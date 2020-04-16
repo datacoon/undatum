@@ -6,7 +6,7 @@ import codecs
 from setuptools import setup, find_packages
 from setuptools.command.test import test as TestCommand
 
-import datus
+import undatum
 
 
 class PyTest(TestCommand):
@@ -16,7 +16,7 @@ class PyTest(TestCommand):
         TestCommand.finalize_options(self)
         self.test_args = [
             '--doctest-modules', '--verbose',
-            './datus', './tests'
+            './undatum', './tests'
         ]
         self.test_suite = True
 
@@ -69,21 +69,21 @@ def long_description():
 
 
 setup(
-    name='datus',
-    version=datus.__version__,
-    description=datus.__doc__.strip(),
+    name='undatum',
+    version=undatum.__version__,
+    description=undatum.__doc__.strip(),
     long_description=long_description(),
-    url='https://github.com/datacoon/datus/',
-    download_url='https://github.com/datacoon/datus/',
+    url='https://github.com/datacoon/undatum/',
+    download_url='https://github.com/datacoon/undatum/',
     packages=find_packages(exclude=('tests', 'tests.*')),
     include_package_data=True,
-    author=datus.__author__,
+    author=undatum.__author__,
     author_email='ivan@begtin.tech',
-    license=datus.__licence__,
+    license=undatum.__licence__,
     entry_points={
         'console_scripts': [
-            'datus = datus.__main__:main',
-            'data = datus.__main__:main',
+            'undatum = undatum.__main__:main',
+            'data = undatum.__main__:main',
         ],
     },
     extras_require=extras_require,

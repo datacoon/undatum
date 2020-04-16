@@ -1,16 +1,10 @@
-Datus: a command-line tool for data processing
-##############################################
+undatum: a command-line tool for data processing
+################################################
 
-Datus (pronounced *da-tus*) is a command line data processing tool.
+undatum (pronounced *un-da-tum*) is a command line data processing tool.
 Its goal is to make CLI interaction with huge datasets so easy as possible.
-It provides a simple ``datus`` command that allows to convert, split, calculate frequency, statistics and to validate
+It provides a simple ``undatum`` command that allows to convert, split, calculate frequency, statistics and to validate
 data in CSV, JSON lines, BSON files.
-
-
-.. class:: no-web no-pdf
-
-    |pypi| |build| |coverage| |downloads| |gitter|
-
 
 
 .. contents::
@@ -45,19 +39,19 @@ macOS
 -----
 
 
-On macOS, datus can be installed via `Homebrew <https://brew.sh/>`_
+On macOS, undatum can be installed via `Homebrew <https://brew.sh/>`_
 (recommended):
 
 .. code-block:: bash
 
-    $ brew install datus
+    $ brew install undatum
 
 
 A MacPorts *port* is also available:
 
 .. code-block:: bash
 
-    $ port install datus
+    $ port install undatum
 
 Linux
 -----
@@ -68,29 +62,29 @@ system package manager, for example:
 .. code-block:: bash
 
     # Debian, Ubuntu, etc.
-    $ apt install datus
+    $ apt install undatum
 
 .. code-block:: bash
 
     # Fedora
-    $ dnf install datus
+    $ dnf install undatum
 
 .. code-block:: bash
 
     # CentOS, RHEL, ...
-    $ yum install datus
+    $ yum install undatum
 
 .. code-block:: bash
 
     # Arch Linux
-    $ pacman -S datus
+    $ pacman -S undatum
 
 
 Windows, etc.
 -------------
 
 A universal installation method (that works on Windows, Mac OS X, Linux, …,
-and always provides the latest version) is to use `pip`_:
+and always provides the latest version) is to use pip:
 
 
 .. code-block:: bash
@@ -98,11 +92,11 @@ and always provides the latest version) is to use `pip`_:
     # Make sure we have an up-to-date version of pip and setuptools:
     $ pip install --upgrade pip setuptools
 
-    $ pip install --upgrade datus
+    $ pip install --upgrade undatum
 
 
 (If ``pip`` installation fails for some reason, you can try
-``easy_install datus`` as a fallback.)
+``easy_install undatum`` as a fallback.)
 
 
 Python version
@@ -120,10 +114,10 @@ Synopsis:
 
 .. code-block:: bash
 
-    $ datus [flags] [command] inputfile
+    $ undatum [flags] [command] inputfile
 
 
-See also ``datus --help``.
+See also ``undatum --help``.
 
 
 Examples
@@ -133,47 +127,47 @@ Get headers from file as `headers command`_,  `JSONl`_ data:
 
 .. code-block:: bash
 
-    $ datus headers examples/ausgovdir.jsonl
+    $ undatum headers examples/ausgovdir.jsonl
 
 
 Analyze file and generate statistics `stats command`_:
 
 .. code-block:: bash
 
-    $ datus stats examples/ausgovdir.jsonl
+    $ undatum stats examples/ausgovdir.jsonl
 
 
 Get `frequency command`_ of values for field GovSystem in the list of Russian federal government domains from  `govdomains repository <https://github.com/infoculture/govdomains/tree/master/refined>`_
 
 .. code-block:: bash
 
-    $ datus frequency examples/feddomains.csv --fields GovSystem
+    $ undatum frequency examples/feddomains.csv --fields GovSystem
 
 
 Get all unique values using `uniq command`_ of the *item.type* field
 
 .. code-block:: bash
 
-    $ datus uniq --fields item.type examples/ausgovdir.jsonl
+    $ undatum uniq --fields item.type examples/ausgovdir.jsonl
 
 `convert command`_ from XML to JSON lines file on tag *item*:
 
 .. code-block:: bash
 
-    $ datus convert --tagname item examples/ausgovdir.xml examples/ausgovdir.jsonl
+    $ undatum convert --tagname item examples/ausgovdir.xml examples/ausgovdir.jsonl
 
 
 Validate data with `validate command`_ against validation rule *ru.org.inn* and field *VendorINN* in  data file. Output is statistcs only :
 
 .. code-block:: bash
 
-    $ datus validate -r ru.org.inn --mode stats --fields VendorINN examples/roszdravvendors_final.jsonl > inn_stats.json
+    $ undatum validate -r ru.org.inn --mode stats --fields VendorINN examples/roszdravvendors_final.jsonl > inn_stats.json
 
 Validate data with `validate command`_ against validation rule *ru.org.inn* and field *VendorINN* in  data file. Output all invalid records :
 
 .. code-block:: bash
 
-    $ datus validate -r ru.org.inn --mode invalid --fields VendorINN examples/roszdravvendors_final.jsonl > inn_invalid.json
+    $ undatum validate -r ru.org.inn --mode invalid --fields VendorINN examples/roszdravvendors_final.jsonl > inn_invalid.json
 
 Commands
 ========
@@ -186,7 +180,7 @@ Get frequencies of values for field *GovSystem* in the list of Russian federal g
 
 .. code-block:: bash
 
-    $ datus frequency examples/feddomains.csv --fields GovSystem
+    $ undatum frequency examples/feddomains.csv --fields GovSystem
 
 
 
@@ -202,13 +196,13 @@ Returns all unique values of field *regions* in selected JSONl file
 
 .. code-block:: bash
 
-    $ datus uniq --fields region examples/reestrgp_final.jsonl
+    $ undatum uniq --fields region examples/reestrgp_final.jsonl
 
 Returns all unique combinations of fields *status* and *regions* in selected JSONl file
 
 .. code-block:: bash
 
-    $ datus uniq --fields status,region examples/reestrgp_final.jsonl
+    $ undatum uniq --fields status,region examples/reestrgp_final.jsonl
 
 
 Convert command
@@ -231,7 +225,7 @@ Converts XML ausgovdir.xml with tag named *item* to ausgovdir.jsonl
 
 .. code-block:: bash
 
-    $ datus convert --tagname item examples/ausgovdir.xml examples/ausgovdir.jsonl
+    $ undatum convert --tagname item examples/ausgovdir.xml examples/ausgovdir.jsonl
 
 
 Validate command
@@ -250,7 +244,7 @@ Validate data with `validate command`_ against validation rule *ru.org.inn* and 
 
 .. code-block:: bash
 
-    $ datus validate -r ru.org.inn --mode invalid --fields VendorINN examples/roszdravvendors_final.jsonl > inn_invalid.json
+    $ undatum validate -r ru.org.inn --mode invalid --fields VendorINN examples/roszdravvendors_final.jsonl > inn_invalid.json
 
 
 Headers command
@@ -262,14 +256,14 @@ Returns headers of JSON lines file with top 10 000 records (default value)
 
 .. code-block:: bash
 
-    $ datus headers examples/ausgovdir.jsonl
+    $ undatum headers examples/ausgovdir.jsonl
 
 
 Returns headers of JSON lines file using top 50 000 records
 
 .. code-block:: bash
 
-    $ datus headers --limit 50000 examples/ausgovdir.jsonl
+    $ undatum headers --limit 50000 examples/ausgovdir.jsonl
 
 Stats command
 -------------
@@ -291,13 +285,13 @@ Returns stats for JSON lines file
 
 .. code-block:: bash
 
-    $ datus stats examples/ausgovdir.jsonl
+    $ undatum stats examples/ausgovdir.jsonl
 
 Analysis of JSON lines file and verifies each field that it's date field, detects date format:
 
 .. code-block:: bash
 
-    $ datus stats --checkdates examples/ausgovdir.jsonl
+    $ undatum stats --checkdates examples/ausgovdir.jsonl
 
 
 
@@ -311,7 +305,7 @@ Split dataset as 10000 records chunks, procuces files like filename_1.jsonl, fil
 
 .. code-block:: bash
 
-    $ datus split -c 10000 examples/ausgovdir.jsonl
+    $ undatum split -c 10000 examples/ausgovdir.jsonl
 
 
 Split dataset as number of files based of field *item.type", generates files [filename]_[value1].jsonl, [filename]_[value2].jsonl and e.t.c.
@@ -319,7 +313,7 @@ There are *[filename]* - ausgovdir and *[value1]* - certain unique value from *i
 
 .. code-block:: bash
 
-    $ datus split --fields item.type examples/ausgovdir.jsonl
+    $ undatum split --fields item.type examples/ausgovdir.jsonl
 
 
 
@@ -332,14 +326,14 @@ Returns columns *item.title* and *item.type* from ausgovdir.jsonl
 
 .. code-block:: bash
 
-    $ datus select --fields item.title,item.type examples/ausgovdir.jsonl
+    $ undatum select --fields item.title,item.type examples/ausgovdir.jsonl
 
 
 Returns columns *item.title* and *item.type* from ausgovdir.jsonl and stores result as selected.jsonl
 
 .. code-block:: bash
 
-    $ datus select --fields item.title,item.type -o selected.jsonl examples/ausgovdir.jsonl
+    $ undatum select --fields item.title,item.type -o selected.jsonl examples/ausgovdir.jsonl
 
 Flatten command
 ---------------
@@ -350,7 +344,7 @@ Returns all columns as flattened key,value
 
 .. code-block:: bash
 
-    $ datus flatten examples/ausgovdir.jsonl
+    $ undatum flatten examples/ausgovdir.jsonl
 
 
 Advanced
@@ -365,20 +359,20 @@ Returns columns item.title and item.type filtered with *item.type* value as *rol
 
 .. code-block:: bash
 
-    $ datus select --fields item.title,item.type --filter "`item.type` == 'role'" examples/ausgovdir.jsonl
+    $ undatum select --fields item.title,item.type --filter "`item.type` == 'role'" examples/ausgovdir.jsonl
 
 Data containers
 ---------------
 
 Sometimes, to keep keep memory usage as low as possible to process huge data files.
 These files are inside compressed containers like .zip, .gz, .bz2 or .tar.gz files.
-*datus* could process compressed files with little memory footprint, but it could slow down file processing.
+*undatum* could process compressed files with little memory footprint, but it could slow down file processing.
 
 Returns headers from subs_dump_1.jsonl file inside subs_dump_1.zip file. Require parameter *-z* to be set and *--format-in* force input file type.
 
 .. code-block:: bash
 
-    $ datus headers --format-in jsonl -z subs_dump_1.zip
+    $ undatum headers --format-in jsonl -z subs_dump_1.zip
 
 
 Date detection
@@ -387,8 +381,17 @@ JSON, JSON lines and CSV files do not support date and datetime data types.
 If you manually prepare your data, than you could define datetime in JSON schema for example.B
 But if data is external, you need to identify these fields.
 
-datus supports date identification via `qddate <https://github.com/ivbeg/qddate>`_ python library with automatic date detection abilities.
+undatum supports date identification via `qddate <https://github.com/ivbeg/qddate>`_ python library with automatic date detection abilities.
 
 .. code-block:: bash
 
-    $ datus stats --checkdates examples/ausgovdir.jsonl
+    $ undatum stats --checkdates examples/ausgovdir.jsonl
+
+
+Data types
+==========
+
+JSONl
+-----
+
+JSON lines is a replacement to CSV and JSON files, with JSON flexibility and ability to process data line by line, without loading everithing into memory.
