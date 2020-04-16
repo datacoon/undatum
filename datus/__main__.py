@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""The main entry point. Invoke as `datum' or `python -m datum'.
+"""The main entry point. Invoke as `datus' or `python -m datus'.
 
 """
 import sys
