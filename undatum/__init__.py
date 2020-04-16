@@ -1,8 +1,8 @@
 """
-HTTPie - a CLI, cURL-like tool for humans.
+undatum: a command-line tool for data processing. Brings CSV simplicity to JSON lines and BSON 
 
 """
 
-__version__ = '1.0.2'
+__version__ = '1.0.3'
 __author__ = 'Ivan Begtin'
 __licence__ = 'MIT'
