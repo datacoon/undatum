@@ -146,7 +146,6 @@ def stats(input, output, dictshare, format_in, format_out, verbose, zipfile, che
     options['format_out'] = format_out
     options['checkdates'] = checkdates
     options['verbose'] = verbose
-    print(options)
     acmd = Analyzer(nodates=not checkdates)
     acmd.analyze(input, options)
     pass
