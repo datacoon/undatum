@@ -7,6 +7,7 @@ import json
 import logging
 
 from .cmds.converter import Converter
+from .cmds.selector import Selector
 from .cmds.transformer import Transformer
 from .cmds.analyzer import Analyzer
 from .cmds.textproc import TextProcessor
@@ -15,8 +16,12 @@ from .cmds.validator import Validator
 #logging.getLogger().addHandler(logging.StreamHandler())
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.ERROR)
+    level=logging.DEBUG)
 
+def enableVerbose():
+    logging.basicConfig(
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        level=logging.DEBUG)
 
 
 @click.group()
@@ -41,7 +46,7 @@ def cli1():
 def convert(input, output, delimiter, encoding, verbose, prefix_strip, fields, start_line, skip_end_rows, start_page, tagname, format_in, format_out, zipfile):
     """Converts one file to another. Supports XML, CSV, JSON, BSON"""
     if verbose:
-        logging.basicConfig(level=logging.DEBUG)
+        enableVerbose()
     options = {}
     options['delimiter'] = delimiter
     options['encoding'] = encoding
@@ -77,7 +82,7 @@ def cli2():
 def uniq(input, output, fields, delimiter, encoding, verbose, format_in, format_out, zipfile, filter):
     """Returns all unique files of certain field(s)"""
     if verbose:
-        logging.basicConfig(level=logging.DEBUG)
+        enableVerbose()
     options = {}
     options['output'] = output
     options['fields'] = fields
@@ -87,7 +92,7 @@ def uniq(input, output, fields, delimiter, encoding, verbose, format_in, format_
     options['format_out'] = format_out
     options['zipfile'] = zipfile
     options['filter'] = filter
-    acmd = Transformer()
+    acmd = Selector()
     acmd.uniq(input, options)
     pass
 
@@ -108,7 +113,7 @@ def cli3():
 def headers(input, output, delimiter, encoding, limit, format_in, format_out, verbose, zipfile):
     """Returns fieldnames of the file. Supports XML, CSV, JSON, BSON"""
     if verbose:
-        logging.basicConfig(level=logging.DEBUG)
+        enableVerbose()
     options = {}
     options['output'] = output
     options['delimiter'] = delimiter
@@ -117,7 +122,7 @@ def headers(input, output, delimiter, encoding, limit, format_in, format_out, ve
     options['format_in'] = format_in
     options['format_out'] = format_out
     options['zipfile'] = zipfile
-    acmd = Transformer()
+    acmd = Selector()
     acmd.headers(input, options)
     pass
 
@@ -137,7 +142,7 @@ def cli4():
 def stats(input, output, dictshare, format_in, format_out, verbose, zipfile, checkdates):
     """Returns detailed stats on selected dataset"""
     if verbose:
-        logging.basicConfig(level=logging.DEBUG)
+        enableVerbose()
     options = {}
     options['output'] = output
     options['dictshare'] = dictshare
@@ -161,8 +166,11 @@ def cli5():
 @click.option('--delimiter', '-d', default=',', help="CSV delimiter if convert from CSV")
 @click.option('--encoding', '-e', default='utf8', help="Input and output encoding")
 @click.option('--filter',  default=None, help="Filter input file with dict query")
-def flatten(input, output, delimiter, encoding, filter):
+@click.option('--verbose', '-v', count=True, help='Verbose output. Print additional info on command execution')
+def flatten(input, output, delimiter, encoding, filter, verbose):
     """Flatten data records. Write them as one value per row"""
+    if verbose:
+        enableVerbose()
     options = {}
     options['delimiter'] = delimiter
     options['output'] = output
@@ -191,7 +199,7 @@ def cli6():
 def frequency(input, output, fields, delimiter, encoding, verbose, format_in, format_out, zipfile, filter):
     """Field value frequency calc"""
     if verbose:
-        logging.basicConfig(level=logging.DEBUG)
+        enableVerbose()
     options = {}
     options['delimiter'] = delimiter
     options['fields'] = fields
@@ -201,7 +209,7 @@ def frequency(input, output, fields, delimiter, encoding, verbose, format_in, fo
     options['format_out'] = format_out
     options['zipfile'] = zipfile
     options['filter'] = filter
-    acmd = Transformer()
+    acmd = Selector()
     acmd.frequency(input, options)
     pass
 
@@ -224,7 +232,7 @@ def cli7():
 def select(input, output, fields, delimiter, encoding, verbose, format_in, format_out, zipfile, filter):
     """Select or re-order columns from file. Supports CSV, JSONl, BSON"""
     if verbose:
-        logging.basicConfig(level=logging.DEBUG)
+        enableVerbose()
     options = {}
     options['delimiter'] = delimiter
     options['fields'] = fields
@@ -234,7 +242,7 @@ def select(input, output, fields, delimiter, encoding, verbose, format_in, forma
     options['format_out'] = format_out
     options['zipfile'] = zipfile
     options['filter'] = filter
-    acmd = Transformer()
+    acmd = Selector()
     acmd.select(input, options)
     pass
 
@@ -255,9 +263,9 @@ def cli8():
 @click.option('-c', '--chunksize', default=10000, help='Default chunk size of file to split. Used if field value not given')
 @click.option('--filter',  default=None, help="Filter input file with dict query")
 def split(input, output, fields, delimiter, encoding, verbose, format_in, zipfile, chunksize, filter):
-    """Splits the given file with data into chunks based on chunk size or field value. Supports CSV, JSONl, BSON"""
+    """Splits the given file with data into chunks."""
     if verbose:
-        logging.basicConfig(level=logging.DEBUG)
+        enableVerbose()
     options = {}
     options['delimiter'] = delimiter
     options['fields'] = fields
@@ -267,7 +275,7 @@ def split(input, output, fields, delimiter, encoding, verbose, format_in, zipfil
     options['zipfile'] = zipfile
     options['chunksize'] = chunksize
     options['filter'] = filter
-    acmd = Transformer()
+    acmd = Selector()
     acmd.split(input, options)
     pass
 
@@ -291,7 +299,7 @@ def cli9():
 def validate(input, output, fields, delimiter, encoding, verbose, format_in, zipfile, rule, filter, mode):
     """Validates selected field against validation rule"""
     if verbose:
-        logging.basicConfig(level=logging.DEBUG)
+        enableVerbose()
     options = {}
     options['delimiter'] = delimiter
     options['fields'] = fields
@@ -306,9 +314,41 @@ def validate(input, output, fields, delimiter, encoding, verbose, format_in, zip
     acmd.validate(input, options)
     pass
 
+@click.group()
+def cli10():
+    pass
 
 
-cli = click.CommandCollection(sources=[cli1, cli2, cli3, cli4, cli5, cli6, cli7, cli8, cli9])
+@cli10.command()
+@click.argument('input')
+@click.option('--output', '-o', 'output', default=None, help='Output to this file')
+@click.option('--delimiter', '-d', default=',', help="CSV delimiter if convert from CSV")
+@click.option('--encoding', '-e', default='utf8', help="Input and output encoding")
+@click.option('--fields', '-f', default=None, help="Fieldnames, delimiter by ','")
+@click.option('--verbose', '-v', count=True, help='Verbose output. Print additional info on command execution')
+@click.option('--format-in',  default=None, help="Format of input file, if set, replaces autodetect")
+@click.option('-z', '--zipfile', 'zipfile', is_flag=True, help="Used to say input file is .zip file and that data file is inside")
+@click.option('-s', '--script',  default=None, required=True, help="Script to run")
+@click.option('--filter',  default=None, help="Filter input file with dict query")
+def apply(input, output, fields, delimiter, encoding, verbose, format_in, zipfile, script, filter):
+    """Runs script against each record of input file"""
+    if verbose:
+        enableVerbose()
+    options = {}
+    options['delimiter'] = delimiter
+    options['fields'] = fields
+    options['output'] = output
+    options['encoding'] = encoding
+    options['format_in'] = format_in
+    options['zipfile'] = zipfile
+    options['filter'] = filter
+    options['script'] = script
+    acmd = Transformer()
+    acmd.script(input, options)
+    pass
+
+
+cli = click.CommandCollection(sources=[cli1, cli2, cli3, cli4, cli5, cli6, cli7, cli8, cli9, cli10])
 
 #if __name__ == '__main__':
 #    cli()

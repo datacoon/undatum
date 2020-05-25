@@ -187,8 +187,8 @@ class Converter:
         pass
 
     def convert(self, fromfile, tofile,  options={}):
-        fromtype = options['format_in'] if 'format_in' in options.keys() else get_file_type(fromfile)
-        totype = options['format_out'] if 'format_out' in options.keys() else get_file_type(tofile)
+        fromtype = options['format_in'] if options['format_in'] is not None else get_file_type(fromfile)
+        totype = options['format_out'] if options['format_out'] is not None else get_file_type(tofile)
         key = '%s2%s' % (fromtype, totype)
         func = CONVERT_FUNC_MAP.get(key, None)
         if func == None:
