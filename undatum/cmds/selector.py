@@ -454,7 +454,7 @@ class Selector:
                     if v is None:
                         splitname = finfilename.rsplit('.', 1)[0] + '_%s.jsonl' % (kx)
                         valuedict[kx] = open(splitname, 'w', encoding='utf8')
-                    valuedict[kx].write(l)#.decode('utf8'))
+                    valuedict[kx].write(l.decode('utf8'))#.decode('utf8')#)
                 for opened in valuedict.values():
                     opened.close()
         elif f_type == 'bson':
