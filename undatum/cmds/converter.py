@@ -173,6 +173,60 @@ def xls_to_bson(fromname, toname, options={}, default_options={'start_page': 0, 
     output.close()
 
 
+def _is_flat(item):
+    for k, v in item.items():
+        if isinstance(v, dict) or isinstance(v, tuple) or isinstance(v, list):
+            return False
+    return True
+
+
+def express_analyze_jsonl(filename, itemlimit=100):
+    f = open(filename, 'r', encoding='utf8')
+    isflat = True
+    n = 0
+    keys = set()
+    for l in f:
+        n += 1
+        if n > itemlimit: break
+        record = json.loads(l)
+        if isflat:
+            if not _is_flat(record):
+                isflat = False
+        if len(keys) == 0:
+            keys = set(record.keys())
+        else:
+            keys = keys.union(set(record.keys()))
+    f.close()
+    keys = list(keys)
+    keys.sort()
+    return {'isflat' : isflat, 'keys' : keys}
+
+
+def jsonl_to_csv(fromname, toname, options={}, default_options={'force_flat' : False, 'useitems' : 100, 'delimiter' : ','}):
+    options = __copy_options(options, default_options)
+    analysis = express_analyze_jsonl(fromname, itemlimit=options['useitems'])
+    if not options['force_flat'] and not analysis['isflat']:
+        logging.error("File %s is not flat and 'force_flat' flag not set. File not converted")
+        return
+    out = open(toname, 'w', encoding='utf8')
+    writer = csv.writer(out, delimiter=options['delimiter'])
+    writer.writerow(analysis['keys'])
+    f = open(fromname, 'r', encoding='utf8')
+    keys = analysis['keys']
+    for l in f:
+        record = json.loads(l)
+        item = []
+        for k in keys:
+            if k in record.keys():
+                item.append(record[k])
+            else:
+                item.append('')
+        writer.writerow(item)
+    out.close()
+    f.close()
+    pass
+
+
 CONVERT_FUNC_MAP = {
     'xls2csv' : xls_to_csv,
     'xls2jsonl' : xls_to_jsonl,
@@ -180,7 +234,8 @@ CONVERT_FUNC_MAP = {
     'xlsx2jsonl': xlsx_to_jsonl,
     'csv2jsonl' : csv_to_jsonl,
     'csv2bson' : csv_to_bson,
-    'xml2jsonl' : xml_to_jsonl
+    'xml2jsonl' : xml_to_jsonl,
+    'jsonl2csv' : jsonl_to_csv,
  }
 class Converter:
     def __init__(self):

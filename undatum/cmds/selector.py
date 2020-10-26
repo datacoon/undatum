@@ -392,8 +392,8 @@ class Selector:
         if f_type == 'csv':
             reader = csv.DictReader(infile, delimiter=delimiter)
             n = 0
+            chunknum = 1
             if options['fields'] is None:
-                chunknum = 1
                 splitname = finfilename.rsplit('.', 1)[0] + '_%d.csv' % (chunknum)
                 out = open(splitname, 'w', encoding=get_option(options, 'encoding'))
                 writer = csv.DictWriter(out, fieldnames=reader.fieldnames, delimiter=delimiter)
@@ -413,7 +413,7 @@ class Selector:
                         out = open(splitname, 'w', encoding=get_option(options, 'encoding'))
                         writer = csv.DictWriter(out, fieldnames=reader.fieldnames, delimiter=delimiter)
                         writer.writeheader()
-            out.close()
+                out.close()
         elif f_type == 'jsonl':
             n = 0
             chunknum = 1
@@ -454,7 +454,8 @@ class Selector:
                     if v is None:
                         splitname = finfilename.rsplit('.', 1)[0] + '_%s.jsonl' % (kx)
                         valuedict[kx] = open(splitname, 'w', encoding='utf8')
-                    valuedict[kx].write(l.decode('utf8'))#.decode('utf8')#)
+                    valuedict[kx].write(l)
+#                    valuedict[kx].write(l.decode('utf8'))#.decode('utf8')#)
                 for opened in valuedict.values():
                     opened.close()
         elif f_type == 'bson':

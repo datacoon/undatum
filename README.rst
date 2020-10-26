@@ -1,5 +1,7 @@
-undatum: a command-line tool for data processing
-################################################
+==================================================
+undatum -- a command-line tool for data processing
+==================================================
+
 
 undatum (pronounced *un-da-tum*) is a command line data processing tool.
 Its goal is to make CLI interaction with huge datasets so easy as possible.
@@ -83,7 +85,7 @@ system package manager, for example:
 Windows, etc.
 -------------
 
-A universal installation method (that works on Windows, Mac OS X, Linux, …,
+A universal installation method (that works on Windows, Mac OS X, Linux, вЂ¦,
 and always provides the latest version) is to use pip:
 
 
@@ -308,7 +310,7 @@ Split dataset as 10000 records chunks, procuces files like filename_1.jsonl, fil
     $ undatum split -c 10000 examples/ausgovdir.jsonl
 
 
-Split dataset as number of files based of field *item.type", generates files [filename]_[value1].jsonl, [filename]_[value2].jsonl and e.t.c.
+Split dataset as number of files based of field *item.type", generates files filename_[value1].jsonl, filename_[value2].jsonl and e.t.c.
 There are *[filename]* - ausgovdir and *[value1]* - certain unique value from *item.type* field
 
 .. code-block:: bash

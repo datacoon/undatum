@@ -73,6 +73,7 @@ setup(
     version=undatum.__version__,
     description=undatum.__doc__.strip(),
     long_description=long_description(),
+#    long_description_content_type='text/rst',
     url='https://github.com/datacoon/undatum/',
     download_url='https://github.com/datacoon/undatum/',
     packages=find_packages(exclude=('tests', 'tests.*')),
