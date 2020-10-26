@@ -220,6 +220,7 @@ Supports conversions:
 * XLS to CSV
 * CSV to BSON
 * XLS to BSON
+* JSON lines to CSV
 
 Conversion between XML and JSON lines require flag *tagname* with name of tag which should be converted into single JSON record.
 
@@ -228,6 +229,12 @@ Converts XML ausgovdir.xml with tag named *item* to ausgovdir.jsonl
 .. code-block:: bash
 
     $ undatum convert --tagname item examples/ausgovdir.xml examples/ausgovdir.jsonl
+
+Converts JSON lines file roszdravvendors_final.jsonl to CSV file roszdravvendors_final.csv 
+
+.. code-block:: bash
+
+    $ undatum convert examples/roszdravvendors_final.jsonl examples/roszdravvendors_final.csv
 
 
 Validate command
