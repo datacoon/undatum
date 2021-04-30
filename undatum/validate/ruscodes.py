@@ -138,12 +138,13 @@ def _check_ogrn(code):
         v = code[0:12]
         v1 = int(v) % 11
         if v1 > 9:
-            v1 = v1 - ((v1 / 10) * 10)
+            v1 = v1 - ((v1 / 10) * 10)      
         return v1 == int(code[12])
     elif code is not None and code.isdigit() and len(code) == 15:
         v = code[0:14]
-        v1 = int(v) % 13
+        v1 = int(v) % 11
         if v1 > 9:
             v1 = v1 - ((v1 / 10) * 10)
+        print(v1, int(code[14]))
         return v1 == int(code[14])
     return False

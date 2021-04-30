@@ -1,5 +1,4 @@
 from xlrd import open_workbook as load_xls
-from openpyxl import load_workbook as load_xlsx
 import logging
 import csv
 import json
@@ -107,7 +106,7 @@ def csv_to_jsonl(fromname, toname, options={}, default_options={'encoding': 'utf
     n = 0
     for j in reader:
         n += 1
-        output.write(json.dumps(j).encode('utf8'))
+        output.write(json.dumps(j, ensure_ascii=False).encode('utf8', ))
         output.write(u'\n'.encode('utf8'))
         if n % 10000 == 0:
             logging.info('csv2jsonl: processed %d records' % (n))
@@ -137,6 +136,7 @@ def xls_to_jsonl(fromname, toname, options={}, default_options={'start_page': 0,
     output.close()
 
 def xlsx_to_jsonl(fromname, toname, options={}, default_options={'start_page': 0, 'start_line' : 0}):
+    from openpyxl import load_workbook as load_xlsx
     options = __copy_options(options, default_options)
     source = load_xlsx(fromname)
     output = open(toname, 'w')
@@ -226,6 +226,19 @@ def jsonl_to_csv(fromname, toname, options={}, default_options={'force_flat' : F
     f.close()
     pass
 
+def bson_to_jsonl(fromname, toname, options={}, default_options={}):
+    options = __copy_options(options, default_options)
+    source = open(fromname, 'rb')
+    output = open(toname, 'w', encoding='utf8')
+    n = 0
+    for r in bson.decode_file_iter(source):
+        n += 1
+        output.write(json.dumps(r, ensure_ascii=False)+ '\n')
+        if n % 10000 == 0:
+            logging.info('bson2jsonl: processed %d records' % (n))
+    source.close()
+    output.close()
+
 
 CONVERT_FUNC_MAP = {
     'xls2csv' : xls_to_csv,
@@ -236,7 +249,8 @@ CONVERT_FUNC_MAP = {
     'csv2bson' : csv_to_bson,
     'xml2jsonl' : xml_to_jsonl,
     'jsonl2csv' : jsonl_to_csv,
- }
+    'bson2jsonl': bson_to_jsonl,
+}
 class Converter:
     def __init__(self):
         pass

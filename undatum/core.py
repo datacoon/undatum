@@ -1,9 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf8 -*-
-import os
 import click
-import tabulate
-import json
 import logging
 
 from .cmds.converter import Converter

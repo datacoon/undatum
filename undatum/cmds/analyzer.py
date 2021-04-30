@@ -4,7 +4,6 @@ from datetime import datetime
 import logging
 import json
 import zipfile
-from tabulate import tabulate
 from qddate import DateParser
 
 def guess_int_size(i):
@@ -84,6 +83,7 @@ class Analyzer:
 
     def analyze(self, fromfile, options):
         """Analyzes JSON file and produces stats"""
+        from tabulate import tabulate
         f_type = get_file_type(fromfile) if options['format_in'] is None else options['format_in']
         if f_type != 'jsonl':
             print('Only JSON lines (.jsonl) files supported now')
