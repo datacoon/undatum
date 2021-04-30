@@ -145,6 +145,5 @@ def _check_ogrn(code):
         v1 = int(v) % 11
         if v1 > 9:
             v1 = v1 - ((v1 / 10) * 10)
-        print(v1, int(code[14]))
         return v1 == int(code[14])
     return False
