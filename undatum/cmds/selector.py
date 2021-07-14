@@ -449,7 +449,7 @@ class Selector:
                     except IndexError:
                         continue
                         kx = "None"
-                    kx = kx.replace('\\', '-').replace('/', '-').replace('?', '-')
+                    kx = kx.replace('\\', '-').replace('/', '-').replace('?', '-').replace('<', '-').replace('>', '-')
                     v = valuedict.get(kx, None)
                     if v is None:
                         splitname = finfilename.rsplit('.', 1)[0] + '_%s.jsonl' % (kx)
