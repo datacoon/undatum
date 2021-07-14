@@ -1,23 +1,22 @@
-from xlrd import open_workbook
-from operator import itemgetter, attrgetter
 import csv
-import zipfile
-import sys
-import json
-import bson
+# import json
 import logging
-#from xmlr import xmliter
-import xml.etree.ElementTree as etree
-from collections import defaultdict
-from ..utils import get_file_type, get_option, write_items, get_dict_value, strip_dict_fields, dict_generator
-import dictquery as dq
+import sys
+import zipfile
 
+import bson
+import dictquery as dq
+import orjson as json
+
+# from xmlr import xmliter
+from ..utils import get_file_type, get_option, write_items, get_dict_value, strip_dict_fields, dict_generator
+
+LINEEND = u'\n'.encode('utf8')
 
 
 class Selector:
     def __init__(self):
         pass
-
 
     def uniq(self, fromfile, options={}):
         logging.debug('Processing %s' % fromfile)
@@ -48,7 +47,7 @@ class Selector:
         logging.info('uniq: looking for fields: %s' % (options['fields']))
         if f_type == 'csv':
             delimiter = get_option(options, 'delimiter')
-            uniqval= []
+            uniqval = []
             reader = csv.DictReader(infile, delimiter=delimiter)
             n = 0
             for r in reader:
@@ -63,7 +62,7 @@ class Selector:
                     uniqval.append(k)
 
         elif f_type == 'jsonl':
-            uniqval= []
+            uniqval = []
             n = 0
             for l in infile:
                 n += 1
@@ -116,7 +115,6 @@ class Selector:
         infile.close()
         logging.debug('%d unique values found' % (len(uniqval)))
         write_items(fields, uniqval, filetype=to_type, handle=out)
-
 
     def headers(self, fromfile, options={}):
         f_type = get_file_type(fromfile) if options['format_in'] is None else options['format_in']
@@ -172,7 +170,6 @@ class Selector:
             f.close()
         else:
             print('\n'.join(keys))
-
 
     def frequency(self, fromfile, options={}):
         """Calculates frequency of the values in the file"""
@@ -251,7 +248,7 @@ class Selector:
                     if not dq.match(r, options['filter']):
                         continue
 
-#                print(r)
+                #                print(r)
                 allvals = []
                 for field in fields:
                     allvals.append(get_dict_value(r, field.split('.')))
@@ -279,8 +276,6 @@ class Selector:
             print(strkeys)
             for k, v in thedict:
                 print('%s\t%d' % (k, v))
-
-
 
     def select(self, fromfile, options={}):
         """Select or re-order columns from file"""
@@ -332,7 +327,7 @@ class Selector:
                 if to_type == 'csv':
                     writer.writerow(item)
                 elif to_type == 'jsonl':
-                    out.write(json.dumps(item)+"\n")
+                    out.write(json.dumps(item) + "\n")
         elif f_type == 'jsonl':
             n = 0
             fields = [field.split('.') for field in fields]
@@ -343,11 +338,11 @@ class Selector:
                 r = json.loads(l)
                 if options['filter'] is not None:
                     res = dq.match(r, options['filter'])
-#                    print(options['filter'], r)
+                    #                    print(options['filter'], r)
                     if not res:
                         continue
                 r_selected = strip_dict_fields(r, fields, 0)
-                out.write(json.dumps(r_selected)+'\n')
+                out.write(json.dumps(r_selected) + '\n')
         elif f_type == 'bson':
             bson_iter = bson.decode_file_iter(infile)
             n = 0
@@ -380,6 +375,10 @@ class Selector:
                 infile = z.open(fnames[0], 'rb')
             else:
                 infile = z.open(fnames[0], 'r')
+        elif options['gzipfile']:
+            import gzip
+            infile = gzip.open(fromfile, 'rb')
+            finfilename = fromfile.split('.', 1)[0] + '.' + f_type
         else:
             finfilename = fromfile
             if f_type == 'bson':
@@ -419,7 +418,7 @@ class Selector:
             chunknum = 1
             if options['fields'] is None:
                 splitname = finfilename.rsplit('.', 1)[0] + '_%d.jsonl' % (chunknum)
-                out = open(splitname, 'w', encoding=get_option(options, 'encoding'))
+                out = open(splitname, 'wb')  # , encoding=get_option(options, 'encoding'))
 
                 for l in infile:
                     n += 1
@@ -429,7 +428,7 @@ class Selector:
                     if options['filter'] is not None:
                         if not dq.match(r, options['filter']):
                             continue
-                    out.write(json.dumps(r)+'\n')
+                    out.write(json.dumps(r) + '\n')
                     if n % options['chunksize'] == 0:
                         out.close()
                         chunknum += 1
@@ -450,12 +449,13 @@ class Selector:
                     except IndexError:
                         continue
                         kx = "None"
+                    kx = kx.replace('\\', '-').replace('/', '-').replace('?', '-')
                     v = valuedict.get(kx, None)
                     if v is None:
                         splitname = finfilename.rsplit('.', 1)[0] + '_%s.jsonl' % (kx)
                         valuedict[kx] = open(splitname, 'w', encoding='utf8')
                     valuedict[kx].write(l)
-#                    valuedict[kx].write(l.decode('utf8'))#.decode('utf8')#)
+                #                    valuedict[kx].write(l.decode('utf8'))#.decode('utf8')#)
                 for opened in valuedict.values():
                     opened.close()
         elif f_type == 'bson':
@@ -463,9 +463,9 @@ class Selector:
             n = 0
             for r in bson_iter:
                 n += 1
-#                print(r)
+                #                print(r)
                 r_selected = strip_dict_fields(r, fields, 0)
-#                out.write(json.dumps(r_selected)+'\n')
+                #                out.write(json.dumps(r_selected)+'\n')
                 if n % 10000 == 0:
                     logging.info('split: processing %d records of %s' % (n, fromfile))
 
@@ -473,4 +473,3 @@ class Selector:
             logging.info('File type not supported')
             return
         logging.debug('split: %d records processed' % (n))
-

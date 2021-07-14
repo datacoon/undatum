@@ -9,6 +9,7 @@ from .cmds.transformer import Transformer
 from .cmds.analyzer import Analyzer
 from .cmds.textproc import TextProcessor
 from .cmds.validator import Validator
+from .cmds.schemer import Schemer
 
 #logging.getLogger().addHandler(logging.StreamHandler())
 logging.basicConfig(
@@ -257,9 +258,10 @@ def cli8():
 @click.option('--verbose', '-v', count=True, help='Verbose output. Print additional info on command execution')
 @click.option('--format-in',  default=None, help="Format of input file, if set, replaces autodetect")
 @click.option('-z', '--zipfile', 'zipfile', is_flag=True, help="Used to say input file is .zip file and that data file is inside")
+@click.option('--gzip', '-g', 'gzipfile', is_flag=True, help="Used to say input file is gzipped file")
 @click.option('-c', '--chunksize', default=10000, help='Default chunk size of file to split. Used if field value not given')
 @click.option('--filter',  default=None, help="Filter input file with dict query")
-def split(input, output, fields, delimiter, encoding, verbose, format_in, zipfile, chunksize, filter):
+def split(input, output, fields, delimiter, encoding, verbose, format_in, zipfile, gzipfile, chunksize, filter):
     """Splits the given file with data into chunks."""
     if verbose:
         enableVerbose()
@@ -270,6 +272,7 @@ def split(input, output, fields, delimiter, encoding, verbose, format_in, zipfil
     options['encoding'] = encoding
     options['format_in'] = format_in
     options['zipfile'] = zipfile
+    options['gzipfile'] = gzipfile
     options['chunksize'] = chunksize
     options['filter'] = filter
     acmd = Selector()
@@ -345,7 +348,36 @@ def apply(input, output, fields, delimiter, encoding, verbose, format_in, zipfil
     pass
 
 
-cli = click.CommandCollection(sources=[cli1, cli2, cli3, cli4, cli5, cli6, cli7, cli8, cli9, cli10])
+@click.group()
+def cli11():
+    pass
+
+@cli11.command()
+@click.argument('input')
+@click.option('--output', '-o', 'output', default=None, help='Output to this file')
+@click.option('--delimiter', '-d', default=',', help="CSV delimiter if convert from CSV")
+@click.option('--encoding', '-e', default='utf8', help="Input and output encoding")
+@click.option('--verbose', '-v', count=True, help='Verbose output. Print additional info on command execution')
+@click.option('--format-in',  default=None, help="Format of input file, if set, replaces autodetect")
+@click.option('-z', '--zipfile', 'zipfile', is_flag=True, help="Used to say input file is .zip file and that data file is inside")
+@click.option('--stype',  default='cerberus', help="Type of the schema: cerberus")
+def scheme(input, output, delimiter, encoding, verbose, format_in, zipfile, stype):
+    """Runs script against each record of input file"""
+    if verbose:
+        enableVerbose()
+    options = {}
+    options['delimiter'] = delimiter
+    options['output'] = output
+    options['encoding'] = encoding
+    options['format_in'] = format_in
+    options['zipfile'] = zipfile
+    options['stype'] = stype
+    acmd = Schemer()
+    acmd.generate_scheme(input, options)
+    pass
+
+
+cli = click.CommandCollection(sources=[cli1, cli2, cli3, cli4, cli5, cli6, cli7, cli8, cli9, cli10, cli11])
 
 #if __name__ == '__main__':
 #    cli()

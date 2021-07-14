@@ -5,3 +5,4 @@ validators
 qddate
 tabulate
 dictquery
+orjson

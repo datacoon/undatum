@@ -132,18 +132,17 @@ def _check_inn(code):
     return False
 
 
-def _check_ogrn(code):
+def _check_ogrn(ogrn):
     """Validates OGRN code"""
-    if code is not None and code.isdigit() and len(code) == 13:
-        v = code[0:12]
-        v1 = int(v) % 11
-        if v1 > 9:
-            v1 = v1 - ((v1 / 10) * 10)      
-        return v1 == int(code[12])
-    elif code is not None and code.isdigit() and len(code) == 15:
-        v = code[0:14]
-        v1 = int(v) % 11
-        if v1 > 9:
-            v1 = v1 - ((v1 / 10) * 10)
-        return v1 == int(code[14])
-    return False
+    if not ogrn:
+        return False
+    if len(ogrn) == 13:
+        delimeter = 11
+    elif len(ogrn) == 15:
+        delimeter = 13
+    else:
+        return False
+    main_part = int(ogrn[:-1]) % delimeter % 10
+    checksum = int(ogrn[-1])
+
+    return main_part == checksum
