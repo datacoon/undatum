@@ -1,4 +1,4 @@
-bson
+pymongo
 click
 openpyxl
 validators
