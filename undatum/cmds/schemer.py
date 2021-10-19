@@ -2,7 +2,7 @@ from ..utils import get_file_type, get_option
 from ..constants import DATE_PATTERNS, DEFAULT_DICT_SHARE
 from datetime import datetime
 import logging
-import json
+import orjson
 import zipfile
 from qddate import DateParser
 from ..common.scheme import generate_scheme_from_file
@@ -39,8 +39,8 @@ class Schemer:
         logging.debug('Start identifying scheme for %s' % (fromfile))
         scheme = generate_scheme_from_file(fileobj=infile, filetype=f_type, delimiter=options['delimiter'], encoding=options['encoding'])
         if options['output']:
-            f = open(options['output'], 'w', encoding='utf8')
-            f.write(json.dumps(scheme, indent=4))
+            f = open(options['output'], 'wb', encoding='utf8')
+            f.write(orjson.dumps(scheme, option=orjson.OPT_INDENT_2))
             f.close()
         else:
-            print(json.dumps(scheme, indent=4))
+            print(str(orjson.dumps(scheme, option=orjson.OPT_INDENT_2)))

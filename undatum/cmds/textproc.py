@@ -1,7 +1,7 @@
 from ..utils import get_file_type, get_option
 from ..constants import DATE_PATTERNS, DEFAULT_DICT_SHARE
 from datetime import datetime
-import json
+import orjson
 import csv
 import bson
 
@@ -37,7 +37,7 @@ class TextProcessor:
             for r in f:
                 allkeys = {}
                 i += 1
-                rec = json.loads(r)
+                rec = orjson.loads(r)
                 for k in get_keys(rec):
                     v = allkeys.get(k, 0)
                     allkeys[k] = v + 1
@@ -53,7 +53,7 @@ class TextProcessor:
                     print('\t'.join([k, str(v)]))
         elif filename[-5:] == '.json':
             allkeys = {}
-            rec = json.loads(f.read())
+            rec = orjson.loads(f.read())
             for k in get_keys(rec):
                 v = allkeys.get(k, 0)
                 allkeys[k] = v + 1

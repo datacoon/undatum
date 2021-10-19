@@ -3,7 +3,7 @@ from operator import itemgetter, attrgetter
 import csv
 import zipfile
 import sys
-import json
+import orjson
 import bson
 import logging
 #from xmlr import xmliter
@@ -72,7 +72,7 @@ class Validator:
                 n += 1
                 if n % 10000 == 0:
                     logging.info('uniq: processing %d records of %s' % (n, fromfile))
-                r = json.loads(l)
+                r = orjson.loads(l)
                 if options['filter'] is not None:
                     if not dq.match(r, options['filter']):
                         continue
@@ -121,5 +121,5 @@ class Validator:
                 elif options['mode'] == 'all':
                     writer.writerow(row)
         else:
-            out.write(json.dumps(stats, indent=4))
+            out.write(str(orjson.dumps(stats, option=orjson.OPT_INDENT_2)))
 

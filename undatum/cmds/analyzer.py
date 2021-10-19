@@ -2,7 +2,7 @@ from ..utils import get_file_type, get_option
 from ..constants import DATE_PATTERNS, DEFAULT_DICT_SHARE
 from datetime import datetime
 import logging
-import json
+import orjson
 import zipfile
 from qddate import DateParser
 
@@ -122,7 +122,7 @@ class Analyzer:
         # process data items one by one
         logging.debug('Start processing %s' % (fromfile))
         for l in infile:
-            item = json.loads(l)
+            item = orjson.loads(l)
             count += 1
             dk = dict_generator(item)
             if count % 1000 == 0: logging.debug('Processing %d records of %s' % (count, fromfile))

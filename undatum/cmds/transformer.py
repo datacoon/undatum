@@ -3,7 +3,7 @@ from operator import itemgetter, attrgetter
 import csv
 import zipfile
 import sys
-import json
+import orjson
 import bson
 import logging
 #from xmlr import xmliter
@@ -41,6 +41,8 @@ class Transformer:
                 return
             if to_type == 'bson':
                 out = open(to_file, 'wb')
+            elif to_type == 'jsonl':
+                out = open(to_file, 'wb')
             else:
                 out = open(to_file, 'w', encoding='utf8')
         else:
@@ -64,16 +66,16 @@ class Transformer:
                 if to_type == 'csv':
                     writer.writerow(item)
                 elif to_type == 'jsonl':
-                    out.write(json.dumps(item) + "\n")
+                    out.write(orjson.dumps(item, option=orjson.OPT_APPEND_NEWLINE))
         elif f_type == 'jsonl':
             n = 0
             for l in infile:
                 n += 1
                 if n % 10000 == 0:
                     logging.info('apply script: processing %d records of %s' % (n, fromfile))
-                r = json.loads(l)
+                r = orjson.loads(l)
                 item = __process_func(r)
-                out.write(json.dumps(item) + '\n')
+                out.write(orjson.dumps(item, option=orjson.OPT_APPEND_NEWLINE))
         elif f_type == 'bson':
             bson_iter = bson.decode_file_iter(infile)
             n = 0
@@ -82,8 +84,7 @@ class Transformer:
                 if n % 10000 == 0:
                     logging.info('apply script: processing %d records of %s' % (n, fromfile))
                 item = __process_func(r)
-                out.write(json.dumps(item) + '\n')
-
+                out.write(str(orjson.dumps(item, option=orjson.OPT_APPEND_NEWLINE)))
         else:
             logging.info('File type not supported')
             return

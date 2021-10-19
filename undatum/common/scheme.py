@@ -1,6 +1,6 @@
 import datetime
 import bson
-import json
+import orjson
 import csv
 import logging
 from copy import copy
@@ -169,7 +169,7 @@ def generate_scheme_from_file(filename=None, fileobj=None, filetype='bson', alim
             n += 1
             if n > alimit:
                 break
-            datacache.append(json.loads(r))
+            datacache.append(orjson.loads(r))
         if filename:
             source.close()
     elif filetype == 'csv':

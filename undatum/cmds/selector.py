@@ -6,7 +6,7 @@ import zipfile
 
 import bson
 import dictquery as dq
-import orjson as json
+import orjson
 
 # from xmlr import xmliter
 from ..utils import get_file_type, get_option, write_items, get_dict_value, strip_dict_fields, dict_generator
@@ -28,6 +28,7 @@ class Selector:
                 infile = z.open(fnames[0], 'rb')
             else:
                 infile = z.open(fnames[0], 'r')
+
         else:
             if f_type == 'bson':
                 infile = open(fromfile, 'rb')
@@ -68,7 +69,7 @@ class Selector:
                 n += 1
                 if n % 10000 == 0:
                     logging.info('uniq: processing %d records of %s' % (n, fromfile))
-                r = json.loads(l)
+                r = orjson.loads(l)
                 if options['filter'] is not None:
                     if not dq.match(r, options['filter']):
                         continue
@@ -141,7 +142,7 @@ class Selector:
             for l in f:
                 n += 1
                 if n > limit: break
-                item = json.loads(l)
+                item = orjson.loads(l)
                 dk = dict_generator(item)
                 for i in dk:
                     k = ".".join(i[:-1])
@@ -219,7 +220,7 @@ class Selector:
                 n += 1
                 if n % 10000 == 0:
                     logging.info('frequency: processing %d records of %s' % (n, fromfile))
-                r = json.loads(l)
+                r = orjson.loads(l)
                 if options['filter'] is not None:
                     if not dq.match(r, options['filter']):
                         continue
@@ -300,6 +301,8 @@ class Selector:
                 return
             if to_type == 'bson':
                 out = open(to_file, 'wb')
+            if to_type == 'jsonl':
+                out = open(to_file, 'wb')
             else:
                 out = open(to_file, 'w', encoding='utf8')
         else:
@@ -327,7 +330,7 @@ class Selector:
                 if to_type == 'csv':
                     writer.writerow(item)
                 elif to_type == 'jsonl':
-                    out.write(json.dumps(item) + "\n")
+                    out.write(orjson.dumps(r_selected, option=orjson.OPT_APPEND_NEWLINE).encode('utf8'))
         elif f_type == 'jsonl':
             n = 0
             fields = [field.split('.') for field in fields]
@@ -335,14 +338,14 @@ class Selector:
                 n += 1
                 if n % 10000 == 0:
                     logging.info('select: processing %d records of %s' % (n, fromfile))
-                r = json.loads(l)
+                r = orjson.loads(l)
                 if options['filter'] is not None:
                     res = dq.match(r, options['filter'])
                     #                    print(options['filter'], r)
                     if not res:
                         continue
                 r_selected = strip_dict_fields(r, fields, 0)
-                out.write(json.dumps(r_selected) + '\n')
+                out.write(orjson.dumps(r_selected, option=orjson.OPT_APPEND_NEWLINE).decode('utf8'))
         elif f_type == 'bson':
             bson_iter = bson.decode_file_iter(infile)
             n = 0
@@ -356,8 +359,7 @@ class Selector:
                     if not res:
                         continue
                 r_selected = strip_dict_fields(r, fields, 0)
-                out.write(json.dumps(r_selected) + '\n')
-
+                out.write(orjson.dumps(r_selected, option=orjson.OPT_APPEND_NEWLINE).encode('utf8'))
         else:
             logging.info('File type not supported')
             return
@@ -424,11 +426,11 @@ class Selector:
                     n += 1
                     if n % 10000 == 0:
                         logging.info('split: processing %d records of %s' % (n, fromfile))
-                    r = json.loads(l)
+                    r = orjson.loads(l)
                     if options['filter'] is not None:
                         if not dq.match(r, options['filter']):
                             continue
-                    out.write(json.dumps(r) + '\n')
+                    out.write(orjson.dumps(r, option=orjson.OPT_APPEND_NEWLINE))
                     if n % options['chunksize'] == 0:
                         out.close()
                         chunknum += 1
@@ -440,7 +442,7 @@ class Selector:
                     n += 1
                     if n % 10000 == 0:
                         logging.info('split: processing %d records of %s' % (n, fromfile))
-                    r = json.loads(l)
+                    r = orjson.loads(l)
                     if options['filter'] is not None:
                         if not dq.match(r, options['filter']):
                             continue
@@ -449,6 +451,7 @@ class Selector:
                     except IndexError:
                         continue
                         kx = "None"
+                    if kx is None: continue
                     kx = kx.replace('\\', '-').replace('/', '-').replace('?', '-').replace('<', '-').replace('>', '-')
                     v = valuedict.get(kx, None)
                     if v is None:

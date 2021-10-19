@@ -1,4 +1,4 @@
-import json
+import orjson
 import csv
 from .constants import SUPPORTED_FILE_TYPES
 from .constants import DEFAULT_OPTIONS
@@ -38,14 +38,14 @@ def write_items(fields, outdata, filetype, handle, delimiter=','):
         if type(outdata[0]) == type(''):
             for rawitem in outdata:
                 item = {fields[0] : rawitem}
-                handle.write(json.dumps(item) + '\n')
+                handle.write(orjson.dumps(item, option=orjson.OPT_APPEND_NEWLINE).decode('utf8'))
         elif type(outdata[0]) == type([]):
             for rawitem in outdata:
                 item = dict(zip(fields, rawitem))
-                handle.write(json.dumps(item) + '\n')
+                handle.write(orjson.dumps(item, option=orjson.OPT_APPEND_NEWLINE).decode('utf8'))
         else:
             for item in outdata:
-                handle.write(json.dumps(item) + '\n')
+                handle.write(orjson.dumps(item, option=orjson.OPT_APPEND_NEWLINE).decode('utf8'))
 
 
 def get_dict_value(d, keys):

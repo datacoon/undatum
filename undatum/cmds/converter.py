@@ -1,5 +1,6 @@
 import csv
 import json
+import orjson
 import logging
 # from xmlr import xmliter
 import xml.etree.ElementTree as etree
@@ -12,6 +13,7 @@ PREFIX_STRIP = True
 PREFIX = ""
 from ..utils import get_file_type
 
+LINEEND = '\n'.encode('utf8')
 
 def __copy_options(user_options, default_options):
     """If user provided option so we use it, if not, default option value should be used"""
@@ -50,7 +52,7 @@ def etree_to_dict(t, prefix_strip=True):
 def xml_to_jsonl(fromname, toname, options={}, default_options={'prefix_strip': True}):
     options = __copy_options(options, default_options)
     ins = open(fromname, 'rb')  # , encoding='utf-8')
-    outf = open(toname, 'w')
+    outf = open(toname, 'wb')
     n = 0
     for event, elem in etree.iterparse(ins):
         shorttag = elem.tag.rsplit('}', 1)[-1]
@@ -60,10 +62,11 @@ def xml_to_jsonl(fromname, toname, options={}, default_options={'prefix_strip': 
                 j = etree_to_dict(elem, prefix_strip=options['prefix_strip'])
             else:
                 j = etree_to_dict(elem)
-            outf.write(json.dumps(j))
-            outf.write('\n')
-        if n % 10000 == 0:
+            outf.write(orjson.dumps(j[shorttag]))
+            outf.write(LINEEND)
+        if n % 500 == 0:
             logging.info('xml2jsonl: processed %d xml tags' % (n))
+    logging.info('xml2jsonl: processed %d xml tags finally' % (n))
     ins.close()
     outf.close()
 
@@ -107,7 +110,6 @@ def csv_to_bson(fromname, toname, options={}, default_options={'encoding': 'utf8
 
 
 def csv_to_jsonl(fromname, toname, options={}, default_options={'encoding': 'utf8', 'delimiter': ','}):
-    import orjson
     options = __copy_options(options, default_options)
     source = open(fromname, 'r', encoding=options['encoding'])
     output = open(toname, 'wb')
@@ -115,7 +117,7 @@ def csv_to_jsonl(fromname, toname, options={}, default_options={'encoding': 'utf
     n = 0
     for j in reader:
         n += 1
-        output.write(orjson.dumps(j))
+        output.write(json.dumps(j, ensure_ascii=False).encode('utf8'))
         #        output.write(orjson.dumps(j, ensure_ascii=False).encode('utf8', ))
         output.write(u'\n'.encode('utf8'))
         if n % 10000 == 0:
@@ -127,7 +129,7 @@ def csv_to_jsonl(fromname, toname, options={}, default_options={'encoding': 'utf
 def xls_to_jsonl(fromname, toname, options={}, default_options={'start_page': 0, 'start_line': 0, 'fields': None}):
     options = __copy_options(options, default_options)
     source = load_xls(fromname)
-    output = open(toname, 'w')
+    output = open(toname, 'wb')
     sheet = source.sheet_by_index(options['start_page'])
     n = 0
     fields = options['fields'].split(',') if options['fields'] is not None else None
@@ -139,8 +141,8 @@ def xls_to_jsonl(fromname, toname, options={}, default_options={'start_page': 0,
         if n == 1 and fields is None:
             fields = tmp
             continue
-        l = json.dumps(dict(zip(fields, tmp)))
-        output.write(l + '\n')
+        l = orjson.dumps(dict(zip(fields, tmp)))
+        output.write(l + LINEEND)
         #        output.write(u'\n'.encode('utf8'))
         if n % 10000 == 0:
             logging.info('xls2jsonl: processed %d records' % (n))
@@ -151,7 +153,7 @@ def xlsx_to_jsonl(fromname, toname, options={}, default_options={'start_page': 0
     from openpyxl import load_workbook as load_xlsx
     options = __copy_options(options, default_options)
     source = load_xlsx(fromname)
-    output = open(toname, 'w')
+    output = open(toname, 'wb')
     sheet = source.active
     n = 0
     for rownum in range(options['start_line'], sheet.nrows):
@@ -159,9 +161,9 @@ def xlsx_to_jsonl(fromname, toname, options={}, default_options={'start_page': 0
         tmp = list()
         for i in range(0, sheet.ncols):
             tmp.append(sheet.row_values(rownum)[i])
-        l = json.dumps(dict(zip(options['fields'], tmp)))
-        output.write(l.encode('utf8'))
-        output.write(u'\n'.encode('utf8'))
+        l = orjson.dumps(dict(zip(options['fields'], tmp)))
+        output.write(l)
+        output.write(LINEEND)
         if n % 10000 == 0:
             logging.info('xls2jsonl: processed %d records' % (n))
     source.close
@@ -201,7 +203,7 @@ def express_analyze_jsonl(filename, itemlimit=100):
     for l in f:
         n += 1
         if n > itemlimit: break
-        record = json.loads(l)
+        record = orjson.loads(l)
         if isflat:
             if not _is_flat(record):
                 isflat = False
@@ -227,8 +229,10 @@ def jsonl_to_csv(fromname, toname, options={},
     writer.writerow(analysis['keys'])
     f = open(fromname, 'r', encoding='utf8')
     keys = analysis['keys']
+    n = 0
     for l in f:
-        record = json.loads(l)
+        n += 1
+        record = orjson.loads(l)
         item = []
         for k in keys:
             if k in record.keys():
@@ -236,6 +240,8 @@ def jsonl_to_csv(fromname, toname, options={},
             else:
                 item.append('')
         writer.writerow(item)
+        if n % 10000 == 0:
+            logging.info('jsonl2csv: processed %d records' % (n))
     out.close()
     f.close()
     pass
@@ -244,11 +250,11 @@ def jsonl_to_csv(fromname, toname, options={},
 def bson_to_jsonl(fromname, toname, options={}, default_options={}):
     options = __copy_options(options, default_options)
     source = open(fromname, 'rb')
-    output = open(toname, 'w', encoding='utf8')
+    output = open(toname, 'wb')
     n = 0
     for r in bson.decode_file_iter(source):
         n += 1
-        output.write(json.dumps(r, ensure_ascii=False) + '\n')
+        output.write(orjson.dumps(r) + LINEEND)
         if n % 10000 == 0:
             logging.info('bson2jsonl: processed %d records' % (n))
     source.close()
