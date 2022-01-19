@@ -134,10 +134,11 @@ def cli4():
 @click.option('--dictshare', '-s', 'dictshare', default=None, help="Uniqness level of certain field to detect that it's dict")
 @click.option('--format-in',  default=None, help="Format of input file, if set, replaces autodetect")
 @click.option('--format-out',  default=None, help="Format of output file, if set, replaces autodetect")
+@click.option('--delimiter', '-d', default=',', help="CSV delimiter if convert from CSV")
 @click.option('--verbose', '-v', count=True, help='Verbose output. Print additional info on command execution')
 @click.option('-z', '--zipfile', 'zipfile', is_flag=True, help="Used to say input file is .zip file and that data file is inside")
 @click.option('--checkdates', is_flag=True, help="Significantly slow down process, buy identifies dates fields from text. Not used by default")
-def stats(input, output, dictshare, format_in, format_out, verbose, zipfile, checkdates):
+def stats(input, output, dictshare, format_in, format_out, delimiter, verbose, zipfile, checkdates):
     """Returns detailed stats on selected dataset"""
     if verbose:
         enableVerbose()
@@ -147,6 +148,7 @@ def stats(input, output, dictshare, format_in, format_out, verbose, zipfile, che
     options['zipfile'] = zipfile
     options['format_in'] = format_in
     options['format_out'] = format_out
+    options['delimiter'] = delimiter
     options['checkdates'] = checkdates
     options['verbose'] = verbose
     acmd = Analyzer(nodates=not checkdates)

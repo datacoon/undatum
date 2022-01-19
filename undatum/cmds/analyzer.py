@@ -2,7 +2,9 @@ from ..utils import get_file_type, get_option
 from ..constants import DATE_PATTERNS, DEFAULT_DICT_SHARE
 from datetime import datetime
 import logging
+import bson
 import orjson
+import csv
 import zipfile
 from qddate import DateParser
 
@@ -85,9 +87,10 @@ class Analyzer:
         """Analyzes JSON file and produces stats"""
         from tabulate import tabulate
         f_type = get_file_type(fromfile) if options['format_in'] is None else options['format_in']
-        if f_type != 'jsonl':
-            print('Only JSON lines (.jsonl) files supported now')
+        if f_type not in ['jsonl', 'bson', 'csv']:
+            print('Only JSON lines (.jsonl), .csv and .bson files supported now')
             return
+
         if options['zipfile']:
             z = zipfile.ZipFile(fromfile, mode='r')
             fnames = z.namelist()
@@ -119,10 +122,22 @@ class Analyzer:
         # Identify item list
         itemlist = []
 
+        if f_type == 'jsonl':
+            for l in infile:
+                itemlist.append(orjson.loads(l))
+        elif f_type == 'csv':
+            delimiter = get_option(options, 'delimiter')
+            reader = csv.DictReader(infile, delimiter=delimiter)
+            for r in reader:
+                itemlist.append(r)
+        elif f_type == 'bson':
+            bson_iter = bson.decode_file_iter(infile)
+            for r in bson_iter:
+                itemlist.append(r)
+
         # process data items one by one
         logging.debug('Start processing %s' % (fromfile))
-        for l in infile:
-            item = orjson.loads(l)
+        for item in itemlist:
             count += 1
             dk = dict_generator(item)
             if count % 1000 == 0: logging.debug('Processing %d records of %s' % (count, fromfile))

@@ -230,7 +230,7 @@ Converts XML ausgovdir.xml with tag named *item* to ausgovdir.jsonl
 
     $ undatum convert --tagname item examples/ausgovdir.xml examples/ausgovdir.jsonl
 
-Converts JSON lines file roszdravvendors_final.jsonl to CSV file roszdravvendors_final.csv 
+Converts JSON lines file roszdravvendors_final.jsonl to CSV file roszdravvendors_final.csv
 
 .. code-block:: bash
 
@@ -276,7 +276,7 @@ Returns headers of JSON lines file using top 50 000 records
 
 Stats command
 -------------
-Collects statistics about data in dataset. Right now supports only JSON lines files
+Collects statistics about data in dataset. Supports BSON, CSV an JSON lines file types.
 
 Returns table with following data:
 
