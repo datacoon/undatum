@@ -39,8 +39,8 @@ class Schemer:
         logging.debug('Start identifying scheme for %s' % (fromfile))
         scheme = generate_scheme_from_file(fileobj=infile, filetype=f_type, delimiter=options['delimiter'], encoding=options['encoding'])
         if options['output']:
-            f = open(options['output'], 'wb', encoding='utf8')
-            f.write(orjson.dumps(scheme, option=orjson.OPT_INDENT_2))
+            f = open(options['output'], 'w', encoding='utf8')
+            f.write(orjson.dumps(scheme, option=orjson.OPT_INDENT_2).decode('utf8'))
             f.close()
         else:
-            print(str(orjson.dumps(scheme, option=orjson.OPT_INDENT_2)))
+            print(str(orjson.dumps(scheme, option=orjson.OPT_INDENT_2).decode('utf8')))
