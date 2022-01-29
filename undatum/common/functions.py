@@ -44,3 +44,4 @@ def get_dict_value_deep(adict, key, prefix=None, as_array=False, splitter='.'):
             else:
                 return get_dict_value_deep(adict[0][prefix[0]], key, prefix=prefix[1:], as_array=as_array)
         return None
+

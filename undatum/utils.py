@@ -1,7 +1,23 @@
-import orjson
 import csv
+import chardet
+import orjson
 from .constants import SUPPORTED_FILE_TYPES
 from .constants import DEFAULT_OPTIONS
+
+def detect_encoding(filename, limit=1000000):
+    f = open(filename, 'rb')
+    chunk = f.read(limit)
+    f.close()
+    detected = chardet.detect(chunk)
+    return detected
+
+def detect_delimiter(filename, encoding='utf8'):
+    f = open(filename, 'r', encoding=encoding)
+    line = f.readline()
+    f.close()
+    dict1 = {',': line.count(','), ';': line.count(';'), '\t': line.count('\t'), '|' : line.count('|')}
+    delimiter = max(dict1, key=dict1.get)
+    return delimiter
 
 def get_file_type(filename):
     ext = filename.rsplit('.', 1)[-1].lower()

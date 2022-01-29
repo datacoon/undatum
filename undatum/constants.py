@@ -5,7 +5,7 @@ DEFAULT_DICT_SHARE = 70
 
 
 
-SUPPORTED_FILE_TYPES = ['xls', 'xlsx', 'csv', 'xml', 'json', 'jsonl', 'yaml', 'tsv', 'sql', 'bson']
+SUPPORTED_FILE_TYPES = ['xls', 'xlsx', 'csv', 'xml', 'json', 'jsonl', 'yaml', 'tsv', 'sql', 'bson', 'parquet']
 
 DEFAULT_OPTIONS = {'encoding' : 'utf8',
                    'delimiter' : ',',

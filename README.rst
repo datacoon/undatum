@@ -21,7 +21,7 @@ Main features
 
 * Common data operations against CSV, JSON lines and BSON files
 * Built-in data filtering
-* Conversion between CSV, JSONl, BSON, XML, XLS, XLSX file types
+* Conversion between CSV, JSONl, BSON, XML, XLS, XLSX, Parquet file types
 * Low memory footprint
 * Support for compressed datasets
 * Advanced statistics calculations
@@ -176,7 +176,8 @@ Commands
 
 Frequency command
 -----------------
-Field value frequency calculator. Returns frequency table for certain field
+Field value frequency calculator. Returns frequency table for certain field.
+This command autodetects delimiter and encoding of CSV files and encoding of JSON lines files by default. You may override it providng "-d" delimiter and "-e" encoding parameters
 
 Get frequencies of values for field *GovSystem* in the list of Russian federal government domains from  `govdomains repository <https://github.com/infoculture/govdomains/tree/master/refined>`_
 
@@ -192,6 +193,7 @@ Uniq command
 
 Returns all unique files of certain field(s). Accepts parameter *fields* with comma separated fields to gets it unique values.
 Provide single field name to get unique values of this field or provide list of fields to get combined unique values.
+This command autodetects delimiter and encoding of CSV files and encoding of JSON lines files by default. You may override it providng "-d" delimiter and "-e" encoding parameters
 
 
 Returns all unique values of field *regions* in selected JSONl file
@@ -210,7 +212,7 @@ Returns all unique combinations of fields *status* and *regions* in selected JSO
 Convert command
 ---------------
 
-Converts data from one format to another.
+Converts data from one format to another. Supports most common data files
 Supports conversions:
 
 * XML to JSON lines
@@ -221,6 +223,8 @@ Supports conversions:
 * CSV to BSON
 * XLS to BSON
 * JSON lines to CSV
+* CSV to Parquet
+* JSON lines to Parquet
 
 Conversion between XML and JSON lines require flag *tagname* with name of tag which should be converted into single JSON record.
 
@@ -235,6 +239,12 @@ Converts JSON lines file roszdravvendors_final.jsonl to CSV file roszdravvendors
 .. code-block:: bash
 
     $ undatum convert examples/roszdravvendors_final.jsonl examples/roszdravvendors_final.csv
+
+Converts CSV file feddomains.csv to Parquet file feddomains.parquet
+
+.. code-block:: bash
+
+    $ undatum convert examples/feddomains.csv examples/feddomains.parquet
 
 
 Validate command
@@ -260,6 +270,7 @@ Headers command
 ---------------
 Returns fieldnames of the file. Supports CSV, JSON, BSON file types.
 For CSV file it takes first line of the file and for JSON lines and BSON files it processes number of records provided as *limit* parameter with default value 10000.
+This command autodetects delimiter and encoding of CSV files and encoding of JSON lines files by default. You may override it providng "-d" delimiter and "-e" encoding parameters
 
 Returns headers of JSON lines file with top 10 000 records (default value)
 
@@ -403,4 +414,4 @@ Data types
 JSONl
 -----
 
-JSON lines is a replacement to CSV and JSON files, with JSON flexibility and ability to process data line by line, without loading everithing into memory.
+JSON lines is a replacement to CSV and JSON files, with JSON flexibility and ability to process data line by line, without loading everything into memory.

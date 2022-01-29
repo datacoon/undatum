@@ -3,10 +3,14 @@
 History
 =======
 
+1.0.10 (2022-01-29)
+-------------------
+* Added encoding and delimiter detection for commands: uniq, select, frequency and headers. Completely rewrote these functions. If options for encoding and delimiter set, they override detected. If not set, detected delimiter and encoding used.
+* Added support of .parquet files to convert to. It's done in a simpliest way using pandas "to_parquet" function.
+
 1.0.9 (2022-01-18)
 ------------------
 * Added support for CSV and BSON files for "stats" command
-
 
 1.0.8 (2021-07-14)
 ------------------

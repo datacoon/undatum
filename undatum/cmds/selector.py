@@ -9,9 +9,61 @@ import dictquery as dq
 import orjson
 
 # from xmlr import xmliter
-from ..utils import get_file_type, get_option, write_items, get_dict_value, strip_dict_fields, dict_generator
-
+from ..utils import get_file_type, get_option, write_items, get_dict_value, strip_dict_fields, dict_generator, detect_encoding
+from ..common.iterable import IterableData, DataWriter
 LINEEND = u'\n'.encode('utf8')
+
+
+def get_iterable_fields_uniq(iterable, fields, dolog=False, dq=None):
+    """ Returns all uniq values of the fields of iterable dictionary"""
+    n = 0
+    uniqval = []
+    for row in iterable:
+#        print(row)
+        n += 1
+        if dolog and n % 1000 == 0:
+            logging.debug('uniq: processing %d records' % (n))
+        try:
+            allvals = []
+            for field in fields:
+                allvals.append(get_dict_value(row, field.split('.')))
+
+            for n1 in range(0, len(allvals[0]), 1):
+                k = []
+                for n2 in range(0, len(allvals)):
+                    k.append(str(allvals[n2][n1]))
+                if k not in uniqval:
+                    uniqval.append(k)
+        except KeyError:
+            pass
+    return uniqval
+
+def get_iterable_fields_freq(iterable, fields, dolog=False, filter=None, dq=None):
+    """Iterates and returns most frequent values"""
+    n = 0
+    valuedict = {}
+    for r in iterable:
+        n += 1
+        if dolog and n % 10000 == 0:
+            logging.info('frequency: processing %d records' % (n))
+        if filter is not None:
+            if not dq.match(r, filter):
+                continue
+        try:
+            allvals = []
+            for field in fields:
+                allvals.append(get_dict_value(r, field.split('.')))
+
+            for n1 in range(0, len(allvals[0]), 1):
+                k = []
+                for n2 in range(0, len(allvals)):
+                    k.append(str(allvals[n2][n1]))
+                kx = '\t'.join(k)
+                v = valuedict.get(kx, 0)
+                valuedict[kx] = v + 1
+        except KeyError:
+            pass
+    return valuedict
 
 
 class Selector:
@@ -20,20 +72,7 @@ class Selector:
 
     def uniq(self, fromfile, options={}):
         logging.debug('Processing %s' % fromfile)
-        f_type = get_file_type(fromfile) if options['format_in'] is None else options['format_in']
-        if options['zipfile']:
-            z = zipfile.ZipFile(fromfile, mode='r')
-            fnames = z.namelist()
-            if f_type == 'bson':
-                infile = z.open(fnames[0], 'rb')
-            else:
-                infile = z.open(fnames[0], 'r')
-
-        else:
-            if f_type == 'bson':
-                infile = open(fromfile, 'rb')
-            else:
-                infile = open(fromfile, 'r', encoding=get_option(options, 'encoding'))
+        iterable = IterableData(fromfile, options=options)
         to_file = get_option(options, 'output')
         if to_file:
             to_type = get_file_type(to_file)
@@ -46,124 +85,32 @@ class Selector:
             out = sys.stdout
         fields = options['fields'].split(',')
         logging.info('uniq: looking for fields: %s' % (options['fields']))
-        if f_type == 'csv':
-            delimiter = get_option(options, 'delimiter')
-            uniqval = []
-            reader = csv.DictReader(infile, delimiter=delimiter)
-            n = 0
-            for r in reader:
-                n += 1
-                if n % 1000 == 0:
-                    logging.info('uniq: processing %d records of %s' % (n, fromfile))
-                if options['filter'] is not None:
-                    if not dq.match(r, options['filter']):
-                        continue
-                k = [r[x] for x in fields]
-                if k not in uniqval:
-                    uniqval.append(k)
-
-        elif f_type == 'jsonl':
-            uniqval = []
-            n = 0
-            for l in infile:
-                n += 1
-                if n % 10000 == 0:
-                    logging.info('uniq: processing %d records of %s' % (n, fromfile))
-                r = orjson.loads(l)
-                if options['filter'] is not None:
-                    if not dq.match(r, options['filter']):
-                        continue
-                try:
-                    allvals = []
-                    for field in fields:
-                        allvals.append(get_dict_value(r, field.split('.')))
-
-                    for n1 in range(0, len(allvals[0]), 1):
-                        k = []
-                        for n2 in range(0, len(allvals)):
-                            k.append(str(allvals[n2][n1]))
-                        if k not in uniqval:
-                            uniqval.append(k)
-                except KeyError:
-                    pass
-        elif f_type == 'bson':
-            uniqval = []
-            bson_iter = bson.decode_file_iter(infile)
-            n = 0
-            for r in bson_iter:
-                n += 1
-                if n % 1000 == 0:
-                    logging.info('uniq: processing %d records of %s' % (n, fromfile))
-                if options['filter'] is not None:
-                    if not dq.match(r, options['filter']):
-                        continue
-                try:
-                    allvals = []
-                    for field in fields:
-                        allvals.append(get_dict_value(r, field.split('.')))
-
-                    for n1 in range(0, len(allvals[0]), 1):
-                        k = []
-                        for n2 in range(0, len(allvals)):
-                            k.append(str(allvals[n2][n1]))
-                        if k not in uniqval:
-                            uniqval.append(k)
-                except KeyError:
-                    pass
-        else:
-            logging.error('Invalid filed format provided')
-            return
-        infile.close()
+        n = 0
+        uniqval = get_iterable_fields_uniq(iterable.iter(), fields, dolog=True)
+        iterable.close()
         logging.debug('%d unique values found' % (len(uniqval)))
         write_items(fields, uniqval, filetype=to_type, handle=out)
+
 
     def headers(self, fromfile, options={}):
         f_type = get_file_type(fromfile) if options['format_in'] is None else options['format_in']
         limit = get_option(options, 'limit')
-        if options['zipfile']:
-            z = zipfile.ZipFile(fromfile, mode='r')
-            fnames = z.namelist()
-            if f_type == 'bson':
-                f = z.open(fnames[0], 'rb')
-            else:
-                f = z.open(fnames[0], 'r')
-        else:
-            if f_type == 'bson':
-                f = open(fromfile, 'rb')
-            else:
-                f = open(fromfile, 'r', encoding=get_option(options, 'encoding'))
+        iterable = IterableData(fromfile, options=options)
         if f_type == 'csv':
-            delimiter = get_option(options, 'delimiter')
-            dr = csv.DictReader(f, delimiter=delimiter)
-            keys = dr.fieldnames
-        elif f_type == 'jsonl':
+            keys = iterable.iter().fieldnames
+        else:
             n = 0
             keys = []
-            for l in f:
-                n += 1
-                if n > limit: break
-                item = orjson.loads(l)
-                dk = dict_generator(item)
-                for i in dk:
-                    k = ".".join(i[:-1])
-                    if k not in keys:
-                        keys.append(k)
-        elif f_type == 'bson':
-            bson_iter = bson.decode_file_iter(f)
-            n = 0
-            while n < limit:
-                n += 1
-                try:
-                    item = next(bson_iter)
-                except:
+            for item in iterable.iter():
+                if limit and n > limit:
                     break
+                n += 1
                 dk = dict_generator(item)
-                keys = []
                 for i in dk:
                     k = ".".join(i[:-1])
                     if k not in keys:
                         keys.append(k)
-        f.close()
+        iterable.close()
         output = get_option(options, 'output')
         if output:
             f = open(output, 'w', encoding=get_option(options, 'encoding'))
@@ -174,19 +121,8 @@ class Selector:
 
     def frequency(self, fromfile, options={}):
         """Calculates frequency of the values in the file"""
-        f_type = get_file_type(fromfile) if options['format_in'] is None else options['format_in']
-        if options['zipfile']:
-            z = zipfile.ZipFile(fromfile, mode='r')
-            fnames = z.namelist()
-            if f_type == 'bson':
-                infile = z.open(fnames[0], 'rb')
-            else:
-                infile = z.open(fnames[0], 'r')
-        else:
-            if f_type == 'bson':
-                infile = open(fromfile, 'rb')
-            else:
-                infile = open(fromfile, 'r', encoding=get_option(options, 'encoding'))
+        iterable = IterableData(fromfile, options=options)
+
         to_file = get_option(options, 'output')
         if to_file:
             to_type = get_file_type(to_file)
@@ -199,67 +135,8 @@ class Selector:
             out = sys.stdout
         fields = options['fields'].split(',')
         valuedict = {}
-        if f_type == 'csv':
-            delimiter = get_option(options, 'delimiter')
-            reader = csv.DictReader(infile, delimiter=delimiter)
-            n = 0
-            for r in reader:
-                n += 1
-                if n % 10000 == 0:
-                    logging.info('frequency: processing %d records of %s' % (n, fromfile))
-                if options['filter'] is not None:
-                    if not dq.match(r, options['filter']):
-                        continue
-                k = [r[x] for x in fields]
-                kx = '\t'.join(k)
-                v = valuedict.get(kx, 0)
-                valuedict[kx] = v + 1
-        elif f_type == 'jsonl':
-            n = 0
-            for l in infile:
-                n += 1
-                if n % 10000 == 0:
-                    logging.info('frequency: processing %d records of %s' % (n, fromfile))
-                r = orjson.loads(l)
-                if options['filter'] is not None:
-                    if not dq.match(r, options['filter']):
-                        continue
-                try:
-                    allvals = []
-                    for field in fields:
-                        allvals.append(get_dict_value(r, field.split('.')))
-
-                    for n1 in range(0, len(allvals[0]), 1):
-                        k = []
-                        for n2 in range(0, len(allvals)):
-                            k.append(str(allvals[n2][n1]))
-                        kx = '\t'.join(k)
-                        v = valuedict.get(kx, 0)
-                        valuedict[kx] = v + 1
-                except KeyError:
-                    pass
-        elif f_type == 'bson':
-            bson_iter = bson.decode_file_iter(infile)
-            n = 0
-            for r in bson_iter:
-                n += 1
-                if n % 10000 == 0:
-                    logging.info('frequency: processing %d records of %s' % (n, fromfile))
-                if options['filter'] is not None:
-                    if not dq.match(r, options['filter']):
-                        continue
-
-                #                print(r)
-                allvals = []
-                for field in fields:
-                    allvals.append(get_dict_value(r, field.split('.')))
-
-                for n1 in range(0, len(allvals[0]), 1):
-                    k = []
-                    for n2 in range(0, len(allvals)):
-                        k.append(str(allvals[n2][n1]))
-                    v = valuedict.get(k, 0)
-                    valuedict[k] = v + 1
+        if iterable:
+            valuedict = get_iterable_fields_freq(iterable.iter(), fields, dolog=True)
         else:
             logging.info('File type not supported')
             return
@@ -281,19 +158,9 @@ class Selector:
     def select(self, fromfile, options={}):
         """Select or re-order columns from file"""
         f_type = get_file_type(fromfile) if options['format_in'] is None else options['format_in']
-        if options['zipfile']:
-            z = zipfile.ZipFile(fromfile, mode='r')
-            fnames = z.namelist()
-            if f_type == 'bson':
-                infile = z.open(fnames[0], 'rb')
-            else:
-                infile = z.open(fnames[0], 'r')
-        else:
-            if f_type == 'bson':
-                infile = open(fromfile, 'rb')
-            else:
-                infile = open(fromfile, 'r', encoding=get_option(options, 'encoding'))
+        iterable = IterableData(fromfile, options=options)
         to_file = get_option(options, 'output')
+
         if to_file:
             to_type = get_file_type(to_file)
             if not to_file:
@@ -309,57 +176,28 @@ class Selector:
             to_type = f_type
             out = sys.stdout
         fields = options['fields'].split(',')
-        valuedict = {}
-        delimiter = get_option(options, 'delimiter')
-        if f_type == 'csv':
-            reader = csv.DictReader(infile, delimiter=delimiter)
-            if to_type == 'csv':
-                writer = csv.DictWriter(out, fieldnames=fields, delimiter=delimiter)
-                writer.writeheader()
-            n = 0
-            for r in reader:
-                n += 1
-                if n % 10000 == 0:
-                    logging.info('select: processing %d records of %s' % (n, fromfile))
-                item = {}
-                if options['filter'] is not None:
-                    if not dq.match(r, options['filter']):
-                        continue
-                for x in fields:
-                    item[x] = r[x]
-                if to_type == 'csv':
-                    writer.writerow(item)
-                elif to_type == 'jsonl':
-                    out.write(orjson.dumps(r_selected, option=orjson.OPT_APPEND_NEWLINE).encode('utf8'))
-        elif f_type == 'jsonl':
+        writer = DataWriter(out, filetype=to_type, fieldnames=fields)
+        if iterable:
             n = 0
             fields = [field.split('.') for field in fields]
-            for l in infile:
+            chunk = []
+            for r in iterable.iter():
                 n += 1
-                if n % 10000 == 0:
-                    logging.info('select: processing %d records of %s' % (n, fromfile))
-                r = orjson.loads(l)
                 if options['filter'] is not None:
                     res = dq.match(r, options['filter'])
                     #                    print(options['filter'], r)
                     if not res:
                         continue
                 r_selected = strip_dict_fields(r, fields, 0)
-                out.write(orjson.dumps(r_selected, option=orjson.OPT_APPEND_NEWLINE).decode('utf8'))
-        elif f_type == 'bson':
-            bson_iter = bson.decode_file_iter(infile)
-            n = 0
-            fields = [field.split('.') for field in fields]
-            for r in bson_iter:
-                n += 1
-                if n % 10000 == 0:
+                if n % 1000 == 0:
                     logging.info('select: processing %d records of %s' % (n, fromfile))
-                if options['filter'] is not None:
-                    res = dq.match(r, options['filter'])
-                    if not res:
-                        continue
-                r_selected = strip_dict_fields(r, fields, 0)
-                out.write(orjson.dumps(r_selected, option=orjson.OPT_APPEND_NEWLINE).encode('utf8'))
+                    if len(chunk) > 0:
+                        writer.write_items(chunk)
+                        chunk = []
+                else:
+                    chunk.append(r_selected)
+            if len(chunk) > 0:
+                writer.write_items(chunk)
         else:
             logging.info('File type not supported')
             return
@@ -386,7 +224,14 @@ class Selector:
             if f_type == 'bson':
                 infile = open(fromfile, 'rb')
             else:
-                infile = open(fromfile, 'r', encoding=get_option(options, 'encoding'))
+                if 'encoding' in options.keys():
+                    infile = open(fromfile, 'r', encoding=get_option(options, 'encoding'))
+                else:
+                    detected_enc = detect_encoding(fromfile, limit=100000)
+                    if detected_enc:
+                        infile = open(fromfile, 'r', encoding=detected_enc['encoding'])
+                    else:
+                        infile = open(fromfile, 'r', encoding='utf8')
         fields = options['fields'].split(',') if options['fields'] is not None else None
         valuedict = {}
         delimiter = get_option(options, 'delimiter')

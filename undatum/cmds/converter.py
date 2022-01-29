@@ -2,6 +2,8 @@ import csv
 import json
 import orjson
 import logging
+import jsonlines
+import pandas
 # from xmlr import xmliter
 import xml.etree.ElementTree as etree
 from collections import defaultdict
@@ -105,7 +107,7 @@ def csv_to_bson(fromname, toname, options={}, default_options={'encoding': 'utf8
         output.write(rec)
         if n % 10000 == 0:
             logging.info('csv2bson: processed %d records' % (n))
-    source.close
+    source.close()
     output.close()
 
 
@@ -122,7 +124,7 @@ def csv_to_jsonl(fromname, toname, options={}, default_options={'encoding': 'utf
         output.write(u'\n'.encode('utf8'))
         if n % 10000 == 0:
             logging.info('csv2jsonl: processed %d records' % (n))
-    source.close
+    source.close()
     output.close()
 
 
@@ -260,6 +262,19 @@ def bson_to_jsonl(fromname, toname, options={}, default_options={}):
     source.close()
     output.close()
 
+def csv_to_parquet(fromname, toname, options={}, default_options={'encoding': 'utf8', 'delimiter': ','}):
+    options = __copy_options(options, default_options)
+    df = pandas.read_csv(fromname, delimiter=options['delimiter'], encoding=options['encoding'])
+    df.to_parquet(toname)
+
+
+def jsonl_to_parquet(fromname, toname, options={},
+                 default_options={'force_flat': False, 'useitems': 100}):
+    options = __copy_options(options, default_options)
+    df = pandas.read_json(fromname, lines=True, encoding=options['encoding'])
+    df.to_parquet(toname)
+
+
 
 CONVERT_FUNC_MAP = {
     'xls2csv': xls_to_csv,
@@ -271,6 +286,8 @@ CONVERT_FUNC_MAP = {
     'xml2jsonl': xml_to_jsonl,
     'jsonl2csv': jsonl_to_csv,
     'bson2jsonl': bson_to_jsonl,
+    'csv2parquet' : csv_to_parquet,
+    'jsonl2parquet': jsonl_to_parquet,
 }
 
 

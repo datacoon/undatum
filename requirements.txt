@@ -6,3 +6,5 @@ qddate
 tabulate
 dictquery
 orjson
+jsonlines
+pyarrow
