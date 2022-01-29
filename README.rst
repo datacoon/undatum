@@ -177,7 +177,7 @@ Commands
 Frequency command
 -----------------
 Field value frequency calculator. Returns frequency table for certain field.
-This command autodetects delimiter and encoding of CSV files and encoding of JSON lines files by default. You may override it providng "-d" delimiter and "-e" encoding parameters
+This command autodetects delimiter and encoding of CSV files and encoding of JSON lines files by default. You may override it providng "-d" delimiter and "-e" encoding parameters.
 
 Get frequencies of values for field *GovSystem* in the list of Russian federal government domains from  `govdomains repository <https://github.com/infoculture/govdomains/tree/master/refined>`_
 
