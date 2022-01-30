@@ -34,14 +34,18 @@ tests_require = [
 
 
 install_requires = [
-    'bson',
-    'click',
-    'xlrd',
-    'openpyxl',
-    'validators',
-    'qddate',
-    'tabulate',
-    'dictquery'
+    'chardet>=3.0.4',
+    'click>=8.0.3',
+    'dictquery>=0.4.0',
+    'jsonlines>=1.2.0',
+    'openpyxl>=3.0.5',
+    'orjson>=3.6.6',
+    'pandas>=1.1.3',
+    'pymongo>=3.11.0',
+    'qddate>=0.1.1',
+    'tabulate>=0.8.7',
+    'validators>=0.18.1',
+    'xlrd>=1.2.0'
 ]
 
 
@@ -59,7 +63,7 @@ if 'bdist_wheel' not in sys.argv:
 # bdist_wheel
 extras_require = {
     # https://wheel.readthedocs.io/en/latest/#defining-conditional-dependencies
-    'python_version == "3.0" or python_version == "3.1"': ['argparse>=1.2.1'],
+    'python_version == "3.8" or python_version == "3.8"': ['argparse>=1.2.1'],
 }
 
 
