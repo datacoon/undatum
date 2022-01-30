@@ -3,6 +3,10 @@
 History
 =======
 
+1.0.10 (2022-01-30)
+-------------------
+* Updated setup.py and requirements.txt to require certain versions of libs and Python 3.8
+
 1.0.10 (2022-01-29)
 -------------------
 * Added encoding and delimiter detection for commands: uniq, select, frequency and headers. Completely rewrote these functions. If options for encoding and delimiter set, they override detected. If not set, detected delimiter and encoding used.
