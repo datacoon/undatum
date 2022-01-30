@@ -94,6 +94,7 @@ setup(
     extras_require=extras_require,
     install_requires=install_requires,
     tests_require=tests_require,
+    python_requires='>=3.8',
     cmdclass={'test': PyTest},
     zip_safe=False,
     keywords='json jsonl csv bson cli dataset',
