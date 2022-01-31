@@ -1,0 +1,82 @@
+{
+    "name": "datagovrudatasets",
+    "title": "Каталог открытых данных портала Data.gov.ru",
+    "description": "База каталога открытых данных с портала data.gov.ru",
+    "licenses": [
+        {
+            "name": "publicdomain",
+            "path": "",
+            "title": "Public domain"
+        }
+    ],
+    "sources": [
+        {
+            "name": "mineconom",
+            "title": "Минэкономразвития России",
+            "path": "https://economy.gov.ru"
+        }
+    ],
+    "keywords": [
+        "datacatalogs"
+    ],
+    "version": "20210716-10-00-00",
+    "package_type": "full",
+    "topics": [
+        {
+            "id": "datacatalogs",
+            "name": "Каталоги данных"
+        }
+    ],
+    "spec_version": "1.0",
+    "spec_type": "crafter-datapackage",
+    "documentation": [],
+    "collections": [
+        {
+            "name": "datasets",
+            "title": "Наборы данных",
+            "description": "Наборы данных",
+            "dbname": "datagovru",
+            "collname": "datasets",
+            "path": "datasets.bson",
+            "compression": null,
+            "format": "jsonl",
+            "uniqkey": "id",
+            "indexes": [
+                "title",
+                "id",
+                "description",
+                "owner_name",
+                "contact_person",
+                "contact_phone",
+                "contact_email",
+                "format",
+                "date_actual",
+                "date_publish",
+                "date_change",
+                "lastchange_text",
+                "topic",
+                "govlevel",
+                "num_views",
+                "keywords",
+                "num_downloads",
+                "score_total",
+                "score_positive",
+                "score_negative",
+                "version_url",
+                "structure_url"
+            ]
+        }
+    ],
+    "resources": [
+        {
+            "title": "datasets as BSON",
+            "type": "final",
+            "format": "bson",
+            "compression": null,
+            "path": "datasets.bson",
+            "mediatype": "application/bson",
+            "bytes": 35997879
+        }
+    ],
+    "created": "2021-07-16T10:00:00.758367+00:00"
+}

@@ -314,6 +314,46 @@ Analysis of JSON lines file and verifies each field that it's date field, detect
     $ undatum stats --checkdates examples/ausgovdir.jsonl
 
 
+Analyze command
+---------------
+
+Analyzes data format and provides human-readable information.
+
+
+.. code-block:: bash
+
+    $ undatum analyze examples/ausgovdir.jsonl
+
+
+Returned values will include:
+
+* Filename - name of the file
+* File type - type of the file, could be: jsonl, xml, csv, json
+* Encoding - file encoding
+* Delimiter - file delimiter if CSV file
+* File size - size of the file, bytes
+* Objects count - number of objects in file
+* Fields - list of file fields
+
+Also for XML AND JSON files:
+
+* Miltiple tables exists - True or False, if multiple data tables in XML files
+* Full data key - full path to data key (field with list of objects) in XML file
+* Short data key - final name of field with objects in XML file
+
+For JSON files:
+
+* JSON type - could be "objects list", "objects list with key' and "single object"
+
+For XML, JSON lines and JSON files:
+
+* Is flat table? - True if table is flat and could be converted to CSV, False if not convertable
+
+For CSV and JSON lines:
+
+* Number of lines - number of lines in file
+
+
 
 Split command
 -------------

@@ -1,3 +1,4 @@
+from collections import OrderedDict
 import csv
 import chardet
 import orjson
@@ -70,7 +71,7 @@ def get_dict_value(d, keys):
         return out
 #    keys = key.split('.')
     if len(keys) == 1:
-        if type(d) == type({}):
+        if type(d) == type({}) or isinstance(d, OrderedDict):
             if keys[0] in d.keys():
                 out.append(d[keys[0]])
         else:
@@ -79,7 +80,7 @@ def get_dict_value(d, keys):
                     out.append(r[keys[0]])
 #        return out
     else:
-        if type(d) == type({}):
+        if type(d) == type({}) or isinstance(d, OrderedDict):
             if keys[0] in d.keys():
                 out.extend(get_dict_value(d[keys[0]], keys[1:]))
         else:
@@ -107,6 +108,10 @@ def strip_dict_fields(record, fields, startkey=0):
 
 
 def dict_generator(indict, pre=None):
+    """Processes python dictionary and return list of key values
+    :param indict
+    :param pre
+    :return generator"""
     pre = pre[:] if pre else []
     if isinstance(indict, dict):
         for key, value in list(indict.items()):
@@ -128,3 +133,52 @@ def dict_generator(indict, pre=None):
                 yield pre + [key, value]
     else:
         yield indict
+
+
+def guess_int_size(i):
+    if i < 255:
+        return 'uint8'
+    if i < 65535:
+        return 'uint16'
+    return 'uint32'
+
+def guess_datatype(s, qd):
+    """Guesses type of data by string provided
+    :param s
+    :param qd
+    :return datatype"""
+    attrs = {'base' : 'str'}
+#    s = unicode(s)
+    if s is None:
+       return {'base' : 'empty'}
+    if type(s) == type(1):
+        return {'base' : 'int'}
+    if type(s) == type(1.0):
+        return {'base' : 'float'}
+    elif type(s) != type(''):
+#        print((type(s)))
+        return {'base' : 'typed'}
+#    s = s.decode('utf8', 'ignore')
+    if s.isdigit():
+        if s[0] == 0:
+            attrs = {'base' : 'numstr'}
+        else:
+            attrs = {'base' : 'int', 'subtype' : guess_int_size(int(s))}
+    else:
+        try:
+            i = float(s)
+            attrs = {'base' : 'float'}
+            return attrs
+        except ValueError:
+            pass
+        if qd:
+            is_date = False
+            res = qd.match(s)
+            if res:
+                attrs = {'base': 'date', 'pat': res['pattern']}
+                is_date = True
+            if not is_date:
+                if len(s.strip()) == 0:
+                    attrs = {'base' : 'empty'}
+    return attrs
+

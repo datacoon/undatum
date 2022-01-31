@@ -1,229 +1,291 @@
-from ..utils import get_file_type, get_option
-from ..constants import DATE_PATTERNS, DEFAULT_DICT_SHARE
-from datetime import datetime
-import logging
+import os
+from ..utils import get_file_type, get_option, dict_generator, guess_int_size, guess_datatype, detect_delimiter, detect_encoding, get_dict_value
+from ..constants import SUPPORTED_FILE_TYPES
+from collections import OrderedDict
 import bson
+import json
+import jsonlines
 import orjson
 import csv
 import zipfile
-from qddate import DateParser
+import xmltodict
+OBJECTS_ANALYZE_LIMIT = 100
 
-def guess_int_size(i):
-    if i < 255:
-        return 'uint8'
-    if i < 65535:
-        return 'uint16'
-    return 'uint32'
+def buf_count_newlines_gen(fname):
+    def _make_gen(reader):
+        while True:
+            b = reader(2 ** 16)
+            if not b: break
+            yield b
 
-def guess_datatype(s, qd):
-    """Guesses type of data by string provided"""
-    attrs = {'base' : 'str'}
-#    s = unicode(s)
-    if s is None:
-       return {'base' : 'empty'}
-    if type(s) == type(1):
-        return {'base' : 'int'}
-    if type(s) == type(1.0):
-        return {'base' : 'float'}
-    elif type(s) != type(''):
-#        print((type(s)))
-        return {'base' : 'typed'}
-#    s = s.decode('utf8', 'ignore')
-    if s.isdigit():
-        if s[0] == 0:
-            attrs = {'base' : 'numstr'}
-        else:
-            attrs = {'base' : 'int', 'subtype' : guess_int_size(int(s))}
+    with open(fname, "rb") as f:
+        count = sum(buf.count(b"\n") for buf in _make_gen(f.raw.read))
+    return count
+
+
+def get_dict_keys(iterable, limit=1000):
+    n = 0
+    keys = []
+    for item in iterable:
+        if limit and n > limit:
+            break
+        n += 1
+        dk = dict_generator(item)
+        for i in dk:
+            k = ".".join(i[:-1])
+            if k not in keys:
+                keys.append(k)
+    return keys
+
+
+def _is_flat(item):
+    """Measures if object is flat"""
+    for k, v in item.items():
+        if isinstance(v, tuple) or isinstance(v, list):
+            return False
+        elif isinstance(v, dict):
+            if not _is_flat(v): return False
+    return True
+
+
+def analyze_csv(filename, objects_limit=OBJECTS_ANALYZE_LIMIT):
+    """Analyzes CSV file"""
+    report = []
+    encoding_det = detect_encoding(filename, limit=100000)
+    report.append(['Filename', filename])
+    report.append(['File type', 'csv'])
+    if encoding_det:
+        encoding = encoding_det['encoding']
+        report.append(['Encoding', encoding])
     else:
-        try:
-            i = float(s)
-            attrs = {'base' : 'float'}
-            return attrs
-        except ValueError:
-            pass
-        if qd:
-            is_date = False
-            res = qd.match(s)
-            if res:
-                attrs = {'base': 'date', 'pat': res['pattern']}
-                is_date = True
-            if not is_date:
-                if len(s.strip()) == 0:
-                    attrs = {'base' : 'empty'}
-    return attrs
+        encoding = 'utf8'
+        report.append(['Encoding', 'Not detected'])
+    delimiter = detect_delimiter(filename, encoding=encoding)
+    report.append(['Delimiter', delimiter])
+    report.append(['Filesize', str(os.path.getsize(filename))])
+    report.append(['Number of lines', buf_count_newlines_gen(filename)])
+    return report
 
-def dict_generator(indict, pre=None):
-    pre = pre[:] if pre else []
-    if isinstance(indict, dict):
-        for key, value in list(indict.items()):
-            if key == "_id":
-                continue
-            if isinstance(value, dict):
-                #                print 'dgen', value, key, pre
-                for d in dict_generator(value, pre + [key]):
-                    yield d
-            elif isinstance(value, list) or isinstance(value, tuple):
-                for v in value:
-                    if isinstance(v, dict):
-                        #                print 'dgen', value, key, pre
-                        for d in dict_generator(v, pre + [key]):
-                            yield d
-#                    for d in dict_generator(v, [key] + pre):
-#                        yield d
+def analyze_jsonl(filename, objects_limit=OBJECTS_ANALYZE_LIMIT):
+    """Analyzes JSON lines file"""
+    report = []
+    encoding_det = detect_encoding(filename, limit=100000)
+    report.append(['Filename', filename])
+    report.append(['File type', 'jsonl'])
+    if encoding_det:
+        encoding = encoding_det['encoding']
+        report.append(['Encoding', encoding])
+    else:
+        encoding = 'utf8'
+        report.append(['Encoding', 'Not detected'])
+    report.append(['Filesize', str(os.path.getsize(filename))])
+    report.append(['Number of lines', buf_count_newlines_gen(filename)])
+    f = open(filename, 'r', encoding=encoding)
+    flat = True
+    reader = jsonlines.Reader(f)
+    objects = []
+    n = 0
+    for o in reader.iter():
+        n += 1
+        objects.append(o)
+        if n > objects_limit:
+            break
+    for o in objects[:objects_limit]:
+        if not _is_flat(o):
+            flat = False
+    report.append(['Is flat table?', str(flat)])
+    report.append(['Fields', str('\n'.join(get_dict_keys(objects)))])
+    return report
+
+
+def analyze_json(filename, objects_limit=OBJECTS_ANALYZE_LIMIT, filesize_limit=500000000):
+    """Analyzes JSON file"""
+    report = []
+    encoding_det = detect_encoding(filename, limit=100000)
+    report.append(['Filename', filename])
+    report.append(['File type', 'json'])
+    if encoding_det:
+        encoding = encoding_det['encoding']
+        report.append(['Encoding', encoding])
+    else:
+        encoding = 'utf8'
+        report.append(['Encoding', 'Not detected'])
+    filesize = os.path.getsize(filename)
+    report.append(['Filesize', str(filesize)])
+    if filesize > filesize_limit:
+        report.append(['Filesize overlimit', 'File size greater than %d. Not processed' % (filesize_limit)])
+        return
+    f = open(filename, 'r', encoding=encoding)
+    data = json.load(f)
+    f.close()
+    objects = None
+    if isinstance(data, list):
+        objects = data
+        n_count = len(objects)
+        report.append(['JSON type', 'objects list'])
+        report.append(['Objects count', str(n_count)])
+    elif isinstance(data, dict):
+        if len(data.keys()) == 1 and isinstance(data[list(data.keys())[0]], list):
+            objects = data.values()[0]
+            n_count = len(objects)
+            report.append(['JSON type', 'objects list with key'])
+            report.append(['JSON objects key', data.keys()[0]])
+            report.append(['Objects count', str(n_count)])
+            if objects:
+                flat = True
+                for o in objects[:objects_limit]:
+                    if not _is_flat(o):
+                        flat = False
+                report.append(['Is flat table?', str(flat)])
+                report.append(['Fields', str('\n'.join(get_dict_keys(objects)))])
+        elif len(data.keys()) > 0:
+            candidates = _seek_dict_lists(data, level=0)
+            if len(candidates) > 0:
+                for fullkey in list(candidates.keys()):
+                    report.append(['Multiple tables exists', str(False)])
+                    report.append(['Full data key', fullkey])
+                    report.append(['Short data key', fullkey.rsplit('.', 1)[-1]])
+                    report.append(['Objects count', str(list(candidates.values())[0]['num'])])
+                    objects = get_dict_value(data, keys=fullkey.split('.'))[0]
+                    flat = True
+                    for o in objects[:objects_limit]:
+                        if not _is_flat(o):
+                            flat = False
+                    report.append(['Is flat table?', str(flat)])
+                    report.append(['Fields', str('\n'.join(get_dict_keys(objects)))])
             else:
-                yield pre + [key, value]
+                report.append(['JSON type', 'single object'])
+                objects = [data,]
+                flat = True
+                for o in objects[:objects_limit]:
+                    if not _is_flat(o):
+                        flat = False
+                report.append(['Is flat table?', str(flat)])
+                report.append(['Fields', str('\n'.join(get_dict_keys(objects)))])
+    return report
+
+
+def _seek_dict_lists(data, level=0, path=None, candidates=OrderedDict()):
+    for key, value in data.items():
+        if isinstance(value, list):
+            isobjectlist = False
+            for listitem in value[:20]:
+                if isinstance(listitem, dict) or isinstance(listitem, OrderedDict):
+                    isobjectlist = True
+                    break
+            if not isobjectlist: continue
+            key = path + '.%s' % (key) if path is not None else key
+            if key not in candidates.keys():
+                candidates[key] = {'key' : key, 'num' : len(value)}
+        elif isinstance(value, OrderedDict) or isinstance(value, dict):
+            res = _seek_xml_lists(value, level + 1, path + '.' + key if path else key, candidates)
+            for k, v in res.items():
+                if k not in candidates.keys():
+                    candidates[k] = v
+        else:
+            continue
+    return candidates
+
+
+
+def _seek_xml_lists(data, level=0, path=None, candidates=OrderedDict()):
+    for key, value in data.items():
+        if isinstance(value, list):
+            key = path + '.%s' % (key) if path is not None else key
+            if key not in candidates.keys():
+                candidates[key] = {'key' : key, 'num' : len(value)}
+        elif isinstance(value, OrderedDict) or isinstance(value, dict):
+            res = _seek_xml_lists(value, level + 1, path + '.' + key if path else key, candidates)
+            for k, v in res.items():
+                if k not in candidates.keys():
+                    candidates[k] = v
+        else:
+            continue
+    return candidates
+
+
+def analyze_xml(filename, objects_limit=OBJECTS_ANALYZE_LIMIT, filesize_limit=100000000):
+    """Analyzes XML file"""
+    report = []
+    encoding_det = detect_encoding(filename, limit=100000)
+    report.append(['Filename', filename])
+    report.append(['File type', 'xml'])
+    if encoding_det:
+        encoding = encoding_det['encoding']
+        report.append(['Encoding', encoding])
     else:
-        yield indict
+        encoding = 'utf8'
+        report.append(['Encoding', 'Not detected'])
+    filesize = os.path.getsize(filename)
+    report.append(['Filesize', str(filesize)])
+#    report.append(['Number of lines', buf_count_newlines_gen(filename)])
+    if filesize > filesize_limit:
+        report.append(['Filesize overlimit', 'File size greater than %d. Not processed' % (filesize_limit)])
+        return
+    f = open(filename, 'rb')#, encoding=encoding)
+    data = xmltodict.parse(f, process_namespaces=False)
+    from pprint import pprint
+#    pprint(data)
+    candidates = _seek_xml_lists(data, level=0)
+    if len(candidates.keys()) == 1:
+        fullkey = str(list(candidates.keys())[0])
+        report.append(['Miltiple tables exists', str(False)])
+        report.append(['Full data key', fullkey])
+        report.append(['Short data key', fullkey.rsplit('.', 1)[-1]])
+        report.append(['Objects count', str(list(candidates.values())[0]['num'])])
+        objects = get_dict_value(data, keys=fullkey.split('.'))[0]
+        flat = True
+        for o in objects[:objects_limit]:
+            if not _is_flat(o):
+                flat = False
+        report.append(['Is flat table?', str(flat)])
+        report.append(['Fields', str('\n'.join(get_dict_keys(objects)))])
+    elif len(candidates) > 1:
+        report.append(['Miltiple tables exists', str(True)])
+        for fullkey in list(candidates.keys()):
+            report.append(['Full data key', fullkey])
+            report.append(['Short data key', fullkey.rsplit('.', 1)[-1]])
+            report.append(['Objects count', str(candidates[fullkey]['num'])])
+            objects = get_dict_value(data, keys=fullkey.split('.'))[0]
+            flat = True
+            for o in objects[:objects_limit]:
+                if not _is_flat(o):
+                    flat = False
+            report.append(['Is flat table?', str(flat)])
+            report.append(['Fields', str('\n'.join(get_dict_keys(objects)))])
+    f.close()
+
+    return report
 
 class Analyzer:
-    def __init__(self, nodates=True):
-        if nodates:
-            self.qd = None
-        else:
-            self.qd = DateParser(generate=True)
+    def __init__(self):
         pass
 
-    def analyze(self, fromfile, options):
-        """Analyzes JSON file and produces stats"""
-        from tabulate import tabulate
-        f_type = get_file_type(fromfile) if options['format_in'] is None else options['format_in']
-        if f_type not in ['jsonl', 'bson', 'csv']:
-            print('Only JSON lines (.jsonl), .csv and .bson files supported now')
+    def analyze(self, filename, options):
+        """Analyzes given data file and returns it's parameters"""
+        import prettytable as pt
+
+        filetype = get_file_type(filename)
+        if not filetype:
+            print('Sorry, file type not supported')
+            print('Supported file types are: %s' % (','.join(SUPPORTED_FILE_TYPES)))
             return
-
-        if options['zipfile']:
-            z = zipfile.ZipFile(fromfile, mode='r')
-            fnames = z.namelist()
-            finfilename = fnames[0]
-            if f_type == 'bson':
-                infile = z.open(fnames[0], 'rb')
-            else:
-                infile = z.open(fnames[0], 'r')
+        table = None
+        if filetype == 'csv':
+            table = analyze_csv(filename)
+        elif filetype == 'jsonl':
+            table = analyze_jsonl(filename)
+        elif filetype == 'json':
+            table = analyze_json(filename)
+        elif filetype == 'xml':
+            table = analyze_xml(filename)
         else:
-            finfilename = fromfile
-            if f_type == 'bson':
-                infile = open(fromfile, 'rb')
-            else:
-                infile = open(fromfile, 'r', encoding=get_option(options, 'encoding'))
-        dictshare = get_option(options, 'dictshare')
-        if dictshare and dictshare.isdigit():
-            dictshare = int(dictshare)
-        else:
-            dictshare = DEFAULT_DICT_SHARE
-
-        profile = {'version': 1.0}
-        fielddata = {}
-        fieldtypes = {}
-
-        #    data = json.load(open(profile['filename']))
-        count = 0
-        nfields = 0
-
-        # Identify item list
-        itemlist = []
-
-        if f_type == 'jsonl':
-            for l in infile:
-                itemlist.append(orjson.loads(l))
-        elif f_type == 'csv':
-            delimiter = get_option(options, 'delimiter')
-            reader = csv.DictReader(infile, delimiter=delimiter)
-            for r in reader:
-                itemlist.append(r)
-        elif f_type == 'bson':
-            bson_iter = bson.decode_file_iter(infile)
-            for r in bson_iter:
-                itemlist.append(r)
-
-        # process data items one by one
-        logging.debug('Start processing %s' % (fromfile))
-        for item in itemlist:
-            count += 1
-            dk = dict_generator(item)
-            if count % 1000 == 0: logging.debug('Processing %d records of %s' % (count, fromfile))
-            for i in dk:
-                #            print(i)
-                k = '.'.join(i[:-1])
-                if len(i) == 0: continue
-                if i[0].isdigit(): continue
-                if len(i[0]) == 1: continue
-                v = i[-1]
-                if k not in list(fielddata.keys()):
-                    fielddata[k] = {'key': k, 'uniq': {}, 'n_uniq': 0, 'total': 0, 'share_uniq': 0.0, 'minlen' : None, 'maxlen' : 0, 'avglen' : 0, 'totallen' : 0}
-                fd = fielddata[k]
-                uniqval = fd['uniq'].get(v, 0)
-                fd['uniq'][v] = uniqval + 1
-                fd['total'] += 1
-                if uniqval == 0:
-                    fd['n_uniq'] += 1
-                    fd['share_uniq'] = (fd['n_uniq'] * 100.0) / fd['total']
-                fl = len(str(v))
-                if fd['minlen'] is None:
-                    fd['minlen'] = fl
-                else:
-                    fd['minlen'] = fl if fl < fd['minlen'] else fd['minlen']
-                fd['maxlen'] = fl if fl > fd['maxlen'] else fd['maxlen']
-                fd['totallen'] += fl
-                fielddata[k] = fd
-                if k not in list(fieldtypes.keys()):
-                    fieldtypes[k] = {'key': k, 'types': {}}
-                fd = fieldtypes[k]
-                thetype = guess_datatype(v, self.qd)['base']
-                uniqval = fd['types'].get(thetype, 0)
-                fd['types'][thetype] = uniqval + 1
-                fieldtypes[k] = fd
-        #        print count
-        for k, v in list(fielddata.items()):
-            fielddata[k]['share_uniq'] = (v['n_uniq'] * 100.0) / v['total']
-            fielddata[k]['avglen'] = v['totallen'] / v['total']
-        profile['count'] = count
-        profile['num_fields'] = nfields
-        dictkeys = []
-        dicts = {}
-#        print(profile)
-        profile['fields'] = []
-        for fd in list(fielddata.values()):
-#            print(fd['key'])  # , fd['n_uniq'], fd['share_uniq'], fieldtypes[fd['key']]
-            field = {'key': fd['key'], 'is_uniq': 0 if fd['share_uniq'] < 100 else 1}
-            profile['fields'].append(field)
-            if fd['share_uniq'] < dictshare:
-                dictkeys.append(fd['key'])
-                dicts[fd['key']] = {'items': fd['uniq'], 'count': fd['n_uniq'],
-                                    'type': 'str'}  # TODO: Shouldn't be "str" by default
-        #            for k, v in fd['uniq'].items():
-        #                print fd['key'], k, v
-        profile['dictkeys'] = dictkeys
-
-        finfields = {}
-        for k, v in list(fielddata.items()):
-            del v['uniq']
-            fielddata[k] = v
-        profile['debug'] = {'fieldtypes': fieldtypes.copy(), 'fielddata': fielddata}
-        for fd in list(fieldtypes.values()):
-            fdt = list(fd['types'].keys())
-            if 'empty' in fdt:
-                del fd['types']['empty']
-            if len(list(fd['types'].keys())) != 1:
-                ftype = 'str'
-            else:
-                ftype = list(fd['types'].keys())[0]
-            finfields[fd['key']] = ftype
-
-        profile['fieldtypes'] = finfields
-        table = []
-        for fd in list(fielddata.values()):
-            field = [fd['key'], ]
-            field.append(finfields[fd['key']])
-            field.append(True if fd['key'] in dictkeys else False)
-            field.append(False if fd['share_uniq'] < 100 else True)
-            field.append(fd['n_uniq'])
-            field.append(fd['share_uniq'])
-            field.append(fd['minlen'])
-            field.append(fd['maxlen'])
-            field.append(fd['avglen'])
-            table.append(field)
-        headers = ['key', 'ftype', 'is_dictkey', 'is_uniq', 'n_uniq', 'share_uniq', 'minlen', 'maxlen', 'avglen']
-        print(tabulate(table, headers=headers))
-
-
-
+            print('File type %s analyzer not ready yet' %(filetype))
+        if table:
+            print('This report intended to be human readable. For machine readable tasks please use other commands.')
+            headers = ['Parameter', 'Value']
+            outtable = pt.PrettyTable(headers)
+            for row in table:
+                outtable.add_row(row)
+            print(f'{outtable}')
+        pass

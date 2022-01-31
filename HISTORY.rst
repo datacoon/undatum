@@ -3,7 +3,11 @@
 History
 =======
 
-1.0.10 (2022-01-30)
+1.0.12 (2022-01-30)
+-------------------
+* Added command "analyze" it provides human-readable information about data files: CSV, JSON lines, JSON, XML. Detects encoding, delimiters, type of files, fields with objects for JSON and XML files. Doesn't support Gzipped, ZIPped and other comressed files yet.
+
+1.0.11 (2022-01-30)
 -------------------
 * Updated setup.py and requirements.txt to require certain versions of libs and Python 3.8
 

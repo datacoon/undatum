@@ -7,6 +7,7 @@ from .cmds.converter import Converter
 from .cmds.selector import Selector
 from .cmds.transformer import Transformer
 from .cmds.analyzer import Analyzer
+from .cmds.statistics import StatProcessor
 from .cmds.textproc import TextProcessor
 from .cmds.validator import Validator
 from .cmds.schemer import Schemer
@@ -151,8 +152,8 @@ def stats(input, output, dictshare, format_in, format_out, delimiter, verbose, z
     options['delimiter'] = delimiter
     options['checkdates'] = checkdates
     options['verbose'] = verbose
-    acmd = Analyzer(nodates=not checkdates)
-    acmd.analyze(input, options)
+    acmd = StatProcessor(nodates=not checkdates)
+    acmd.stats(input, options)
     pass
 
 
@@ -379,7 +380,29 @@ def scheme(input, output, delimiter, encoding, verbose, format_in, zipfile, styp
     pass
 
 
-cli = click.CommandCollection(sources=[cli1, cli2, cli3, cli4, cli5, cli6, cli7, cli8, cli9, cli10, cli11])
+@click.group()
+def cli12():
+    pass
+
+@cli12.command()
+@click.argument('input')
+@click.option('--verbose', '-v', count=True, help='Verbose output. Print additional info on command execution')
+@click.option('--format-in',  default=None, help="Format of input file, if set, replaces autodetect")
+@click.option('-z', '--zipfile', 'zipfile', is_flag=True, help="Used to say input file is .zip file and that data file is inside")
+def analyze(input, verbose, format_in, zipfile):
+    """Analyzes given data file and returns human readable insights about it"""
+    if verbose:
+        enableVerbose()
+    options = {}
+    options['format_in'] = format_in
+    options['zipfile'] = zipfile
+    acmd = Analyzer()
+    acmd.analyze(input, options)
+    pass
+
+
+
+cli = click.CommandCollection(sources=[cli1, cli2, cli3, cli4, cli5, cli6, cli7, cli8, cli9, cli10, cli11, cli12])
 
 #if __name__ == '__main__':
 #    cli()

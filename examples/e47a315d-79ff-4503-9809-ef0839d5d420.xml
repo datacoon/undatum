@@ -1,0 +1,2010 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<BCCproperties xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+	<property>
+		<property_name>AGNES ST CIVIC AMENITY SITE</property_name>
+		<town>BELFAST</town>
+		<postcode>BT13 1GG</postcode>
+		<type>Waste Collection</type>
+		<uprn>0</uprn>
+		<x>332691</x>
+		<y>374874</y>
+	</property>
+	<property>
+		<property_name>AGNES ST PUBLIC CONVENIENCE</property_name>
+		<town>Belfast</town>
+		<postcode>BT13 1GG</postcode>
+		<type>Public Convenience</type>
+		<uprn>0</uprn>
+		<x>332702</x>
+		<y>374873</y>
+	</property>
+	<property>
+		<property_name>ALBERT CLOCK</property_name>
+		<town>Belfast</town>
+		<postcode>BT1 2</postcode>
+		<type>Other Community Assets</type>
+		<uprn>0</uprn>
+		<x>334186</x>
+		<y>374493</y>
+	</property>
+	<property>
+		<property_name>ALBERT SQUARE PUBLIC CONVENIENCE</property_name>
+		<town>Belfast</town>
+		<postcode>BT1 3</postcode>
+		<type>Public Convenience</type>
+		<uprn>0</uprn>
+		<x>334301</x>
+		<y>374652</y>
+	</property>
+	<property>
+		<property_name>ALDERMAN TOMMY PATTON MEMORIAL PARK - BOWLING PAVILION</property_name>
+		<town>Belfast</town>
+		<postcode>BT4 1RN</postcode>
+		<type>Recreation and Sport</type>
+		<uprn>0</uprn>
+		<x>337712</x>
+		<y>375736</y>
+	</property>
+	<property>
+		<property_name>INVERARY COMMUNITY CENTRE</property_name>
+		<building_name>INVERARY COMMUNITY CENTRE</building_name>
+		<primary_thorofare>INVERARY AVENUE</primary_thorofare>
+		<town>BELFAST</town>
+		<postcode>BT4 1RN</postcode>
+		<type>Community Services</type>
+		<uprn>185871556</uprn>
+		<x>337413</x>
+		<y>375685</y>
+	</property>
+	<property>
+		<property_name>ALEXANDRA PARK RECYCLING CENTRE</property_name>
+		<town>Belfast</town>
+		<postcode>BT15 3GJ</postcode>
+		<type>Waste Collection</type>
+		<uprn>0</uprn>
+		<x>333556</x>
+		<y>376553</y>
+	</property>
+	<property>
+		<property_name>ANDERSONSTOWN LEISURE CENTRE</property_name>
+		<town>BELFAST</town>
+		<postcode>BT11 9BY</postcode>
+		<type>Recreation and Sport</type>
+		<uprn>0</uprn>
+		<x>330249</x>
+		<y>371192</y>
+	</property>
+	<property>
+		<property_name>ANTRIM RD AUTOMATED PC</property_name>
+		<town>BELFAST</town>
+		<postcode>BT15 2</postcode>
+		<type>Public Convenience</type>
+		<uprn>0</uprn>
+		<x>333207</x>
+		<y>376415</y>
+	</property>
+	<property>
+		<property_name>ARDOYNE COMMUNITY CENTRE</property_name>
+		<building_number>40</building_number>
+		<primary_thorofare>HERBERT STREET</primary_thorofare>
+		<town>BELFAST</town>
+		<postcode>BT14 7NY</postcode>
+		<type>Community Services</type>
+		<uprn>187255222</uprn>
+		<x>331947</x>
+		<y>375888</y>
+	</property>
+	<property>
+		<property_name>AVONIEL LEISURE CENTRE</property_name>
+		<building_name>AVONIEL LEISURE CENTRE</building_name>
+		<primary_thorofare>AVONIEL ROAD</primary_thorofare>
+		<town>BELFAST</town>
+		<postcode>BT5 4SF</postcode>
+		<type>Recreation and Sport</type>
+		<uprn>185758251</uprn>
+		<x>336068</x>
+		<y>373855</y>
+	</property>
+	<property>
+		<property_name>AVONIEL LEISURE CENTRE - ANNEXE</property_name>
+		<building_name>AVONIEL LEISURE CENTRE</building_name>
+		<primary_thorofare>AVONIEL ROAD</primary_thorofare>
+		<town>BELFAST</town>
+		<postcode>BT5 4SF</postcode>
+		<type>Recreation and Sport</type>
+		<uprn>185758251</uprn>
+		<x>336068</x>
+		<y>373855</y>
+	</property>
+	<property>
+		<property_name>AVONIEL PLAY CENTRE</property_name>
+		<town>BELFAST</town>
+		<postcode>BT5 4SF</postcode>
+		<type>Recreation and Sport</type>
+		<uprn>0</uprn>
+		<x>336053</x>
+		<y>373799</y>
+	</property>
+	<property>
+		<property_name>BALLYMACARRETT RECREATION CENTRE</property_name>
+		<building_name>BALLYMACARRETT LEISURE CENTRE</building_name>
+		<primary_thorofare>BALLYMACARRETT WALKWAY</primary_thorofare>
+		<town>BELFAST</town>
+		<postcode>BT4 1SX</postcode>
+		<type>Recreation and Sport</type>
+		<uprn>185751492</uprn>
+		<x>336326</x>
+		<y>374408</y>
+	</property>
+	<property>
+		<property_name>BALLYSILLAN LEISURE CENTRE</property_name>
+		<building_name>BALLYSILLAN LEISURE CENTRE</building_name>
+		<primary_thorofare>BALLYSILLAN ROAD</primary_thorofare>
+		<town>BELFAST</town>
+		<postcode>BT14 7QQ</postcode>
+		<type>Recreation and Sport</type>
+		<uprn>185742966</uprn>
+		<x>331166</x>
+		<y>376839</y>
+	</property>
+	<property>
+		<property_name>BALLYSILLAN PLAY CENTRE</property_name>
+		<town>BELFAST</town>
+		<postcode>BT14 8</postcode>
+		<type>Recreation and Sport</type>
+		<uprn>0</uprn>
+		<x>331103</x>
+		<y>377699</y>
+	</property>
+	<property>
+		<property_name>BARNETT DEMESNE - MALONE HOUSE</property_name>
+		<building_name>MALONE HOUSE</building_name>
+		<primary_thorofare>MALONE ROAD</primary_thorofare>
+		<town>BELFAST</town>
+		<postcode>BT9 5PB</postcode>
+		<type>Recreation and Sport</type>
+		<uprn>185074177</uprn>
+		<x>332172</x>
+		<y>369108</y>
+	</property>
+	<property>
+		<property_name>BARNETT DEMESNE - SERVICE YARD/BUILDINGS</property_name>
+		<building_name>MALONE HOUSE</building_name>
+		<primary_thorofare>MALONE ROAD</primary_thorofare>
+		<town>Belfast</town>
+		<postcode>BT9 5PB</postcode>
+		<type>Recreation and Sport</type>
+		<uprn>185074177</uprn>
+		<x>332172</x>
+		<y>369108</y>
+	</property>
+	<property>
+		<property_name>BEECHMOUNT LEISURE CENTRE</property_name>
+		<building_name>BEECHMOUNT LEISURE CENTRE</building_name>
+		<primary_thorofare>FALLS ROAD</primary_thorofare>
+		<town>BELFAST</town>
+		<postcode>BT12 6FD</postcode>
+		<type>Recreation and Sport</type>
+		<uprn>185878318</uprn>
+		<x>331385</x>
+		<y>373452</y>
+	</property>
+	<property>
+		<property_name>BEECHVALE FARM - BUNGALOW</property_name>
+		<building_number>51</building_number>
+		<primary_thorofare>GRANSHA ROAD</primary_thorofare>
+		<town>Belfast</town>
+		<postcode>BT23 5RF</postcode>
+		<type>Other Community Assets</type>
+		<uprn>185228121</uprn>
+		<x>341581</x>
+		<y>368669</y>
+	</property>
+	<property>
+		<property_name>BEECHVALE FARM - FARMHOUSE</property_name>
+		<building_number>51</building_number>
+		<primary_thorofare>GRANSHA ROAD</primary_thorofare>
+		<town>Belfast</town>
+		<postcode>BT23 5RF</postcode>
+		<type>Other Community Assets</type>
+		<uprn>185228121</uprn>
+		<x>341581</x>
+		<y>368669</y>
+	</property>
+	<property>
+		<property_name>BEECHVALE FARM - GREENHOUSE</property_name>
+		<building_number>51</building_number>
+		<primary_thorofare>GRANSHA ROAD</primary_thorofare>
+		<town>Belfast</town>
+		<postcode>BT23 5RF</postcode>
+		<type>Other Community Assets</type>
+		<uprn>185228121</uprn>
+		<x>341581</x>
+		<y>368669</y>
+	</property>
+	<property>
+		<property_name>BEECHVALE FARM - OUTBUILDINGS</property_name>
+		<building_number>51</building_number>
+		<primary_thorofare>GRANSHA ROAD</primary_thorofare>
+		<town>Belfast</town>
+		<postcode>BT23 5RF</postcode>
+		<type>Other Community Assets</type>
+		<uprn>185228121</uprn>
+		<x>341581</x>
+		<y>368669</y>
+	</property>
+	<property>
+		<property_name>BEECHVALE FARM - WORKSHOP/OFFICE</property_name>
+		<building_number>51</building_number>
+		<primary_thorofare>GRANSHA ROAD</primary_thorofare>
+		<town>Belfast</town>
+		<postcode>BT23 5RF</postcode>
+		<type>Other Community Assets</type>
+		<uprn>185228121</uprn>
+		<x>341581</x>
+		<y>368669</y>
+	</property>
+	<property>
+		<property_name>EAST BELFAST COMMUNITY SITE OFFICE</property_name>
+		<building_number>167-177</building_number>
+		<primary_thorofare>BEERSBRIDGE ROAD</primary_thorofare>
+		<town>BELFAST</town>
+		<postcode>BT5 4RR</postcode>
+		<type>Community Services</type>
+		<uprn>185970031</uprn>
+		<x>336012</x>
+		<y>373549</y>
+	</property>
+	<property>
+		<property_name>BELFAST WELCOME CENTRE</property_name>
+		<building_number>47</building_number>
+		<primary_thorofare>DONEGALL PLACE</primary_thorofare>
+		<town>Belfast</town>
+		<postcode>BT1 5AG</postcode>
+		<type>Tourism</type>
+		<uprn>185973259</uprn>
+		<x>333802</x>
+		<y>374163</y>
+	</property>
+	<property>
+		<property_name>BOUCHER RD CIVIC AMENITY SITE</property_name>
+		<building_number>70-72</building_number>
+		<primary_thorofare>BOUCHER ROAD</primary_thorofare>
+		<town>Belfast</town>
+		<postcode>BT12 6HR</postcode>
+		<type>Waste Collection</type>
+		<uprn>185744027</uprn>
+		<x>331330</x>
+		<y>371151</y>
+	</property>
+	<property>
+		<property_name>BOUCHER RD PLAYING FIELDS - CHANGING ACCOMMODATION</property_name>
+		<building_number>97-103</building_number>
+		<primary_thorofare>BOUCHER ROAD</primary_thorofare>
+		<town>Belfast</town>
+		<postcode>BT12 6HR</postcode>
+		<type>Recreation and Sport</type>
+		<uprn>185744033</uprn>
+		<x>331369</x>
+		<y>371484</y>
+	</property>
+	<property>
+		<property_name>CAVEHILL COUNTRY PARK - McARTS FORT</property_name>
+		<town>Belfast</town>
+		<type>Recreation and Sport</type>
+		<uprn>0</uprn>
+		<x>335301</x>
+		<y>374173</y>
+	</property>
+	<property>
+		<property_name>BELFAST CASTLE</property_name>
+		<building_name>BELFAST CASTLE</building_name>
+		<primary_thorofare>ANTRIM ROAD</primary_thorofare>
+		<town>Belfast</town>
+		<postcode>BT15 5GR</postcode>
+		<type>Recreation and Sport</type>
+		<uprn>185154161</uprn>
+		<x>332904</x>
+		<y>379125</y>
+	</property>
+	<property>
+		<property_name>BELFAST CASTLE ESTATE - PUMP HOUSE</property_name>
+		<building_name>BELFAST CASTLE</building_name>
+		<primary_thorofare>ANTRIM ROAD</primary_thorofare>
+		<town>Belfast</town>
+		<postcode>BT15 5GR</postcode>
+		<type>Council Offices</type>
+		<uprn>185154161</uprn>
+		<x>332904</x>
+		<y>379125</y>
+	</property>
+	<property>
+		<property_name>BELFAST ZOO - ADMINISTRATION BLDG</property_name>
+		<building_name>CITY OF BELFAST ZOOLOGICAL GARDENS</building_name>
+		<primary_thorofare>ANTRIM ROAD</primary_thorofare>
+		<town>Belfast</town>
+		<postcode>BT36 7PN</postcode>
+		<type>Council Offices</type>
+		<uprn>185863459</uprn>
+		<x>332772</x>
+		<y>380803</y>
+	</property>
+	<property>
+		<property_name>BELFAST ZOO - KG SECTION</property_name>
+		<town>Belfast</town>
+		<postcode>BT36 7PN</postcode>
+		<type>Recreation and Sport</type>
+		<uprn>0</uprn>
+		<x>332800</x>
+		<y>380800</y>
+	</property>
+	<property>
+		<property_name>BELFAST ZOO - ARK RESTAURANT</property_name>
+		<town>Belfast</town>
+		<postcode>BT36 7PN</postcode>
+		<type>Recreation and Sport</type>
+		<uprn>0</uprn>
+		<x>332830</x>
+		<y>380679</y>
+	</property>
+	<property>
+		<property_name>BELFAST ZOO - B SECTION</property_name>
+		<town>Belfast</town>
+		<postcode>BT36 7PN</postcode>
+		<type>Recreation and Sport</type>
+		<uprn>0</uprn>
+		<x>332800</x>
+		<y>380800</y>
+	</property>
+	<property>
+		<property_name>BELFAST ZOO - C SECTION</property_name>
+		<town>Belfast</town>
+		<postcode>BT36 7PN</postcode>
+		<type>Recreation and Sport</type>
+		<uprn>0</uprn>
+		<x>332800</x>
+		<y>380800</y>
+	</property>
+	<property>
+		<property_name>BELFAST ZOO - BUNGALOW</property_name>
+		<town>Belfast</town>
+		<postcode>BT36 7PN</postcode>
+		<type>Recreation and Sport</type>
+		<uprn>0</uprn>
+		<x>332800</x>
+		<y>380800</y>
+	</property>
+	<property>
+		<property_name>BELFAST ZOO - BURGER BAR</property_name>
+		<town>Belfast</town>
+		<postcode>BT36 7PN</postcode>
+		<type>Recreation and Sport</type>
+		<uprn>0</uprn>
+		<x>332800</x>
+		<y>380800</y>
+	</property>
+	<property>
+		<property_name>BELFAST ZOO - FARM SECTION</property_name>
+		<town>Belfast</town>
+		<postcode>BT36 7PN</postcode>
+		<type>Recreation and Sport</type>
+		<uprn>0</uprn>
+		<x>332883</x>
+		<y>380612</y>
+	</property>
+	<property>
+		<property_name>BELFAST ZOO - D SECTION</property_name>
+		<town>Belfast</town>
+		<postcode>BT36 7PN</postcode>
+		<type>Recreation and Sport</type>
+		<uprn>0</uprn>
+		<x>332800</x>
+		<y>380800</y>
+	</property>
+	<property>
+		<property_name>BELFAST ZOO - FILTER ROOM</property_name>
+		<town>Belfast</town>
+		<postcode>BT36 7PN</postcode>
+		<type>Council Offices</type>
+		<uprn>0</uprn>
+		<x>332800</x>
+		<y>380800</y>
+	</property>
+	<property>
+		<property_name>BELFAST ZOO - FLORAL HALL</property_name>
+		<town>Belfast</town>
+		<postcode>BT36 7PN</postcode>
+		<type>Other Community Assets</type>
+		<uprn>0</uprn>
+		<x>332833</x>
+		<y>380610</y>
+	</property>
+	<property>
+		<property_name>BELFAST ZOO - JOINERS SHOP</property_name>
+		<town>Belfast</town>
+		<postcode>BT36 7PN</postcode>
+		<type>Council Offices</type>
+		<uprn>0</uprn>
+		<x>332800</x>
+		<y>380800</y>
+	</property>
+	<property>
+		<property_name>BELFAST ZOO - MANAGERS HOUSE</property_name>
+		<town>Belfast</town>
+		<postcode>BT36 7PN</postcode>
+		<type>Council Offices</type>
+		<uprn>0</uprn>
+		<x>332910</x>
+		<y>380817</y>
+	</property>
+	<property>
+		<property_name>BELFAST ZOO - M SECTION</property_name>
+		<town>Belfast</town>
+		<postcode>BT36 7PN</postcode>
+		<type>Recreation and Sport</type>
+		<uprn>0</uprn>
+		<x>332800</x>
+		<y>380800</y>
+	</property>
+	<property>
+		<property_name>BELFAST ZOO - MOUNTAIN TEA HOUSE</property_name>
+		<town>Belfast</town>
+		<postcode>BT36 7PN</postcode>
+		<type>Recreation and Sport</type>
+		<uprn>0</uprn>
+		<x>332800</x>
+		<y>380800</y>
+	</property>
+	<property>
+		<property_name>BELFAST ZOO - SCHOOL ROOM</property_name>
+		<town>Belfast</town>
+		<postcode>BT36 7PN</postcode>
+		<type>Other Community Assets</type>
+		<uprn>0</uprn>
+		<x>332800</x>
+		<y>380800</y>
+	</property>
+	<property>
+		<property_name>BELFAST ZOO - SOUVENIR SHOP</property_name>
+		<town>Belfast</town>
+		<postcode>BT36 7PN</postcode>
+		<type>Tourism</type>
+		<uprn>0</uprn>
+		<x>332769</x>
+		<y>380796</y>
+	</property>
+	<property>
+		<property_name>BELFAST ZOO - TOILETS (LOWER)</property_name>
+		<town>Belfast</town>
+		<postcode>BT36 7PN</postcode>
+		<type>Public Convenience</type>
+		<uprn>0</uprn>
+		<x>332772</x>
+		<y>380766</y>
+	</property>
+	<property>
+		<property_name>BELFAST ZOO - TOILETS (MIDDLE)</property_name>
+		<town>Belfast</town>
+		<postcode>BT36 7PN</postcode>
+		<type>Public Convenience</type>
+		<uprn>0</uprn>
+		<x>332841</x>
+		<y>380407</y>
+	</property>
+	<property>
+		<property_name>BELFAST ZOO - DG SECTION</property_name>
+		<town>Belfast</town>
+		<postcode>BT36 7PN</postcode>
+		<type>Recreation and Sport</type>
+		<uprn>0</uprn>
+		<x>332800</x>
+		<y>380800</y>
+	</property>
+	<property>
+		<property_name>BELFAST ZOO - K SECTION</property_name>
+		<town>Belfast</town>
+		<postcode>BT36 7PN</postcode>
+		<type>Recreation and Sport</type>
+		<uprn>0</uprn>
+		<x>332800</x>
+		<y>380800</y>
+	</property>
+	<property>
+		<property_name>BELFAST ZOO - STORE SECTION</property_name>
+		<town>Belfast</town>
+		<postcode>BT36 7PN</postcode>
+		<type>Council Offices</type>
+		<uprn>0</uprn>
+		<x>332800</x>
+		<y>380800</y>
+	</property>
+	<property>
+		<property_name>BELFAST ZOO - DJ SECTION</property_name>
+		<town>Belfast</town>
+		<postcode>BT36 7PN</postcode>
+		<type>Recreation and Sport</type>
+		<uprn>0</uprn>
+		<x>332800</x>
+		<y>380800</y>
+	</property>
+	<property>
+		<property_name>BELFAST ZOO - I SECTION</property_name>
+		<town>Belfast</town>
+		<postcode>BT36 7PN</postcode>
+		<type>Recreation and Sport</type>
+		<uprn>0</uprn>
+		<x>332800</x>
+		<y>380800</y>
+	</property>
+	<property>
+		<property_name>BELFAST ZOO - G SECTION</property_name>
+		<town>Belfast</town>
+		<postcode>BT36 7PN</postcode>
+		<type>Recreation and Sport</type>
+		<uprn>0</uprn>
+		<x>332800</x>
+		<y>380800</y>
+	</property>
+	<property>
+		<property_name>BELFAST ZOO - SERVICE BLOCK</property_name>
+		<town>Belfast</town>
+		<postcode>BT36 7PN</postcode>
+		<type>Council Offices</type>
+		<uprn>0</uprn>
+		<x>332800</x>
+		<y>380800</y>
+	</property>
+	<property>
+		<property_name>BELFAST ZOO - FRIENDS ROOM</property_name>
+		<town>Belfast</town>
+		<postcode>BT36 7PN</postcode>
+		<type>Recreation and Sport</type>
+		<uprn>0</uprn>
+		<x>332909</x>
+		<y>380593</y>
+	</property>
+	<property>
+		<property_name>BELFAST ZOO - OLD ZOO BUILDINGS</property_name>
+		<town>Belfast</town>
+		<postcode>BT36 7PN</postcode>
+		<type>Other Community Assets</type>
+		<uprn>0</uprn>
+		<x>332800</x>
+		<y>380800</y>
+	</property>
+	<property>
+		<property_name>BELFAST ZOO - ELEPHANT HOUSE</property_name>
+		<town>BELFAST</town>
+		<postcode>BT36 7PN</postcode>
+		<type>Recreation and Sport</type>
+		<uprn>0</uprn>
+		<x>332935</x>
+		<y>380416</y>
+	</property>
+	<property>
+		<property_name>BELFAST ZOO - AVIARY</property_name>
+		<town>BELFAST</town>
+		<postcode>BT36 7PN</postcode>
+		<type>Recreation and Sport</type>
+		<uprn>0</uprn>
+		<x>332811</x>
+		<y>380518</y>
+	</property>
+	<property>
+		<property_name>BELFAST ZOO - PRIMATES/MONKEY HOUSE</property_name>
+		<town>BELFAST</town>
+		<postcode>BT36 7PN</postcode>
+		<type>Recreation and Sport</type>
+		<uprn>0</uprn>
+		<x>332834</x>
+		<y>380379</y>
+	</property>
+	<property>
+		<property_name>BELFAST ZOO - GORILLA/CHIMPS HOUSE</property_name>
+		<town>BELFAST</town>
+		<postcode>BT36 7PN</postcode>
+		<type>Recreation and Sport</type>
+		<uprn>0</uprn>
+		<x>332790</x>
+		<y>380339</y>
+	</property>
+	<property>
+		<property_name>BELFAST ZOO - TOILETS (UPPER)</property_name>
+		<town>BELFAST</town>
+		<postcode>BT36 7PN</postcode>
+		<type>Public Convenience</type>
+		<uprn>0</uprn>
+		<x>332792</x>
+		<y>380196</y>
+	</property>
+	<property>
+		<property_name>BELFAST ZOO - PARROT HOUSE</property_name>
+		<town>BELFAST</town>
+		<postcode>BT36 7PN</postcode>
+		<type>Recreation and Sport</type>
+		<uprn>0</uprn>
+		<x>332800</x>
+		<y>380800</y>
+	</property>
+	<property>
+		<property_name>BELFAST ZOO - SPIDER MONKEY HOUSE</property_name>
+		<town>BELFAST</town>
+		<postcode>BT36 7PN</postcode>
+		<type>Recreation and Sport</type>
+		<uprn>0</uprn>
+		<x>332800</x>
+		<y>380800</y>
+	</property>
+	<property>
+		<property_name>BELFAST ZOO - GIBBON HOUSE</property_name>
+		<town>BELFAST</town>
+		<postcode>BT36 7PN</postcode>
+		<type>Recreation and Sport</type>
+		<uprn>0</uprn>
+		<x>332861</x>
+		<y>380501</y>
+	</property>
+	<property>
+		<property_name>BELFAST ZOO - MINOR JOINERY</property_name>
+		<town>Belfast</town>
+		<postcode>BT36 7PN</postcode>
+		<type>Council Offices</type>
+		<uprn>0</uprn>
+		<x>332800</x>
+		<y>380800</y>
+	</property>
+	<property>
+		<property_name>BELFAST ZOO - MINOR ELECTRICAL</property_name>
+		<town>Belfast</town>
+		<postcode>BT36 7PN</postcode>
+		<type>Council Offices</type>
+		<uprn>0</uprn>
+		<x>332800</x>
+		<y>380800</y>
+	</property>
+	<property>
+		<property_name>BELFAST ZOO - MINOR PLUMBING</property_name>
+		<town>Belfast</town>
+		<postcode>BT36 7PN</postcode>
+		<type>Council Offices</type>
+		<uprn>0</uprn>
+		<x>332800</x>
+		<y>380800</y>
+	</property>
+	<property>
+		<property_name>CECIL WARD BUILDING</property_name>
+		<building_name>THE CECIL WARD BUILDING</building_name>
+		<building_number>4-10</building_number>
+		<primary_thorofare>LINENHALL STREET</primary_thorofare>
+		<town>Belfast</town>
+		<postcode>BT2 8BP</postcode>
+		<type>Council Offices</type>
+		<uprn>185003020</uprn>
+		<x>333876</x>
+		<y>373869</y>
+	</property>
+	<property>
+		<property_name>CHARLOTTE ST CIVIC AMENITY SITE</property_name>
+		<town>Belfast</town>
+		<postcode>BT7 1BG</postcode>
+		<type>Waste Collection</type>
+		<uprn>0</uprn>
+		<x>334017</x>
+		<y>373370</y>
+	</property>
+	<property>
+		<property_name>CHERRYVALE PLAYING FIELDS - CHANGING ACCOMMODATION</property_name>
+		<building_name>CHERRYVALE PAVILION</building_name>
+		<primary_thorofare>RAVENHILL ROAD</primary_thorofare>
+		<town>Belfast</town>
+		<postcode>BT6 0</postcode>
+		<type>Recreation and Sport</type>
+		<uprn>185879999</uprn>
+		<x>335043</x>
+		<y>371515</y>
+	</property>
+	<property>
+		<property_name>CHERRYVALE PLAYING FIELDS - CRICKET PAVILION</property_name>
+		<building_name>CHERRYVALE PAVILION</building_name>
+		<primary_thorofare>RAVENHILL ROAD</primary_thorofare>
+		<town>Belfast</town>
+		<postcode>BT6 0</postcode>
+		<type>Recreation and Sport</type>
+		<uprn>185879999</uprn>
+		<x>335043</x>
+		<y>371515</y>
+	</property>
+	<property>
+		<property_name>CHURCH LANE - PUBLIC CONVENIENCE</property_name>
+		<town>Belfast</town>
+		<postcode>BT1 4QN</postcode>
+		<type>Public Convenience</type>
+		<uprn>0</uprn>
+		<x>334125</x>
+		<y>374359</y>
+	</property>
+	<property>
+		<property_name>CITY HALL</property_name>
+		<building_name>BELFAST CITY HALL</building_name>
+		<primary_thorofare>DONEGALL SQUARE NORTH</primary_thorofare>
+		<town>Belfast</town>
+		<postcode>BT1 5GS</postcode>
+		<type>Council Offices</type>
+		<uprn>185002086</uprn>
+		<x>333832</x>
+		<y>374014</y>
+	</property>
+	<property>
+		<property_name>CITY OF BELFAST PLAYING FIELDS - CHANGING ACCOMMODATION</property_name>
+		<building_number>2</building_number>
+		<primary_thorofare>PARK ROAD</primary_thorofare>
+		<town>Newtowna</town>
+		<postcode>BT36 4QF</postcode>
+		<type>Recreation and Sport</type>
+		<uprn>185351385</uprn>
+		<x>329047</x>
+		<y>383649</y>
+	</property>
+	<property>
+		<property_name>CLARA ST CIVIC AMENITY SITE</property_name>
+		<town>Belfast</town>
+		<postcode>BT5 5GB</postcode>
+		<type>Waste Collection</type>
+		<uprn>0</uprn>
+		<x>336113</x>
+		<y>373439</y>
+	</property>
+	<property>
+		<property_name>CLARA ST PUBLIC CONVENIENCE</property_name>
+		<town>Belfast</town>
+		<postcode>BT5 5GB</postcode>
+		<type>Public Convenience</type>
+		<uprn>0</uprn>
+		<x>336079</x>
+		<y>373484</y>
+	</property>
+	<property>
+		<property_name>CLIFTONPARK AVE CIVIC AMENITY SITE</property_name>
+		<town>Belfast</town>
+		<postcode>BT14 6DT</postcode>
+		<type>Waste Collection</type>
+		<uprn>0</uprn>
+		<x>332990</x>
+		<y>375864</y>
+	</property>
+	<property>
+		<property_name>CONCORDE COMMUNITY CENTRE</property_name>
+		<building_number>36</building_number>
+		<primary_thorofare>ALLIANCE ROAD</primary_thorofare>
+		<town>BELFAST</town>
+		<postcode>BT14 7JB</postcode>
+		<type>Community Services</type>
+		<uprn>187196357</uprn>
+		<x>331283</x>
+		<y>376681</y>
+	</property>
+	<property>
+		<property_name>CONNSWATER PUBLIC CONVENIENCE</property_name>
+		<town>Belfast</town>
+		<postcode>BT4 1NS</postcode>
+		<type>Public Convenience</type>
+		<uprn>0</uprn>
+		<x>336506</x>
+		<y>374272</y>
+	</property>
+	<property>
+		<property_name>CALLENDER HOUSE (CALLENDER ST)</property_name>
+		<town>Belfast</town>
+		<postcode>BT1 5BN</postcode>
+		<type>Council Offices</type>
+		<uprn>0</uprn>
+		<x>333912</x>
+		<y>374211</y>
+	</property>
+	<property>
+		<property_name>PORT HEALTH</property_name>
+		<building_number>5</building_number>
+		<primary_thorofare>CORRY PLACE</primary_thorofare>
+		<town>BELFAST</town>
+		<postcode>BT3 9HY</postcode>
+		<type>Council Offices</type>
+		<uprn>185870502</uprn>
+		<x>334543</x>
+		<y>375405</y>
+	</property>
+	<property>
+		<property_name>CULLINGTREE RD - PLAYCENTRE</property_name>
+		<town>BELFAST</town>
+		<postcode>BT12 4</postcode>
+		<type>Recreation and Sport</type>
+		<uprn>0</uprn>
+		<x>332990</x>
+		<y>374061</y>
+	</property>
+	<property>
+		<property_name>DARGAN CRES - PEST CONTROL</property_name>
+		<building_name>DUNCRUE MAINTAINANCE COMPLEX</building_name>
+		<building_number>90</building_number>
+		<primary_thorofare>DARGAN CRESCENT</primary_thorofare>
+		<town>BELFAST</town>
+		<postcode>BT3 9JP</postcode>
+		<type>Environmental Health</type>
+		<uprn>185003939</uprn>
+		<x>335026</x>
+		<y>377472</y>
+	</property>
+	<property>
+		<property_name>DEE ST COMMUNITY CENTRE</property_name>
+		<building_number>12-16</building_number>
+		<primary_thorofare>DEE STREET</primary_thorofare>
+		<town>BELFAST</town>
+		<postcode>BT4 1FT</postcode>
+		<type>Community Services</type>
+		<uprn>185871123</uprn>
+		<x>335936</x>
+		<y>374376</y>
+	</property>
+	<property>
+		<property_name>DIVIS COMMUNITY CENTRE</property_name>
+		<building_name>DIVIS COMMUNITY CENTRE</building_name>
+		<building_number>2A</building_number>
+		<primary_thorofare>ARDMOULIN PLACE</primary_thorofare>
+		<town>BELFAST</town>
+		<postcode>BT12 4RT</postcode>
+		<type>Community Services</type>
+		<uprn>185869226</uprn>
+		<x>332994</x>
+		<y>374263</y>
+	</property>
+	<property>
+		<property_name>DIXON PARK PLAYING FIELDS - CHANGING ACCOMMODATION</property_name>
+		<building_name>DIXON PARK PLAYING FIELDS</building_name>
+		<primary_thorofare>ORBY ROAD</primary_thorofare>
+		<town>Belfast</town>
+		<postcode>BT5 5HP</postcode>
+		<type>Recreation and Sport</type>
+		<uprn>185880777</uprn>
+		<x>336609</x>
+		<y>373210</y>
+	</property>
+	<property>
+		<property_name>DONEGALL PASS COMMUNITY CENTRE</property_name>
+		<town>BELFAST</town>
+		<postcode>BT7 1BL</postcode>
+		<type>Community Services</type>
+		<uprn>0</uprn>
+		<x>333893</x>
+		<y>373354</y>
+	</property>
+	<property>
+		<property_name>DUBLIN RD AUTOMATIC PUBLIC CONVENIENCE</property_name>
+		<town>Belfast</town>
+		<postcode>BT2 7HW</postcode>
+		<type>Public Convenience</type>
+		<uprn>0</uprn>
+		<x>333739</x>
+		<y>373563</y>
+	</property>
+	<property>
+		<property_name>DUNBAR LINK DEPOT</property_name>
+		<town>Belfast</town>
+		<postcode>BT1 2LH</postcode>
+		<type>Depot</type>
+		<uprn>0</uprn>
+		<x>334056</x>
+		<y>374690</y>
+	</property>
+	<property>
+		<property_name>DUNCAIRN COMMUNITY CENTRE</property_name>
+		<building_name>DUNCAIRN COMUMMITY CENTRE</building_name>
+		<primary_thorofare>EDLINGHAM STREET</primary_thorofare>
+		<town>BELFAST</town>
+		<postcode>BT15 2JZ</postcode>
+		<type>Community Services</type>
+		<uprn>185144224</uprn>
+		<x>333698</x>
+		<y>376021</y>
+	</property>
+	<property>
+		<property_name>DUNCRUE COMPLEX</property_name>
+		<building_name>DUNCRUE COMPLEX</building_name>
+		<building_number>31 TO 51</building_number>
+		<primary_thorofare>DUNCRUE ROAD</primary_thorofare>
+		<town>Belfast</town>
+		<postcode>BT3 9BP</postcode>
+		<type>Council Offices</type>
+		<uprn>185870589</uprn>
+		<x>334862</x>
+		<y>377503</y>
+	</property>
+	<property>
+		<property_name>DUNDONALD CEMETERY - HOUSE</property_name>
+		<building_name>CEMETERY LODGE</building_name>
+		<building_number>743</building_number>
+		<primary_thorofare>UPPER NEWTOWNARDS ROAD</primary_thorofare>
+		<town>Belfast</town>
+		<postcode>BT16 2QY</postcode>
+		<type>Cemetry, Cremation and Mortuary Services</type>
+		<uprn>185160916</uprn>
+		<x>340889</x>
+		<y>373936</y>
+	</property>
+	<property>
+		<property_name>DUNVILLE PARK - FOUNTAIN</property_name>
+		<town>Belfast</town>
+		<postcode>BT12 4</postcode>
+		<type>Other Community Assets</type>
+		<uprn>0</uprn>
+		<x>332344</x>
+		<y>373911</y>
+	</property>
+	<property>
+		<property_name>FALLS SWIM CENTRE</property_name>
+		<town>BELFAST</town>
+		<postcode>BT12 4PB</postcode>
+		<type>Recreation and Sport</type>
+		<uprn>0</uprn>
+		<x>332569</x>
+		<y>374254</y>
+	</property>
+	<property>
+		<property_name>FINAGHY COMMUNITY CENTRE</property_name>
+		<building_name>FINAGHY COMMUNITY CENTRE</building_name>
+		<building_number>1-6</building_number>
+		<primary_thorofare>GEERAGH PLACE</primary_thorofare>
+		<town>BELFAST</town>
+		<postcode>BT10 0ER</postcode>
+		<type>Community Services</type>
+		<uprn>185878048</uprn>
+		<x>330659</x>
+		<y>369603</y>
+	</property>
+	<property>
+		<property_name>FINVOY ST COMMUNITY CENTRE</property_name>
+		<town>BELFAST</town>
+		<postcode>BT5 5</postcode>
+		<type>Community Services</type>
+		<uprn>0</uprn>
+		<x>336687</x>
+		<y>374124</y>
+	</property>
+	<property>
+		<property_name>CONSUMER ADVICE CENTRE (WELLINGTON PLACE)</property_name>
+		<town>Belfast</town>
+		<postcode>BT1 6GE</postcode>
+		<type>Community Services</type>
+		<uprn>0</uprn>
+		<x>333684</x>
+		<y>374056</y>
+	</property>
+	<property>
+		<property_name>GARRON CRES CIVIC AMENITY SITE</property_name>
+		<building_name>CIVIC AMENITY SITE</building_name>
+		<building_number>56</building_number>
+		<primary_thorofare>GARRON CRESCENT</primary_thorofare>
+		<town>Belfast</town>
+		<postcode>BT10 0EQ</postcode>
+		<type>Waste Collection</type>
+		<uprn>185761104</uprn>
+		<x>330814</x>
+		<y>369557</y>
+	</property>
+	<property>
+		<property_name>GASWORKS - AUTOMATIC PUBLIC CONVENIENCE</property_name>
+		<postcode>BT7 2JD</postcode>
+		<type>Public Convenience</type>
+		<uprn>0</uprn>
+		<x>334328</x>
+		<y>373381</y>
+	</property>
+	<property>
+		<property_name>GLEN COMMUNITY CENTRE</property_name>
+		<building_name>COMMUNITY CENTRE</building_name>
+		<primary_thorofare>CARRIGART AVENUE</primary_thorofare>
+		<town>BELFAST</town>
+		<postcode>BT11 9HU</postcode>
+		<type>Community Services</type>
+		<uprn>185876925</uprn>
+		<x>328338</x>
+		<y>371261</y>
+	</property>
+	<property>
+		<property_name>ISB - 22 - 38 GLOUCESTER ST</property_name>
+		<building_number>22-38</building_number>
+		<primary_thorofare>GLOUCESTER STREET</primary_thorofare>
+		<town>Belfast</town>
+		<postcode>BT1 4LS</postcode>
+		<type>Council Offices</type>
+		<uprn>185001780</uprn>
+		<x>334154</x>
+		<y>373988</y>
+	</property>
+	<property>
+		<property_name>GROSVENOR COMMUNITY CENTRE</property_name>
+		<building_number>162</building_number>
+		<primary_thorofare>GROSVENOR ROAD</primary_thorofare>
+		<town>BELFAST</town>
+		<postcode>BT12 5AT</postcode>
+		<type>Community Services</type>
+		<uprn>185749683</uprn>
+		<x>332952</x>
+		<y>373745</y>
+	</property>
+	<property>
+		<property_name>GROVE LEISURE CENTRE</property_name>
+		<building_name>GROVE LEISURE CENTRE</building_name>
+		<primary_thorofare>YORK ROAD</primary_thorofare>
+		<town>BELFAST</town>
+		<postcode>BT15 3HF</postcode>
+		<type>Recreation and Sport</type>
+		<uprn>185965611</uprn>
+		<x>334155</x>
+		<y>376430</y>
+	</property>
+	<property>
+		<property_name>HAMMER - PAVILION</property_name>
+		<town>BELFAST</town>
+		<postcode>BT13 1SH</postcode>
+		<type>Recreation and Sport</type>
+		<uprn>0</uprn>
+		<x>332821</x>
+		<y>374978</y>
+	</property>
+	<property>
+		<property_name>HIGHFIELD COMMUNITY CENTRE</property_name>
+		<town>BELFAST</town>
+		<postcode>BT13 3SA</postcode>
+		<type>Community Services</type>
+		<uprn>0</uprn>
+		<x>330827</x>
+		<y>374684</y>
+	</property>
+	<property>
+		<property_name>HOPE ST AUTOMATIC PUBLIC CONVENIENCE</property_name>
+		<town>Belfast</town>
+		<postcode>BT2 7</postcode>
+		<type>Public Convenience</type>
+		<uprn>0</uprn>
+		<x>333539</x>
+		<y>373632</y>
+	</property>
+	<property>
+		<property_name>HORN DR COMMUNITY CENTRE</property_name>
+		<building_name>HORN DRIVE COMMUNITY CENTRE</building_name>
+		<building_number>44A</building_number>
+		<primary_thorofare>HORN DRIVE</primary_thorofare>
+		<town>BELFAST</town>
+		<postcode>BT11 9GS</postcode>
+		<type>Community Services</type>
+		<uprn>185877110</uprn>
+		<x>328726</x>
+		<y>370856</y>
+	</property>
+	<property>
+		<property_name>KENNEDY WAY CIVIC AMENITY SITE</property_name>
+		<building_number>100</building_number>
+		<primary_thorofare>KENNEDY WAY</primary_thorofare>
+		<town>Belfast</town>
+		<postcode>BT11 9AP</postcode>
+		<type>Waste Collection</type>
+		<uprn>185750331</uprn>
+		<x>330356</x>
+		<y>371973</y>
+	</property>
+	<property>
+		<property_name>KING GEORGE V PLAYING FIELDS - CHANGING ACCOMMODATION</property_name>
+		<building_name>PAVILION</building_name>
+		<primary_thorofare>PARKGATE GARDENS</primary_thorofare>
+		<town>Belfast</town>
+		<postcode>BT4 1ES</postcode>
+		<type>Recreation and Sport</type>
+		<uprn>185871325</uprn>
+		<x>336523</x>
+		<y>374717</y>
+	</property>
+	<property>
+		<property_name>KNOCKNAGONEY COMMUNITY CENTRE</property_name>
+		<building_number>41A</building_number>
+		<primary_thorofare>KNOCKNAGONEY DRIVE</primary_thorofare>
+		<town>BELFAST</town>
+		<postcode>BT4 2QF</postcode>
+		<type>Community Services</type>
+		<uprn>185012747</uprn>
+		<x>338735</x>
+		<y>376395</y>
+	</property>
+	<property>
+		<property_name>LIGONIEL COMMUNITY CENTRE</property_name>
+		<building_number>144</building_number>
+		<primary_thorofare>LIGONIEL ROAD</primary_thorofare>
+		<town>BELFAST</town>
+		<postcode>BT14 8DT</postcode>
+		<type>Community Services</type>
+		<uprn>185138105</uprn>
+		<x>330250</x>
+		<y>377182</y>
+	</property>
+	<property>
+		<property_name>LOOP RIVER PLAY CENTRE</property_name>
+		<town>BELFAST</town>
+		<postcode>BT6 9</postcode>
+		<type>Recreation and Sport</type>
+		<uprn>0</uprn>
+		<x>336256</x>
+		<y>372603</y>
+	</property>
+	<property>
+		<property_name>LOUGHSIDE - RECREATION CENTRE</property_name>
+		<building_name>LOUGHSIDE RECREATION CENTRE</building_name>
+		<primary_thorofare>SHORE ROAD</primary_thorofare>
+		<town>BELFAST</town>
+		<postcode>BT15 4HP</postcode>
+		<type>Recreation and Sport</type>
+		<uprn>185746300</uprn>
+		<x>334190</x>
+		<y>378229</y>
+	</property>
+	<property>
+		<property_name>MARKETS - COMMUNITY CENTRE</property_name>
+		<building_name>MARKETS COMMUNITY CENTRE</building_name>
+		<primary_thorofare>LOWER STANFIELD STREET</primary_thorofare>
+		<town>BELFAST</town>
+		<postcode>BT7 2HB</postcode>
+		<type>Community Services</type>
+		<uprn>185055085</uprn>
+		<x>334258</x>
+		<y>373757</y>
+	</property>
+	<property>
+		<property_name>MARY PETERS TRACK - PAVILION</property_name>
+		<building_name>MARY PETERS TRACK</building_name>
+		<primary_thorofare>OLD COACH ROAD</primary_thorofare>
+		<town>Belfast</town>
+		<postcode>BT9 5PR</postcode>
+		<type>Recreation and Sport</type>
+		<uprn>185758768</uprn>
+		<x>331670</x>
+		<y>368619</y>
+	</property>
+	<property>
+		<property_name>MARY PETERS TRACK - STORE BUILDING</property_name>
+		<building_name>MARY PETERS TRACK</building_name>
+		<primary_thorofare>OLD COACH ROAD</primary_thorofare>
+		<town>Belfast</town>
+		<postcode>BT9 5PR</postcode>
+		<type>Recreation and Sport</type>
+		<uprn>185758768</uprn>
+		<x>331670</x>
+		<y>368619</y>
+	</property>
+	<property>
+		<property_name>MAYSFIELD LEISURE CENTRE</property_name>
+		<building_name>MAYSFIELD LEISURE CENTRE</building_name>
+		<primary_thorofare>MAYS MEADOW</primary_thorofare>
+		<town>Belfast</town>
+		<postcode>BT1 3PH</postcode>
+		<type>General Property</type>
+		<uprn>185001481</uprn>
+		<x>334804</x>
+		<y>373878</y>
+	</property>
+	<property>
+		<property_name>MAYSFIELD - LEARNING &amp; DEVELOPMENT CENTRE</property_name>
+		<building_number>49A</building_number>
+		<primary_thorofare>EAST BRIDGE STREET</primary_thorofare>
+		<town>Belfast</town>
+		<postcode>BT1 3NR</postcode>
+		<type>Council Offices</type>
+		<uprn>187384889</uprn>
+		<x>334802</x>
+		<y>373813</y>
+	</property>
+	<property>
+		<property_name>MEDWAY ST CIVIC AMENITY SITE</property_name>
+		<building_number>27</building_number>
+		<primary_thorofare>MEDWAY STREET</primary_thorofare>
+		<town>Belfast</town>
+		<postcode>BT4 1GP</postcode>
+		<type>Waste Collection</type>
+		<uprn>185751662</uprn>
+		<x>335859</x>
+		<y>374704</y>
+	</property>
+	<property>
+		<property_name>ARTHUR LANE PUBLIC CONVENIENCE</property_name>
+		<town>Belfast</town>
+		<postcode>BT1 4</postcode>
+		<type>Public Convenience</type>
+		<uprn>0</uprn>
+		<x>334020</x>
+		<y>374055</y>
+	</property>
+	<property>
+		<property_name>MORTON COMMUNITY CENTRE</property_name>
+		<building_number>8-10</building_number>
+		<primary_thorofare>LORNE STREET</primary_thorofare>
+		<town>BELFAST</town>
+		<postcode>BT9 7DU</postcode>
+		<type>Community Services</type>
+		<uprn>185081751</uprn>
+		<x>332594</x>
+		<y>372335</y>
+	</property>
+	<property>
+		<property_name>MORTUARY  (Belfast Health Trust)</property_name>
+		<town>BELFAST</town>
+		<postcode>BT8 6</postcode>
+		<type>Cemetry, Cremation and Mortuary Services</type>
+		<uprn>0</uprn>
+		<x>335376</x>
+		<y>370105</y>
+	</property>
+	<property>
+		<property_name>MUSGRAVE - BOWLING PAVILION</property_name>
+		<primary_thorofare>STOCKMANS LANE</primary_thorofare>
+		<town>Belfast</town>
+		<postcode>BT9 7IC</postcode>
+		<type>Recreation and Sport</type>
+		<uprn>185878275</uprn>
+		<x>331180</x>
+		<y>370878</y>
+	</property>
+	<property>
+		<property_name>GROVELANDS - OUTBUILDINGS</property_name>
+		<town>Belfast</town>
+		<postcode>BT9 7</postcode>
+		<type>Council Offices</type>
+		<uprn>0</uprn>
+		<x>331362</x>
+		<y>370925</y>
+	</property>
+	<property>
+		<property_name>DARGAN RD LANDFILL SITE - OFFICE/WEIGHBRIDGE</property_name>
+		<town>Belfast</town>
+		<postcode>BT3 9JU</postcode>
+		<type>Council Offices</type>
+		<uprn>0</uprn>
+		<x>334916</x>
+		<y>377865</y>
+	</property>
+	<property>
+		<property_name>GIANTS PARK PROJECT OFFICE</property_name>
+		<postcode>BT3 9</postcode>
+		<type>Council Offices</type>
+		<uprn>0</uprn>
+		<x>335016</x>
+		<y>377807</y>
+	</property>
+	<property>
+		<property_name>NORTH QUEEN ST COMMUNITY CENTRE</property_name>
+		<building_name>NORTH QUEEN STREET COMMUNITY CENTRE</building_name>
+		<building_number>46A</building_number>
+		<primary_thorofare>VICTORIA PARADE</primary_thorofare>
+		<town>BELFAST</town>
+		<postcode>BT15 2EN</postcode>
+		<type>Community Services</type>
+		<uprn>185869816</uprn>
+		<x>333746</x>
+		<y>375321</y>
+	</property>
+	<property>
+		<property_name>NORTH QUEEN ST PLAYCENTRE</property_name>
+		<town>BELFAST</town>
+		<postcode>BT15 1DJ</postcode>
+		<type>Recreation and Sport</type>
+		<uprn>0</uprn>
+		<x>333876</x>
+		<y>375368</y>
+	</property>
+	<property>
+		<property_name>OLYMPIA LEISURE CENTRE</property_name>
+		<building_number>14</building_number>
+		<primary_thorofare>BOUCHER ROAD</primary_thorofare>
+		<town>BELFAST</town>
+		<postcode>BT12 6HR</postcode>
+		<type>Recreation and Sport</type>
+		<uprn>185878595</uprn>
+		<x>331989</x>
+		<y>372480</y>
+	</property>
+	<property>
+		<property_name>OLYMPIA COMMUNITY CENTRE</property_name>
+		<building_number>14</building_number>
+		<primary_thorofare>BOUCHER ROAD</primary_thorofare>
+		<town>BELFAST</town>
+		<postcode>BT12 6HR</postcode>
+		<type>Community Services</type>
+		<uprn>185878595</uprn>
+		<x>331989</x>
+		<y>372480</y>
+	</property>
+	<property>
+		<property_name>ORANGEFIELD PLAYING FIELDS - CHANGING ACCOMMODATION</property_name>
+		<building_name>ORANGEFIELD PARK PAVILLION</building_name>
+		<primary_thorofare>HOUSTON PARK</primary_thorofare>
+		<town>Belfast</town>
+		<postcode>BT5 6AT</postcode>
+		<type>Recreation and Sport</type>
+		<uprn>187336360</uprn>
+		<x>337093</x>
+		<y>372853</y>
+	</property>
+	<property>
+		<property_name>ORMEAU PARK - BOWLING PAVILION (ORMEAU RD)</property_name>
+		<town>Belfast</town>
+		<postcode>BT7 3</postcode>
+		<type>Recreation and Sport</type>
+		<uprn>185879832</uprn>
+		<x>334573</x>
+		<y>372202</y>
+	</property>
+	<property>
+		<property_name>ORMEAU PARK - BOWLING PAVILION (RAVENHILL RD)</property_name>
+		<town>Belfast</town>
+		<postcode>BT7 3</postcode>
+		<type>Recreation and Sport</type>
+		<uprn>185880017</uprn>
+		<x>335083</x>
+		<y>373121</y>
+	</property>
+	<property>
+		<property_name>TENNIS CENTRE/OZONE</property_name>
+		<building_name>OZONE COMPLEX</building_name>
+		<primary_thorofare>ORMEAU EMBANKMENT</primary_thorofare>
+		<town>BELFAST</town>
+		<postcode>BT6 8LT</postcode>
+		<type>Recreation and Sport</type>
+		<uprn>187144411</uprn>
+		<x>334823</x>
+		<y>373265</y>
+	</property>
+	<property>
+		<property_name>ORMEAU PUBLIC CONVENIENCE</property_name>
+		<town>Belfast</town>
+		<postcode>BT6 3PJ</postcode>
+		<type>Public Convenience</type>
+		<uprn>0</uprn>
+		<x>334482</x>
+		<y>372450</y>
+	</property>
+	<property>
+		<property_name>ORMEAU RECYCLING CENTRE</property_name>
+		<building_number>6</building_number>
+		<primary_thorofare>PARK ROAD</primary_thorofare>
+		<town>Belfast</town>
+		<postcode>BT7 2PW</postcode>
+		<type>Waste Collection</type>
+		<uprn>185753621</uprn>
+		<x>334646</x>
+		<y>372181</y>
+	</property>
+	<property>
+		<property_name>PALMERSTON RD RECYCLING CENTRE</property_name>
+		<building_number>2</building_number>
+		<primary_thorofare>PALMERSTON ROAD</primary_thorofare>
+		<town>Belfast</town>
+		<postcode>BT4 1QA</postcode>
+		<type>Waste Collection</type>
+		<uprn>185871539</uprn>
+		<x>337329</x>
+		<y>374879</y>
+	</property>
+	<property>
+		<property_name>PERCY ST COMMUNITY CENTRE</property_name>
+		<town>BELFAST</town>
+		<postcode>BT13 2HS</postcode>
+		<type>Community Services</type>
+		<uprn>0</uprn>
+		<x>332824</x>
+		<y>374615</y>
+	</property>
+	<property>
+		<property_name>PRIMROSE ST CIVIC AMENITY SITE</property_name>
+		<building_number>27</building_number>
+		<primary_thorofare>PRIMROSE STREET</primary_thorofare>
+		<postcode>BT14 8AS</postcode>
+		<type>Waste Collection</type>
+		<uprn>185752430</uprn>
+		<x>330832</x>
+		<y>376832</y>
+	</property>
+	<property>
+		<property_name>RAVENHILL RD PUBLIC CONVENIENCE</property_name>
+		<town>Belfast</town>
+		<postcode>BT6 8</postcode>
+		<type>Public Convenience</type>
+		<uprn>0</uprn>
+		<x>335012</x>
+		<y>373929</y>
+	</property>
+	<property>
+		<property_name>ROSELAWN CREMATORIUM</property_name>
+		<town>Belfast</town>
+		<postcode>BT5 7TZ</postcode>
+		<type>Cemetry, Cremation and Mortuary Services</type>
+		<uprn>185035451</uprn>
+		<x>338489</x>
+		<y>370147</y>
+	</property>
+	<property>
+		<property_name>ROSELAWN CEMETERY - HOUSE</property_name>
+		<building_name>OFFICE</building_name>
+		<building_number>127</building_number>
+		<primary_thorofare>BALLYGOWAN ROAD</primary_thorofare>
+		<town>Belfast</town>
+		<postcode>BT5 7TZ</postcode>
+		<type>Cemetry, Cremation and Mortuary Services</type>
+		<uprn>185035450</uprn>
+		<x>338802</x>
+		<y>370136</y>
+	</property>
+	<property>
+		<property_name>ROSELAWN CEMETERY - OFFICE</property_name>
+		<town>Belfast</town>
+		<postcode>BT5 7TZ</postcode>
+		<type>Cemetry, Cremation and Mortuary Services</type>
+		<uprn>185035450</uprn>
+		<x>338802</x>
+		<y>370136</y>
+	</property>
+	<property>
+		<property_name>SANDY ROW COMMUNITY CENTRE</property_name>
+		<building_number>67-75</building_number>
+		<primary_thorofare>SANDY ROW</primary_thorofare>
+		<town>BELFAST</town>
+		<postcode>BT12 5ER</postcode>
+		<type>Community Services</type>
+		<uprn>185756464</uprn>
+		<x>333403</x>
+		<y>373482</y>
+	</property>
+	<property>
+		<property_name>SEAPARK DR CIVIC AMENITY SITE</property_name>
+		<building_name>CIVIL AMENITY SITE</building_name>
+		<building_number>17</building_number>
+		<primary_thorofare>SEAPARK DRIVE</primary_thorofare>
+		<postcode>BT15 3NU</postcode>
+		<type>Waste Collection</type>
+		<uprn>185870038</uprn>
+		<x>333944</x>
+		<y>377216</y>
+	</property>
+	<property>
+		<property_name>SHAFTESBURY COMMUNITY CENTRE</property_name>
+		<building_number>97</building_number>
+		<primary_thorofare>BALFOUR AVENUE</primary_thorofare>
+		<town>BELFAST</town>
+		<postcode>BT7 2EW</postcode>
+		<type>Community Services</type>
+		<uprn>185054118</uprn>
+		<x>334514</x>
+		<y>373016</y>
+	</property>
+	<property>
+		<property_name>SHAFTESBURY SQ PUBLIC CONVENIENCE</property_name>
+		<town>Belfast</town>
+		<postcode>BT12 5</postcode>
+		<type>Public Convenience</type>
+		<uprn>0</uprn>
+		<x>333604</x>
+		<y>373298</y>
+	</property>
+	<property>
+		<property_name>SHAFTESBURY SQ URILIFT</property_name>
+		<postcode>BT12 5</postcode>
+		<type>Other Community Assets</type>
+		<uprn>0</uprn>
+		<x>333604</x>
+		<y>373208</y>
+	</property>
+	<property>
+		<property_name>SHANKILL LEISURE CENTRE</property_name>
+		<building_name>SHANKILL LEISURE CENTRE</building_name>
+		<building_number>100</building_number>
+		<primary_thorofare>SHANKILL ROAD</primary_thorofare>
+		<town>BELFAST</town>
+		<postcode>BT13 2BD</postcode>
+		<type>Recreation and Sport</type>
+		<uprn>185117119</uprn>
+		<x>332860</x>
+		<y>374751</y>
+	</property>
+	<property>
+		<property_name>SHORE RD PLAYING FIELDS - CHANGING ACCOMMODATION OLD</property_name>
+		<building_name>PAVILLION</building_name>
+		<building_number>885</building_number>
+		<primary_thorofare>SHORE ROAD</primary_thorofare>
+		<town>Belfast</town>
+		<postcode>BT36 7DH</postcode>
+		<type>Recreation and Sport</type>
+		<uprn>185870354</uprn>
+		<x>334257</x>
+		<y>379284</y>
+	</property>
+	<property>
+		<property_name>SIR THOMAS &amp; LADY DIXON PARK - STABLES RESTAURANT</property_name>
+		<building_number>245A</building_number>
+		<primary_thorofare>UPPER MALONE ROAD</primary_thorofare>
+		<town>Belfast</town>
+		<postcode>BT17 9LA</postcode>
+		<type>Recreation and Sport</type>
+		<uprn>187371085</uprn>
+		<x>330551</x>
+		<y>367370</y>
+	</property>
+	<property>
+		<property_name>SIR THOMAS &amp; LADY DIXON PARK - WILMONT HOUSE</property_name>
+		<building_name>WILMONT HOUSE</building_name>
+		<building_number>237</building_number>
+		<primary_thorofare>UPPER MALONE ROAD</primary_thorofare>
+		<town>Belfast</town>
+		<postcode>BT17 9LA</postcode>
+		<type>Council Offices</type>
+		<uprn>185750625</uprn>
+		<x>330602</x>
+		<y>367609</y>
+	</property>
+	<property>
+		<property_name>SIR THOMAS &amp; LADY DIXON PARK - STABLES OFFICES</property_name>
+		<building_number>245A</building_number>
+		<primary_thorofare>UPPER MALONE ROAD</primary_thorofare>
+		<postcode>BT17 9LA</postcode>
+		<type>Council Offices</type>
+		<uprn>187371085</uprn>
+		<x>330551</x>
+		<y>367370</y>
+	</property>
+	<property>
+		<property_name>SMITHFIELD MARKET</property_name>
+		<town>Belfast</town>
+		<postcode>BT1 1JE</postcode>
+		<type>Trading Services</type>
+		<uprn>0</uprn>
+		<x>333543</x>
+		<y>374567</y>
+	</property>
+	<property>
+		<property_name>WINETAVERN ST PUBLIC CONVENIENCE</property_name>
+		<town>Belfast</town>
+		<postcode>BT1 1</postcode>
+		<type>Public Convenience</type>
+		<uprn>0</uprn>
+		<x>333569</x>
+		<y>374586</y>
+	</property>
+	<property>
+		<property_name>SPRINGFIELD AVE CIVIC AMENITY SITE</property_name>
+		<town>Belfast</town>
+		<postcode>BT12 7BA</postcode>
+		<type>Waste Collection</type>
+		<uprn>0</uprn>
+		<x>331892</x>
+		<y>374151</y>
+	</property>
+	<property>
+		<property_name>ST GEORGES MARKET</property_name>
+		<building_number>12-20</building_number>
+		<primary_thorofare>EAST BRIDGE STREET</primary_thorofare>
+		<town>Belfast</town>
+		<postcode>BT1 3NQ</postcode>
+		<type>Trading Services</type>
+		<uprn>185001467</uprn>
+		<x>334353</x>
+		<y>373950</y>
+	</property>
+	<property>
+		<property_name>SUFFOLK COMMUNITY CENTRE</property_name>
+		<building_name>SUFFOLK COMMUNITY CENTRE</building_name>
+		<primary_thorofare>CARNANMORE PARK</primary_thorofare>
+		<town>BELFAST</town>
+		<postcode>BT11 9LX</postcode>
+		<type>Community Services</type>
+		<uprn>185877084</uprn>
+		<x>328677</x>
+		<y>370163</y>
+	</property>
+	<property>
+		<property_name>TEMPLEMORE AVE PUBLIC CONVENIENCE</property_name>
+		<town>Belfast</town>
+		<postcode>BT5 4</postcode>
+		<type>Public Convenience</type>
+		<uprn>0</uprn>
+		<x>335595</x>
+		<y>374285</y>
+	</property>
+	<property>
+		<property_name>TEMPLEMORE AVE - SWIMMING POOL</property_name>
+		<building_number>96</building_number>
+		<primary_thorofare>TEMPLEMORE AVENUE</primary_thorofare>
+		<town>BELFAST</town>
+		<postcode>BT5 4FW</postcode>
+		<type>Recreation and Sport</type>
+		<uprn>187145364</uprn>
+		<x>335704</x>
+		<y>374063</y>
+	</property>
+	<property>
+		<property_name>TEMPLEMORE AVE - SWIMMING POOL CARETAKERS HOUSE</property_name>
+		<building_number>96</building_number>
+		<primary_thorofare>TEMPLEMORE AVENUE</primary_thorofare>
+		<town>BELFAST</town>
+		<postcode>BT5 4FW</postcode>
+		<type>Recreation and Sport</type>
+		<uprn>187145364</uprn>
+		<x>335704</x>
+		<y>374063</y>
+	</property>
+	<property>
+		<property_name>TRINITY ST COMMUNITY CENTRE</property_name>
+		<building_number>2A</building_number>
+		<primary_thorofare>REGENT STREET</primary_thorofare>
+		<town>BELFAST</town>
+		<postcode>BT13 1EX</postcode>
+		<type>Community Services</type>
+		<uprn>185115093</uprn>
+		<x>333528</x>
+		<y>374985</y>
+	</property>
+	<property>
+		<property_name>ULSTER HALL</property_name>
+		<building_name>ULSTER HALL</building_name>
+		<building_number>30</building_number>
+		<primary_thorofare>BEDFORD STREET</primary_thorofare>
+		<town>BELFAST</town>
+		<postcode>BT2 7FF</postcode>
+		<type>Other Community Assets</type>
+		<uprn>185869888</uprn>
+		<x>333812</x>
+		<y>373792</y>
+	</property>
+	<property>
+		<property_name>GROUP THEATRE</property_name>
+		<town>BELFAST</town>
+		<postcode>BT2 8</postcode>
+		<type>Recreation and Sport</type>
+		<uprn>0</uprn>
+		<x>333814</x>
+		<y>373782</y>
+	</property>
+	<property>
+		<property_name>VICTORIA PARK - CHANGING ACCOMMODATION</property_name>
+		<building_name>FOOTBALL PAVILLION</building_name>
+		<primary_thorofare>PARK AVENUE</primary_thorofare>
+		<town>Belfast</town>
+		<postcode>BT4 1LL</postcode>
+		<type>Recreation and Sport</type>
+		<uprn>185871343</uprn>
+		<x>336597</x>
+		<y>375358</y>
+	</property>
+	<property>
+		<property_name>WATERFRONT HALL</property_name>
+		<building_number>2</building_number>
+		<primary_thorofare>LANYON PLACE</primary_thorofare>
+		<town>BELFAST</town>
+		<postcode>BT1 3WH</postcode>
+		<type>Recreation and Sport</type>
+		<uprn>185001539</uprn>
+		<x>334478</x>
+		<y>374125</y>
+	</property>
+	<property>
+		<property_name>WEDDERBURN PARK - BOWLS PAVILION</property_name>
+		<type>Recreation and Sport</type>
+		<uprn>185877909</uprn>
+		<x>330403</x>
+		<y>369490</y>
+	</property>
+	<property>
+		<property_name>WHITEROCK - LEISURE CENTRE</property_name>
+		<building_name>WHITEROCK LEISURE CENTRE</building_name>
+		<building_number>10</building_number>
+		<primary_thorofare>WHITEROCK CLOSE</primary_thorofare>
+		<town>BELFAST</town>
+		<postcode>BT12 7RG</postcode>
+		<type>Recreation and Sport</type>
+		<uprn>185877850</uprn>
+		<x>330255</x>
+		<y>373263</y>
+	</property>
+	<property>
+		<property_name>WHITEROCK - COMMUNITY CENTRE</property_name>
+		<building_name>WHITEROCK LEISURE CENTRE</building_name>
+		<building_number>10</building_number>
+		<primary_thorofare>WHITEROCK CLOSE</primary_thorofare>
+		<town>BELFAST</town>
+		<postcode>BT12 7RG</postcode>
+		<type>Community Services</type>
+		<uprn>185877850</uprn>
+		<x>330255</x>
+		<y>373263</y>
+	</property>
+	<property>
+		<property_name>WHITEROCK - PLAYCENTRE</property_name>
+		<town>BELFAST</town>
+		<postcode>BT12 7</postcode>
+		<type>Recreation and Sport</type>
+		<uprn>0</uprn>
+		<x>330210</x>
+		<y>373294</y>
+	</property>
+	<property>
+		<property_name>WILLOWFIELD WAR MEMORIAL</property_name>
+		<town>Belfast</town>
+		<postcode>BT6 8</postcode>
+		<type>Other Community Assets</type>
+		<uprn>0</uprn>
+		<x>335529</x>
+		<y>373548</y>
+	</property>
+	<property>
+		<property_name>WOODVALE COMMUNITY CENTRE</property_name>
+		<building_number>74A</building_number>
+		<primary_thorofare>DISRAELI STREET</primary_thorofare>
+		<town>BELFAST</town>
+		<postcode>BT13 3HW</postcode>
+		<type>Community Services</type>
+		<uprn>187257734</uprn>
+		<x>331874</x>
+		<y>375539</y>
+	</property>
+	<property>
+		<property_name>WOODVALE PARK - BOWLING PAVILION/SHELTER</property_name>
+		<town>Belfast</town>
+		<postcode>BT13 3</postcode>
+		<type>Recreation and Sport</type>
+		<uprn>185868185</uprn>
+		<x>331501</x>
+		<y>374961</y>
+	</property>
+	<property>
+		<property_name>LOWER OLDPARK COMMUNITY CENTRE</property_name>
+		<building_number>9-21</building_number>
+		<primary_thorofare>AVOCA STREET</primary_thorofare>
+		<town>BELFAST</town>
+		<postcode>BT14 6EN</postcode>
+		<type>Community Services</type>
+		<uprn>185747486</uprn>
+		<x>332855</x>
+		<y>375649</y>
+	</property>
+	<property>
+		<property_name>OLDPARK PLAYING FIELDS PAVILION</property_name>
+		<town>Belfast</town>
+		<postcode>BT14 7</postcode>
+		<type>Recreation and Sport</type>
+		<uprn>0</uprn>
+		<x>332272</x>
+		<y>376185</y>
+	</property>
+	<property>
+		<property_name>CORNMARKET PODIUM</property_name>
+		<town>BELFAST</town>
+		<postcode>BT1 5</postcode>
+		<type>Other Community Assets</type>
+		<uprn>0</uprn>
+		<x>333987</x>
+		<y>375245</y>
+	</property>
+	<property>
+		<property_name>BLACKSTAFF WAY RECYCLING CENTRE</property_name>
+		<town>Belfast</town>
+		<postcode>BT11 9DT</postcode>
+		<type>Waste Collection</type>
+		<uprn>0</uprn>
+		<x>330997</x>
+		<y>371859</y>
+	</property>
+	<property>
+		<property_name>BLACKMAN (DR COOKE STATUE)</property_name>
+		<town>BELFAST</town>
+		<postcode>BT1 6</postcode>
+		<type>Other Community Assets</type>
+		<uprn>0</uprn>
+		<x>333525</x>
+		<y>374057</y>
+	</property>
+	<property>
+		<property_name>REV HUGH HANNA STATUE</property_name>
+		<town>BELFAST</town>
+		<postcode>BT14 6</postcode>
+		<type>Other Community Assets</type>
+		<uprn>0</uprn>
+		<x>333366</x>
+		<y>375211</y>
+	</property>
+	<property>
+		<property_name>CLARENDON HOUSE</property_name>
+		<town>Belfast</town>
+		<postcode>BT2 8DJ</postcode>
+		<type>Council Offices</type>
+		<uprn>0</uprn>
+		<x>333915</x>
+		<y>373874</y>
+	</property>
+	<property>
+		<property_name>ALBERTBRIDGE ROAD/RAVENHILL ROAD RAISED PLANTERS</property_name>
+		<town>BELFAST</town>
+		<postcode>BT6 8</postcode>
+		<type>Other Community Assets</type>
+		<uprn>0</uprn>
+		<x>335058</x>
+		<y>373870</y>
+	</property>
+	<property>
+		<property_name>MIDLAND SOCIAL &amp; RECREATIONAL CLUB</property_name>
+		<building_name>CLUB</building_name>
+		<primary_thorofare>CULTRA STREET</primary_thorofare>
+		<town>BELFAST</town>
+		<postcode>BT15 1GT</postcode>
+		<type>Recreation and Sport</type>
+		<uprn>185870215</uprn>
+		<x>334116</x>
+		<y>375899</y>
+	</property>
+	<property>
+		<property_name>QUEENS BRIDGE WALKWAY</property_name>
+		<town>BELFAST</town>
+		<postcode>BT5 4</postcode>
+		<type>Other Community Assets</type>
+		<uprn>0</uprn>
+		<x>334576</x>
+		<y>374288</y>
+	</property>
+	<property>
+		<property_name>TWADDELL AVENUE/CRUMLIN ROAD PUBLIC CONVENIENCE</property_name>
+		<town>BELFAST</town>
+		<postcode>BT13 3</postcode>
+		<type>Public Convenience</type>
+		<uprn>0</uprn>
+		<x>331519</x>
+		<y>375824</y>
+	</property>
+	<property>
+		<property_name>SHORT STRAND COMMUNITY CENTRE</property_name>
+		<building_number>26A</building_number>
+		<primary_thorofare>BEECHFIELD STREET</primary_thorofare>
+		<town>BELFAST</town>
+		<postcode>BT5 4EP</postcode>
+		<type>Community Services</type>
+		<uprn>186000871</uprn>
+		<x>335291</x>
+		<y>374166</y>
+	</property>
+	<property>
+		<property_name>ISB - 9 GLOUCESTER ST</property_name>
+		<town>Belfast</town>
+		<postcode>BT1 4LS</postcode>
+		<type>Council Offices</type>
+		<uprn>0</uprn>
+		<x>334181</x>
+		<y>374065</y>
+	</property>
+	<property>
+		<property_name>DENMARK ST COMMUNITY CENTRE</property_name>
+		<building_name>DENMARK STREET COMMUNITY CENTRE</building_name>
+		<primary_thorofare>DENMARK STREET</primary_thorofare>
+		<town>BELFAST</town>
+		<postcode>BT13 1AN</postcode>
+		<type>Community Services</type>
+		<uprn>185869404</uprn>
+		<x>333225</x>
+		<y>375004</y>
+	</property>
+	<property>
+		<property_name>LINENHALL EXCHANGE</property_name>
+		<building_name>REA HOUSE</building_name>
+		<building_number>26</building_number>
+		<primary_thorofare>LINENHALL STREET</primary_thorofare>
+		<town>Belfast</town>
+		<postcode>BT2 8NU</postcode>
+		<type>General Property</type>
+		<uprn>185003414</uprn>
+		<x>333898</x>
+		<y>373753</y>
+	</property>
+	<property>
+		<property_name>SCOTTISH AMICABLE BUILDING</property_name>
+		<town>Belfast</town>
+		<postcode>BT1 5JE</postcode>
+		<type>General Property</type>
+		<uprn>0</uprn>
+		<x>333795</x>
+		<y>373922</y>
+	</property>
+	<property>
+		<property_name>ADELAIDE EXCHANGE</property_name>
+		<building_name>ADELAIDE EXCHANGE</building_name>
+		<building_number>24-26</building_number>
+		<primary_thorofare>ADELAIDE STREET</primary_thorofare>
+		<town>BELFAST</town>
+		<postcode>BT2 8GD</postcode>
+		<type>Council Offices</type>
+		<uprn>187378451</uprn>
+		<x>333977</x>
+		<y>373679</y>
+	</property>
+	<property>
+		<property_name>CLARENDON DOCK BUILDING</property_name>
+		<building_name>CLARENDON DOCK</building_name>
+		<building_number>29</building_number>
+		<primary_thorofare>CLARENDON ROAD</primary_thorofare>
+		<town>BELFAST</town>
+		<postcode>BT1 3BG</postcode>
+		<type>Council Offices</type>
+		<uprn>185001190</uprn>
+		<x>334626</x>
+		<y>375181</y>
+	</property>
+	<property>
+		<property_name>WASTE TRANSFER STATION</property_name>
+		<town>BELFAST</town>
+		<postcode>BT3 9HU</postcode>
+		<type>Waste Collection</type>
+		<uprn>0</uprn>
+		<x>334978</x>
+		<y>377907</y>
+	</property>
+	<property>
+		<property_name>CUSTOM HOUSE SQUARE AUTOMATIC PUBLIC CONVENIENCE</property_name>
+		<town>BELFAST</town>
+		<postcode>BT1 3</postcode>
+		<type>Public Convenience</type>
+		<uprn>0</uprn>
+		<x>334306</x>
+		<y>374550</y>
+	</property>
+	<property>
+		<property_name>LOMBARD STREET AUTOMATIC PUBLIC CONVENIENCE</property_name>
+		<town>BELFAST</town>
+		<postcode>BT1 1</postcode>
+		<type>Public Convenience</type>
+		<uprn>0</uprn>
+		<x>333901</x>
+		<y>374357</y>
+	</property>
+	<property>
+		<property_name>GROVE WELLBEING CENTRE - LEISURE CENTRE</property_name>
+		<building_number>120</building_number>
+		<primary_thorofare>YORK ROAD</primary_thorofare>
+		<postcode>BT15 3QX</postcode>
+		<type>Recreation and Sport</type>
+		<uprn>187172629</uprn>
+		<x>334137</x>
+		<y>376773</y>
+	</property>
+	<property>
+		<property_name>GROVE WELLBEING CENTRE - BELFAST HEALTH TRUST</property_name>
+		<postcode>BT15 3QX</postcode>
+		<type>Other Community Assets</type>
+		<uprn>0</uprn>
+		<x>334138</x>
+		<y>376786</y>
+	</property>
+	<property>
+		<property_name>GROVE WELLBEING CENTRE - BELB</property_name>
+		<postcode>BT15 3QX</postcode>
+		<type>Other Community Assets</type>
+		<uprn>0</uprn>
+		<x>334138</x>
+		<y>376786</y>
+	</property>
+	<property>
+		<property_name>GROVE WELLBEING CENTRE - DAY CARE CENTRE</property_name>
+		<postcode>BT15 3QX</postcode>
+		<type>Other Community Assets</type>
+		<uprn>0</uprn>
+		<x>334138</x>
+		<y>376786</y>
+	</property>
+	<property>
+		<property_name>9 LANYON PLACE</property_name>
+		<building_number>9</building_number>
+		<primary_thorofare>LANYON PLACE</primary_thorofare>
+		<postcode>BT1 3LP</postcode>
+		<type>Council Offices</type>
+		<uprn>185001346</uprn>
+		<x>334440</x>
+		<y>373946</y>
+	</property>
+</BCCproperties>
