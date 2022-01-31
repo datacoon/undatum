@@ -182,3 +182,39 @@ def guess_datatype(s, qd):
                     attrs = {'base' : 'empty'}
     return attrs
 
+
+def buf_count_newlines_gen(fname):
+    def _make_gen(reader):
+        while True:
+            b = reader(2 ** 16)
+            if not b: break
+            yield b
+
+    with open(fname, "rb") as f:
+        count = sum(buf.count(b"\n") for buf in _make_gen(f.raw.read))
+    return count
+
+
+def get_dict_keys(iterable, limit=1000):
+    n = 0
+    keys = []
+    for item in iterable:
+        if limit and n > limit:
+            break
+        n += 1
+        dk = dict_generator(item)
+        for i in dk:
+            k = ".".join(i[:-1])
+            if k not in keys:
+                keys.append(k)
+    return keys
+
+
+def _is_flat(item):
+    """Measures if object is flat"""
+    for k, v in item.items():
+        if isinstance(v, tuple) or isinstance(v, list):
+            return False
+        elif isinstance(v, dict):
+            if not _is_flat(v): return False
+    return True

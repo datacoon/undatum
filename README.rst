@@ -328,7 +328,7 @@ Analyzes data format and provides human-readable information.
 Returned values will include:
 
 * Filename - name of the file
-* File type - type of the file, could be: jsonl, xml, csv, json
+* File type - type of the file, could be: jsonl, xml, csv, json, bson
 * Encoding - file encoding
 * Delimiter - file delimiter if CSV file
 * File size - size of the file, bytes

@@ -1,5 +1,7 @@
+# -*- coding: utf8 -*-
+# FIXME: A lot of unoptimized code here, it could be better, shorter and some functions could be improved
 import os
-from ..utils import get_file_type, get_option, dict_generator, guess_int_size, guess_datatype, detect_delimiter, detect_encoding, get_dict_value
+from ..utils import get_file_type, get_option, dict_generator, guess_int_size, guess_datatype, detect_delimiter, detect_encoding, get_dict_value, get_dict_keys, _is_flat, buf_count_newlines_gen
 from ..constants import SUPPORTED_FILE_TYPES
 from collections import OrderedDict
 import bson
@@ -11,41 +13,6 @@ import zipfile
 import xmltodict
 OBJECTS_ANALYZE_LIMIT = 100
 
-def buf_count_newlines_gen(fname):
-    def _make_gen(reader):
-        while True:
-            b = reader(2 ** 16)
-            if not b: break
-            yield b
-
-    with open(fname, "rb") as f:
-        count = sum(buf.count(b"\n") for buf in _make_gen(f.raw.read))
-    return count
-
-
-def get_dict_keys(iterable, limit=1000):
-    n = 0
-    keys = []
-    for item in iterable:
-        if limit and n > limit:
-            break
-        n += 1
-        dk = dict_generator(item)
-        for i in dk:
-            k = ".".join(i[:-1])
-            if k not in keys:
-                keys.append(k)
-    return keys
-
-
-def _is_flat(item):
-    """Measures if object is flat"""
-    for k, v in item.items():
-        if isinstance(v, tuple) or isinstance(v, list):
-            return False
-        elif isinstance(v, dict):
-            if not _is_flat(v): return False
-    return True
 
 
 def analyze_csv(filename, objects_limit=OBJECTS_ANALYZE_LIMIT):
@@ -90,6 +57,30 @@ def analyze_jsonl(filename, objects_limit=OBJECTS_ANALYZE_LIMIT):
         objects.append(o)
         if n > objects_limit:
             break
+    for o in objects[:objects_limit]:
+        if not _is_flat(o):
+            flat = False
+    report.append(['Is flat table?', str(flat)])
+    report.append(['Fields', str('\n'.join(get_dict_keys(objects)))])
+    return report
+
+
+def analyze_bson(filename, objects_limit=OBJECTS_ANALYZE_LIMIT):
+    """Analyzes BSON file"""
+    report = []
+    report.append(['Filename', filename])
+    report.append(['File type', 'bson'])
+    report.append(['Filesize', str(os.path.getsize(filename))])
+    f = open(filename, 'rb')
+    flat = True
+    objects = []
+    n = 0
+    for o in bson.decode_file_iter(f):
+        n += 1
+        objects.append(o)
+        if n > objects_limit:
+            break
+    f.close()
     for o in objects[:objects_limit]:
         if not _is_flat(o):
             flat = False
@@ -275,6 +266,8 @@ class Analyzer:
             table = analyze_csv(filename)
         elif filetype == 'jsonl':
             table = analyze_jsonl(filename)
+        elif filetype == 'bson':
+            table = analyze_bson(filename)
         elif filetype == 'json':
             table = analyze_json(filename)
         elif filetype == 'xml':
