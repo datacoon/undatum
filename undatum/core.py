@@ -15,12 +15,12 @@ from .cmds.schemer import Schemer
 #logging.getLogger().addHandler(logging.StreamHandler())
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.DEBUG)
+    level=logging.INFO)
 
 def enableVerbose():
     logging.basicConfig(
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-        level=logging.DEBUG)
+        level=logging.INFO)
 
 
 @click.group()
@@ -365,7 +365,7 @@ def cli11():
 @click.option('-z', '--zipfile', 'zipfile', is_flag=True, help="Used to say input file is .zip file and that data file is inside")
 @click.option('--stype',  default='cerberus', help="Type of the schema: cerberus")
 def scheme(input, output, delimiter, encoding, verbose, format_in, zipfile, stype):
-    """Runs script against each record of input file"""
+    """Generate data schema from file"""
     if verbose:
         enableVerbose()
     options = {}

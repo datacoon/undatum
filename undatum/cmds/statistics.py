@@ -157,7 +157,7 @@ class StatProcessor:
             field.append(fd['maxlen'])
             field.append(fd['avglen'])
             table.append(field)
-        headers = ['key', 'ftype', 'is_dictkey', 'is_uniq', 'n_uniq', 'share_uniq', 'minlen', 'maxlen', 'avglen']
+        headers = ('key', 'ftype', 'is_dictkey', 'is_uniq', 'n_uniq', 'share_uniq', 'minlen', 'maxlen', 'avglen')
         print(tabulate(table, headers=headers))
 
 

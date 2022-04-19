@@ -4,7 +4,7 @@ import os
 from ..utils import get_file_type, get_option, dict_generator, guess_int_size, guess_datatype, detect_delimiter, detect_encoding, get_dict_value, get_dict_keys, _is_flat, buf_count_newlines_gen
 from ..constants import SUPPORTED_FILE_TYPES
 from collections import OrderedDict
-import bson
+from bson import decode_file_iter
 import json
 import jsonlines
 import orjson
@@ -75,7 +75,7 @@ def analyze_bson(filename, objects_limit=OBJECTS_ANALYZE_LIMIT):
     flat = True
     objects = []
     n = 0
-    for o in bson.decode_file_iter(f):
+    for o in decode_file_iter(f):
         n += 1
         objects.append(o)
         if n > objects_limit:
@@ -276,7 +276,7 @@ class Analyzer:
             print('File type %s analyzer not ready yet' %(filetype))
         if table:
             print('This report intended to be human readable. For machine readable tasks please use other commands.')
-            headers = ['Parameter', 'Value']
+            headers = ('Parameter', 'Value')
             outtable = pt.PrettyTable(headers)
             for row in table:
                 outtable.add_row(row)
