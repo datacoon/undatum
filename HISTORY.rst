@@ -3,6 +3,10 @@
 History
 =======
 
+1.0.13 (2022-04-20)
+* Fixed conversion xlsx-to-jsonl
+* Added experimental command "query", not documented yet. Allows to use mistql query engine
+
 1.0.12 (2022-01-30)
 -------------------                                                                     
 * Added command "analyze" it provides human-readable information about data files: CSV, BSON, JSON lines, JSON, XML. Detects encoding, delimiters, type of files, fields with objects for JSON and XML files. Doesn't support Gzipped, ZIPped and other comressed files yet.

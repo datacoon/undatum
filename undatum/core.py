@@ -11,6 +11,7 @@ from .cmds.statistics import StatProcessor
 from .cmds.textproc import TextProcessor
 from .cmds.validator import Validator
 from .cmds.schemer import Schemer
+from .cmds.query import DataQuery
 
 #logging.getLogger().addHandler(logging.StreamHandler())
 logging.basicConfig(
@@ -400,9 +401,41 @@ def analyze(input, verbose, format_in, zipfile):
     acmd.analyze(input, options)
     pass
 
+@click.group()
+def cli13():
+    pass
+
+@cli13.command()
+@click.argument('input')
+@click.option('--output', '-o', 'output', default=None, help='Output to this file')
+@click.option('--delimiter', '-d', default=None, help="CSV delimiter if convert from CSV")
+@click.option('--encoding', '-e', default=None, help="Input and output encoding")
+@click.option('--fields', '-f', default=None, help="Fieldnames, delimiter by ','")
+@click.option('--verbose', '-v', count=True, help='Verbose output. Print additional info on command execution')
+@click.option('--format-in',  default=None, help="Format of input file, if set, replaces autodetect")
+@click.option('--format-out',  default=None, help="Format of output file, if set, replaces autodetect")
+@click.option('-z', '--zipfile', 'zipfile', is_flag=True, help="Used to say input file is .zip file and that data file is inside")
+@click.option('--query', '-q',  default=None, help="Query using mistql")
+def query(input, output, fields, delimiter, encoding, verbose, format_in, format_out, zipfile, query):
+    """Query data using mistql (experimental, require mistql). Use 'pip install mistql' to install"""
+    if verbose:
+        enableVerbose()
+    options = {}
+    options['delimiter'] = delimiter
+    options['fields'] = fields
+    options['output'] = output
+    options['encoding'] = encoding
+    options['format_in'] = format_in
+    options['format_out'] = format_out
+    options['zipfile'] = zipfile
+    options['query'] = query
+    acmd = DataQuery()
+    acmd.query(input, options)
+    pass
 
 
-cli = click.CommandCollection(sources=[cli1, cli2, cli3, cli4, cli5, cli6, cli7, cli8, cli9, cli10, cli11, cli12])
+
+cli = click.CommandCollection(sources=[cli1, cli2, cli3, cli4, cli5, cli6, cli7, cli8, cli9, cli10, cli11, cli12, cli13])
 
 #if __name__ == '__main__':
 #    cli()
