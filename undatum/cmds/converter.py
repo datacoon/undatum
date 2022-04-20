@@ -156,18 +156,24 @@ def xlsx_to_jsonl(fromname, toname, options={}, default_options={'start_page': 0
     options = __copy_options(options, default_options)
     source = load_xlsx(fromname)
     output = open(toname, 'wb')
-    sheet = source.active
+    sheet = source.active       #FIXME! Use start_page instead
     n = 0
-    for rownum in range(options['start_line'], sheet.nrows):
+    fields = options['fields'].split(',') if options['fields'] is not None else None
+    for row in sheet.iter_rows():
         n += 1
+        if n < options['start_line']: continue
         tmp = list()
-        for i in range(0, sheet.ncols):
-            tmp.append(sheet.row_values(rownum)[i])
-        l = orjson.dumps(dict(zip(options['fields'], tmp)))
+
+        for cell in row:
+            tmp.append(cell.value)
+        if n == 1 and fields is None:
+            fields = tmp
+            continue
+        l = orjson.dumps(dict(zip(fields, tmp)))
         output.write(l)
         output.write(LINEEND)
         if n % 10000 == 0:
-            logging.info('xls2jsonl: processed %d records' % (n))
+            logging.debug('xls2jsonl: processed %d records' % (n))
     source.close
     output.close()
 
