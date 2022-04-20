@@ -4,8 +4,9 @@ History
 =======
 
 1.0.13 (2022-04-20)
+-------------------
 * Fixed conversion xlsx-to-jsonl
-* Added experimental command "query", not documented yet. Allows to use mistql query engine
+* Added experimental command "query", not documented yet. Allows to use mistql query engine.
 
 1.0.12 (2022-01-30)
 -------------------                                                                     
