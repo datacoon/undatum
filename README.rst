@@ -21,6 +21,7 @@ Main features
 
 * Common data operations against CSV, JSON lines and BSON files
 * Built-in data filtering
+* Support data compressed with ZIP, XZ, GZ, BZ2
 * Conversion between CSV, JSONl, BSON, XML, XLS, XLSX, Parquet file types
 * Low memory footprint
 * Support for compressed datasets
@@ -418,11 +419,18 @@ Sometimes, to keep keep memory usage as low as possible to process huge data fil
 These files are inside compressed containers like .zip, .gz, .bz2 or .tar.gz files.
 *undatum* could process compressed files with little memory footprint, but it could slow down file processing.
 
-Returns headers from subs_dump_1.jsonl file inside subs_dump_1.zip file. Require parameter *-z* to be set and *--format-in* force input file type.
+Returns headers from subs_dump_1.jsonl file inside subs_dump_1.zip file. Require parameter *--format-in* to force input file type.
 
 .. code-block:: bash
 
-    $ undatum headers --format-in jsonl -z subs_dump_1.zip
+    $ undatum headers --format-in jsonl subs_dump_1.zip
+
+
+Extracts unique values of the field countryCode from XZ compressed file data.jsonl.xz. Require parameter *--format-in* to force input file type.
+
+.. code-block:: bash
+
+    $ undatum uniq -f countryCode --format-in jsonl data.jsonl.xz
 
 
 Date detection
