@@ -167,9 +167,10 @@ def cli5():
 @click.option('--output', '-o', 'output', default=None, help='Output to this file')
 @click.option('--delimiter', '-d', default=',', help="CSV delimiter if convert from CSV")
 @click.option('--encoding', '-e', default='utf8', help="Input and output encoding")
+@click.option('--format-in',  default=None, help="Format of input file, if set, replaces autodetect")
 @click.option('--filter',  default=None, help="Filter input file with dict query")
 @click.option('--verbose', '-v', count=True, help='Verbose output. Print additional info on command execution')
-def flatten(input, output, delimiter, encoding, filter, verbose):
+def flatten(input, output, delimiter, encoding, format_in, filter, verbose):
     """Flatten data records. Write them as one value per row"""
     if verbose:
         enableVerbose()
@@ -177,6 +178,7 @@ def flatten(input, output, delimiter, encoding, filter, verbose):
     options['delimiter'] = delimiter
     options['output'] = output
     options['encoding'] = encoding
+    options['format_in'] = format_in
     options['filter'] = filter
     acmd = TextProcessor()
     acmd.flatten(input, options)

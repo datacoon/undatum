@@ -179,7 +179,7 @@ Frequency command
 Field value frequency calculator. Returns frequency table for certain field.
 This command autodetects delimiter and encoding of CSV files and encoding of JSON lines files by default. You may override it providng "-d" delimiter and "-e" encoding parameters.
 
-Get frequencies of values for field *GovSystem* in the list of Russian federal government domains from  `govdomains repository <https://github.com/infoculture/govdomains/tree/master/refined>`_
+Get frequencies of values for field *GovSystem* in the list of Russian federal government domains
 
 .. code-block:: bash
 
@@ -313,7 +313,6 @@ Analysis of JSON lines file and verifies each field that it's date field, detect
 
     $ undatum stats --checkdates examples/ausgovdir.jsonl
 
-
 Analyze command
 ---------------
 
@@ -341,18 +340,9 @@ Also for XML AND JSON files:
 * Full data key - full path to data key (field with list of objects) in XML file
 * Short data key - final name of field with objects in XML file
 
-For JSON files:
-
-* JSON type - could be "objects list", "objects list with key' and "single object"
-
-For XML, JSON lines and JSON files:
-
-* Is flat table? - True if table is flat and could be converted to CSV, False if not convertable
-
-For CSV and JSON lines:
-
-* Number of lines - number of lines in file
-
+For JSON files: JSON type - could be "objects list", "objects list with key" and "single object"
+For XML, JSON lines and JSON files: Is flat table? - True if table is flat and could be converted to CSV, False if not convertable
+For CSV and JSON lines: Number of lines - number of lines in file
 
 
 Split command
@@ -368,7 +358,7 @@ Split dataset as 10000 records chunks, procuces files like filename_1.jsonl, fil
     $ undatum split -c 10000 examples/ausgovdir.jsonl
 
 
-Split dataset as number of files based of field *item.type", generates files filename_[value1].jsonl, filename_[value2].jsonl and e.t.c.
+Split dataset as number of files based of field *item.type", generates files filename_value1.jsonl, filename_value2.jsonl and e.t.c.
 There are *[filename]* - ausgovdir and *[value1]* - certain unique value from *item.type* field
 
 .. code-block:: bash

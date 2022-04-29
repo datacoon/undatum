@@ -4,6 +4,7 @@
     <modules>
       <module fileurl="file://$PROJECT_DIR$/../../apicrafter/v2/crafter/.idea/datacraftercmd.iml" filepath="$PROJECT_DIR$/../../apicrafter/v2/crafter/.idea/datacraftercmd.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/datum.iml" filepath="$PROJECT_DIR$/.idea/datum.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../../ruarxive/wparc/.idea/spcrawler.iml" filepath="$PROJECT_DIR$/../../ruarxive/wparc/.idea/spcrawler.iml" />
     </modules>
   </component>
 </project>

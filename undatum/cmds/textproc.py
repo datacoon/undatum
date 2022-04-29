@@ -1,9 +1,8 @@
 from ..utils import get_file_type, get_option
-from ..constants import DATE_PATTERNS, DEFAULT_DICT_SHARE
-from datetime import datetime
 import orjson
 import csv
 import bson
+from ..common.iterable import IterableData, DataWriter
 
 def get_keys(adict, prefix=None):
     keys = {}
@@ -28,6 +27,23 @@ class TextProcessor:
         pass
 
     def flatten(self, filename, options):
+        """Flatten the data. One field - one line"""
+        f_type = get_file_type(filename) if options['format_in'] is None else options['format_in']
+        iterable = IterableData(filename, options=options)
+        to_file = get_option(options, 'output')
+        i = 0
+        for rec in iterable.iter():
+            allkeys = {}
+            i += 1
+            for k in get_keys(rec):
+                v = allkeys.get(k, 0)
+                allkeys[k] = v + 1
+            for k, v in allkeys.items():
+                print('\t'.join([k, str(v)]))
+
+
+
+    def flatten_old(self, filename, options):
         if filename[-5:] == '.bson':
             f = open(filename, 'rb')
         else:
