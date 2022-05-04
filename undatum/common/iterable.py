@@ -7,9 +7,10 @@ import orjson
 import jsonlines
 import bson
 import logging
+import io
 
 SUPPORTED_COMPRESSION = {'gz': True, 'zip': True, 'xz': False, '7z': False,  'lz4': False, 'bz2' : True}
-from gzip import GzipFile
+import gzip
 from zipfile import ZipFile
 from lzma import LZMAFile
 from bz2 import BZ2File
@@ -43,27 +44,31 @@ class IterableData:
         self.options = options
         self.archiveobj = None
         self.fileobj = None
+        self.binary = False
+        self.delimiter = get_option(options, 'delimiter')
         self.init(filename, options)
         pass
 
 
     def init(self, filename, options):
         f_type = get_file_type(filename) if options['format_in'] is None else options['format_in']
-        encoding = get_option(options, 'encoding')
+        self.encoding = get_option(options, 'encoding')
         self.filetype = f_type
         ext = filename.rsplit('.', 1)[-1].lower()
         self.ext = ext
         if ext in SUPPORTED_COMPRESSION.keys():
+            self.binary = True
+            self.mode = 'rb' if self.filetype in BINARY_FILE_TYPES else 'r'
             if ext == 'gz':
-                self.fileobj = GzipFile(filename, 'rb') if self.filetype in BINARY_FILE_TYPES else GzipFile(filename, 'r')
+                self.fileobj = gzip.open(filename, self.mode)
             elif ext == 'bz2':
-                self.fileobj = BZ2File(filename, 'rb') if self.filetype in BINARY_FILE_TYPES else BZ2File(filename, 'r')
+                self.fileobj = BZ2File(filename, self.mode)
             elif ext == 'xz':
-                self.fileobj = LZMAFile(filename, 'rb') if self.filetype in BINARY_FILE_TYPES else LZMAFile(filename, 'r')
+                self.fileobj = LZMAFile(filename, self.mode)
             elif ext == 'zip':
-                z = ZipFile(filename, mode='r')
-                fnames = z.namelist()
-                self.fileobj = z.open(fnames[0], 'rb') if self.filetype in BINARY_FILE_TYPES else z.open(fnames[0], 'r')
+                self.archiveobj = ZipFile(filename, mode='r')
+                fnames = self.archiveobj.namelist()
+                self.fileobj = self.archiveobj.open(fnames[0], self.mode)
             else:
                 raise NotImplemented
 #            elif ext == 'lz4':
@@ -94,6 +99,7 @@ class IterableData:
                         encoding = DEFAULT_ENCODING
                         if f_type == 'csv':
                             delimiter = DEFAULT_DELIMITER
+                            self.delimiter = delimiter
                     logging.debug('Detected encoding %s' % (detected_enc['encoding']))
                 self.encoding = encoding
                 self.fileobj = open(filename, 'r', encoding=encoding)
@@ -133,7 +139,11 @@ class IterableData:
 
     def iter(self):
         if self.filetype == 'csv':
-            reader = csv.DictReader(self.fileobj, delimiter=self.delimiter)
+            if self.binary:
+                obj = io.TextIOWrapper(self.fileobj, encoding=self.encoding)
+                reader = csv.DictReader(obj, delimiter=self.delimiter)
+            else:
+                reader = csv.DictReader(self.fileobj, delimiter=self.delimiter)
             return iter(reader)
         elif self.filetype == 'jsonl':
             return jsonlines.Reader(self.fileobj)
