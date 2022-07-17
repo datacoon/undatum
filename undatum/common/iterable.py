@@ -2,8 +2,6 @@
 from ..constants import BINARY_FILE_TYPES
 from ..utils import get_file_type, get_option, detect_encoding, detect_delimiter
 import csv
-import json
-import orjson
 import jsonlines
 import bson
 import logging
@@ -71,16 +69,6 @@ class IterableData:
                 self.fileobj = self.archiveobj.open(fnames[0], self.mode)
             else:
                 raise NotImplemented
-#            elif ext == 'lz4':
-#                z = ZipFile(filename, mode='r')
-#                fnames = z.namelist()
-#                self.fileobj = z.open(fnames[0], 'rb') if self.filetype in BINARY_FILE_TYPES else z.open(fnames[0], 'r')
-#            elif ext == '7z':
-#                z = py7zr.SevenZipFile(filename, 'r')
-#                fnames = z.getnames()
-#                self.fileobj = z.open(fnames[0], 'rb') if self.filetype in BINARY_FILE_TYPES else z.open(fnames[0], 'r')
-
-            pass
         else:
             if f_type in BINARY_FILE_TYPES:
                 self.fileobj = open(filename, 'rb')

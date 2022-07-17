@@ -151,6 +151,8 @@ def xls_to_jsonl(fromname, toname, options={}, default_options={'start_page': 0,
     output.close()
 
 
+
+
 def xlsx_to_jsonl(fromname, toname, options={}, default_options={'start_page': 0, 'start_line': 0}):
     from openpyxl import load_workbook as load_xlsx
     options = __copy_options(options, default_options)
@@ -173,10 +175,34 @@ def xlsx_to_jsonl(fromname, toname, options={}, default_options={'start_page': 0
         output.write(l)
         output.write(LINEEND)
         if n % 10000 == 0:
-            logging.debug('xls2jsonl: processed %d records' % (n))
+            logging.debug('xlsx2jsonl: processed %d records' % (n))
     source.close
     output.close()
 
+def xlsx_to_bson(fromname, toname, options={}, default_options={'start_page': 0, 'start_line': 0}):
+    from openpyxl import load_workbook as load_xlsx
+    options = __copy_options(options, default_options)
+    source = load_xlsx(fromname)
+    output = open(toname, 'wb')
+    sheet = source.active       #FIXME! Use start_page instead
+    n = 0
+    fields = options['fields'].split(',') if options['fields'] is not None else None
+    for row in sheet.iter_rows():
+        n += 1
+        if n < options['start_line']: continue
+        tmp = list()
+
+        for cell in row:
+            tmp.append(cell.value)
+        if n == 1 and fields is None:
+            fields = tmp
+            continue
+        output.write(bson.BSON.encode(dict(zip(fields, tmp))))
+
+        if n % 10000 == 0:
+            logging.debug('xlsx2bson: processed %d records' % (n))
+    source.close
+    output.close()
 
 def xls_to_bson(fromname, toname, options={}, default_options={'start_page': 0, 'start_line': 0}):
     options = __copy_options(options, default_options)
@@ -287,6 +313,7 @@ CONVERT_FUNC_MAP = {
     'xls2jsonl': xls_to_jsonl,
     'xls2bson': xls_to_bson,
     'xlsx2jsonl': xlsx_to_jsonl,
+    'xlsx2bson': xlsx_to_bson,
     'csv2jsonl': csv_to_jsonl,
     'csv2bson': csv_to_bson,
     'xml2jsonl': xml_to_jsonl,
