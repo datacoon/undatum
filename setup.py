@@ -45,7 +45,8 @@ install_requires = [
     'qddate>=0.1.1',
     'tabulate>=0.8.7',
     'validators>=0.18.1',
-    'xlrd>=1.2.0'
+    'xlrd>=1.2.0',
+    'xmltodict'
 ]
 
 
