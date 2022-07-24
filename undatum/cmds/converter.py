@@ -294,6 +294,27 @@ def bson_to_jsonl(fromname, toname, options={}, default_options={}):
     source.close()
     output.close()
 
+
+def json_to_jsonl(fromname, toname, options={}, default_options={}):
+    """Simple implementation of JSON to JSON lines conversion. Assuming that JSON is an array or dict with 1-st level value with data"""
+    options = __copy_options(options, default_options)    
+    source = open(fromname, 'rb')
+    source_data = json.load(source)    
+    data = source_data
+    if 'tagname' in options.keys():
+        if isinstance(source_data, dict) and  options['tagname'] in source_data.keys():
+            data = data[options['tagname']]    
+    output = open(toname, 'wb')
+    n = 0
+    for r in data:
+        n += 1
+        output.write(orjson.dumps(r) + LINEEND)
+        if n % 10000 == 0:
+            logging.info('json2jsonl: processed %d records' % (n))
+    source.close()
+    output.close()
+
+
 def csv_to_parquet(fromname, toname, options={}, default_options={'encoding': 'utf8', 'delimiter': ','}):
     options = __copy_options(options, default_options)
     df = pandas.read_csv(fromname, delimiter=options['delimiter'], encoding=options['encoding'])
@@ -319,6 +340,7 @@ CONVERT_FUNC_MAP = {
     'xml2jsonl': xml_to_jsonl,
     'jsonl2csv': jsonl_to_csv,
     'bson2jsonl': bson_to_jsonl,
+    'json2jsonl': json_to_jsonl,
     'csv2parquet' : csv_to_parquet,
     'jsonl2parquet': jsonl_to_parquet,
 }
