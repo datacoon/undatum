@@ -9,6 +9,7 @@ import xml.etree.ElementTree as etree
 from collections import defaultdict
 
 import bson
+from bson import ObjectId
 from xlrd import open_workbook as load_xls
 
 PREFIX_STRIP = True
@@ -281,6 +282,10 @@ def jsonl_to_csv(fromname, toname, options={},
     pass
 
 
+def default(obj):
+    if isinstance(obj, ObjectId):
+        return str(obj)
+
 def bson_to_jsonl(fromname, toname, options={}, default_options={}):
     options = __copy_options(options, default_options)
     source = open(fromname, 'rb')
@@ -288,7 +293,8 @@ def bson_to_jsonl(fromname, toname, options={}, default_options={}):
     n = 0
     for r in bson.decode_file_iter(source):
         n += 1
-        output.write(orjson.dumps(r) + LINEEND)
+        output.write(orjson.dumps(r, default=default))
+        output.write(LINEEND)
         if n % 10000 == 0:
             logging.info('bson2jsonl: processed %d records' % (n))
     source.close()

@@ -68,7 +68,7 @@ class IterableData:
                 fnames = self.archiveobj.namelist()
                 self.fileobj = self.archiveobj.open(fnames[0], self.mode)
             else:
-                raise NotImplemented
+                raise NotImplementedError
         else:
             if f_type in BINARY_FILE_TYPES:
                 self.fileobj = open(filename, 'rb')
@@ -182,11 +182,11 @@ class DataWriter:
             self.writer.writeheader()
             if isinstance(outdata[0], str):
                 for rawitem in outdata:
-                    item = {self.fieldsnames[0]: rawitem}
+                    item = {self.fieldnames[0]: rawitem}
                     self.writer.writerow(item)
             elif type(outdata[0]) == type([]):
                 for rawitem in outdata:
-                    item = dict(zip(self.fieldsnames, rawitem))
+                    item = dict(zip(self.fieldnames, rawitem))
                     self.writer.writerow(item)
             else:
                 self.writer.writerows(outdata)
