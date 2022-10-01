@@ -21,7 +21,9 @@ class StatProcessor:
 
     def stats(self, fromfile, options):
         """Produces statistics and structure analysis of JSONlines, BSON or CSV file and produces stats"""
-        from tabulate import tabulate
+        from rich import print
+        from rich.table import Table
+
         f_type = get_file_type(fromfile) if options['format_in'] is None else options['format_in']
         if f_type not in STAT_READY_DATA_FORMATS:
             print('Only JSON lines (.jsonl), .csv and .bson files supported now')
@@ -131,5 +133,12 @@ class StatProcessor:
             field.append(fd['avglen'])
             table.append(field)
         headers = ('key', 'ftype', 'is_dictkey', 'is_uniq', 'n_uniq', 'share_uniq', 'minlen', 'maxlen', 'avglen')
-        print(tabulate(table, headers=headers))
+        reptable = Table(title="Statistics")
+        reptable.add_column(headers[0], justify="left", style="magenta")
+        for key in headers[1:-1]:
+            reptable.add_column(key, justify="left", style="cyan", no_wrap=True)
+        reptable.add_column(headers[-1], justify="right", style="cyan")
+        for row in table:
+            reptable.add_row(*map(str, row))
+        print(reptable)
 

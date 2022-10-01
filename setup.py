@@ -46,7 +46,8 @@ install_requires = [
     'tabulate>=0.8.7',
     'validators>=0.18.1',
     'xlrd>=1.2.0',
-    'xmltodict'
+    'xmltodict',
+    'rich'
 ]
 
 
