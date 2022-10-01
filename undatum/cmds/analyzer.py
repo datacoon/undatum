@@ -47,19 +47,19 @@ def analyze_jsonl(filename, objects_limit=OBJECTS_ANALYZE_LIMIT):
         report.append(['Encoding', 'Not detected'])
     report.append(['Filesize', str(os.path.getsize(filename))])
     report.append(['Number of lines', buf_count_newlines_gen(filename)])
-    f = open(filename, 'r', encoding=encoding)
-    flat = True
-    reader = jsonlines.Reader(f)
-    objects = []
-    n = 0
-    for o in reader.iter():
-        n += 1
-        objects.append(o)
-        if n > objects_limit:
-            break
-    for o in objects[:objects_limit]:
-        if not _is_flat(o):
-            flat = False
+    with open(filename, 'r', encoding=encoding) as fileobj:
+        flat = True
+        reader = jsonlines.Reader(fileobj)
+        objects = []
+        n_count = 0
+        for obj in reader.iter():
+            n_count += 1
+            objects.append(obj)
+            if n_count > objects_limit:
+                break
+        for obj in objects[:objects_limit]:
+            if not _is_flat(obj):
+                flat = False
     report.append(['Is flat table?', str(flat)])
     report.append(['Fields', str('\n'.join(get_dict_keys(objects)))])
     return report
@@ -71,18 +71,17 @@ def analyze_bson(filename, objects_limit=OBJECTS_ANALYZE_LIMIT):
     report.append(['Filename', filename])
     report.append(['File type', 'bson'])
     report.append(['Filesize', str(os.path.getsize(filename))])
-    f = open(filename, 'rb')
-    flat = True
-    objects = []
-    n = 0
-    for o in decode_file_iter(f):
-        n += 1
-        objects.append(o)
-        if n > objects_limit:
-            break
-    f.close()
-    for o in objects[:objects_limit]:
-        if not _is_flat(o):
+    with open(filename, 'rb') as fileobj:
+        flat = True
+        objects = []
+        n_count = 0
+        for obj in decode_file_iter(fileobj):
+            n_count += 1
+            objects.append(obj)
+            if n_count > objects_limit:
+                break
+    for obj in objects[:objects_limit]:
+        if not _is_flat(obj):
             flat = False
     report.append(['Is flat table?', str(flat)])
     report.append(['Fields', str('\n'.join(get_dict_keys(objects)))])
@@ -254,7 +253,8 @@ class Analyzer:
 
     def analyze(self, filename, options):
         """Analyzes given data file and returns it's parameters"""
-        import prettytable as pt
+        from rich import print
+        from rich.table import Table
 
         filetype = get_file_type(filename)
         if not filetype:
@@ -276,9 +276,10 @@ class Analyzer:
             print('File type %s analyzer not ready yet' %(filetype))
         if table:
             print('This report intended to be human readable. For machine readable tasks please use other commands.')
-            headers = ('Parameter', 'Value')
-            outtable = pt.PrettyTable(headers)
+            reptable = Table(title="Analysis report")
+            reptable.add_column("Parameter", justify="right", style="cyan", no_wrap=True)
+            reptable.add_column("Value", justify="right", style="magenta")
             for row in table:
-                outtable.add_row(row)
-            print(f'{outtable}')
+                reptable.add_row(*map(str, row))
+            print(reptable)
         pass
