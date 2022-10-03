@@ -140,7 +140,8 @@ def cli4():
 @click.option('--verbose', '-v', count=True, help='Verbose output. Print additional info on command execution')
 @click.option('-z', '--zipfile', 'zipfile', is_flag=True, help="Used to say input file is .zip file and that data file is inside")
 @click.option('--checkdates', is_flag=True, help="Significantly slow down process, buy identifies dates fields from text. Not used by default")
-def stats(input, output, dictshare, format_in, format_out, delimiter, verbose, zipfile, checkdates):
+@click.option('--encoding', '-e', default=None, help="Input and output encoding")
+def stats(input, output, dictshare, format_in, format_out, delimiter, verbose, zipfile, checkdates, encoding):
     """Returns detailed stats on selected dataset"""
     if verbose:
         enableVerbose()
@@ -152,6 +153,7 @@ def stats(input, output, dictshare, format_in, format_out, delimiter, verbose, z
     options['format_out'] = format_out
     options['delimiter'] = delimiter
     options['checkdates'] = checkdates
+    options['encoding'] = encoding
     options['verbose'] = verbose
     acmd = StatProcessor(nodates=not checkdates)
     acmd.stats(input, options)
