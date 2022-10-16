@@ -33,6 +33,7 @@ def cli1():
 @click.argument('output')
 @click.option('--delimiter', '-d', default=',', help="CSV delimiter if convert from CSV, default ','")
 @click.option('--encoding', '-e', default='utf8', help="Input and output encoding, default is utf8")
+@click.option('--compression', '-c', default='brotli', help="Set output compression for Parquet files. Default: brotli")
 @click.option('--verbose', '-v', count=False, help='Verbose output. Print additional info')
 @click.option('--prefix-strip', default=True, is_flag=True, help="Strip prefix from XML files")
 @click.option('--fields', '-f', default=None, help="Fieldnames from XLS conversion")
@@ -43,12 +44,13 @@ def cli1():
 @click.option('--format-in',  default=None, help="Format of input file, if set, replaces autodetect")
 @click.option('--format-out',  default=None, help="Format of output file, if set, replaces autodetect")
 @click.option('-z', '--zipfile', 'zipfile', is_flag=False, help="Used to say input file is .zip file and that data file is inside")
-def convert(input, output, delimiter, encoding, verbose, prefix_strip, fields, start_line, skip_end_rows, start_page, tagname, format_in, format_out, zipfile):
+def convert(input, output, delimiter, compression, encoding, verbose, prefix_strip, fields, start_line, skip_end_rows, start_page, tagname, format_in, format_out, zipfile):
     """Converts one file to another. Supports XML, CSV, JSON, BSON"""
     if verbose:
         enableVerbose()
     options = {}
     options['delimiter'] = delimiter
+    options['compression'] = compression
     options['encoding'] = encoding
     options['prefix_strip'] = prefix_strip
     options['start_line'] = start_line

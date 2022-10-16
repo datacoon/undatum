@@ -321,17 +321,17 @@ def json_to_jsonl(fromname, toname, options={}, default_options={}):
     output.close()
 
 
-def csv_to_parquet(fromname, toname, options={}, default_options={'encoding': 'utf8', 'delimiter': ','}):
+def csv_to_parquet(fromname, toname, options={}, default_options={'encoding': 'utf8', 'delimiter': ',', 'compression' : 'brotli'}):
     options = __copy_options(options, default_options)
     df = pandas.read_csv(fromname, delimiter=options['delimiter'], encoding=options['encoding'])
-    df.to_parquet(toname)
+    df.to_parquet(toname, compression=options['compression'] if options['compression'] != 'None' else None)
 
 
 def jsonl_to_parquet(fromname, toname, options={},
-                 default_options={'force_flat': False, 'useitems': 100}):
+                 default_options={'force_flat': False, 'useitems': 100, 'compression' : 'brotli'}):
     options = __copy_options(options, default_options)
     df = pandas.read_json(fromname, lines=True, encoding=options['encoding'])
-    df.to_parquet(toname)
+    df.to_parquet(toname, compression=options['compression'] if options['compression'] != 'None' else None)
 
 
 
