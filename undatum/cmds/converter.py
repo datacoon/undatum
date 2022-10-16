@@ -18,6 +18,26 @@ from ..utils import get_file_type
 
 LINEEND = '\n'.encode('utf8')
 
+def df_to_pyorc_schema(df):
+    """Extracts column information from pandas dataframe and generate pyorc schema"""
+    struct_schema = []
+    for k, v in df.dtypes.to_dict().items():
+        v = str(v)
+        if v == 'float64':
+            struct_schema.append('%s:float' % (k))
+        elif v == 'float32':
+            struct_schema.append('%s:float' % (k))
+        elif v == 'datetime64[ns]':
+            struct_schema.append('%s:timestamp' % (k))
+        elif v == 'int32':
+            struct_schema.append('%s:int' % (k))
+        elif v == 'int64':
+            struct_schema.append('%s:int' % (k))
+        else:
+            struct_schema.append('%s:string' %(k))
+    return struct_schema
+
+
 def __copy_options(user_options, default_options):
     """If user provided option so we use it, if not, default option value should be used"""
     for k in default_options.keys():
@@ -328,12 +348,78 @@ def csv_to_parquet(fromname, toname, options={}, default_options={'encoding': 'u
 
 
 def jsonl_to_parquet(fromname, toname, options={},
-                 default_options={'force_flat': False, 'useitems': 100, 'compression' : 'brotli'}):
+                 default_options={'force_flat': False, 'useitems': 100, 'compression' : 'brotli'}):                 
     options = __copy_options(options, default_options)
     df = pandas.read_json(fromname, lines=True, encoding=options['encoding'])
     df.to_parquet(toname, compression=options['compression'] if options['compression'] != 'None' else None)
 
 
+PYORC_COMPRESSION_MAP = {'zstd': 5, 'snappy' : 2, 'zlib' : 1, 'lzo' : 3, 'lz4' : 4, 'None' : 0}
+
+def csv_to_orc(fromname, toname, options={}, default_options={'encoding': 'utf8', 'delimiter': ',', 'compression' : 'zstd'}):
+    """Converts CSV file to ORC file"""
+    import pyorc    
+    options = __copy_options(options, default_options)
+    compression = PYORC_COMPRESSION_MAP[options['compression']] if options['compression'] in PYORC_COMPRESSION_MAP.keys() else 0
+    source = open(fromname, 'r', encoding=options['encoding'])
+    reader = csv.DictReader(source, delimiter=options['delimiter'])
+    struct_schema = []
+    for field in reader.fieldnames:
+        struct_schema.append('%s:string' %(field))
+    output = open(toname, 'wb')
+    writer = pyorc.Writer(output, "struct<%s>" % (','.join(struct_schema)), struct_repr = pyorc.StructRepr.DICT, compression=compression, compression_strategy=1)
+    n = 0
+    for row in reader:
+        n += 1
+        try: 
+            writer.write(row)
+        except TypeError:
+            print('Error processing row %d. Skip and continue' % (n))
+    writer.close()
+    output.close()
+
+def jsonl_to_orc(fromname, toname, options={},
+                 default_options={'force_flat': False, 'useitems': 100, 'compression' : 'zstd'}):
+    """Converts JSON file to ORC file"""
+    import pyorc
+    options = __copy_options(options, default_options)
+    compression = PYORC_COMPRESSION_MAP[options['compression']] if options['compression'] in PYORC_COMPRESSION_MAP.keys() else 0
+    df = pandas.read_json(fromname, lines=True, encoding=options['encoding'])
+    df.info()
+    struct_schema = df_to_pyorc_schema(df)
+    output = open(toname, 'wb')
+    writer = pyorc.Writer(output, "struct<%s>" % (','.join(struct_schema)), struct_repr = pyorc.StructRepr.DICT, compression=compression, compression_strategy=1)
+    writer.writerows(df.to_dict(orient="records"))
+    writer.close()
+    output.close()
+
+def csv_to_avro(fromname, toname, options={}, default_options={'encoding': 'utf8', 'delimiter': ',', 'compression' : 'deflate'}):
+    """Converts CSV file to AVRO file"""
+    import avro.schema
+    from avro.datafile import DataFileWriter, Codecs
+    from avro.io import DatumWriter
+    
+    options = __copy_options(options, default_options)    
+    compression = PYORC_COMPRESSION_MAP[options['compression']] if options['compression'] in PYORC_COMPRESSION_MAP.keys() else 0
+    source = open(fromname, 'r', encoding=options['encoding'])
+    reader = csv.DictReader(source, delimiter=options['delimiter'])
+
+    schema_dict = {"namespace": "data.avro", "type": "record", "name": "Record", "fields": []}
+
+    for field in reader.fieldnames:
+        schema_dict['fields'].append({'name' : field, 'type' : 'string'})
+    schema = avro.schema.parse(json.dumps(schema_dict))
+    output = open(toname, 'wb')
+    writer = DataFileWriter(output, DatumWriter(), schema, codec=options['compression'])
+    n = 0
+    for row in reader:
+        n += 1
+        try: 
+            writer.append(row)
+        except TypeError:
+            print('Error processing row %d. Skip and continue' % (n))
+    writer.close()
+    output.close()
 
 CONVERT_FUNC_MAP = {
     'xls2csv': xls_to_csv,
@@ -349,6 +435,9 @@ CONVERT_FUNC_MAP = {
     'json2jsonl': json_to_jsonl,
     'csv2parquet' : csv_to_parquet,
     'jsonl2parquet': jsonl_to_parquet,
+    'jsonl2orc' : jsonl_to_orc,
+    'csv2orc' : csv_to_orc,
+    'csv2avro' : csv_to_avro,
 }
 
 
