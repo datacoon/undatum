@@ -22,7 +22,7 @@ Main features
 * Common data operations against CSV, JSON lines and BSON files
 * Built-in data filtering
 * Support data compressed with ZIP, XZ, GZ, BZ2
-* Conversion between CSV, JSONl, BSON, XML, XLS, XLSX, Parquet file types
+* Conversion between CSV, JSONl, BSON, XML, XLS, XLSX, Parquet, AVRO and ORC file types 
 * Low memory footprint
 * Support for compressed datasets
 * Advanced statistics calculations
