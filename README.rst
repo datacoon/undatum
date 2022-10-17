@@ -248,6 +248,25 @@ Converts CSV file feddomains.csv to Parquet file feddomains.parquet
     $ undatum convert examples/feddomains.csv examples/feddomains.parquet
 
 
+*Data formats conversion table map*
+ 
++------------+------+-------------+-------+-------+------+-------+------+----------+------+-------+
+| From / To  | CSV  | JSON lines  | BSON  | JSON  | XLS  | XLSX  | XML  | Parquet  | ORC  | AVRO  |
++============+======+=============+=======+=======+======+=======+======+==========+======+=======+
+| CSV        | -    | Yes         | Yes   | No    | No   | No    | No   | Yes      | Yes  | Yes   |
+| JSON lines | Yes  | -           | No    | No    | No   | No    | No   | Yes      | Yes  | No    |
+| BSON       | No   | Yes         | -     | No    | No   | No    | No   | No       | No   | No    |
+| JSON       | No   | Yes         | No    | -     | No   | No    | No   | No       | No   | No    |
+| XLS        | No   | Yes         | Yes   | No    | -    | No    | No   | No       | No   | No    |
+| XLSX       | No   | Yes         | Yes   | No    | No   | -     | No   | No       | No   | No    |
+| XML        | No   | Yes         | No    | No    | No   | No    | -    | No       | No   | No    |
+| Parquet    | No   | No          | No    | No    | No   | No    | No   | -        | No   | No    |
+| ORC        | No   | No          | No    | No    | No   | No    | No   | No       | -    | No    |
+| AVRO       | No   | No          | No    | No    | No   | No    | No   | No       | No   | -     |
++------------+------+-------------+-------+-------+------+-------+------+----------+------+-------+
+
+
+
 Validate command
 ----------------
 
