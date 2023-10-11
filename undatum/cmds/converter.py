@@ -1,8 +1,8 @@
+# -*- coding: utf8 -*-
 import csv
 import json
 import orjson
 import logging
-import jsonlines
 import pandas
 # from xmlr import xmliter
 import xml.etree.ElementTree as etree
@@ -396,11 +396,11 @@ def jsonl_to_orc(fromname, toname, options={},
 def csv_to_avro(fromname, toname, options={}, default_options={'encoding': 'utf8', 'delimiter': ',', 'compression' : 'deflate'}):
     """Converts CSV file to AVRO file"""
     import avro.schema
-    from avro.datafile import DataFileWriter, Codecs
+    from avro.datafile import DataFileWriter
     from avro.io import DatumWriter
     
     options = __copy_options(options, default_options)    
-    compression = PYORC_COMPRESSION_MAP[options['compression']] if options['compression'] in PYORC_COMPRESSION_MAP.keys() else 0
+    options['compression']
     source = open(fromname, 'r', encoding=options['encoding'])
     reader = csv.DictReader(source, delimiter=options['delimiter'])
 
@@ -450,7 +450,7 @@ class Converter:
         totype = options['format_out'] if options['format_out'] is not None else get_file_type(tofile)
         key = '%s2%s' % (fromtype, totype)
         func = CONVERT_FUNC_MAP.get(key, None)
-        if func == None:
+        if func is None:
             logging.error('Conversion between %s and %s not supported' % (fromtype, totype))
         else:
             logging.info('Convert %s from %s to %s' % (key, fromfile, tofile))

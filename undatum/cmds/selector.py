@@ -1,3 +1,4 @@
+# -*- coding: utf8 -*-
 import csv
 # import json
 import logging
@@ -9,7 +10,7 @@ import dictquery as dq
 import orjson
 
 # from xmlr import xmliter
-from ..utils import get_file_type, get_option, write_items, get_dict_value, strip_dict_fields, dict_generator, detect_encoding
+from ..utils import get_file_type, get_option, get_dict_value, strip_dict_fields, dict_generator, detect_encoding
 from ..common.iterable import IterableData, DataWriter
 LINEEND = u'\n'.encode('utf8')
 
@@ -85,11 +86,11 @@ class Selector:
             out = sys.stdout
         fields = options['fields'].split(',')
         logging.info('uniq: looking for fields: %s' % (options['fields']))
-        n = 0
         uniqval = get_iterable_fields_uniq(iterable.iter(), fields, dolog=True)
         iterable.close()
         logging.debug('%d unique values found' % (len(uniqval)))
-        write_items(fields, uniqval, filetype=to_type, handle=out)
+        writer = DataWriter(out, filetype=to_type, fieldnames=fields)
+        writer.write_items(uniqval)
 
 
     def headers(self, fromfile, options={}):
@@ -117,7 +118,8 @@ class Selector:
             f.write('\n'.join(keys))
             f.close()
         else:
-            print('\n'.join(keys))
+            for x in keys:
+                print(x.encode('utf8').decode('utf8', 'ignore'))  
 
     def frequency(self, fromfile, options={}):
         """Calculates frequency of the values in the file"""
@@ -125,14 +127,13 @@ class Selector:
 
         to_file = get_option(options, 'output')
         if to_file:
-            to_type = get_file_type(to_file)
+            get_file_type(to_file)
             if not to_file:
                 print('Output file type not supported')
                 return
-            out = open(to_file, 'w', encoding='utf8')
+            open(to_file, 'w', encoding='utf8')
         else:
-            to_type = 'csv'
-            out = sys.stdout
+            pass
         fields = options['fields'].split(',')
         valuedict = {}
         if iterable:
@@ -312,7 +313,7 @@ class Selector:
             for r in bson_iter:
                 n += 1
                 #                print(r)
-                r_selected = strip_dict_fields(r, fields, 0)
+                strip_dict_fields(r, fields, 0)
                 #                out.write(json.dumps(r_selected)+'\n')
                 if n % 10000 == 0:
                     logging.info('split: processing %d records of %s' % (n, fromfile))

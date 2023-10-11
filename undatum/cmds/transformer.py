@@ -1,5 +1,4 @@
-from xlrd import open_workbook
-from operator import itemgetter, attrgetter
+# -*- coding: utf8 -*-
 import csv
 import zipfile
 import sys
@@ -7,10 +6,7 @@ import orjson
 import bson
 import logging
 #from xmlr import xmliter
-import xml.etree.ElementTree as etree
-from collections import defaultdict
-from ..utils import get_file_type, get_option, write_items, get_dict_value, strip_dict_fields, dict_generator
-import dictquery as dq
+from ..utils import get_file_type, get_option
 from runpy import run_path
 
 class Transformer:

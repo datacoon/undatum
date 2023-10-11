@@ -1,3 +1,4 @@
+# -*- coding: utf8 -*-
 
 def get_dict_value(adict, key, prefix=None):
     if prefix is None:
@@ -13,7 +14,7 @@ def get_dict_value_deep(adict, key, prefix=None, as_array=False, splitter='.'):
         prefix = key.split(splitter)
     if len(prefix) == 1:
         if type(adict) == type({}):
-            if not prefix[0] in adict.keys():
+            if prefix[0] not in adict.keys():
                 return None
             if as_array:
                 return [adict[prefix[0]], ]

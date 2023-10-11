@@ -1,3 +1,4 @@
+# -*- coding: utf8 -*-
 """
 undatum: a command-line tool for data processing. Brings CSV simplicity to JSON lines and BSON
 

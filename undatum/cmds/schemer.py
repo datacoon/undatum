@@ -1,6 +1,5 @@
+# -*- coding: utf8 -*-
 from ..utils import get_file_type, get_option
-from ..constants import DATE_PATTERNS, DEFAULT_DICT_SHARE
-from datetime import datetime
 import logging
 import orjson
 import zipfile
@@ -24,13 +23,12 @@ class Schemer:
         if options['zipfile']:
             z = zipfile.ZipFile(fromfile, mode='r')
             fnames = z.namelist()
-            finfilename = fnames[0]
+            fnames[0]
             if f_type == 'bson':
                 infile = z.open(fnames[0], 'rb')
             else:
                 infile = z.open(fnames[0], 'r')
         else:
-            finfilename = fromfile
             if f_type == 'bson':
                 infile = open(fromfile, 'rb')
             else:

@@ -1,4 +1,3 @@
-import sys
 import timeit
 from undatum.common.iterable import IterableData
 

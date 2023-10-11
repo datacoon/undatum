@@ -1,3 +1,4 @@
+# -*- coding: utf8 -*-
 DATE_PATTERNS = ["%d.%m.%Y", "%Y-%m-%d", "%y-%m-%d", "%Y-%m-%dT%H:%M:%S",
                  "%Y-%m-%d %H:%M:%S",
                  "%d.%m.%Y %H:%M"]

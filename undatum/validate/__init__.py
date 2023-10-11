@@ -1,3 +1,4 @@
+# -*- coding: utf8 -*-
 from .ruscodes import _check_inn, _check_ogrn
 from .commonrules import _validate_email, _validate_url
 

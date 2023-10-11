@@ -1,3 +1,4 @@
+# -*- coding: utf8 -*-
 # This is purely the result of trial and error.
 
 import sys

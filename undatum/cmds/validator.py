@@ -1,5 +1,4 @@
-from xlrd import open_workbook
-from operator import itemgetter, attrgetter
+# -*- coding: utf8 -*-
 import csv
 import zipfile
 import sys
@@ -7,9 +6,7 @@ import orjson
 import bson
 import logging
 #from xmlr import xmliter
-import xml.etree.ElementTree as etree
-from collections import defaultdict
-from ..utils import get_file_type, get_option, write_items, get_dict_value, strip_dict_fields, dict_generator
+from ..utils import get_file_type, get_option, get_dict_value
 import dictquery as dq
 from ..validate import VALIDATION_RULEMAP
 
@@ -36,13 +33,12 @@ class Validator:
                 infile = open(fromfile, 'r', encoding=get_option(options, 'encoding'))
         to_file = get_option(options, 'output')
         if to_file:
-            to_type = get_file_type(to_file)
+            get_file_type(to_file)
             if not to_file:
                 logging.debug('Output file type not supported')
                 return
             out = open(to_file, 'w', encoding='utf8')
         else:
-            to_type = 'csv'
             out = sys.stdout
         fields = options['fields'].split(',')
         val_func = VALIDATION_RULEMAP[options['rule']]
@@ -87,7 +83,6 @@ class Validator:
                     stats['novalue'] += 1
 
         elif f_type == 'bson':
-            uniqval = []
             bson_iter = bson.decode_file_iter(infile)
             n = 0
             for r in bson_iter:

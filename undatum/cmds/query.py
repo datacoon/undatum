@@ -1,15 +1,12 @@
-import csv
+# -*- coding: utf8 -*-
 # import json
 import logging
 import sys
-import zipfile
 
-import bson
-import orjson
 
 # from xmlr import xmliter
-from ..utils import get_file_type, get_option, write_items, get_dict_value, strip_dict_fields, dict_generator, detect_encoding
-from ..common.iterable import IterableData, DataWriter
+from ..utils import get_file_type, get_option, strip_dict_fields
+from ..common.iterable import IterableData
 LINEEND = u'\n'.encode('utf8')
 
 DEFAULT_CHUNK_SIZE = 50
@@ -45,7 +42,6 @@ class DataQuery:
         if iterable:
             n = 0
             fields = [field.split('.') for field in fields] if fields else None
-            chunk = []
             for r in iterable.iter():
                 n += 1
                 if fields:

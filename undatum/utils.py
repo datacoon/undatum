@@ -1,7 +1,6 @@
+# -*- coding: utf8 -*-
 from collections import OrderedDict
-import csv
 import chardet
-import orjson
 from .constants import SUPPORTED_FILE_TYPES
 from .constants import DEFAULT_OPTIONS
 
@@ -33,37 +32,6 @@ def get_option(options, name):
     elif name in DEFAULT_OPTIONS.keys():
         return DEFAULT_OPTIONS[name]
     return None
-
-def write_items(fields, outdata, filetype, handle, delimiter=','):
-    if len(outdata) == 0:
-        return
-    if filetype == 'csv':
-        dw = csv.DictWriter(handle, delimiter=delimiter, fieldnames=fields)
-        dw.writeheader()
-        if type(outdata[0]) == type(''):
-            for rawitem in outdata:
-                item = {fields[0] : rawitem}
-                dw.writerow(item)
-        elif type(outdata[0]) == type([]):
-            for rawitem in outdata:
-                item = dict(zip(fields, rawitem))
-                dw.writerow(item)
-        else:
-            dw.writerows(outdata)
-    elif filetype == 'jsonl':
-        # If our data is just array of strings, we just transform it to dict
-        if type(outdata[0]) == type(''):
-            for rawitem in outdata:
-                item = {fields[0] : rawitem}
-                handle.write(orjson.dumps(item, option=orjson.OPT_APPEND_NEWLINE).decode('utf8'))
-        elif type(outdata[0]) == type([]):
-            for rawitem in outdata:
-                item = dict(zip(fields, rawitem))
-                handle.write(orjson.dumps(item, option=orjson.OPT_APPEND_NEWLINE).decode('utf8'))
-        else:
-            for item in outdata:
-                handle.write(orjson.dumps(item, option=orjson.OPT_APPEND_NEWLINE).decode('utf8'))
-
 
 def get_dict_value(d, keys):
     out = []
@@ -166,7 +134,7 @@ def guess_datatype(s, qd):
             attrs = {'base' : 'int', 'subtype' : guess_int_size(int(s))}
     else:
         try:
-            i = float(s)
+            float(s)
             attrs = {'base' : 'float'}
             return attrs
         except ValueError:

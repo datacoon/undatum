@@ -1,8 +1,6 @@
+# -*- coding: utf8 -*-
 from ..utils import get_file_type, get_option
-import orjson
-import csv
-import bson
-from ..common.iterable import IterableData, DataWriter
+from ..common.iterable import IterableData
 
 def get_keys(adict, prefix=None):
     keys = {}
@@ -28,9 +26,9 @@ class TextProcessor:
 
     def flatten(self, filename, options):
         """Flatten the data. One field - one line"""
-        f_type = get_file_type(filename) if options['format_in'] is None else options['format_in']
+        get_file_type(filename) if options['format_in'] is None else options['format_in']
         iterable = IterableData(filename, options=options)
-        to_file = get_option(options, 'output')
+        get_option(options, 'output')
         i = 0
         for rec in iterable.iter():
             allkeys = {}

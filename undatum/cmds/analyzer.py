@@ -1,15 +1,12 @@
 # -*- coding: utf8 -*-
 # FIXME: A lot of unoptimized code here, it could be better, shorter and some functions could be improved
 import os
-from ..utils import get_file_type, get_option, dict_generator, guess_int_size, guess_datatype, detect_delimiter, detect_encoding, get_dict_value, get_dict_keys, _is_flat, buf_count_newlines_gen
+from ..utils import get_file_type, detect_delimiter, detect_encoding, get_dict_value, get_dict_keys, _is_flat, buf_count_newlines_gen
 from ..constants import SUPPORTED_FILE_TYPES
 from collections import OrderedDict
 from bson import decode_file_iter
 import json
 import jsonlines
-import orjson
-import csv
-import zipfile
 import xmltodict
 OBJECTS_ANALYZE_LIMIT = 100
 
@@ -218,7 +215,6 @@ def analyze_xml(filename, objects_limit=OBJECTS_ANALYZE_LIMIT, filesize_limit=10
         return
     f = open(filename, 'rb')#, encoding=encoding)
     data = xmltodict.parse(f, process_namespaces=False)
-    from pprint import pprint
 #    pprint(data)
     candidates = _seek_xml_lists(data, level=0)
     if len(candidates.keys()) == 1:

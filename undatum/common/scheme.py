@@ -1,3 +1,4 @@
+# -*- coding: utf8 -*-
 import datetime
 import bson
 import orjson
@@ -109,7 +110,6 @@ def get_schema(obj, novalue=True):
 
 def extract_keys(obj, parent=None, text=None, level=1):
     """Extracts keys"""
-    keys = []
     text = ''
     if not parent:
         text = "'schema': {\n"

@@ -1,3 +1,4 @@
+# -*- coding: utf8 -*-
 ## Very unfinished, just a few example for future full rewrite to conform pytest
 
 from copy import deepcopy

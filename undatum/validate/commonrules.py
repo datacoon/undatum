@@ -1,3 +1,4 @@
+# -*- coding: utf8 -*-
 from email.utils import parseaddr
 import validators.url
 
@@ -6,4 +7,4 @@ def _validate_email(s):
 
 def _validate_url(s):
     r = validators.url(s)
-    return (r == True)
+    return (r is True)

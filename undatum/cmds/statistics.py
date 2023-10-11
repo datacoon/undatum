@@ -1,13 +1,9 @@
-from ..utils import get_file_type, get_option, dict_generator, guess_int_size, guess_datatype
-from ..constants import DATE_PATTERNS, DEFAULT_DICT_SHARE
-from datetime import datetime
+# -*- coding: utf8 -*-
+from ..utils import get_file_type, get_option, dict_generator, guess_datatype
+from ..constants import DEFAULT_DICT_SHARE
 import logging
-import bson
-import orjson
-import csv
-import zipfile
 from qddate import DateParser
-from ..common.iterable import IterableData, DataWriter
+from ..common.iterable import IterableData
 
 STAT_READY_DATA_FORMATS = ['jsonl', 'bson', 'csv']
 
