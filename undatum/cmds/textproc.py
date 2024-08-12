@@ -1,6 +1,19 @@
 # -*- coding: utf8 -*-
 from ..utils import get_file_type, get_option
-from ..common.iterable import IterableData
+from iterable.helpers.detect import open_iterable
+
+#STAT_READY_DATA_FORMATS = ['jsonl', 'bson', 'csv']
+
+ITERABLE_OPTIONS_KEYS = ['tagname', 'delimiter', 'encoding', 'start_line', 'page']
+
+
+def get_iterable_options(options):
+    out = {}
+    for k in ITERABLE_OPTIONS_KEYS:
+        if k in options.keys():
+            out[k] = options[k]
+    return out            
+
 
 def get_keys(adict, prefix=None):
     keys = {}
@@ -27,10 +40,11 @@ class TextProcessor:
     def flatten(self, filename, options):
         """Flatten the data. One field - one line"""
         get_file_type(filename) if options['format_in'] is None else options['format_in']
-        iterable = IterableData(filename, options=options)
+        iterableargs = get_iterable_options(options)
+        iterable = open_iterable(fromfile, mode='r', iterableargs=iterableargs)
         get_option(options, 'output')
         i = 0
-        for rec in iterable.iter():
+        for rec in iterable:
             allkeys = {}
             i += 1
             for k in get_keys(rec):

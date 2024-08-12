@@ -6,8 +6,23 @@ import orjson
 import bson
 import logging
 #from xmlr import xmliter
-from ..utils import get_file_type, get_option
+from ..utils import get_file_type, get_option, get_dict_value, strip_dict_fields, dict_generator, detect_encoding
 from runpy import run_path
+from iterable.helpers.detect import open_iterable
+
+ITERABLE_OPTIONS_KEYS = ['tagname', 'delimiter', 'encoding', 'start_line', 'page']
+
+
+def get_iterable_options(options):
+    out = {}
+    for k in ITERABLE_OPTIONS_KEYS:
+        if k in options.keys():
+            out[k] = options[k]
+    return out            
+
+DEFAULT_HEADERS_DETECT_LIMIT = 1000
+
+
 
 class Transformer:
     def __init__(self):
@@ -16,75 +31,51 @@ class Transformer:
 
     def script(self, fromfile, options={}):
         """Run certain script against selected file"""
-        f_type = get_file_type(fromfile) if options['format_in'] is None else options['format_in']
-        if options['zipfile']:
-            z = zipfile.ZipFile(fromfile, mode='r')
-            fnames = z.namelist()
-            if f_type == 'bson':
-                infile = z.open(fnames[0], 'rb')
-            else:
-                infile = z.open(fnames[0], 'r')
-        else:
-            if f_type == 'bson':
-                infile = open(fromfile, 'rb')
-            else:
-                infile = open(fromfile, 'r', encoding=get_option(options, 'encoding'))
-        to_file = get_option(options, 'output')
-        if to_file:
-            to_type = get_file_type(to_file)
-            if not to_file:
-                print('Output file type not supported')
-                return
-            if to_type == 'bson':
-                out = open(to_file, 'wb')
-            elif to_type == 'jsonl':
-                out = open(to_file, 'wb')
-            else:
-                out = open(to_file, 'w', encoding='utf8')
-        else:
-            to_type = f_type
-            out = sys.stdout
- #       fields = options['fields'].split(',') if options['fields'] else None
+
         script = run_path(options['script'])
         __process_func = script['process']
-        delimiter = get_option(options, 'delimiter')
-        if f_type == 'csv':
-            reader = csv.DictReader(infile, delimiter=delimiter)
-            if to_type == 'csv':
-                writer = csv.DictWriter(out, fieldnames=fields, delimiter=delimiter)
-                writer.writeheader()
-            n = 0
-            for r in reader:
-                n += 1
-                if n % 10000 == 0:
-                    logging.info('apply script: processing %d records of %s' % (n, fromfile))
-                item = __process_func(r)
-                if to_type == 'csv':
-                    writer.writerow(item)
-                elif to_type == 'jsonl':
-                    out.write(orjson.dumps(item, option=orjson.OPT_APPEND_NEWLINE))
-        elif f_type == 'jsonl':
-            n = 0
-            for l in infile:
-                n += 1
-                if n % 10000 == 0:
-                    logging.info('apply script: processing %d records of %s' % (n, fromfile))
-                r = orjson.loads(l)
-                item = __process_func(r)
-                out.write(orjson.dumps(item, option=orjson.OPT_APPEND_NEWLINE))
-        elif f_type == 'bson':
-            bson_iter = bson.decode_file_iter(infile)
-            n = 0
-            for r in bson_iter:
-                n += 1
-                if n % 10000 == 0:
-                    logging.info('apply script: processing %d records of %s' % (n, fromfile))
-                item = __process_func(r)
-                out.write(str(orjson.dumps(item, option=orjson.OPT_APPEND_NEWLINE)))
-        else:
-            logging.info('File type not supported')
-            return
+
+        iterableargs = get_iterable_options(options)
+        read_iterable = open_iterable(fromfile, mode='r', iterableargs=iterableargs)
+
+        limit = DEFAULT_HEADERS_DETECT_LIMIT
+
+        keys = []
+        n = 0
+        for item in read_iterable:
+            if limit and n > limit:
+                break
+            item = __process_func(item)
+            n += 1
+            dk = dict_generator(item)
+            for i in dk:
+                k = ".".join(i[:-1])
+                if k not in keys:
+                    keys.append(k)
+
+        read_iterable.close()
+        read_iterable = open_iterable(fromfile, mode='r', iterableargs=iterableargs)
+
+
+        write_to_iterable = False
+        to_file = get_option(options, 'output')
+        if to_file:            
+            write_to_iterable = True
+            write_iterable = open_iterable(to_file, mode='w', iterableargs={'keys' : keys}) 
+        n = 0
+        for r in read_iterable:
+            n += 1
+            if n % 10000 == 0:                                                                                                                 
+                logging.info('apply script: processing %d records of %s' % (n, fromfile))
+            item = __process_func(r)
+            if write_to_iterable:
+                write_iterable.write(item)
+            else:
+                sys.stdout.write(orjson.dumps(item, option=orjson.OPT_APPEND_NEWLINE).decode('utf8'))
+       
         logging.debug('select: %d records processed' % (n))
-        out.close()
+        read_iterable.close()
+        if write_to_iterable:
+            write_iterable.close()
 
 
