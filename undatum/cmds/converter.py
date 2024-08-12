@@ -11,6 +11,19 @@ from collections import defaultdict
 import bson
 from bson import ObjectId
 from xlrd import open_workbook as load_xls
+from ..utils import get_file_type, get_option, get_dict_value, strip_dict_fields, dict_generator, detect_encoding
+from iterable.helpers.detect import open_iterable
+
+ITERABLE_OPTIONS_KEYS = ['tagname', 'delimiter', 'encoding', 'start_line', 'page']
+
+def get_iterable_options(options):
+    out = {}
+    for k in ITERABLE_OPTIONS_KEYS:
+        if k in options.keys():
+            out[k] = options[k]
+    return out            
+
+
 
 PREFIX_STRIP = True
 PREFIX = ""
@@ -441,11 +454,40 @@ CONVERT_FUNC_MAP = {
 }
 
 
+DEFAULT_HEADERS_DETECT_LIMIT = 1000
+
 class Converter:
     def __init__(self):
         pass
 
-    def convert(self, fromfile, tofile, options={}):
+    def convert(self, fromfile, tofile, options={}, limit=DEFAULT_HEADERS_DETECT_LIMIT):
+        iterableargs = get_iterable_options(options)
+        it_in = open_iterable(fromfile, mode='r', iterableargs=iterableargs)
+
+        keys = []
+        n = 0
+        for item in it_in:
+            if limit and n > limit:
+                break
+            n += 1
+            dk = dict_generator(item)
+            for i in dk:
+                k = ".".join(i[:-1])
+                if k not in keys:
+                    keys.append(k)
+
+        it_in.reset()
+        it_out = open_iterable(tofile, mode='w', iterableargs={'keys' : keys})
+
+        n = 0
+        for row in it_in:
+            n += 1
+            it_out.write(row)
+        it_in.close()
+        it_out.close()
+
+
+    def convert_old(self, fromfile, tofile, options={}):
         fromtype = options['format_in'] if options['format_in'] is not None else get_file_type(fromfile)
         totype = options['format_out'] if options['format_out'] is not None else get_file_type(tofile)
         key = '%s2%s' % (fromtype, totype)

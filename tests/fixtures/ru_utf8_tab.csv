@@ -1,0 +1,21 @@
+db	coll	collname	name	ftype	description	fieldclass	sample1	sample2	sample3
+fedsubsidies	subsidies	Реестр соглашений на предоставлений субсидий федерального бюджета и бюджетов субъектов федерации	_id	string	Уникальный суррогатный ключ		5f507ddbb31874c9c8b59035
+fedsubsidies	subsidies	Реестр соглашений на предоставлений субсидий федерального бюджета и бюджетов субъектов федерации	info	dict			{'name': 'Соглашения (договоры), заключенные ГРБС о предоставлении субсидий из федерального бюджета юридическим лицам', 'regNum': '05116248000', 'startDate': datetime.datetime(2016, 2, 15, 0, 0), 'endDate': datetime.datetime(2016, 12, 31, 0, 0), 'sum': 300000.0, 'currencySum': 300000.0, 'currencyName': 'рубль', 'currencyCode': '643', 'code': '121', 'numAgreem': 'СБ-09-23С/256', 'dateAgreem': datetime.datetime(2016, 2, 15, 0, 0), 'numberNpa': '', 'dateReg': '', 'nameNpa': '', 'rate': 1.0, 'dateUpdate': datetime.datetime(2016, 3, 15, 0, 0), 'sumMba': None, 'sumMbamo': None, 'regnumRgz': '', 'mfCode': '', 'mfName': '', 'npaKind': '', 'sumSubFzFb': None, 'outerSystem': 'ASFK', 'internaldocnum': '0', 'loaddate': '2016-03-16 10:13:58.0', 'ts_mrk': '', 'ap_mrk': '', 't_summ': ''}
+fedsubsidies	subsidies	Реестр соглашений на предоставлений субсидий федерального бюджета и бюджетов субъектов федерации	info.name	string			Соглашения (договоры), заключенные ГРБС о предоставлении субсидий из федерального бюджета юридическим лицам
+fedsubsidies	subsidies	Реестр соглашений на предоставлений субсидий федерального бюджета и бюджетов субъектов федерации	info.regNum	string			05116248000
+fedsubsidies	subsidies	Реестр соглашений на предоставлений субсидий федерального бюджета и бюджетов субъектов федерации	info.startDate	string			2016-02-15 00:00:00
+fedsubsidies	subsidies	Реестр соглашений на предоставлений субсидий федерального бюджета и бюджетов субъектов федерации	info.endDate	string			2016-12-31 00:00:00
+fedsubsidies	subsidies	Реестр соглашений на предоставлений субсидий федерального бюджета и бюджетов субъектов федерации	info.sum	float			300000.0
+fedsubsidies	subsidies	Реестр соглашений на предоставлений субсидий федерального бюджета и бюджетов субъектов федерации	info.currencySum	float			300000.0
+fedsubsidies	subsidies	Реестр соглашений на предоставлений субсидий федерального бюджета и бюджетов субъектов федерации	info.currencyName	string			рубль
+fedsubsidies	subsidies	Реестр соглашений на предоставлений субсидий федерального бюджета и бюджетов субъектов федерации	info.currencyCode	string			643
+fedsubsidies	subsidies	Реестр соглашений на предоставлений субсидий федерального бюджета и бюджетов субъектов федерации	info.code	string			121
+fedsubsidies	subsidies	Реестр соглашений на предоставлений субсидий федерального бюджета и бюджетов субъектов федерации	info.numAgreem	string			СБ-09-23С/256
+fedsubsidies	subsidies	Реестр соглашений на предоставлений субсидий федерального бюджета и бюджетов субъектов федерации	info.dateAgreem	datetime		datetime	2016-02-15 00:00:00
+fedsubsidies	subsidies	Реестр соглашений на предоставлений субсидий федерального бюджета и бюджетов субъектов федерации	info.numberNpa	string			
+fedsubsidies	subsidies	Реестр соглашений на предоставлений субсидий федерального бюджета и бюджетов субъектов федерации	info.dateReg	string			
+fedsubsidies	subsidies	Реестр соглашений на предоставлений субсидий федерального бюджета и бюджетов субъектов федерации	info.nameNpa	string			
+fedsubsidies	subsidies	Реестр соглашений на предоставлений субсидий федерального бюджета и бюджетов субъектов федерации	info.rate	float			1.0
+fedsubsidies	subsidies	Реестр соглашений на предоставлений субсидий федерального бюджета и бюджетов субъектов федерации	info.dateUpdate	datetime		datetime	2016-03-15 00:00:00
+fedsubsidies	subsidies	Реестр соглашений на предоставлений субсидий федерального бюджета и бюджетов субъектов федерации	info.sumMba	string			None
+fedsubsidies	subsidies	Реестр соглашений на предоставлений субсидий федерального бюджета и бюджетов субъектов федерации	info.sumMbamo	string			None

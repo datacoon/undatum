@@ -8,11 +8,25 @@ import zipfile
 import bson
 import dictquery as dq
 import orjson
+import glom
 
 # from xmlr import xmliter
 from ..utils import get_file_type, get_option, get_dict_value, strip_dict_fields, dict_generator, detect_encoding
+
+from iterable.helpers.detect import open_iterable
+
 from ..common.iterable import IterableData, DataWriter
 LINEEND = u'\n'.encode('utf8')
+
+ITERABLE_OPTIONS_KEYS = ['tagname', 'delimiter', 'encoding', 'start_line', 'page']
+
+
+def get_iterable_options(options):
+    out = {}
+    for k in ITERABLE_OPTIONS_KEYS:
+        if k in options.keys():
+            out[k] = options[k]
+    return out            
 
 
 def get_iterable_fields_uniq(iterable, fields, dolog=False, dq=None):
@@ -72,8 +86,10 @@ class Selector:
         pass
 
     def uniq(self, fromfile, options={}):
+        """Extracts unique values by field"""
         logging.debug('Processing %s' % fromfile)
-        iterable = IterableData(fromfile, options=options)
+        iterableargs = get_iterable_options(options)
+        iterable = open_iterable(fromfile, mode='r', iterableargs=iterableargs)
         to_file = get_option(options, 'output')
         if to_file:
             to_type = get_file_type(to_file)
@@ -86,7 +102,7 @@ class Selector:
             out = sys.stdout
         fields = options['fields'].split(',')
         logging.info('uniq: looking for fields: %s' % (options['fields']))
-        uniqval = get_iterable_fields_uniq(iterable.iter(), fields, dolog=True)
+        uniqval = get_iterable_fields_uniq(iterable, fields, dolog=True)
         iterable.close()
         logging.debug('%d unique values found' % (len(uniqval)))
         writer = DataWriter(out, filetype=to_type, fieldnames=fields)
@@ -94,23 +110,23 @@ class Selector:
 
 
     def headers(self, fromfile, options={}):
+        """Extracts headers values"""
         f_type = get_file_type(fromfile) if options['format_in'] is None else options['format_in']
         limit = get_option(options, 'limit')
-        iterable = IterableData(fromfile, options=options)
-        if f_type == 'csv':
-            keys = iterable.iter().fieldnames
-        else:
-            n = 0
-            keys = []
-            for item in iterable.iter():
-                if limit and n > limit:
-                    break
-                n += 1
-                dk = dict_generator(item)
-                for i in dk:
-                    k = ".".join(i[:-1])
-                    if k not in keys:
-                        keys.append(k)
+        iterableargs = get_iterable_options(options)
+        
+        iterable = open_iterable(fromfile, mode='r', iterableargs=iterableargs)
+        keys = []
+        n = 0
+        for item in iterable:
+            if limit and n > limit:
+                break
+            n += 1
+            dk = dict_generator(item)
+            for i in dk:
+                k = ".".join(i[:-1])
+                if k not in keys:
+                    keys.append(k)
         iterable.close()
         output = get_option(options, 'output')
         if output:
@@ -123,8 +139,8 @@ class Selector:
 
     def frequency(self, fromfile, options={}):
         """Calculates frequency of the values in the file"""
-        iterable = IterableData(fromfile, options=options)
-
+        iterableargs = get_iterable_options(options)
+        iterable = open_iterable(fromfile, mode='r', iterableargs=iterableargs)
         to_file = get_option(options, 'output')
         if to_file:
             get_file_type(to_file)
@@ -137,7 +153,7 @@ class Selector:
         fields = options['fields'].split(',')
         valuedict = {}
         if iterable:
-            valuedict = get_iterable_fields_freq(iterable.iter(), fields, dolog=True)
+            valuedict = get_iterable_fields_freq(iterable, fields, dolog=True)
         else:
             logging.info('File type not supported')
             return
@@ -146,10 +162,11 @@ class Selector:
         output = get_option(options, 'output')
         strkeys = '\t'.join(fields) + '\tcount'
         if output:
-            f = open(output, 'w', encoding=get_option(options, 'encoding'))
-            f.write(strkeys + '\n')
+            encoding = get_option(options, 'encoding')
+            f = open(output, 'wb')
+            f.write((strkeys + '\n').encode(encoding))
             for k, v in thedict:
-                f.write('%s\t%d\n' % (k, v))
+                f.write(('%s\t%d\n' % (k, v)).encode(encoding))
             f.close()
         else:
             print(strkeys)
@@ -204,6 +221,14 @@ class Selector:
             return
         logging.debug('select: %d records processed' % (n))
         out.close()
+
+
+    def split_new(self, fromfile, options={}):
+        """Splits the given file with data into chunks based on chunk size or field value"""
+        iterableargs = get_iterable_options(options)
+        iterable = open_iterable(fromfile, mode='r', iterableargs=iterableargs)
+        to_file = get_option(options, 'output')
+
 
     def split(self, fromfile, options={}):
         """Splits the given file with data into chunks based on chunk size or field value"""
@@ -260,7 +285,6 @@ class Selector:
                         out = open(splitname, 'w', encoding=get_option(options, 'encoding'))
                         writer = csv.DictWriter(out, fieldnames=reader.fieldnames, delimiter=delimiter)
                         writer.writeheader()
-                out.close()
         elif f_type == 'jsonl':
             n = 0
             chunknum = 1
@@ -298,7 +322,7 @@ class Selector:
                         continue
                         kx = "None"
                     if kx is None: continue
-                    kx = kx.replace('\\', '-').replace('/', '-').replace('?', '-').replace('<', '-').replace('>', '-')
+                    kx = kx.replace('\\', '-').replace('/', '-').replace('?', '-').replace('<', '-').replace('>', '-').replace('\n', '')
                     v = valuedict.get(kx, None)
                     if v is None:
                         splitname = finfilename.rsplit('.', 1)[0] + '_%s.jsonl' % (kx)

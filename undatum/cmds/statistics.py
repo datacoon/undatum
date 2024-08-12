@@ -3,9 +3,21 @@ from ..utils import get_file_type, get_option, dict_generator, guess_datatype
 from ..constants import DEFAULT_DICT_SHARE
 import logging
 from qddate import DateParser
-from ..common.iterable import IterableData
+#from ..common.iterable import IterableData
+from iterable.helpers.detect import open_iterable
 
-STAT_READY_DATA_FORMATS = ['jsonl', 'bson', 'csv']
+#STAT_READY_DATA_FORMATS = ['jsonl', 'bson', 'csv']
+
+ITERABLE_OPTIONS_KEYS = ['tagname', 'delimiter', 'encoding', 'start_line', 'page']
+
+
+def get_iterable_options(options):
+    out = {}
+    for k in ITERABLE_OPTIONS_KEYS:
+        if k in options.keys():
+            out[k] = options[k]
+    return out            
+
 
 class StatProcessor:
     def __init__(self, nodates=True):
@@ -20,13 +32,10 @@ class StatProcessor:
         from rich import print
         from rich.table import Table
 
-        f_type = get_file_type(fromfile) if options['format_in'] is None else options['format_in']
-        if f_type not in STAT_READY_DATA_FORMATS:
-            print('Only JSON lines (.jsonl), .csv and .bson files supported now')
-            return
-        iterable = IterableData(fromfile, options=options)
-
+        iterableargs = get_iterable_options(options)
+        iterable = open_iterable(fromfile, mode='r', iterableargs=iterableargs)
         dictshare = get_option(options, 'dictshare')
+
         if dictshare and dictshare.isdigit():
             dictshare = int(dictshare)
         else:
@@ -42,7 +51,7 @@ class StatProcessor:
 
         # process data items one by one
         logging.debug('Start processing %s' % (fromfile))
-        for item in iterable.iter():
+        for item in iterable:
             count += 1
             dk = dict_generator(item)
             if count % 1000 == 0: logging.debug('Processing %d records of %s' % (count, fromfile))
