@@ -422,7 +422,7 @@ class Analyzer:
                 f.write(json.dumps(report.model_dump()))
                 f.close()
             else:
-                print(json.dumps(report.model_dump()))
+                print(json.dumps(report.model_dump(), indent=4, ensure_ascii=False))
         elif options['outtype'] == 'markdown':
             raise "Not Implemented"
         else:
