@@ -48,7 +48,10 @@ install_requires = [
     'validators>=0.18.1',
     'xlrd>=1.2.0',
     'xmltodict',
-    'rich'
+    'rich',
+    'duckdb',
+    'pyzstd',
+    'pydantic'
 ]
 
 

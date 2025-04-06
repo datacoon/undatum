@@ -1,12 +1,9 @@
 # -*- coding: utf8 -*-
-import csv
-import zipfile
 import sys
 import orjson
-import bson
 import logging
 #from xmlr import xmliter
-from ..utils import get_file_type, get_option, get_dict_value, strip_dict_fields, dict_generator, detect_encoding
+from ..utils import get_option, dict_generator
 from runpy import run_path
 from iterable.helpers.detect import open_iterable
 

@@ -8,12 +8,12 @@ import sys
 
 def main():
     try:
-        from .core import cli
-        cli()
+        from .core import app
+        app()
     except KeyboardInterrupt:
         print("Ctrl-C pressed. Aborting")
     sys.exit(0)
 
 
 if __name__ == '__main__':
-    main()
+    app()

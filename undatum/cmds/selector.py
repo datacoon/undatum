@@ -1,4 +1,5 @@
 # -*- coding: utf8 -*-
+import os
 import csv
 # import json
 import logging
@@ -8,7 +9,6 @@ import zipfile
 import bson
 import dictquery as dq
 import orjson
-import glom
 
 # from xmlr import xmliter
 from ..utils import get_file_type, get_option, get_dict_value, strip_dict_fields, dict_generator, detect_encoding
@@ -306,7 +306,7 @@ class Selector:
                         chunknum += 1
                         splitname = finfilename.rsplit('.', 1)[0] + '_%d.jsonl' % (chunknum)
                         logging.info('split: new chunk %s' % splitname)
-                        out = open(splitname, 'w', encoding=get_option(options, 'encoding'))
+                        out = open(splitname, 'wb') #, encoding=get_option(options, 'encoding'))
             else:
                 for l in infile:
                     n += 1
@@ -325,7 +325,9 @@ class Selector:
                     kx = kx.replace('\\', '-').replace('/', '-').replace('?', '-').replace('<', '-').replace('>', '-').replace('\n', '')
                     v = valuedict.get(kx, None)
                     if v is None:
-                        splitname = finfilename.rsplit('.', 1)[0] + '_%s.jsonl' % (kx)
+#                        splitname = finfilename.rsplit('.', 1)[0] + '_%s.jsonl' % (kx)
+                        splitname = '%s.jsonl' % (kx)
+                        if options['dirname'] is not None: splitname = os.path.join(options['dirname'], splitname)
                         valuedict[kx] = open(splitname, 'w', encoding='utf8')
                     valuedict[kx].write(l)
                 #                    valuedict[kx].write(l.decode('utf8'))#.decode('utf8')#)

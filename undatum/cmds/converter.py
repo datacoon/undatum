@@ -11,10 +11,13 @@ from collections import defaultdict
 import bson
 from bson import ObjectId
 from xlrd import open_workbook as load_xls
-from ..utils import get_file_type, get_option, get_dict_value, strip_dict_fields, dict_generator, detect_encoding
+from ..utils import get_file_type, get_option, dict_generator
 from iterable.helpers.detect import open_iterable
+from tqdm import tqdm
 
 ITERABLE_OPTIONS_KEYS = ['tagname', 'delimiter', 'encoding', 'start_line', 'page']
+
+DEFAULT_BATCH_SIZE = 50000
 
 def get_iterable_options(options):
     out = {}
@@ -27,7 +30,6 @@ def get_iterable_options(options):
 
 PREFIX_STRIP = True
 PREFIX = ""
-from ..utils import get_file_type
 
 LINEEND = '\n'.encode('utf8')
 
@@ -177,8 +179,8 @@ def xls_to_jsonl(fromname, toname, options={}, default_options={'start_page': 0,
         if n == 1 and fields is None:
             fields = tmp
             continue
-        l = orjson.dumps(dict(zip(fields, tmp)))
-        output.write(l + LINEEND)
+        line = orjson.dumps(dict(zip(fields, tmp)))
+        output.write(line + LINEEND)
         #        output.write(u'\n'.encode('utf8'))
         if n % 10000 == 0:
             logging.info('xls2jsonl: processed %d records' % (n))
@@ -197,7 +199,8 @@ def xlsx_to_jsonl(fromname, toname, options={}, default_options={'start_page': 0
     fields = options['fields'].split(',') if options['fields'] is not None else None
     for row in sheet.iter_rows():
         n += 1
-        if n < options['start_line']: continue
+        if n < options['start_line']: 
+            continue
         tmp = list()
 
         for cell in row:
@@ -205,8 +208,8 @@ def xlsx_to_jsonl(fromname, toname, options={}, default_options={'start_page': 0
         if n == 1 and fields is None:
             fields = tmp
             continue
-        l = orjson.dumps(dict(zip(fields, tmp)))
-        output.write(l)
+        line = orjson.dumps(dict(zip(fields, tmp)))
+        output.write(line)
         output.write(LINEEND)
         if n % 10000 == 0:
             logging.debug('xlsx2jsonl: processed %d records' % (n))
@@ -223,7 +226,8 @@ def xlsx_to_bson(fromname, toname, options={}, default_options={'start_page': 0,
     fields = options['fields'].split(',') if options['fields'] is not None else None
     for row in sheet.iter_rows():
         n += 1
-        if n < options['start_line']: continue
+        if n < options['start_line']: 
+            continue
         tmp = list()
 
         for cell in row:
@@ -268,10 +272,11 @@ def express_analyze_jsonl(filename, itemlimit=100):
     isflat = True
     n = 0
     keys = set()
-    for l in f:
+    for line in f:
         n += 1
-        if n > itemlimit: break
-        record = orjson.loads(l)
+        if n > itemlimit: 
+            break
+        record = orjson.loads(line)
         if isflat:
             if not _is_flat(record):
                 isflat = False
@@ -298,9 +303,9 @@ def jsonl_to_csv(fromname, toname, options={},
     f = open(fromname, 'r', encoding='utf8')
     keys = analysis['keys']
     n = 0
-    for l in f:
+    for line in f:
         n += 1
-        record = orjson.loads(l)
+        record = orjson.loads(line)
         item = []
         for k in keys:
             if k in record.keys():
@@ -456,33 +461,64 @@ CONVERT_FUNC_MAP = {
 
 DEFAULT_HEADERS_DETECT_LIMIT = 1000
 
+def make_flat(item):
+    result = {}
+    for k, v in item.items():
+        if isinstance(v, tuple) or isinstance(v, list) or isinstance(v, dict):
+            result[k] = str(v)
+        result[k] = v
+    return result
+
 class Converter:
-    def __init__(self):
+    def __init__(self, batch_size = DEFAULT_BATCH_SIZE):
+        self.batch_size = batch_size
         pass
 
     def convert(self, fromfile, tofile, options={}, limit=DEFAULT_HEADERS_DETECT_LIMIT):
         iterableargs = get_iterable_options(options)
-        it_in = open_iterable(fromfile, mode='r', iterableargs=iterableargs)
-
+#        print(iterableargs)
+        it_in = open_iterable(fromfile, mode='r', iterableargs=iterableargs)       
+        is_flatten = get_option(options, 'flatten')
         keys = []
         n = 0
-        for item in it_in:
-            if limit and n > limit:
+        logging.info('Extracting schema')
+        for item in tqdm(it_in, total=limit):
+#            print(item)
+            if limit is not None and n > limit:
                 break
-            n += 1
-            dk = dict_generator(item)
-            for i in dk:
-                k = ".".join(i[:-1])
-                if k not in keys:
-                    keys.append(k)
+            n += 1                
+            if not is_flatten:
+                dk = dict_generator(item)
+                for i in dk:
+                    k = ".".join(i[:-1])
+                    if k not in keys:
+                        keys.append(k)
+            else:
+                item = make_flat(item)
+                for k in item.keys():
+                    if k not in keys:
+                        keys.append(k)
 
         it_in.reset()
         it_out = open_iterable(tofile, mode='w', iterableargs={'keys' : keys})
 
+        logging.info('Converting data')
         n = 0
-        for row in it_in:
-            n += 1
-            it_out.write(row)
+        batch = []
+        for row in tqdm(it_in):
+            n += 1 
+            if is_flatten:
+                for k in keys:
+                    if k not in row.keys(): 
+                        row[k] = None              
+                batch.append(make_flat(row))
+            else:
+                batch.append(row)
+            if n % self.batch_size == 0:
+                it_out.write_bulk(batch)
+                batch = []
+        if len(batch) > 0: 
+            it_out.write_bulk(batch)
         it_in.close()
         it_out.close()
 

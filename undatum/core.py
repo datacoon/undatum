@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf8 -*-
-import click
+import typer
 import logging
 
 from .cmds.converter import Converter
@@ -13,6 +13,8 @@ from .cmds.validator import Validator
 from .cmds.schemer import Schemer
 from .cmds.query import DataQuery
 
+app = typer.Typer()
+
 #logging.getLogger().addHandler(logging.StreamHandler())
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -23,34 +25,15 @@ def enableVerbose():
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
         level=logging.INFO)
 
-
-@click.group()
-def cli1():
-    pass
-
-@cli1.command()
-@click.argument('input')
-@click.argument('output')
-@click.option('--delimiter', '-d', default=',', help="CSV delimiter if convert from CSV, default ','")
-@click.option('--encoding', '-e', default='utf8', help="Input and output encoding, default is utf8")
-@click.option('--compression', '-c', default='brotli', help="Set output compression for Parquet files. Default: brotli")
-@click.option('--verbose', '-v', count=False, help='Verbose output. Print additional info')
-@click.option('--prefix-strip', default=True, is_flag=True, help="Strip prefix from XML files")
-@click.option('--fields', '-f', default=None, help="Fieldnames from XLS conversion")
-@click.option('--start-line', default=0, help="Start line, used for XLS and XLSX conversion")
-@click.option('--skip-end-rows', default=0, help="Skip rows at the end of xls file")
-@click.option('--start-page', default=0, help="Start page, used for XLS and XLSX conversion")
-@click.option('--tagname',  default=None, help="Object tagname, needed for xml2json")
-@click.option('--format-in',  default=None, help="Format of input file, if set, replaces autodetect")
-@click.option('--format-out',  default=None, help="Format of output file, if set, replaces autodetect")
-@click.option('-z', '--zipfile', 'zipfile', is_flag=False, help="Used to say input file is .zip file and that data file is inside")
-def convert(input, output, delimiter, compression, encoding, verbose, prefix_strip, fields, start_line, skip_end_rows, start_page, tagname, format_in, format_out, zipfile):
+@app.command()
+def convert(input:str, output:str, delimiter:str=',', compression:str='brotli', encoding:str='utf8', verbose:bool=False, flatten:bool=False, prefix_strip:bool=True, fields:str=None, start_line:int=0, skip_end_rows:int=0, start_page:int=0, tagname:str=None, format_in:str=None, format_out:str=None, zipfile:bool=False):
     """Converts one file to another. Supports XML, CSV, JSON, BSON"""
     if verbose:
         enableVerbose()
     options = {}
     options['delimiter'] = delimiter
     options['compression'] = compression
+    options['flatten'] = flatten
     options['encoding'] = encoding
     options['prefix_strip'] = prefix_strip
     options['start_line'] = start_line
@@ -65,23 +48,31 @@ def convert(input, output, delimiter, compression, encoding, verbose, prefix_str
     acmd.convert(input, output, options)
     pass
 
-
-@click.group()
-def cli2():
+@app.command()
+def convertold(input:str, output:str, delimiter:str=',', compression:str='brotli', encoding:str='utf8', verbose:bool=False, flatten:bool=False, prefix_strip:bool=True, fields:str=None, start_line:int=0, skip_end_rows:int=0, start_page:int=0, tagname:str=None, format_in:str=None, format_out:str=None, zipfile:bool=False):
+    """Converts one file to another. Supports XML, CSV, JSON, BSON (old implementation)"""
+    if verbose:
+        enableVerbose()
+    options = {}
+    options['delimiter'] = delimiter
+    options['compression'] = compression
+    options['flatten'] = flatten
+    options['encoding'] = encoding
+    options['prefix_strip'] = prefix_strip
+    options['start_line'] = start_line
+    options['skip_end_rows'] = skip_end_rows
+    options['start_page'] = start_page
+    options['tagname'] = tagname
+    options['fields'] = fields
+    options['format_in'] = format_in
+    options['format_out'] = format_out
+    options['zipfile'] = zipfile
+    acmd = Converter()
+    acmd.convert_old(input, output, options)
     pass
 
-@cli2.command()
-@click.argument('input')
-@click.option('--output', '-o', 'output', default=None, help='Output to this file')
-@click.option('--fields', '-f', default=None, help="Fieldnames, delimiter by ','")
-@click.option('--delimiter', '-d', default=',', help="CSV delimiter if convert from CSV")
-@click.option('--encoding', '-e', default=None, help="Input and output encoding")
-@click.option('--verbose', '-v', count=True, help='Verbose output. Print additional info on command execution')
-@click.option('--format-in',  default=None, help="Format of input file, if set, replaces autodetect")
-@click.option('--format-out',  default=None, help="Format of output file, if set, replaces autodetect")
-@click.option('-z', '--zipfile', 'zipfile', is_flag=True, help="Used to say input file is .zip file and that data file is inside")
-@click.option('--filter',  default=None, help="Filter input file with dict query")
-def uniq(input, output, fields, delimiter, encoding, verbose, format_in, format_out, zipfile, filter):
+@app.command()
+def uniq(input:str, output:str=None, fields:str=None, delimiter:str=',', encoding:str=None, verbose:bool=False, format_in:str=None, format_out:str=None, zipfile:bool=False, filter:str=None):
     """Returns all unique files of certain field(s)"""
     if verbose:
         enableVerbose()
@@ -98,21 +89,9 @@ def uniq(input, output, fields, delimiter, encoding, verbose, format_in, format_
     acmd.uniq(input, options)
     pass
 
-@click.group()
-def cli3():
-    pass
 
-@cli3.command()
-@click.argument('input')
-@click.option('--output', '-o', 'output', default=None, help='Output to this file')
-@click.option('--delimiter', '-d', default=None, help="CSV delimiter if convert from CSV")
-@click.option('--encoding', '-e', default=None, help="Input and output encoding")
-@click.option('--limit', '-l', default=1000, help="Limit of lines used to detect headers of JSON/BSON files only")
-@click.option('--format-in',  default=None, help="Format of input file, if set, replaces autodetect")
-@click.option('--format-out',  default=None, help="Format of output file, if set, replaces autodetect")
-@click.option('--verbose', '-v', count=True, help='Verbose output. Print additional info on command execution')
-@click.option('-z', '--zipfile', 'zipfile', is_flag=True, help="Used to say input file is .zip file and that data file is inside")
-def headers(input, output, delimiter, encoding, limit, format_in, format_out, verbose, zipfile):
+@app.command()
+def headers(input:str, output:str=None, fields:str=None, delimiter:str=',', encoding:str=None, limit:int=10000, verbose:bool=False, format_in:str=None, format_out:str=None, zipfile:bool=False, filter:str=None):
     """Returns fieldnames of the file. Supports XML, CSV, JSON, BSON"""
     if verbose:
         enableVerbose()
@@ -128,22 +107,8 @@ def headers(input, output, delimiter, encoding, limit, format_in, format_out, ve
     acmd.headers(input, options)
     pass
 
-@click.group()
-def cli4():
-    pass
-
-@cli4.command()
-@click.argument('input')
-@click.option('--output', '-o', 'output', default=None, help='Output to this file')
-@click.option('--dictshare', '-s', 'dictshare', default=None, help="Uniqness level of certain field to detect that it's dict")
-@click.option('--format-in',  default=None, help="Format of input file, if set, replaces autodetect")
-@click.option('--format-out',  default=None, help="Format of output file, if set, replaces autodetect")
-@click.option('--delimiter', '-d', default=',', help="CSV delimiter if convert from CSV")
-@click.option('--verbose', '-v', count=True, help='Verbose output. Print additional info on command execution')
-@click.option('-z', '--zipfile', 'zipfile', is_flag=True, help="Used to say input file is .zip file and that data file is inside")
-@click.option('--checkdates', is_flag=True, help="Significantly slow down process, buy identifies dates fields from text. Not used by default")
-@click.option('--encoding', '-e', default=None, help="Input and output encoding")
-def stats(input, output, dictshare, format_in, format_out, delimiter, verbose, zipfile, checkdates, encoding):
+@app.command()
+def stats(input:str, output:str=None, dictshare:int=None, format_in:str=None, format_out:str=None, delimiter:str=None, verbose:bool=False, zipfile:bool=False, checkdates:bool=True, encoding:str=None):
     """Returns detailed stats on selected dataset"""
     if verbose:
         enableVerbose()
@@ -161,20 +126,7 @@ def stats(input, output, dictshare, format_in, format_out, delimiter, verbose, z
     acmd.stats(input, options)
     pass
 
-
-@click.group()
-def cli5():
-    pass
-
-@cli5.command()
-@click.argument('input')
-@click.option('--output', '-o', 'output', default=None, help='Output to this file')
-@click.option('--delimiter', '-d', default=',', help="CSV delimiter if convert from CSV")
-@click.option('--encoding', '-e', default='utf8', help="Input and output encoding")
-@click.option('--format-in',  default=None, help="Format of input file, if set, replaces autodetect")
-@click.option('--filter',  default=None, help="Filter input file with dict query")
-@click.option('--verbose', '-v', count=True, help='Verbose output. Print additional info on command execution')
-def flatten(input, output, delimiter, encoding, format_in, filter, verbose):
+def flatten(input:str, output:str=None, delimiter:str=',', encoding:str='utf8', format_in:str=None, filter:str=None, verbose:bool=False):
     """Flatten data records. Write them as one value per row"""
     if verbose:
         enableVerbose()
@@ -189,22 +141,8 @@ def flatten(input, output, delimiter, encoding, format_in, filter, verbose):
     pass
 
 
-@click.group()
-def cli6():
-    pass
-
-@cli6.command()
-@click.argument('input')
-@click.option('--output', '-o', 'output', default=None, help='Output to this file')
-@click.option('--delimiter', '-d', default=',', help="CSV delimiter if convert from CSV")
-@click.option('--encoding', '-e', default=None, help="Input and output encoding")
-@click.option('--fields', '-f', default=None, help="Fieldnames, delimiter by ','")
-@click.option('--verbose', '-v', count=True, help='Verbose output. Print additional info on command execution')
-@click.option('--format-in',  default=None, help="Format of input file, if set, replaces autodetect")
-@click.option('--format-out',  default=None, help="Format of output file, if set, replaces autodetect")
-@click.option('-z', '--zipfile', 'zipfile', is_flag=True, help="Used to say input file is .zip file and that data file is inside")
-@click.option('--filter',  default=None, help="Filter input file with dict query")
-def frequency(input, output, fields, delimiter, encoding, verbose, format_in, format_out, zipfile, filter):
+@app.command()
+def frequency(input:str, output:str=None, fields:str=None, delimiter:str=",", encoding:str=None, verbose:bool=False, format_in:str=None, format_out:str=None, zipfile:bool=False, filter:str=None):
     """Field value frequency calc"""
     if verbose:
         enableVerbose()
@@ -221,23 +159,8 @@ def frequency(input, output, fields, delimiter, encoding, verbose, format_in, fo
     acmd.frequency(input, options)
     pass
 
-
-@click.group()
-def cli7():
-    pass
-
-@cli7.command()
-@click.argument('input')
-@click.option('--output', '-o', 'output', default=None, help='Output to this file')
-@click.option('--delimiter', '-d', default=None, help="CSV delimiter if convert from CSV")
-@click.option('--encoding', '-e', default=None, help="Input and output encoding")
-@click.option('--fields', '-f', default=None, help="Fieldnames, delimiter by ','")
-@click.option('--verbose', '-v', count=True, help='Verbose output. Print additional info on command execution')
-@click.option('--format-in',  default=None, help="Format of input file, if set, replaces autodetect")
-@click.option('--format-out',  default=None, help="Format of output file, if set, replaces autodetect")
-@click.option('-z', '--zipfile', 'zipfile', is_flag=True, help="Used to say input file is .zip file and that data file is inside")
-@click.option('--filter',  default=None, help="Filter input file with dict query")
-def select(input, output, fields, delimiter, encoding, verbose, format_in, format_out, zipfile, filter):
+@app.command()
+def select(input:str, output:str=None, fields:str=None, delimiter:str=",", encoding:str=None, verbose:bool=False, format_in:str=None, format_out:str=None, zipfile:bool=False, filter:str=None):
     """Select or re-order columns from file. Supports CSV, JSONl, BSON"""
     if verbose:
         enableVerbose()
@@ -255,23 +178,8 @@ def select(input, output, fields, delimiter, encoding, verbose, format_in, forma
     pass
 
 
-@click.group()
-def cli8():
-    pass
-
-@cli8.command()
-@click.argument('input')
-@click.option('--output', '-o', 'output', default=None, help='Output to this file')
-@click.option('--delimiter', '-d', default=',', help="CSV delimiter if convert from CSV")
-@click.option('--encoding', '-e', default='utf8', help="Input and output encoding")
-@click.option('--fields', '-f', default=None, help="Fieldnames, delimiter by ','")
-@click.option('--verbose', '-v', count=True, help='Verbose output. Print additional info on command execution')
-@click.option('--format-in',  default=None, help="Format of input file, if set, replaces autodetect")
-@click.option('-z', '--zipfile', 'zipfile', is_flag=True, help="Used to say input file is .zip file and that data file is inside")
-@click.option('--gzip', '-g', 'gzipfile', is_flag=True, help="Used to say input file is gzipped file")
-@click.option('-c', '--chunksize', default=10000, help='Default chunk size of file to split. Used if field value not given')
-@click.option('--filter',  default=None, help="Filter input file with dict query")
-def split(input, output, fields, delimiter, encoding, verbose, format_in, zipfile, gzipfile, chunksize, filter):
+@app.command()
+def split(input:str, output:str=None, fields:str=None, delimiter:str=',', encoding:str="utf8", verbose:bool=False, format_in:str=None, zipfile:bool=False, gzipfile:str=None, chunksize:int=10000, filter:str=None, dirname:str=None):
     """Splits the given file with data into chunks."""
     if verbose:
         enableVerbose()
@@ -285,28 +193,13 @@ def split(input, output, fields, delimiter, encoding, verbose, format_in, zipfil
     options['gzipfile'] = gzipfile
     options['chunksize'] = chunksize
     options['filter'] = filter
+    options['dirname'] = dirname
     acmd = Selector()
     acmd.split(input, options)
     pass
 
-@click.group()
-def cli9():
-    pass
-
-
-@cli9.command()
-@click.argument('input')
-@click.option('--output', '-o', 'output', default=None, help='Output to this file')
-@click.option('--delimiter', '-d', default=',', help="CSV delimiter if convert from CSV")
-@click.option('--encoding', '-e', default='utf8', help="Input and output encoding")
-@click.option('--fields', '-f', default=None, help="Fieldnames, delimiter by ','")
-@click.option('--verbose', '-v', count=True, help='Verbose output. Print additional info on command execution')
-@click.option('--format-in',  default=None, help="Format of input file, if set, replaces autodetect")
-@click.option('-z', '--zipfile', 'zipfile', is_flag=True, help="Used to say input file is .zip file and that data file is inside")
-@click.option('-r', '--rule',  default=None, required=True, help="Validation rule")
-@click.option('--filter',  default=None, help="Filter input file with dict query")
-@click.option('-m', '--mode',  default='invalid', help="Mode of validation output: invalid, all, or stats")
-def validate(input, output, fields, delimiter, encoding, verbose, format_in, zipfile, rule, filter, mode):
+@app.command()
+def validate(input:str, output:str=None, fields:str=None, delimiter:str=',', encoding:str='utf8', verbose:bool=False, format_in:str=None, zipfile:bool=False, rule:str=None, filter:str=None, mode:str="invalid"):
     """Validates selected field against validation rule"""
     if verbose:
         enableVerbose()
@@ -324,23 +217,8 @@ def validate(input, output, fields, delimiter, encoding, verbose, format_in, zip
     acmd.validate(input, options)
     pass
 
-@click.group()
-def cli10():
-    pass
-
-
-@cli10.command()
-@click.argument('input')
-@click.option('--output', '-o', 'output', default=None, help='Output to this file')
-@click.option('--delimiter', '-d', default=',', help="CSV delimiter if convert from CSV")
-@click.option('--encoding', '-e', default='utf8', help="Input and output encoding")
-@click.option('--fields', '-f', default=None, help="Fieldnames, delimiter by ','")
-@click.option('--verbose', '-v', count=True, help='Verbose output. Print additional info on command execution')
-@click.option('--format-in',  default=None, help="Format of input file, if set, replaces autodetect")
-@click.option('-z', '--zipfile', 'zipfile', is_flag=True, help="Used to say input file is .zip file and that data file is inside")
-@click.option('-s', '--script',  default=None, required=True, help="Script to run")
-@click.option('--filter',  default=None, help="Filter input file with dict query")
-def apply(input, output, fields, delimiter, encoding, verbose, format_in, zipfile, script, filter):
+@app.command()
+def apply(input:str, output:str=None, fields:str=None, delimiter:str=",", encoding:str='utf8', verbose:bool=False, format_in:str=None, zipfile:bool=False, script:str=None, filter:str=None):
     """Runs script against each record of input file"""
     if verbose:
         enableVerbose()
@@ -358,20 +236,8 @@ def apply(input, output, fields, delimiter, encoding, verbose, format_in, zipfil
     pass
 
 
-@click.group()
-def cli11():
-    pass
-
-@cli11.command()
-@click.argument('input')
-@click.option('--output', '-o', 'output', default=None, help='Output to this file')
-@click.option('--delimiter', '-d', default=',', help="CSV delimiter if convert from CSV")
-@click.option('--encoding', '-e', default='utf8', help="Input and output encoding")
-@click.option('--verbose', '-v', count=True, help='Verbose output. Print additional info on command execution')
-@click.option('--format-in',  default=None, help="Format of input file, if set, replaces autodetect")
-@click.option('-z', '--zipfile', 'zipfile', is_flag=True, help="Used to say input file is .zip file and that data file is inside")
-@click.option('--stype',  default='cerberus', help="Type of the schema: cerberus")
-def scheme(input, output, delimiter, encoding, verbose, format_in, zipfile, stype):
+@app.command()
+def scheme(input:str, output:str=None, delimiter:str=',', encoding:str='utf8', verbose:bool=False, format_in:str=None, zipfile:bool=False, stype:str='cerberus'):
     """Generate data schema from file"""
     if verbose:
         enableVerbose()
@@ -387,42 +253,25 @@ def scheme(input, output, delimiter, encoding, verbose, format_in, zipfile, styp
     pass
 
 
-@click.group()
-def cli12():
-    pass
 
-@cli12.command()
-@click.argument('input')
-@click.option('--verbose', '-v', count=True, help='Verbose output. Print additional info on command execution')
-@click.option('--format-in',  default=None, help="Format of input file, if set, replaces autodetect")
-@click.option('-z', '--zipfile', 'zipfile', is_flag=True, help="Used to say input file is .zip file and that data file is inside")
-def analyze(input, verbose, format_in, zipfile):
+@app.command()
+def analyze(input:str, verbose:bool=False, engine:str="auto", use_pandas:bool=False, outtype:str="text", output:str=None, autodoc:bool=False, lang:str="English"):
     """Analyzes given data file and returns human readable insights about it"""
     if verbose:
         enableVerbose()
     options = {}
-    options['format_in'] = format_in
-    options['zipfile'] = zipfile
+    options['engine'] = engine
+    options['use_pandas'] = use_pandas
+    options['outtype'] = outtype
+    options['output'] = output
+    options['autodoc'] = autodoc
+    options['lang'] = lang
     acmd = Analyzer()
     acmd.analyze(input, options)
     pass
 
-@click.group()
-def cli13():
-    pass
-
-@cli13.command()
-@click.argument('input')
-@click.option('--output', '-o', 'output', default=None, help='Output to this file')
-@click.option('--delimiter', '-d', default=None, help="CSV delimiter if convert from CSV")
-@click.option('--encoding', '-e', default=None, help="Input and output encoding")
-@click.option('--fields', '-f', default=None, help="Fieldnames, delimiter by ','")
-@click.option('--verbose', '-v', count=True, help='Verbose output. Print additional info on command execution')
-@click.option('--format-in',  default=None, help="Format of input file, if set, replaces autodetect")
-@click.option('--format-out',  default=None, help="Format of output file, if set, replaces autodetect")
-@click.option('-z', '--zipfile', 'zipfile', is_flag=True, help="Used to say input file is .zip file and that data file is inside")
-@click.option('--query', '-q',  default=None, help="Query using mistql")
-def query(input, output, fields, delimiter, encoding, verbose, format_in, format_out, zipfile, query):
+@app.command()
+def query(input:str, output:str=None, fields:str=None, delimiter:str=',', encoding:str=None, verbose:bool=False, format_in:str=None, format_out:str=None, zipfile:bool=False, query:str=None):
     """Query data using mistql (experimental, require mistql). Use 'pip install mistql' to install"""
     if verbose:
         enableVerbose()
@@ -441,8 +290,7 @@ def query(input, output, fields, delimiter, encoding, verbose, format_in, format
 
 
 
-cli = click.CommandCollection(sources=[cli1, cli2, cli3, cli4, cli5, cli6, cli7, cli8, cli9, cli10, cli11, cli12, cli13])
 
-#if __name__ == '__main__':
-#    cli()
+if __name__ == '__main__':
+    app()
 

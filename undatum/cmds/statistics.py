@@ -1,5 +1,5 @@
 # -*- coding: utf8 -*-
-from ..utils import get_file_type, get_option, dict_generator, guess_datatype
+from ..utils import get_option, dict_generator, guess_datatype
 from ..constants import DEFAULT_DICT_SHARE
 import logging
 from qddate import DateParser
