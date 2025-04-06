@@ -1,6 +1,5 @@
 avro>=1.10.2
 chardet>=5.2.0
-click>=8.1.6
 dictquery>=0.5.0
 jsonlines>=4.0.0
 lz4>=4.3.2
@@ -25,3 +24,4 @@ python_docx>=0.8.11
 duckdb
 pyzstd
 pydantic
+typer

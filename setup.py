@@ -51,7 +51,8 @@ install_requires = [
     'rich',
     'duckdb',
     'pyzstd',
-    'pydantic'
+    'pydantic',
+    'typer'
 ]
 
 
