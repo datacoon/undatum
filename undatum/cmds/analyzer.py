@@ -9,6 +9,7 @@ from bson import decode_file_iter
 import json
 import jsonlines
 import xmltodict
+import yaml
 from pydantic import BaseModel
 from typing import Optional
 import duckdb
@@ -170,6 +171,7 @@ class ReportSchema(BaseModel):
     error:str = None
 
 
+MAX_SAMPLE_SIZE = 200
 DELIMITED_FILES = ['csv', 'tsv']
 DUCKABLE_FILE_TYPES = ['csv', 'jsonl', 'json', 'parquet']  
 DUCKABLE_CODECS  = ['zst', 'gzip', 'raw']
@@ -179,6 +181,11 @@ def table_from_objects(objects:list, id:str, objects_limit:int, use_pandas:bool=
     """Reconstructs table schema from list of objects"""
     table = TableSchema(id=id)
     table.num_records = len(objects)
+    if autodoc:
+       f = io.StringIO()
+       writer = csv.writer(f)
+       writer.writerows(objects[:MAX_SAMPLE_SIZE])
+       table.description = get_description(f.getvalue(), language=lang)
     if use_pandas:
         df = pd.DataFrame(objects)
         columns_raw = duckdb_decompose(frame=df, path='*', limit=objects_limit)
@@ -257,6 +264,11 @@ def analyze(filename:str, filetype:str=None, compression:str='raw', objects_limi
                 table.fields.append(field)
                 if field.ftype == 'STRUCT' or field.is_array: is_flat = False                    
             table.is_flat = is_flat
+            sample = duckdb.sql("select * from '%s' limit %d" % (filename, MAX_SAMPLE_SIZE)).fetchall()
+            f = io.StringIO()
+            writer = csv.writer(f)
+            writer.writerows(sample[:MAX_SAMPLE_SIZE])
+            table.description = get_description(f.getvalue(), language=lang)
         else:
             if engine == 'duckdb':            
                 report.success = False
@@ -388,8 +400,8 @@ def analyze(filename:str, filetype:str=None, compression:str='raw', objects_limi
                                 report.tables.append(table)
                                 report.total_tables = len(report.tables)
                                 report.total_records = table.num_records
-
-    if report.total_tables > 0:
+    
+    if autodoc and report.total_tables > 0:
         tables = []
         for table in report.tables:            
             fields = []
@@ -423,6 +435,14 @@ class Analyzer:
                 f.close()
             else:
                 print(json.dumps(report.model_dump(), indent=4, ensure_ascii=False))
+        if options['outtype'] == 'yaml': 
+            if options['output'] is not None:
+                f = open(options['output'], 'w', encoding='utf8')
+                f.write(yaml.dump(report.model_dump(), Dumper=yaml.Dumper))
+                f.close()
+            else:
+                print(yaml.dump(report.model_dump(), Dumper=yaml.Dumper))
+
         elif options['outtype'] == 'markdown':
             raise "Not Implemented"
         else:
@@ -447,5 +467,6 @@ class Analyzer:
                 for field in rtable.fields:
                     table.append([field.name, field.ftype, str(field.is_array), field.description])#, field.description, field.sem_type, field.sem_url])
                 print(tabulate(table, headers=tabheaders))
-                
+                print("Summary:")
+                print(rtable.description)                
                 

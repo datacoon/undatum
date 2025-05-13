@@ -12,6 +12,9 @@ from .cmds.textproc import TextProcessor
 from .cmds.validator import Validator
 from .cmds.schemer import Schemer
 from .cmds.query import DataQuery
+from .cmds.ingester import Ingester
+
+DEFAULT_BATCH_SIZE = 1000
 
 app = typer.Typer()
 
@@ -269,6 +272,54 @@ def analyze(input:str, verbose:bool=False, engine:str="auto", use_pandas:bool=Fa
     acmd = Analyzer()
     acmd.analyze(input, options)
     pass
+
+@app.command()
+def schema(input:str, verbose:bool=False, outtype:str="text", output:str=None, autodoc:bool=False, lang:str="English"):
+    """Schema extraction"""
+    if verbose:
+        enableVerbose()
+    options = {}
+    options['outtype'] = outtype
+    options['output'] = output
+    options['autodoc'] = autodoc
+    options['lang'] = lang
+    acmd = Schemer()
+    acmd.extract_schema(input, options)
+    pass
+
+@app.command()
+def schema_bulk(input:str, verbose:bool=False, outtype:str="text", output:str=None, mode:str="distinct", autodoc:bool=False, lang:str="English"):
+    """Schema extraction from many files. Default mode is 'distinct' that creates unique schema files per schema, alternative is 'perfile' that creates a schema per file with same names"""
+    if verbose:
+        enableVerbose()
+    options = {}
+    options['outtype'] = outtype
+    options['output'] = output
+    options['mode'] = mode
+    options['autodoc'] = autodoc
+    options['lang'] = lang
+    acmd = Schemer()
+    acmd.extract_schema_bulk(input, options)
+    pass
+
+@app.command()
+def ingest(input:str, uri:str, db:str, table:str, verbose:bool=False, batch:int=DEFAULT_BATCH_SIZE, dbtype:str="mongodb", totals:bool=False, drop:bool=False, timeout:int=-30, skip:int=None, api_key:str=None, doc_id:str=None):
+    """Data ingester"""
+    if verbose:
+        enableVerbose()
+    options = {}
+    options['dbtype'] = dbtype
+    options['skip'] = skip
+    options['drop'] = drop
+    options['totals'] = totals
+    options['doc_id'] =  doc_id
+    options['api_key'] =  api_key
+    options['timeout'] =  timeout
+    acmd = Ingester(batch)
+    acmd.ingest(input, uri, db, table, options)
+    pass
+
+
 
 @app.command()
 def query(input:str, output:str=None, fields:str=None, delimiter:str=',', encoding:str=None, verbose:bool=False, format_in:str=None, format_out:str=None, zipfile:bool=False, query:str=None):

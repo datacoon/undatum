@@ -62,14 +62,14 @@ def get_description(data, language='English'):
                 f"""
 I have the following CSV data: 
 {data}
-Please provide short description about this data in English.""")},
+Please provide short description in {language} about this data in English. Consider this data as sample of the bigger dataset.Don't generate any code and data examples""")},
         ],
         "response_format": {
                 "type": "text",
         },
     }
     response = requests.post(url, headers=headers, json=payload).json()
-    return response.text
+    return response["choices"][0]["message"]["content"]
 
 
 
