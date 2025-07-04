@@ -14,6 +14,8 @@ from .cmds.schemer import Schemer
 from .cmds.query import DataQuery
 from .cmds.ingester import Ingester
 
+import glob
+
 DEFAULT_BATCH_SIZE = 1000
 
 app = typer.Typer()
@@ -316,7 +318,8 @@ def ingest(input:str, uri:str, db:str, table:str, verbose:bool=False, batch:int=
     options['api_key'] =  api_key
     options['timeout'] =  timeout
     acmd = Ingester(batch)
-    acmd.ingest(input, uri, db, table, options)
+    files = glob.glob(input.strip("'"))    
+    acmd.ingest(files, uri, db, table, options)
     pass
 
 

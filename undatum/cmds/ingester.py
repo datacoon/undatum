@@ -64,8 +64,13 @@ class Ingester:
         self.batch_size = batch_size
         pass
 
-    def ingest(self, fromfile, uri, db, table, options={}):
-        """Loads data contents to the schemaless database like MongoDB"""
+    def ingest(self, fromfiles, uri, db, table, options={}):
+        for filename in fromfiles:
+            self.ingest_single(filename, uri, db, table, options=options)
+
+  
+    def ingest_single(self, fromfile, uri, db, table, options={}):
+        """Loads single file data contents to the schemaless database like MongoDB"""
         dbtype = options['dbtype']
         processor = None
         totals = -1
