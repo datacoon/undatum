@@ -43,7 +43,7 @@ class ElasticIngester(BasicIngester):
         for doc in batch:
             documents.append({ "index": { "_index": self._index, '_id' : doc[self._item_id]}})
             documents.append(doc)
-        self.client.bulk(operations=documents, pipeline="ent-search-generic-ingestion")
+        result = self.client.bulk(operations=documents, pipeline="ent-search-generic-ingestion")
 
 
 class MongoIngester:
