@@ -14,3 +14,6 @@ DEFAULT_OPTIONS = {'encoding' : 'utf8',
                    'delimiter' : ',',
                    'limit' : 1000
                    }
+
+DUCKABLE_FILE_TYPES = ['csv', 'jsonl', 'json', 'parquet']  
+DUCKABLE_CODECS  = ['zst', 'gzip', 'raw']

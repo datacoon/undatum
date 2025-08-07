@@ -158,9 +158,10 @@ class BSONWriter:
 
 class DataWriter:
     """Data writer (CSV/JSON lines, BSON"""
-    def __init__(self, fileobj, filetype, delimiter=',', fieldnames=None):
+    def __init__(self, fileobj, filetype, output_type:str='iterable', delimiter:str=',', fieldnames:list=None):
         """Creates iterable object from CSV, JSON lines or BSON file.
         """
+        self.output_type = output_type
         self.filetype = filetype
         self.fieldnames = fieldnames
         self.fileobj = fileobj
@@ -184,7 +185,7 @@ class DataWriter:
                 for rawitem in outdata:
                     item = {self.fieldnames[0]: rawitem}
                     self.writer.writerow(item)
-            elif type(outdata[0]) == type([]):
+            elif isinstance(outdata[0], list) or isinstance(outdata[0], tuple):
                 for rawitem in outdata:
                     item = dict(zip(self.fieldnames, rawitem))
                     self.writer.writerow(item)
@@ -197,13 +198,17 @@ class DataWriter:
                     item = {self.fieldnames[0]: rawitem}
                     self.writer.write(item)
 #                    handle.write(orjson.dumps(item, option=orjson.OPT_APPEND_NEWLINE).decode('utf8'))
-            elif type(outdata[0]) == type([]):
+            elif isinstance(outdata[0], list) or isinstance(outdata[0], tuple):
                 for rawitem in outdata:
                     item = dict(zip(self.fieldnames, rawitem))
                     self.writer.write(item)
 #                    handle.write(orjson.dumps(item, option=orjson.OPT_APPEND_NEWLINE).decode('utf8'))
             else:
-                for item in outdata:
+                if self.output_type == 'iterable':                    
+                    for item in outdata:
+                        self.writer.write(item)
+                elif self.output_type == 'duckdb':
+                    item = dict(zip(self.fieldnames, rawitem))
                     self.writer.write(item)
 #                    handle.write(orjson.dumps(item, option=orjson.OPT_APPEND_NEWLINE).decode('utf8'))
 

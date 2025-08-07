@@ -62,7 +62,7 @@ def get_description(data, language='English'):
                 f"""
 I have the following CSV data: 
 {data}
-Please provide short description in {language} about this data in English. Consider this data as sample of the bigger dataset.Don't generate any code and data examples""")},
+Please provide short description in about this data in {language}. Consider this data as sample of the bigger dataset.Don't generate any code and data examples""")},
         ],
         "response_format": {
                 "type": "text",

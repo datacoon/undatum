@@ -268,7 +268,8 @@ def analyze(filename:str, filetype:str=None, compression:str='raw', objects_limi
             f = io.StringIO()
             writer = csv.writer(f)
             writer.writerows(sample[:MAX_SAMPLE_SIZE])
-            table.description = get_description(f.getvalue(), language=lang)
+            if autodoc:
+                table.description = get_description(f.getvalue(), language=lang)
         else:
             if engine == 'duckdb':            
                 report.success = False

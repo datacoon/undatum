@@ -77,7 +77,7 @@ def convertold(input:str, output:str, delimiter:str=',', compression:str='brotli
     pass
 
 @app.command()
-def uniq(input:str, output:str=None, fields:str=None, delimiter:str=',', encoding:str=None, verbose:bool=False, format_in:str=None, format_out:str=None, zipfile:bool=False, filter:str=None):
+def uniq(input:str, output:str=None, fields:str=None, delimiter:str=',', encoding:str=None, verbose:bool=False, filetype:str=None, engine:str="auto"):
     """Returns all unique files of certain field(s)"""
     if verbose:
         enableVerbose()
@@ -86,10 +86,8 @@ def uniq(input:str, output:str=None, fields:str=None, delimiter:str=',', encodin
     options['fields'] = fields
     options['delimiter'] = delimiter
     options['encoding'] = encoding
-    options['format_in'] = format_in
-    options['format_out'] = format_out
-    options['zipfile'] = zipfile
-    options['filter'] = filter
+    options['filetype'] = filetype
+    options['engine'] = engine        
     acmd = Selector()
     acmd.uniq(input, options)
     pass
@@ -147,7 +145,7 @@ def flatten(input:str, output:str=None, delimiter:str=',', encoding:str='utf8', 
 
 
 @app.command()
-def frequency(input:str, output:str=None, fields:str=None, delimiter:str=",", encoding:str=None, verbose:bool=False, format_in:str=None, format_out:str=None, zipfile:bool=False, filter:str=None):
+def frequency(input:str, output:str=None, fields:str=None, delimiter:str=",", encoding:str=None, verbose:bool=False, filetype:str=None, engine:str="auto"):
     """Field value frequency calc"""
     if verbose:
         enableVerbose()
@@ -156,10 +154,8 @@ def frequency(input:str, output:str=None, fields:str=None, delimiter:str=",", en
     options['fields'] = fields
     options['output'] = output
     options['encoding'] = encoding
-    options['format_in'] = format_in
-    options['format_out'] = format_out
-    options['zipfile'] = zipfile
-    options['filter'] = filter
+    options['filetype'] = filetype
+    options['engine'] = engine        
     acmd = Selector()
     acmd.frequency(input, options)
     pass

@@ -9,14 +9,18 @@ import zipfile
 import bson
 import dictquery as dq
 import orjson
+import duckdb
 
 # from xmlr import xmliter
-from ..utils import get_file_type, get_option, get_dict_value, strip_dict_fields, dict_generator, detect_encoding
+from ..utils import get_file_type, detect_delimiter, detect_encoding, get_dict_value, get_dict_keys, _is_flat, buf_count_newlines_gen, get_option, strip_dict_fields, dict_generator
 
-from iterable.helpers.detect import open_iterable
+from iterable.helpers.detect import open_iterable, detect_file_type
 
 from ..common.iterable import IterableData, DataWriter
 LINEEND = u'\n'.encode('utf8')
+
+from ..constants import DUCKABLE_FILE_TYPES, DUCKABLE_CODECS
+
 
 ITERABLE_OPTIONS_KEYS = ['tagname', 'delimiter', 'encoding', 'start_line', 'page']
 
@@ -53,10 +57,24 @@ def get_iterable_fields_uniq(iterable, fields, dolog=False, dq=None):
             pass
     return uniqval
 
+
+def get_duckdb_fields_uniq(filename, fields, dolog=False, dq=None):
+    """ Returns all uniq values of the fields of the filename using DuckdDB"""
+    uniqval = []
+    fieldstext = ','.join(fields) 
+    query = f"select unnest(grp) from (select distinct({fieldstext}) as grp from '{filename}')"
+    if dolog:
+        logging.info(query)
+    uniqval = duckdb.sql(query).fetchall()
+    return uniqval
+
+
+
 def get_iterable_fields_freq(iterable, fields, dolog=False, filter=None, dq=None):
     """Iterates and returns most frequent values"""
     n = 0
     valuedict = {}
+    items = []
     for r in iterable:
         n += 1
         if dolog and n % 10000 == 0:
@@ -78,7 +96,22 @@ def get_iterable_fields_freq(iterable, fields, dolog=False, filter=None, dq=None
                 valuedict[kx] = v + 1
         except KeyError:
             pass
-    return valuedict
+    for k, v in valuedict.items():
+        row = k.split('\t')
+        row.append(v)
+        items.append(row)
+    items.sort(key=lambda x: x[-1], reverse=True)
+    return items
+
+def get_duckdb_fields_freq(filename, fields, dolog=False, dq=None):
+    """ Returns frequencies for the fields of the filename using DuckdDB"""
+    uniqval = []
+    fieldstext = ','.join(fields) 
+    query = f"select {fieldstext}, count(*) as c from '{filename}' group by {fieldstext} order by c desc"
+    if dolog:
+        logging.info(query)
+    uniqval = duckdb.sql(query).fetchall()
+    return uniqval    
 
 
 class Selector:
@@ -89,8 +122,9 @@ class Selector:
         """Extracts unique values by field"""
         logging.debug('Processing %s' % fromfile)
         iterableargs = get_iterable_options(options)
-        iterable = open_iterable(fromfile, mode='r', iterableargs=iterableargs)
+        filetype = get_option(options, 'filetype')
         to_file = get_option(options, 'output')
+        engine = get_option(options, 'engine')
         if to_file:
             to_type = get_file_type(to_file)
             if not to_file:
@@ -101,11 +135,38 @@ class Selector:
             to_type = 'csv'
             out = sys.stdout
         fields = options['fields'].split(',')
-        logging.info('uniq: looking for fields: %s' % (options['fields']))
-        uniqval = get_iterable_fields_uniq(iterable, fields, dolog=True)
-        iterable.close()
+        detected_engine = None
+        fileext = fromfile.rsplit('.', 1)[-1].lower()
+        filesize = os.path.getsize(fromfile)
+        compression = 'raw'
+        if filetype is None:
+            ftype = detect_file_type(fromfile)
+            if ftype['success']:
+                filetype = ftype['datatype'].id()            
+                if ftype['codec'] is not None:
+                    compression = ftype['codec'].id()
+        logging.info(f'File filetype {filetype} and compression {compression}')
+        if engine == 'auto':
+            if filetype in DUCKABLE_FILE_TYPES and compression in DUCKABLE_CODECS:
+                detected_engine = 'duckdb'
+            else:
+                detected_engine = 'iterable'
+        else:
+            detected_engine = engine            
+        if detected_engine == 'duckdb':
+            output_type = 'duckdb'
+            uniqval = get_duckdb_fields_uniq(fromfile, fields, dolog=True)
+        elif engine == 'iterable':
+            output_type = 'iterable'
+            iterable = open_iterable(fromfile, mode='r', iterableargs=iterableargs)
+            logging.info('uniq: looking for fields: %s' % (options['fields']))
+            uniqval = get_iterable_fields_uniq(iterable, fields, dolog=True)
+            iterable.close()
+        else:
+            logging.info('Engine not supported. Please choose duckdb or iterable')
+            return
         logging.debug('%d unique values found' % (len(uniqval)))
-        writer = DataWriter(out, filetype=to_type, fieldnames=fields)
+        writer = DataWriter(out, filetype=to_type, output_type=output_type, fieldnames=fields)
         writer.write_items(uniqval)
 
 
@@ -139,39 +200,59 @@ class Selector:
 
     def frequency(self, fromfile, options={}):
         """Calculates frequency of the values in the file"""
+        logging.debug('Processing %s' % fromfile)
         iterableargs = get_iterable_options(options)
-        iterable = open_iterable(fromfile, mode='r', iterableargs=iterableargs)
+        filetype = get_option(options, 'filetype')
         to_file = get_option(options, 'output')
+        engine = get_option(options, 'engine')
         if to_file:
-            get_file_type(to_file)
+            to_type = get_file_type(to_file)
             if not to_file:
-                print('Output file type not supported')
+                logging.debug('Output file type not supported')
                 return
-            open(to_file, 'w', encoding='utf8')
+            out = open(to_file, 'w', encoding='utf8')
         else:
-            pass
+            to_type = 'csv'
+            out = sys.stdout
         fields = options['fields'].split(',')
-        valuedict = {}
-        if iterable:
-            valuedict = get_iterable_fields_freq(iterable, fields, dolog=True)
+        detected_engine = None
+        fileext = fromfile.rsplit('.', 1)[-1].lower()
+        filesize = os.path.getsize(fromfile)
+        compression = 'raw'
+        if filetype is None:
+            ftype = detect_file_type(fromfile)
+            if ftype['success']:
+                filetype = ftype['datatype'].id()            
+                if ftype['codec'] is not None:
+                    compression = ftype['codec'].id()
+        logging.info(f'File filetype {filetype} and compression {compression}')
+        if engine == 'auto':
+            if filetype in DUCKABLE_FILE_TYPES and compression in DUCKABLE_CODECS:
+                detected_engine = 'duckdb'
+            else:
+                detected_engine = 'iterable'
         else:
-            logging.info('File type not supported')
+            detected_engine = engine            
+        items = []
+        output_type = 'iterable'
+        if detected_engine == 'duckdb':
+            items = get_duckdb_fields_freq(fromfile, fields=fields, dolog=True)
+            output_type = 'duckdb'
+        elif detected_engine == 'iterable':
+            output_type = 'iterable'
+            iterable = open_iterable(fromfile, mode='r', iterableargs=iterableargs)
+            if iterable is not None:
+                items = get_iterable_fields_freq(iterable, fields, dolog=True)
+            else:
+                logging.info('File type not supported')
+                return
+        else:
+            logging.debug('Data processing engine is not set and not detected')
             return
-        logging.debug('frequency: %d unique values found' % (len(valuedict)))
-        thedict = sorted(valuedict.items(), key=lambda item: item[1], reverse=False)
-        output = get_option(options, 'output')
-        strkeys = '\t'.join(fields) + '\tcount'
-        if output:
-            encoding = get_option(options, 'encoding')
-            f = open(output, 'wb')
-            f.write((strkeys + '\n').encode(encoding))
-            for k, v in thedict:
-                f.write(('%s\t%d\n' % (k, v)).encode(encoding))
-            f.close()
-        else:
-            print(strkeys)
-            for k, v in thedict:
-                print('%s\t%d' % (k, v))
+        logging.debug('frequency: %d unique values found' % (len(items)))
+        fields.append('count')
+        writer = DataWriter(out, filetype=to_type, output_type=output_type, fieldnames=fields)
+        writer.write_items(items)
 
     def select(self, fromfile, options={}):
         """Select or re-order columns from file"""
