@@ -1,4 +1,5 @@
 # -*- coding: utf8 -*-
+"""Statistical analysis module."""
 from ..utils import get_option, dict_generator, guess_datatype
 from ..constants import DEFAULT_DICT_SHARE
 import logging
@@ -12,6 +13,7 @@ ITERABLE_OPTIONS_KEYS = ['tagname', 'delimiter', 'encoding', 'start_line', 'page
 
 
 def get_iterable_options(options):
+    """Extract iterable-specific options from options dictionary."""
     out = {}
     for k in ITERABLE_OPTIONS_KEYS:
         if k in options.keys():
@@ -20,6 +22,7 @@ def get_iterable_options(options):
 
 
 class StatProcessor:
+    """Statistical processing handler."""
     def __init__(self, nodates=True):
         if nodates:
             self.qd = None

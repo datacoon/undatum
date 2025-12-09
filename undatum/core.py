@@ -1,7 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf8 -*-
-import typer
+"""Core module providing CLI commands for the undatum package."""
+import glob
 import logging
+
+import typer
 
 from .cmds.converter import Converter
 from .cmds.selector import Selector
@@ -14,8 +17,6 @@ from .cmds.schemer import Schemer
 from .cmds.query import DataQuery
 from .cmds.ingester import Ingester
 
-import glob
-
 DEFAULT_BATCH_SIZE = 1000
 
 app = typer.Typer()
@@ -25,322 +26,394 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO)
 
-def enableVerbose():
+
+def enable_verbose():
+    """Enable verbose logging."""
     logging.basicConfig(
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
         level=logging.INFO)
 
 @app.command()
-def convert(input:str, output:str, delimiter:str=',', compression:str='brotli', encoding:str='utf8', verbose:bool=False, flatten:bool=False, prefix_strip:bool=True, fields:str=None, start_line:int=0, skip_end_rows:int=0, start_page:int=0, tagname:str=None, format_in:str=None, format_out:str=None, zipfile:bool=False):
-    """Converts one file to another. Supports XML, CSV, JSON, BSON"""
+def convert(input_file: str, output: str, delimiter: str = ',',
+            compression: str = 'brotli', encoding: str = 'utf8',
+            verbose: bool = False, flatten_data: bool = False,
+            prefix_strip: bool = True, fields: str = None,
+            start_line: int = 0, skip_end_rows: int = 0,
+            start_page: int = 0, tagname: str = None,
+            format_in: str = None, format_out: str = None,
+            zipfile: bool = False):
+    """Converts one file to another. Supports XML, CSV, JSON, BSON."""
     if verbose:
-        enableVerbose()
-    options = {}
-    options['delimiter'] = delimiter
-    options['compression'] = compression
-    options['flatten'] = flatten
-    options['encoding'] = encoding
-    options['prefix_strip'] = prefix_strip
-    options['start_line'] = start_line
-    options['skip_end_rows'] = skip_end_rows
-    options['start_page'] = start_page
-    options['tagname'] = tagname
-    options['fields'] = fields
-    options['format_in'] = format_in
-    options['format_out'] = format_out
-    options['zipfile'] = zipfile
+        enable_verbose()
+    options = {
+        'delimiter': delimiter,
+        'compression': compression,
+        'flatten': flatten_data,
+        'encoding': encoding,
+        'prefix_strip': prefix_strip,
+        'start_line': start_line,
+        'skip_end_rows': skip_end_rows,
+        'start_page': start_page,
+        'tagname': tagname,
+        'fields': fields,
+        'format_in': format_in,
+        'format_out': format_out,
+        'zipfile': zipfile
+    }
     acmd = Converter()
-    acmd.convert(input, output, options)
-    pass
+    acmd.convert(input_file, output, options)
 
 @app.command()
-def convertold(input:str, output:str, delimiter:str=',', compression:str='brotli', encoding:str='utf8', verbose:bool=False, flatten:bool=False, prefix_strip:bool=True, fields:str=None, start_line:int=0, skip_end_rows:int=0, start_page:int=0, tagname:str=None, format_in:str=None, format_out:str=None, zipfile:bool=False):
-    """Converts one file to another. Supports XML, CSV, JSON, BSON (old implementation)"""
+def convertold(input_file: str, output: str, delimiter: str = ',',
+               compression: str = 'brotli', encoding: str = 'utf8',
+               verbose: bool = False, flatten_data: bool = False,
+               prefix_strip: bool = True, fields: str = None,
+               start_line: int = 0, skip_end_rows: int = 0,
+               start_page: int = 0, tagname: str = None,
+               format_in: str = None, format_out: str = None,
+               zipfile: bool = False):
+    """Converts one file to another. Supports XML, CSV, JSON, BSON (old)."""
     if verbose:
-        enableVerbose()
-    options = {}
-    options['delimiter'] = delimiter
-    options['compression'] = compression
-    options['flatten'] = flatten
-    options['encoding'] = encoding
-    options['prefix_strip'] = prefix_strip
-    options['start_line'] = start_line
-    options['skip_end_rows'] = skip_end_rows
-    options['start_page'] = start_page
-    options['tagname'] = tagname
-    options['fields'] = fields
-    options['format_in'] = format_in
-    options['format_out'] = format_out
-    options['zipfile'] = zipfile
+        enable_verbose()
+    options = {
+        'delimiter': delimiter,
+        'compression': compression,
+        'flatten': flatten_data,
+        'encoding': encoding,
+        'prefix_strip': prefix_strip,
+        'start_line': start_line,
+        'skip_end_rows': skip_end_rows,
+        'start_page': start_page,
+        'tagname': tagname,
+        'fields': fields,
+        'format_in': format_in,
+        'format_out': format_out,
+        'zipfile': zipfile
+    }
     acmd = Converter()
-    acmd.convert_old(input, output, options)
-    pass
+    acmd.convert_old(input_file, output, options)
 
 @app.command()
-def uniq(input:str, output:str=None, fields:str=None, delimiter:str=',', encoding:str=None, verbose:bool=False, filetype:str=None, engine:str="auto"):
-    """Returns all unique files of certain field(s)"""
+def uniq(input_file: str, output: str = None, fields: str = None,
+         delimiter: str = ',', encoding: str = None, verbose: bool = False,
+         filetype: str = None, engine: str = "auto"):
+    """Returns all unique files of certain field(s)."""
     if verbose:
-        enableVerbose()
-    options = {}
-    options['output'] = output
-    options['fields'] = fields
-    options['delimiter'] = delimiter
-    options['encoding'] = encoding
-    options['filetype'] = filetype
-    options['engine'] = engine        
+        enable_verbose()
+    options = {
+        'output': output,
+        'fields': fields,
+        'delimiter': delimiter,
+        'encoding': encoding,
+        'filetype': filetype,
+        'engine': engine
+    }
     acmd = Selector()
-    acmd.uniq(input, options)
-    pass
+    acmd.uniq(input_file, options)
 
 
 @app.command()
-def headers(input:str, output:str=None, fields:str=None, delimiter:str=',', encoding:str=None, limit:int=10000, verbose:bool=False, format_in:str=None, format_out:str=None, zipfile:bool=False, filter:str=None):
-    """Returns fieldnames of the file. Supports XML, CSV, JSON, BSON"""
+def headers(input_file: str, output: str = None, fields: str = None,
+           delimiter: str = ',', encoding: str = None, limit: int = 10000,
+           verbose: bool = False, format_in: str = None,
+           format_out: str = None, zipfile: bool = False,
+           filter_expr: str = None):  # pylint: disable=unused-argument
+    """Returns fieldnames of the file. Supports XML, CSV, JSON, BSON."""
     if verbose:
-        enableVerbose()
-    options = {}
-    options['output'] = output
-    options['delimiter'] = delimiter
-    options['encoding'] = encoding
-    options['limit'] = limit
-    options['format_in'] = format_in
-    options['format_out'] = format_out
-    options['zipfile'] = zipfile
+        enable_verbose()
+    # fields and filter_expr kept for API compatibility
+    options = {
+        'output': output,
+        'delimiter': delimiter,
+        'encoding': encoding,
+        'limit': limit,
+        'format_in': format_in,
+        'format_out': format_out,
+        'zipfile': zipfile
+    }
     acmd = Selector()
-    acmd.headers(input, options)
-    pass
+    acmd.headers(input_file, options)
 
 @app.command()
-def stats(input:str, output:str=None, dictshare:int=None, format_in:str=None, format_out:str=None, delimiter:str=None, verbose:bool=False, zipfile:bool=False, checkdates:bool=True, encoding:str=None):
-    """Returns detailed stats on selected dataset"""
+def stats(input_file: str, output: str = None, dictshare: int = None,
+         format_in: str = None, format_out: str = None, delimiter: str = None,
+         verbose: bool = False, zipfile: bool = False,
+         checkdates: bool = True, encoding: str = None):
+    """Returns detailed stats on selected dataset."""
     if verbose:
-        enableVerbose()
-    options = {}
-    options['output'] = output
-    options['dictshare'] = dictshare
-    options['zipfile'] = zipfile
-    options['format_in'] = format_in
-    options['format_out'] = format_out
-    options['delimiter'] = delimiter
-    options['checkdates'] = checkdates
-    options['encoding'] = encoding
-    options['verbose'] = verbose
+        enable_verbose()
+    options = {
+        'output': output,
+        'dictshare': dictshare,
+        'zipfile': zipfile,
+        'format_in': format_in,
+        'format_out': format_out,
+        'delimiter': delimiter,
+        'checkdates': checkdates,
+        'encoding': encoding,
+        'verbose': verbose
+    }
     acmd = StatProcessor(nodates=not checkdates)
-    acmd.stats(input, options)
-    pass
+    acmd.stats(input_file, options)
 
-def flatten(input:str, output:str=None, delimiter:str=',', encoding:str='utf8', format_in:str=None, filter:str=None, verbose:bool=False):
-    """Flatten data records. Write them as one value per row"""
+
+def flatten(input_file: str, output: str = None, delimiter: str = ',',
+           encoding: str = 'utf8', format_in: str = None,
+           filter_expr: str = None, verbose: bool = False):
+    """Flatten data records. Write them as one value per row."""
     if verbose:
-        enableVerbose()
-    options = {}
-    options['delimiter'] = delimiter
-    options['output'] = output
-    options['encoding'] = encoding
-    options['format_in'] = format_in
-    options['filter'] = filter
+        enable_verbose()
+    options = {
+        'delimiter': delimiter,
+        'output': output,
+        'encoding': encoding,
+        'format_in': format_in,
+        'filter': filter_expr
+    }
     acmd = TextProcessor()
-    acmd.flatten(input, options)
-    pass
+    acmd.flatten(input_file, options)
 
 
 @app.command()
-def frequency(input:str, output:str=None, fields:str=None, delimiter:str=",", encoding:str=None, verbose:bool=False, filetype:str=None, engine:str="auto"):
-    """Field value frequency calc"""
+def frequency(input_file: str, output: str = None, fields: str = None,
+             delimiter: str = ",", encoding: str = None, verbose: bool = False,
+             filetype: str = None, engine: str = "auto"):
+    """Field value frequency calc."""
     if verbose:
-        enableVerbose()
-    options = {}
-    options['delimiter'] = delimiter
-    options['fields'] = fields
-    options['output'] = output
-    options['encoding'] = encoding
-    options['filetype'] = filetype
-    options['engine'] = engine        
+        enable_verbose()
+    options = {
+        'delimiter': delimiter,
+        'fields': fields,
+        'output': output,
+        'encoding': encoding,
+        'filetype': filetype,
+        'engine': engine
+    }
     acmd = Selector()
-    acmd.frequency(input, options)
-    pass
+    acmd.frequency(input_file, options)
+
 
 @app.command()
-def select(input:str, output:str=None, fields:str=None, delimiter:str=",", encoding:str=None, verbose:bool=False, format_in:str=None, format_out:str=None, zipfile:bool=False, filter:str=None):
-    """Select or re-order columns from file. Supports CSV, JSONl, BSON"""
+def select(input_file: str, output: str = None, fields: str = None,
+          delimiter: str = ",", encoding: str = None, verbose: bool = False,
+          format_in: str = None, format_out: str = None,
+          zipfile: bool = False, filter_expr: str = None):
+    """Select or re-order columns from file. Supports CSV, JSONl, BSON."""
     if verbose:
-        enableVerbose()
-    options = {}
-    options['delimiter'] = delimiter
-    options['fields'] = fields
-    options['output'] = output
-    options['encoding'] = encoding
-    options['format_in'] = format_in
-    options['format_out'] = format_out
-    options['zipfile'] = zipfile
-    options['filter'] = filter
+        enable_verbose()
+    options = {
+        'delimiter': delimiter,
+        'fields': fields,
+        'output': output,
+        'encoding': encoding,
+        'format_in': format_in,
+        'format_out': format_out,
+        'zipfile': zipfile,
+        'filter': filter_expr
+    }
     acmd = Selector()
-    acmd.select(input, options)
-    pass
+    acmd.select(input_file, options)
 
 
 @app.command()
-def split(input:str, output:str=None, fields:str=None, delimiter:str=',', encoding:str="utf8", verbose:bool=False, format_in:str=None, zipfile:bool=False, gzipfile:str=None, chunksize:int=10000, filter:str=None, dirname:str=None):
+def split(input_file: str, output: str = None, fields: str = None,
+         delimiter: str = ',', encoding: str = "utf8", verbose: bool = False,
+         format_in: str = None, zipfile: bool = False, gzipfile: str = None,
+         chunksize: int = 10000, filter_expr: str = None,
+         dirname: str = None):
     """Splits the given file with data into chunks."""
     if verbose:
-        enableVerbose()
-    options = {}
-    options['delimiter'] = delimiter
-    options['fields'] = fields
-    options['output'] = output
-    options['encoding'] = encoding
-    options['format_in'] = format_in
-    options['zipfile'] = zipfile
-    options['gzipfile'] = gzipfile
-    options['chunksize'] = chunksize
-    options['filter'] = filter
-    options['dirname'] = dirname
+        enable_verbose()
+    options = {
+        'delimiter': delimiter,
+        'fields': fields,
+        'output': output,
+        'encoding': encoding,
+        'format_in': format_in,
+        'zipfile': zipfile,
+        'gzipfile': gzipfile,
+        'chunksize': chunksize,
+        'filter': filter_expr,
+        'dirname': dirname
+    }
     acmd = Selector()
-    acmd.split(input, options)
-    pass
+    acmd.split(input_file, options)
+
 
 @app.command()
-def validate(input:str, output:str=None, fields:str=None, delimiter:str=',', encoding:str='utf8', verbose:bool=False, format_in:str=None, zipfile:bool=False, rule:str=None, filter:str=None, mode:str="invalid"):
-    """Validates selected field against validation rule"""
+def validate(input_file: str, output: str = None, fields: str = None,
+            delimiter: str = ',', encoding: str = 'utf8',
+            verbose: bool = False, format_in: str = None,
+            zipfile: bool = False, rule: str = None,
+            filter_expr: str = None, mode: str = "invalid"):
+    """Validates selected field against validation rule."""
     if verbose:
-        enableVerbose()
-    options = {}
-    options['delimiter'] = delimiter
-    options['fields'] = fields
-    options['output'] = output
-    options['encoding'] = encoding
-    options['format_in'] = format_in
-    options['zipfile'] = zipfile
-    options['filter'] = filter
-    options['rule'] = rule
-    options['mode'] = mode
+        enable_verbose()
+    options = {
+        'delimiter': delimiter,
+        'fields': fields,
+        'output': output,
+        'encoding': encoding,
+        'format_in': format_in,
+        'zipfile': zipfile,
+        'filter': filter_expr,
+        'rule': rule,
+        'mode': mode
+    }
     acmd = Validator()
-    acmd.validate(input, options)
-    pass
+    acmd.validate(input_file, options)
+
 
 @app.command()
-def apply(input:str, output:str=None, fields:str=None, delimiter:str=",", encoding:str='utf8', verbose:bool=False, format_in:str=None, zipfile:bool=False, script:str=None, filter:str=None):
-    """Runs script against each record of input file"""
+def apply(input_file: str, output: str = None, fields: str = None,
+         delimiter: str = ",", encoding: str = 'utf8', verbose: bool = False,
+         format_in: str = None, zipfile: bool = False, script: str = None,
+         filter_expr: str = None):
+    """Runs script against each record of input file."""
     if verbose:
-        enableVerbose()
-    options = {}
-    options['delimiter'] = delimiter
-    options['fields'] = fields
-    options['output'] = output
-    options['encoding'] = encoding
-    options['format_in'] = format_in
-    options['zipfile'] = zipfile
-    options['filter'] = filter
-    options['script'] = script
+        enable_verbose()
+    options = {
+        'delimiter': delimiter,
+        'fields': fields,
+        'output': output,
+        'encoding': encoding,
+        'format_in': format_in,
+        'zipfile': zipfile,
+        'filter': filter_expr,
+        'script': script
+    }
     acmd = Transformer()
-    acmd.script(input, options)
-    pass
+    acmd.script(input_file, options)
 
 
 @app.command()
-def scheme(input:str, output:str=None, delimiter:str=',', encoding:str='utf8', verbose:bool=False, format_in:str=None, zipfile:bool=False, stype:str='cerberus'):
-    """Generate data schema from file"""
+def scheme(input_file: str, output: str = None, delimiter: str = ',',
+          encoding: str = 'utf8', verbose: bool = False,
+          format_in: str = None, zipfile: bool = False,
+          stype: str = 'cerberus'):
+    """Generate data schema from file."""
     if verbose:
-        enableVerbose()
-    options = {}
-    options['delimiter'] = delimiter
-    options['output'] = output
-    options['encoding'] = encoding
-    options['format_in'] = format_in
-    options['zipfile'] = zipfile
-    options['stype'] = stype
+        enable_verbose()
+    options = {
+        'delimiter': delimiter,
+        'output': output,
+        'encoding': encoding,
+        'format_in': format_in,
+        'zipfile': zipfile,
+        'stype': stype
+    }
     acmd = Schemer()
-    acmd.generate_scheme(input, options)
-    pass
-
+    acmd.generate_scheme(input_file, options)
 
 
 @app.command()
-def analyze(input:str, verbose:bool=False, engine:str="auto", use_pandas:bool=False, outtype:str="text", output:str=None, autodoc:bool=False, lang:str="English"):
-    """Analyzes given data file and returns human readable insights about it"""
+def analyze(input_file: str, verbose: bool = False, engine: str = "auto",
+           use_pandas: bool = False, outtype: str = "text",
+           output: str = None, autodoc: bool = False,
+           lang: str = "English"):
+    """Analyzes given data file and returns human readable insights."""
     if verbose:
-        enableVerbose()
-    options = {}
-    options['engine'] = engine
-    options['use_pandas'] = use_pandas
-    options['outtype'] = outtype
-    options['output'] = output
-    options['autodoc'] = autodoc
-    options['lang'] = lang
+        enable_verbose()
+    options = {
+        'engine': engine,
+        'use_pandas': use_pandas,
+        'outtype': outtype,
+        'output': output,
+        'autodoc': autodoc,
+        'lang': lang
+    }
     acmd = Analyzer()
-    acmd.analyze(input, options)
-    pass
+    acmd.analyze(input_file, options)
+
 
 @app.command()
-def schema(input:str, verbose:bool=False, outtype:str="text", output:str=None, autodoc:bool=False, lang:str="English"):
-    """Schema extraction"""
+def schema(input_file: str, verbose: bool = False, outtype: str = "text",
+          output: str = None, autodoc: bool = False, lang: str = "English"):
+    """Schema extraction."""
     if verbose:
-        enableVerbose()
-    options = {}
-    options['outtype'] = outtype
-    options['output'] = output
-    options['autodoc'] = autodoc
-    options['lang'] = lang
+        enable_verbose()
+    options = {
+        'outtype': outtype,
+        'output': output,
+        'autodoc': autodoc,
+        'lang': lang
+    }
     acmd = Schemer()
-    acmd.extract_schema(input, options)
-    pass
+    acmd.extract_schema(input_file, options)
+
 
 @app.command()
-def schema_bulk(input:str, verbose:bool=False, outtype:str="text", output:str=None, mode:str="distinct", autodoc:bool=False, lang:str="English"):
-    """Schema extraction from many files. Default mode is 'distinct' that creates unique schema files per schema, alternative is 'perfile' that creates a schema per file with same names"""
+def schema_bulk(input_file: str, verbose: bool = False,
+               outtype: str = "text", output: str = None,
+               mode: str = "distinct", autodoc: bool = False,
+               lang: str = "English"):
+    """Schema extraction from many files.
+
+    Default mode is 'distinct' that creates unique schema files per schema,
+    alternative is 'perfile' that creates a schema per file with same names.
+    """
     if verbose:
-        enableVerbose()
-    options = {}
-    options['outtype'] = outtype
-    options['output'] = output
-    options['mode'] = mode
-    options['autodoc'] = autodoc
-    options['lang'] = lang
+        enable_verbose()
+    options = {
+        'outtype': outtype,
+        'output': output,
+        'mode': mode,
+        'autodoc': autodoc,
+        'lang': lang
+    }
     acmd = Schemer()
-    acmd.extract_schema_bulk(input, options)
-    pass
+    acmd.extract_schema_bulk(input_file, options)
+
 
 @app.command()
-def ingest(input:str, uri:str, db:str, table:str, verbose:bool=False, batch:int=DEFAULT_BATCH_SIZE, dbtype:str="mongodb", totals:bool=False, drop:bool=False, timeout:int=-30, skip:int=None, api_key:str=None, doc_id:str=None):
-    """Data ingester"""
+def ingest(input_file: str, uri: str, db: str, table: str,
+          verbose: bool = False, batch: int = DEFAULT_BATCH_SIZE,
+          dbtype: str = "mongodb", totals: bool = False, drop: bool = False,
+          timeout: int = -30, skip: int = None, api_key: str = None,
+          doc_id: str = None):
+    """Data ingester."""
     if verbose:
-        enableVerbose()
-    options = {}
-    options['dbtype'] = dbtype
-    options['skip'] = skip
-    options['drop'] = drop
-    options['totals'] = totals
-    options['doc_id'] =  doc_id
-    options['api_key'] =  api_key
-    options['timeout'] =  timeout
+        enable_verbose()
+    options = {
+        'dbtype': dbtype,
+        'skip': skip,
+        'drop': drop,
+        'totals': totals,
+        'doc_id': doc_id,
+        'api_key': api_key,
+        'timeout': timeout
+    }
     acmd = Ingester(batch)
-    files = glob.glob(input.strip("'"))    
+    files = glob.glob(input_file.strip("'"))
     acmd.ingest(files, uri, db, table, options)
-    pass
-
 
 
 @app.command()
-def query(input:str, output:str=None, fields:str=None, delimiter:str=',', encoding:str=None, verbose:bool=False, format_in:str=None, format_out:str=None, zipfile:bool=False, query:str=None):
-    """Query data using mistql (experimental, require mistql). Use 'pip install mistql' to install"""
+def query(input_file: str, output: str = None, fields: str = None,
+         delimiter: str = ',', encoding: str = None, verbose: bool = False,
+         format_in: str = None, format_out: str = None,
+         zipfile: bool = False, query_expr: str = None):
+    """Query data using mistql (experimental, require mistql).
+
+    Use 'pip install mistql' to install.
+    """
     if verbose:
-        enableVerbose()
-    options = {}
-    options['delimiter'] = delimiter
-    options['fields'] = fields
-    options['output'] = output
-    options['encoding'] = encoding
-    options['format_in'] = format_in
-    options['format_out'] = format_out
-    options['zipfile'] = zipfile
-    options['query'] = query
+        enable_verbose()
+    options = {
+        'delimiter': delimiter,
+        'fields': fields,
+        'output': output,
+        'encoding': encoding,
+        'format_in': format_in,
+        'format_out': format_out,
+        'zipfile': zipfile,
+        'query': query_expr
+    }
     acmd = DataQuery()
-    acmd.query(input, options)
-    pass
+    acmd.query(input_file, options)
 
 
 
 
 if __name__ == '__main__':
     app()
-

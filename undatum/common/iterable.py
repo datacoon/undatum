@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+"""Iterable data handling module."""
 from ..constants import BINARY_FILE_TYPES
 from ..utils import get_file_type, get_option, detect_encoding, detect_delimiter
 import csv
@@ -148,6 +149,7 @@ class IterableData:
 
 
 class BSONWriter:
+    """BSON file writer."""
     def __init__(self, fileobj):
         self.fo = fileobj
 

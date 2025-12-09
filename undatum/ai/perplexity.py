@@ -1,3 +1,4 @@
+"""AI-powered data analysis using Perplexity API."""
 import requests
 import csv
 import sys

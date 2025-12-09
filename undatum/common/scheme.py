@@ -1,4 +1,5 @@
 # -*- coding: utf8 -*-
+"""Schema definition and type mapping module."""
 import datetime
 import bson
 import orjson
@@ -92,11 +93,11 @@ def get_schema(obj, novalue=True):
             else:
                 found = False
                 for otype, oname in OTYPES_MAP:
-                    if type(obj[k][0]) == otype:
+                    if isinstance(obj[k][0], otype):
                         result[k]['subtype'] = oname
                         found = True
                 if not found:
-                    if type(obj[k][0]) == type({}):
+                    if isinstance(obj[k][0], dict):
                         result[k]['subtype'] = 'dict'
                         result[k]['schema'] =  merge_schemes(get_schemes(obj[k]))
                     else:
@@ -114,15 +115,15 @@ def extract_keys(obj, parent=None, text=None, level=1):
     if not parent:
         text = "'schema': {\n"
     for k in obj.keys():
-        if type(obj[k]) == type({}):
+        if isinstance(obj[k], dict):
             text += "\t" * level + "'%s' : {'type' : 'dict', 'schema' : {\n" % (k)
             text += extract_keys(obj[k], k, text, level+1)
             text += "\t" * level + "}},\n"
-        elif type(obj[k]) == type([]):
+        elif isinstance(obj[k], list):
             text += "\t" * level + "'%s' : {'type' : 'list', 'schema' : { 'type' : 'dict', 'schema' : {\n" % (k)
             if len(obj[k]) > 0:
                 item = obj[k][0]
-                if type(item) == type({}):
+                if isinstance(item, dict):
                     text += extract_keys(item, k, text, level+1)
                 else:
                     text += "\t" * level + "'%s' : {'type' : 'string'},\n" % (k)

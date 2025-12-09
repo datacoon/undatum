@@ -1,14 +1,14 @@
 # -*- coding: utf8 -*-
-
+"""DOCX file format handling and table extraction."""
 import csv
-import xlwt
-import openpyxl
-import json
 import datetime
+import json
 
+import openpyxl
+import xlwt
 from docx import Document
-from docx.table import _Cell
 from docx.oxml.simpletypes import ST_Merge
+from docx.table import _Cell
 
 
 def __extract_table(table, strip_space=False):
@@ -35,26 +35,25 @@ def __extract_table(table, strip_space=False):
     return results
 
 
-def __store_table(tabdata, filename, format="csv"):
-    """Saves table data as csv file"""
-    if format == "csv":
-        f = open(filename, "w", encoding='utf8')
-        w = csv.writer(f, delimiter=",")
-        for row in tabdata:
-            w.writerow(row)
-    elif format == 'tsv':
-        f = open(filename, 'w')
-        w = csv.writer(f, delimiter='\t')
-        for row in tabdata:
-            w.writerow(row)
-    elif format == 'xls':
+def __store_table(tabdata, filename, output_format="csv"):
+    """Saves table data as csv file."""
+    if output_format == "csv":
+        with open(filename, "w", encoding='utf8') as f:
+            w = csv.writer(f, delimiter=",")
+            for row in tabdata:
+                w.writerow(row)
+    elif output_format == 'tsv':
+        with open(filename, 'w', encoding='utf8') as f:
+            w = csv.writer(f, delimiter='\t')
+            for row in tabdata:
+                w.writerow(row)
+    elif output_format == 'xls':
         workbook = xlwt.Workbook()
-        ws = __xls_table_to_sheet(tabdata, workbook.add_sheet("0"))
-#        print(dir(ws))
+        __xls_table_to_sheet(tabdata, workbook.add_sheet("0"))
         workbook.save(filename)
-    elif format == "xlsx":
+    elif output_format == "xlsx":
         workbook = openpyxl.Workbook()
-        ws = __xlsx_table_to_sheet(tabdata, workbook.create_sheet("0"))
+        __xlsx_table_to_sheet(tabdata, workbook.create_sheet("0"))
         workbook.save(filename)
 
 def __xls_table_to_sheet(table, ws):
@@ -97,55 +96,57 @@ def extract_docx_tables(filename, strip_space=True):
 
 
 
-def extract(filename, format="csv", sizefilter=0, singlefile=False, output=None, strip_space=True):
-    """Extracts tables from csv files and saves them as csv, xls or xlsx files"""
-    tables = extract_tables(filename, strip_space=strip_space)
+def extract(filename, output_format="csv", sizefilter=0, singlefile=False,
+           output=None, strip_space=True):
+    """Extracts tables from csv files and saves them as csv, xls or xlsx files."""
+    tables = extract_docx_tables(filename, strip_space=strip_space)
     name = filename.rsplit(".", 1)[0]
-    format = format.lower()
+    output_format = output_format.lower()
     n = 0
     lfilter = int(sizefilter)
     if singlefile:
-        if format == "xls":
+        if output_format == "xls":
             workbook = xlwt.Workbook()
             for t in tables:
                 if lfilter >= len(t):
                     continue
                 n += 1
-                ws = __xls_table_to_sheet(t['data'], workbook.add_sheet(str(n)))
-            destname = output if output else name + ".%s" % (format)
+                __xls_table_to_sheet(t['data'], workbook.add_sheet(str(n)))
+            destname = output if output else f"{name}.{output_format}"
             workbook.save(destname)
-        elif format == "xlsx":
+        elif output_format == "xlsx":
             workbook = openpyxl.Workbook()
             for t in tables:
                 if lfilter >= len(t):
                     continue
                 n += 1
-                ws = __xlsx_table_to_sheet(t['data'], workbook.create_sheet(str(n)))
-            destname = output if output else name + ".%s" % (format)
+                __xlsx_table_to_sheet(t['data'], workbook.create_sheet(str(n)))
+            destname = output if output else f"{name}.{output_format}"
             workbook.save(destname)
-        elif format == "json":
-            report = {'filename' : filename, 
-            'timestamp' : datetime.datetime.now().isoformat(), 'num_tables' : len(tables),
-            'tables' : tables}
-            destname = output if output else name + ".%s" % (format)
-            f = open(destname, 'w', encoding='utf8')
-            json.dump(report, f, ensure_ascii=False, indent=4)
-            f.close()
+        elif output_format == "json":
+            report = {'filename': filename,
+                      'timestamp': datetime.datetime.now().isoformat(),
+                      'num_tables': len(tables),
+                      'tables': tables}
+            destname = output if output else f"{name}.{output_format}"
+            with open(destname, 'w', encoding='utf8') as f:
+                json.dump(report, f, ensure_ascii=False, indent=4)
 
     else:
         for t in tables:
             if lfilter >= len(t):
                 continue
             n += 1
-            destname = output if output else name + "_%d.%s" % (n, format)
-            __store_table(t['data'], destname, format)
+            destname = output if output else f"{name}_{n}.{output_format}"
+            __store_table(t['data'], destname, output_format)
 
 
-def analyze_docx(filename, extract_data=False, strip_space=True):
-    """Analyzes docx file and extracts data if requested"""
+def analyze_docx(filename, extract_data=None, strip_space=True):
+    """Analyzes docx file and extracts data if requested."""
+    # extract_data parameter kept for API compatibility but not used
     tableinfo = []
     document = Document(filename)
-    n = 0    
+    n = 0
     for table in document.tables:
         n += 1
         info = {}

@@ -1,4 +1,5 @@
 # -*- coding: utf8 -*-
+"""Data query module using mistql."""
 # import json
 import logging
 import sys
@@ -7,17 +8,20 @@ import sys
 # from xmlr import xmliter
 from ..utils import get_file_type, get_option, strip_dict_fields
 from ..common.iterable import IterableData
-LINEEND = u'\n'.encode('utf8')
+LINEEND = '\n'.encode('utf8')
 
 DEFAULT_CHUNK_SIZE = 50
 
 class DataQuery:
+    """Data query handler using mistql."""
     def __init__(self):
         pass
 
 
-    def query(self, fromfile, options={}):
-        """Use mistql to query data"""
+    def query(self, fromfile, options=None):
+        """Use mistql to query data."""
+        if options is None:
+            options = {}
         from mistql import query
         f_type = get_file_type(fromfile) if options['format_in'] is None else options['format_in']
         iterable = IterableData(fromfile, options=options)
@@ -30,7 +34,7 @@ class DataQuery:
                 return
             if to_type == 'bson':
                 out = open(to_file, 'wb')
-            if to_type == 'jsonl':
+            elif to_type == 'jsonl':
                 out = open(to_file, 'wb')
             else:
                 out = open(to_file, 'w', encoding='utf8')
@@ -59,5 +63,6 @@ class DataQuery:
         else:
             logging.info('File type not supported')
             return
-        logging.debug('query: %d records processed' % (n))
-        out.close()
+        logging.debug('query: %d records processed', n)
+        if to_file:
+            out.close()

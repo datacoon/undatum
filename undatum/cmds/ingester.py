@@ -1,4 +1,5 @@
 # -*- coding: utf8 -*-
+"""Data ingestion module for databases."""
 import duckdb
 import logging
 from iterable.helpers.detect import open_iterable
@@ -16,6 +17,7 @@ DUCKABLE_CODECS = ['gz', 'zst']
 DEFAULT_BATCH_SIZE = 50000
 
 def get_iterable_options(options):
+    """Extract iterable-specific options from options dictionary."""
     out = {}
     for k in ITERABLE_OPTIONS_KEYS:
         if k in options.keys():
@@ -24,13 +26,15 @@ def get_iterable_options(options):
 
 
 class BasicIngester:
+    """Base class for data ingestion."""
     def __init__(self):
         pass
-    
+
     def ingest(self, batch):
         raise NotImplemented
 
 class ElasticIngester(BasicIngester):
+    """Elasticsearch data ingester."""
     def __init__(self, uri:str, api_key:str, search_index:str, document_id:str="id"):
         self.client = Elasticsearch(uri, api_key=api_key, verify_certs=False,ssl_show_warn=False, timeout=60, max_retries=10, retry_on_timeout=True)
         self._index = search_index
@@ -38,7 +42,7 @@ class ElasticIngester(BasicIngester):
         pass
 
 
-    def ingest(self, batch):        
+    def ingest(self, batch):
         documents = []
         for doc in batch:
             documents.append({ "index": { "_index": self._index, '_id' : doc[self._item_id]}})
@@ -47,6 +51,7 @@ class ElasticIngester(BasicIngester):
 
 
 class MongoIngester:
+    """MongoDB data ingester."""
     def __init__(self, uri, db, table,do_drop=False):
         self.client = MongoClient(uri)
         self.db = self.client[db]
@@ -60,6 +65,7 @@ class MongoIngester:
 
 
 class Ingester:
+    """Main data ingestion handler."""
     def __init__(self, batch_size=DEFAULT_BATCH_SIZE):
         self.batch_size = batch_size
         pass
@@ -77,7 +83,7 @@ class Ingester:
         skip = options['skip']
         use_totals = options['totals']if 'totals' in options.keys() else False
         do_drop = options['drop']if 'dro[]' in options.keys() else False
-
+        print(f'Ingesting {fromfile} to {uri} with db {db} table {table}')
         if use_totals:
             parts = fromfile.rsplit('.', 2)
             if len(parts) == 2:

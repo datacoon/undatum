@@ -1,4 +1,5 @@
 # -*- coding: utf8 -*-
+"""Data transformation module."""
 import sys
 import orjson
 import logging
@@ -11,6 +12,7 @@ ITERABLE_OPTIONS_KEYS = ['tagname', 'delimiter', 'encoding', 'start_line', 'page
 
 
 def get_iterable_options(options):
+    """Extract iterable-specific options from options dictionary."""
     out = {}
     for k in ITERABLE_OPTIONS_KEYS:
         if k in options.keys():
@@ -22,6 +24,7 @@ DEFAULT_HEADERS_DETECT_LIMIT = 1000
 
 
 class Transformer:
+    """Data transformation handler."""
     def __init__(self):
         pass
 

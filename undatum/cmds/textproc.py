@@ -1,4 +1,5 @@
 # -*- coding: utf8 -*-
+"""Text processing module."""
 from ..utils import get_file_type, get_option
 from iterable.helpers.detect import open_iterable
 
@@ -8,32 +9,35 @@ ITERABLE_OPTIONS_KEYS = ['tagname', 'delimiter', 'encoding', 'start_line', 'page
 
 
 def get_iterable_options(options):
+    """Extract iterable-specific options from options dictionary."""
     out = {}
     for k in ITERABLE_OPTIONS_KEYS:
         if k in options.keys():
             out[k] = options[k]
-    return out            
+    return out
 
 
 def get_keys(adict, prefix=None):
+    """Extract all keys from nested dictionary."""
     keys = {}
     for k, v in adict.items():
         fullk = '.'.join([prefix, k]) if prefix else k
         keys[fullk] = 1
-        if type(v) == type({}):
+        if isinstance(v, dict):
             for ak in get_keys(v, fullk):
                 keys[ak] = 1
-        elif type(v) == type([]):
+        elif isinstance(v, list):
             for item in v:
-                if type(item) == type({}):
+                if isinstance(item, dict):
                     for ak in get_keys(item, fullk):
                         keys[ak] = 1
         else:
-            print((u'%s\t%s' % (fullk, str(v))))
+            print(('%s\t%s' % (fullk, str(v))))
     return keys
 
 
 class TextProcessor:
+    """Text processing handler."""
     def __init__(self):
         pass
 

@@ -1,55 +1,71 @@
 # -*- coding: utf8 -*-
-import os
+"""Data selection and filtering module."""
 import csv
-# import json
 import logging
+import os
 import sys
 import zipfile
 
 import bson
 import dictquery as dq
-import orjson
 import duckdb
+import orjson
+from iterable.helpers.detect import detect_file_type, open_iterable
 
-# from xmlr import xmliter
-from ..utils import get_file_type, detect_delimiter, detect_encoding, get_dict_value, get_dict_keys, _is_flat, buf_count_newlines_gen, get_option, strip_dict_fields, dict_generator
+from ..common.iterable import DataWriter, IterableData
+from ..constants import DUCKABLE_CODECS, DUCKABLE_FILE_TYPES
+from ..utils import (detect_encoding, dict_generator, get_dict_value,
+                     get_file_type, get_option, strip_dict_fields)
 
-from iterable.helpers.detect import open_iterable, detect_file_type
-
-from ..common.iterable import IterableData, DataWriter
-LINEEND = u'\n'.encode('utf8')
-
-from ..constants import DUCKABLE_FILE_TYPES, DUCKABLE_CODECS
+LINEEND = '\n'.encode('utf8')
 
 
 ITERABLE_OPTIONS_KEYS = ['tagname', 'delimiter', 'encoding', 'start_line', 'page']
 
 
 def get_iterable_options(options):
+    """Extract iterable-specific options from options dictionary."""
     out = {}
     for k in ITERABLE_OPTIONS_KEYS:
         if k in options.keys():
             out[k] = options[k]
-    return out            
+    return out
 
 
-def get_iterable_fields_uniq(iterable, fields, dolog=False, dq=None):
-    """ Returns all uniq values of the fields of iterable dictionary"""
+def _detect_engine(fromfile, engine, filetype):
+    """Detect the appropriate engine for processing."""
+    compression = 'raw'
+    if filetype is None:
+        ftype = detect_file_type(fromfile)
+        if ftype['success']:
+            filetype = ftype['datatype'].id()
+            if ftype['codec'] is not None:
+                compression = ftype['codec'].id()
+    logging.info(f'File filetype {filetype} and compression {compression}')
+    if engine == 'auto':
+        if filetype in DUCKABLE_FILE_TYPES and compression in DUCKABLE_CODECS:
+            return 'duckdb'
+        return 'iterable'
+    return engine
+
+
+def get_iterable_fields_uniq(iterable, fields, dolog=False, dq_instance=None):  # pylint: disable=unused-argument
+    """Returns all uniq values of the fields of iterable dictionary."""
+    # dq_instance kept for API compatibility
     n = 0
     uniqval = []
     for row in iterable:
-#        print(row)
         n += 1
         if dolog and n % 1000 == 0:
-            logging.debug('uniq: processing %d records' % (n))
+            logging.debug('uniq: processing %d records', n)
         try:
             allvals = []
             for field in fields:
                 allvals.append(get_dict_value(row, field.split('.')))
 
-            for n1 in range(0, len(allvals[0]), 1):
+            for n1, _ in enumerate(allvals[0]):
                 k = []
-                for n2 in range(0, len(allvals)):
+                for n2, _ in enumerate(allvals):
                     k.append(str(allvals[n2][n1]))
                 if k not in uniqval:
                     uniqval.append(k)
@@ -58,11 +74,13 @@ def get_iterable_fields_uniq(iterable, fields, dolog=False, dq=None):
     return uniqval
 
 
-def get_duckdb_fields_uniq(filename, fields, dolog=False, dq=None):
-    """ Returns all uniq values of the fields of the filename using DuckdDB"""
+def get_duckdb_fields_uniq(filename, fields, dolog=False, dq_instance=None):  # pylint: disable=unused-argument
+    """Returns all uniq values of the fields of the filename using DuckdDB."""
+    # dq_instance kept for API compatibility
     uniqval = []
-    fieldstext = ','.join(fields) 
-    query = f"select unnest(grp) from (select distinct({fieldstext}) as grp from '{filename}')"
+    fieldstext = ','.join(fields)
+    query = (f"select unnest(grp) from (select distinct({fieldstext}) "
+             f"as grp from '{filename}')")
     if dolog:
         logging.info(query)
     uniqval = duckdb.sql(query).fetchall()
@@ -70,26 +88,27 @@ def get_duckdb_fields_uniq(filename, fields, dolog=False, dq=None):
 
 
 
-def get_iterable_fields_freq(iterable, fields, dolog=False, filter=None, dq=None):
-    """Iterates and returns most frequent values"""
+def get_iterable_fields_freq(iterable, fields, dolog=False, filter_expr=None, dq_instance=None):
+    """Iterates and returns most frequent values."""
     n = 0
     valuedict = {}
     items = []
     for r in iterable:
         n += 1
         if dolog and n % 10000 == 0:
-            logging.info('frequency: processing %d records' % (n))
-        if filter is not None:
-            if not dq.match(r, filter):
+            logging.info('frequency: processing %d records', n)
+        if filter_expr is not None:
+            query_obj = dq_instance if dq_instance is not None else dq
+            if not query_obj.match(r, filter_expr):
                 continue
         try:
             allvals = []
             for field in fields:
                 allvals.append(get_dict_value(r, field.split('.')))
 
-            for n1 in range(0, len(allvals[0]), 1):
+            for n1, _ in enumerate(allvals[0]):
                 k = []
-                for n2 in range(0, len(allvals)):
+                for n2, _ in enumerate(allvals):
                     k.append(str(allvals[n2][n1]))
                 kx = '\t'.join(k)
                 v = valuedict.get(kx, 0)
@@ -103,24 +122,29 @@ def get_iterable_fields_freq(iterable, fields, dolog=False, filter=None, dq=None
     items.sort(key=lambda x: x[-1], reverse=True)
     return items
 
-def get_duckdb_fields_freq(filename, fields, dolog=False, dq=None):
-    """ Returns frequencies for the fields of the filename using DuckdDB"""
+def get_duckdb_fields_freq(filename, fields, dolog=False, dq_instance=None):  # pylint: disable=unused-argument
+    """Returns frequencies for the fields of the filename using DuckdDB."""
+    # dq_instance kept for API compatibility
     uniqval = []
-    fieldstext = ','.join(fields) 
-    query = f"select {fieldstext}, count(*) as c from '{filename}' group by {fieldstext} order by c desc"
+    fieldstext = ','.join(fields)
+    query = (f"select {fieldstext}, count(*) as c from '{filename}' "
+             f"group by {fieldstext} order by c desc")
     if dolog:
         logging.info(query)
     uniqval = duckdb.sql(query).fetchall()
-    return uniqval    
+    return uniqval
 
 
 class Selector:
+    """Data selection and filtering handler."""
     def __init__(self):
         pass
 
-    def uniq(self, fromfile, options={}):
-        """Extracts unique values by field"""
-        logging.debug('Processing %s' % fromfile)
+    def uniq(self, fromfile, options=None):
+        """Extracts unique values by field."""
+        if options is None:
+            options = {}
+        logging.debug('Processing %s', fromfile)
         iterableargs = get_iterable_options(options)
         filetype = get_option(options, 'filetype')
         to_file = get_option(options, 'output')
@@ -135,28 +159,11 @@ class Selector:
             to_type = 'csv'
             out = sys.stdout
         fields = options['fields'].split(',')
-        detected_engine = None
-        fileext = fromfile.rsplit('.', 1)[-1].lower()
-        filesize = os.path.getsize(fromfile)
-        compression = 'raw'
-        if filetype is None:
-            ftype = detect_file_type(fromfile)
-            if ftype['success']:
-                filetype = ftype['datatype'].id()            
-                if ftype['codec'] is not None:
-                    compression = ftype['codec'].id()
-        logging.info(f'File filetype {filetype} and compression {compression}')
-        if engine == 'auto':
-            if filetype in DUCKABLE_FILE_TYPES and compression in DUCKABLE_CODECS:
-                detected_engine = 'duckdb'
-            else:
-                detected_engine = 'iterable'
-        else:
-            detected_engine = engine            
+        detected_engine = _detect_engine(fromfile, engine, filetype)
         if detected_engine == 'duckdb':
             output_type = 'duckdb'
             uniqval = get_duckdb_fields_uniq(fromfile, fields, dolog=True)
-        elif engine == 'iterable':
+        elif detected_engine == 'iterable':
             output_type = 'iterable'
             iterable = open_iterable(fromfile, mode='r', iterableargs=iterableargs)
             logging.info('uniq: looking for fields: %s' % (options['fields']))
@@ -170,12 +177,13 @@ class Selector:
         writer.write_items(uniqval)
 
 
-    def headers(self, fromfile, options={}):
-        """Extracts headers values"""
-        f_type = get_file_type(fromfile) if options['format_in'] is None else options['format_in']
+    def headers(self, fromfile, options=None):
+        """Extracts headers values."""
+        if options is None:
+            options = {}
         limit = get_option(options, 'limit')
         iterableargs = get_iterable_options(options)
-        
+
         iterable = open_iterable(fromfile, mode='r', iterableargs=iterableargs)
         keys = []
         n = 0
@@ -191,16 +199,17 @@ class Selector:
         iterable.close()
         output = get_option(options, 'output')
         if output:
-            f = open(output, 'w', encoding=get_option(options, 'encoding'))
-            f.write('\n'.join(keys))
-            f.close()
+            with open(output, 'w', encoding=get_option(options, 'encoding')) as f:
+                f.write('\n'.join(keys))
         else:
             for x in keys:
-                print(x.encode('utf8').decode('utf8', 'ignore'))  
+                print(x.encode('utf8').decode('utf8', 'ignore'))
 
-    def frequency(self, fromfile, options={}):
-        """Calculates frequency of the values in the file"""
-        logging.debug('Processing %s' % fromfile)
+    def frequency(self, fromfile, options=None):
+        """Calculates frequency of the values in the file."""
+        if options is None:
+            options = {}
+        logging.debug('Processing %s', fromfile)
         iterableargs = get_iterable_options(options)
         filetype = get_option(options, 'filetype')
         to_file = get_option(options, 'output')
@@ -215,24 +224,7 @@ class Selector:
             to_type = 'csv'
             out = sys.stdout
         fields = options['fields'].split(',')
-        detected_engine = None
-        fileext = fromfile.rsplit('.', 1)[-1].lower()
-        filesize = os.path.getsize(fromfile)
-        compression = 'raw'
-        if filetype is None:
-            ftype = detect_file_type(fromfile)
-            if ftype['success']:
-                filetype = ftype['datatype'].id()            
-                if ftype['codec'] is not None:
-                    compression = ftype['codec'].id()
-        logging.info(f'File filetype {filetype} and compression {compression}')
-        if engine == 'auto':
-            if filetype in DUCKABLE_FILE_TYPES and compression in DUCKABLE_CODECS:
-                detected_engine = 'duckdb'
-            else:
-                detected_engine = 'iterable'
-        else:
-            detected_engine = engine            
+        detected_engine = _detect_engine(fromfile, engine, filetype)
         items = []
         output_type = 'iterable'
         if detected_engine == 'duckdb':
@@ -254,8 +246,10 @@ class Selector:
         writer = DataWriter(out, filetype=to_type, output_type=output_type, fieldnames=fields)
         writer.write_items(items)
 
-    def select(self, fromfile, options={}):
-        """Select or re-order columns from file"""
+    def select(self, fromfile, options=None):
+        """Select or re-order columns from file."""
+        if options is None:
+            options = {}
         f_type = get_file_type(fromfile) if options['format_in'] is None else options['format_in']
         iterable = IterableData(fromfile, options=options)
         to_file = get_option(options, 'output')
@@ -304,15 +298,19 @@ class Selector:
         out.close()
 
 
-    def split_new(self, fromfile, options={}):
-        """Splits the given file with data into chunks based on chunk size or field value"""
+    def split_new(self, fromfile, options=None):
+        """Splits the given file with data into chunks based on chunk size or field value."""
+        if options is None:
+            options = {}
         iterableargs = get_iterable_options(options)
-        iterable = open_iterable(fromfile, mode='r', iterableargs=iterableargs)
-        to_file = get_option(options, 'output')
+        open_iterable(fromfile, mode='r', iterableargs=iterableargs)
+        get_option(options, 'output')
 
 
-    def split(self, fromfile, options={}):
-        """Splits the given file with data into chunks based on chunk size or field value"""
+    def split(self, fromfile, options=None):
+        """Splits the given file with data into chunks based on chunk size or field value."""
+        if options is None:
+            options = {}
         f_type = get_file_type(fromfile) if options['format_in'] is None else options['format_in']
         if options['zipfile']:
             z = zipfile.ZipFile(fromfile, mode='r')
@@ -362,9 +360,12 @@ class Selector:
                     if n % options['chunksize'] == 0:
                         out.close()
                         chunknum += 1
-                        splitname = finfilename.rsplit('.', 1)[0] + '_%d.csv' % (chunknum)
-                        out = open(splitname, 'w', encoding=get_option(options, 'encoding'))
-                        writer = csv.DictWriter(out, fieldnames=reader.fieldnames, delimiter=delimiter)
+                        splitname = finfilename.rsplit('.', 1)[0] + '_%d.csv' % (
+                            chunknum)
+                        out = open(splitname, 'w',
+                                   encoding=get_option(options, 'encoding'))
+                        writer = csv.DictWriter(out, fieldnames=reader.fieldnames,
+                                                 delimiter=delimiter)
                         writer.writeheader()
         elif f_type == 'jsonl':
             n = 0
@@ -402,13 +403,18 @@ class Selector:
                     except IndexError:
                         continue
                         kx = "None"
-                    if kx is None: continue
-                    kx = kx.replace('\\', '-').replace('/', '-').replace('?', '-').replace('<', '-').replace('>', '-').replace('\n', '')
+                    if kx is None:
+                        continue
+                    kx = (kx.replace('\\', '-').replace('/', '-')
+                          .replace('?', '-').replace('<', '-')
+                          .replace('>', '-').replace('\n', ''))
                     v = valuedict.get(kx, None)
                     if v is None:
-#                        splitname = finfilename.rsplit('.', 1)[0] + '_%s.jsonl' % (kx)
+                        # splitname = finfilename.rsplit('.', 1)[0] + '_%s.jsonl' % (kx)
                         splitname = '%s.jsonl' % (kx)
-                        if options['dirname'] is not None: splitname = os.path.join(options['dirname'], splitname)
+                        if options['dirname'] is not None:
+                            splitname = os.path.join(options['dirname'],
+                                                     splitname)
                         valuedict[kx] = open(splitname, 'w', encoding='utf8')
                     valuedict[kx].write(l)
                 #                    valuedict[kx].write(l.decode('utf8'))#.decode('utf8')#)

@@ -1,28 +1,32 @@
 # -*- coding: utf8 -*-
-from ..utils import get_file_type, get_option
-import logging
-import orjson
-import zipfile
-from qddate import DateParser
-from ..common.scheme import generate_scheme_from_file
-from pydantic import BaseModel
-from typing import Optional
-import duckdb
-import pandas as pd
-import yaml
+"""Schema generation and extraction module."""
 import csv
-import json
-import tempfile
 import io
+import json
+import logging
 import os
-import xxhash
+import tempfile
+import zipfile
+from typing import Optional
+
+import duckdb
+import orjson
+import pandas as pd
 import tqdm
+import xxhash
+import yaml
+from pydantic import BaseModel
 from pyzstd import ZstdFile
+from qddate import DateParser
+
+from ..common.scheme import generate_scheme_from_file
+from ..utils import get_file_type, get_option
 from ..ai.perplexity import get_fields_info, get_description
 
 
 
 def column_type_parse(column_type):
+    """Parse column type string to extract array flag and base type."""
     is_array = (column_type[-2:] == '[]') 
     if is_array:
         text = column_type[:-2]
@@ -38,11 +42,15 @@ def column_type_parse(column_type):
 
 
 def get_schema_key(fields):
+    """Generate hash key for schema based on field names."""
     return xxhash.xxh64('|'.join(sorted(fields))).hexdigest()
 
 
-def duckdb_decompose(filename:str=None, frame:pd.DataFrame=None, filetype:str=None, path:str="*", limit:int=10000000, recursive:bool=True, root:str="", ignore_errors:bool=True):
-    """Decomposes file or data frame structure"""  
+def duckdb_decompose(filename: str = None, frame: pd.DataFrame = None,
+                    filetype: str = None, path: str = "*",
+                    limit: int = 10000000, recursive: bool = True,
+                    root: str = "", ignore_errors: bool = True):
+    """Decomposes file or data frame structure."""
     text_ignore = ', ignore_errors=true' if ignore_errors else ''
     if filetype in ['csv', 'tsv']:
         read_func = f"read_csv('{filename}'{text_ignore}, sample_size={limit})"
@@ -52,63 +60,88 @@ def duckdb_decompose(filename:str=None, frame:pd.DataFrame=None, filetype:str=No
         read_func = f"'{filename}'"
     if path == '*':
         if filename is not None:
-            data = duckdb.sql(f"describe select {path} from {read_func} limit {limit}").fetchall()
+            query_str = f"describe select {path} from {read_func} limit {limit}"
+            data = duckdb.sql(query_str).fetchall()
         else:
-            data = duckdb.sql(f"describe select {path} from frame limit {limit}").fetchall()
+            query_str = f"describe select {path} from frame limit {limit}"
+            data = duckdb.sql(query_str).fetchall()
     else:
          path_parts = path.split('.')
          query = None
          if len(path_parts) == 1:
             if filename is not None:
-                query = f"describe select unnest(\"{path}\", recursive:=true) from {read_func} limit {limit}"
+                query = (f"describe select unnest(\"{path}\", recursive:=true) "
+                        f"from {read_func} limit {limit}")
             else:
-                query = f"describe select unnest(\"{path}\", recursive:=true) from frame limit {limit}"
+                query = (f"describe select unnest(\"{path}\", recursive:=true) "
+                        f"from frame limit {limit}")
          elif len(path_parts) == 2:
             if filename is not None:
-                query = f"describe select unnest(\"{path_parts[1]}\", recursive:=true) from (select unnest(\"{path_parts[0]}\", recursive:=true) from {read_func} limit {limit})"
+                query = (f"describe select unnest(\"{path_parts[1]}\", "
+                        f"recursive:=true) from (select unnest(\"{path_parts[0]}\", "
+                        f"recursive:=true) from {read_func} limit {limit})")
             else:
-                query = f"describe select unnest(\"{path_parts[1]}\", recursive:=true) from (select unnest(\"{path_parts[0]}\", recursive:=true) from frame limit {limit})"
+                query = (f"describe select unnest(\"{path_parts[1]}\", "
+                        f"recursive:=true) from (select unnest(\"{path_parts[0]}\", "
+                        f"recursive:=true) from frame limit {limit})")
          elif len(path_parts) == 3:
             if filename is not None:
-                query = f"describe select unnest(\"{path_parts[2]}\", recursive:=true) from (select unnest(\"{path_parts[1]}\", recursive:=true) from (select unnest(\"{path_parts[0]}\", recursive:=true) from {read_func} limit {limit}))"
+                query = (f"describe select unnest(\"{path_parts[2]}\", "
+                        f"recursive:=true) from (select unnest(\"{path_parts[1]}\", "
+                        f"recursive:=true) from (select unnest(\"{path_parts[0]}\", "
+                        f"recursive:=true) from {read_func} limit {limit}))")
             else:
-                query = f"describe select unnest(\"{path_parts[2]}\", recursive:=true) from (select unnest(\"{path_parts[1]}\", recursive:=true) from (select unnest(\"{path_parts[0]}\", recursive:=true) from frame limit {limit}))"                
+                query = (f"describe select unnest(\"{path_parts[2]}\", "
+                        f"recursive:=true) from (select unnest(\"{path_parts[1]}\", "
+                        f"recursive:=true) from (select unnest(\"{path_parts[0]}\", "
+                        f"recursive:=true) from frame limit {limit}))")
          elif len(path_parts) == 4:
             if filename is not None:
-                query = f"describe select unnest(\"{path_parts[2]}.{path_parts[3]}\", recursive:=true) from (select unnest(\"{path_parts[1]}\", recursive:=true) from (select unnest(\"{path_parts[0]}\", recursive:=true) from {read_func} limit {limit}))"
+                query = (f"describe select unnest(\"{path_parts[2]}.{path_parts[3]}\", "
+                        f"recursive:=true) from (select unnest(\"{path_parts[1]}\", "
+                        f"recursive:=true) from (select unnest(\"{path_parts[0]}\", "
+                        f"recursive:=true) from {read_func} limit {limit}))")
             else:
-                query = f"describe select unnest(\"{path_parts[2]}.{path_parts[3]}\", recursive:=true) from (select unnest(\"{path_parts[1]}\", recursive:=true) from (select unnest(\"{path_parts[0]}\", recursive:=true) from frame limit {limit}))"
+                query = (f"describe select unnest(\"{path_parts[2]}.{path_parts[3]}\", "
+                        f"recursive:=true) from (select unnest(\"{path_parts[1]}\", "
+                        f"recursive:=true) from (select unnest(\"{path_parts[0]}\", "
+                        f"recursive:=true) from frame limit {limit}))")
          data = duckdb.sql(query).fetchall()
     table = []
-    for row in data:        
-        item = [row[0] if len(root) ==0 else root+ '.' + row[0], ]
+    for row in data:
+        item = [row[0] if len(root) == 0 else root + '.' + row[0]]
         item.extend(column_type_parse(row[1]))
         table.append(item)
         if recursive and item[1] == 'STRUCT':
-            subtable = duckdb_decompose(filename, frame, filetype=filetype, path=row[0] if len(root) == 0 else item[0], limit=limit, recursive=recursive, root=item[0], ignore_errors=ignore_errors)
+            sub_path = row[0] if len(root) == 0 else item[0]
+            subtable = duckdb_decompose(filename, frame, filetype=filetype,
+                                       path=sub_path, limit=limit,
+                                       recursive=recursive, root=item[0],
+                                       ignore_errors=ignore_errors)
             for subitem in subtable:
                 table.append(subitem)
     return table    
 
 
 class FieldSchema(BaseModel):
+    """Schema definition for a data field."""
     name: str
     ftype: str
-    is_array:bool = False
+    is_array: bool = False
     description: Optional[str] = None
-    sem_type:str = None
-    sem_url:str = None
+    sem_type: str = None
+    sem_url: str = None
 
 
 class TableSchema(BaseModel):
-    """Table schema"""    
+    """Table schema definition."""
     key: Optional[str] = None
     num_cols: int = -1
-    is_flat:bool = True
-    id:Optional[str] = None    
-    fields:Optional[list[FieldSchema]] = []
-    description:Optional[str] = None
-    files:Optional[list[str]] = []
+    is_flat: bool = True
+    id: Optional[str] = None
+    fields: Optional[list[FieldSchema]] = []
+    description: Optional[str] = None
+    files: Optional[list[str]] = []
 
 
 MAX_SAMPLE_SIZE = 200
@@ -150,13 +183,15 @@ def table_from_objects(objects:list, id:str, objects_limit:int, use_pandas:bool=
     for column in columns_raw:                          
         field = FieldSchema(name=column[0], ftype=column[1], is_array=column[2])
         table.fields.append(field)
-        if field.ftype == 'STRUCT' or field.is_array: is_flat = False                    
+        if field.ftype == 'STRUCT' or field.is_array:
+            is_flat = False                    
         table.is_flat = is_flat                            
     table.num_records = len(objects)    
     return table
 
 
 def build_schema(filename:str, objects_limit:int=100000):
+    """Build schema from file by analyzing sample of objects."""
     fileext = filename.rsplit('.', 1)[-1].lower()
     filetype = fileext
     # Getting total count
@@ -170,7 +205,8 @@ def build_schema(filename:str, objects_limit:int=100000):
         field = FieldSchema(name=column[0], ftype=column[1], is_array=column[2])
         fieldsnames.append(column[0])
         table.fields.append(field)
-        if field.ftype == 'STRUCT' or field.is_array: is_flat = False                    
+        if field.ftype == 'STRUCT' or field.is_array:
+            is_flat = False                    
         table.is_flat = is_flat
     table.key = get_schema_key(fieldsnames)
     return table
@@ -178,6 +214,7 @@ def build_schema(filename:str, objects_limit:int=100000):
 
 
 class Schemer:
+    """Schema generation handler."""
     def __init__(self, nodates=True):
         if nodates:
             self.qd = None
@@ -186,6 +223,7 @@ class Schemer:
         pass
 
     def extract_schema(self, fromfile, options):
+        """Extract schema from file and output as YAML."""
         table = build_schema(fromfile)
         print(yaml.dump(table.model_dump(), Dumper=yaml.Dumper))
 
@@ -195,11 +233,14 @@ class Schemer:
         filenames = os.listdir(fromdir)
         files = []
         tables = {}
+        supported_exts = ['csv', 'json', 'jsonl', 'parquet', 'csv.gz',
+                         'csv.zstd', 'jsonl.zstd']
         for filename in filenames:
-            if filename.rsplit('.', 1)[-1] in ['csv', 'json', 'jsonl', 'parquet', 'csv.gz', 'csv.zstd', 'jsonl.zstd']:
+            ext = filename.rsplit('.', 1)[-1]
+            if ext in supported_exts:
                 files.append(os.path.join(fromdir, filename))
         mode = options['mode']
-        print(f'Found {len(files)} files. Processing mode {mode}')                
+        print(f'Found {len(files)} files. Processing mode {mode}')
         for filename in tqdm.tqdm(files):
             table = build_schema(filename)
             fbase = os.path.basename(filename)
@@ -207,40 +248,47 @@ class Schemer:
             if mode == 'distinct':
                 if table.key not in tables.keys():
                     tables[table.key] = table
-                    tables[table.key].files.append(fbase)                
-                    print(options)
-                    if 'autodoc' in options.keys() and options['autodoc'] and 'lang' in options.keys():                    
+                    tables[table.key].files.append(fbase)
+                    if ('autodoc' in options.keys() and options['autodoc'] and
+                       'lang' in options.keys()):
                         fields = []
                         for column in table.fields:
                             fields.append(column.name)
-                        descriptions = get_fields_info(fields, language=options['lang'])
+                        descriptions = get_fields_info(fields,
+                                                      language=options['lang'])
                         for column in table.fields:
-                            if column.name in descriptions.keys(): column.description = descriptions[column.name]                
+                            if column.name in descriptions.keys():
+                                column.description = descriptions[column.name]                
                 else:
                     tables[table.key].files.append(fbase)
             elif mode == 'perfile':
-                table.files.append(fbase)                
-                if 'autodoc' in options.keys() and options['autodoc'] and 'lang' in options.keys():                    
+                table.files.append(fbase)
+                if ('autodoc' in options.keys() and options['autodoc'] and
+                   'lang' in options.keys()):
                     fields = []
                     for column in table.fields:
                         fields.append(column.name)
-                    descriptions = get_fields_info(fields, language=options['lang'])
+                    descriptions = get_fields_info(fields,
+                                                  language=options['lang'])
                     for column in table.fields:
-                        if column.name in descriptions.keys(): column.description = descriptions[column.name]                
-                f = open(os.path.join(options['output'], fbase + '.yaml'), 'w', encoding='utf8')
-                f.write(yaml.dump(table.model_dump(), Dumper=yaml.Dumper))
-                f.close
+                        if column.name in descriptions.keys():
+                            column.description = descriptions[column.name]
+                output_path = os.path.join(options['output'], fbase + '.yaml')
+                with open(output_path, 'w', encoding='utf8') as f:
+                    f.write(yaml.dump(table.model_dump(), Dumper=yaml.Dumper))
         if mode == 'distinct':
             print(f'Total schemas {len(tables)}, files {len(files)}')
         elif mode == 'perfile':
             print(f'Total schemas {len(files)}, files {len(files)}')
         if 'output' in options.keys():
             if mode == 'distinct':
-                print(f'Writing schemas')
+                print('Writing schemas')
                 for table in tables.values():
-                    f = open(os.path.join(options['output'], table.key + '.yaml'), 'w', encoding='utf8')
-                    f.write(yaml.dump(table.model_dump(), Dumper=yaml.Dumper))
-                    f.close
+                    output_path = os.path.join(options['output'],
+                                             table.key + '.yaml')
+                    with open(output_path, 'w', encoding='utf8') as f:
+                        f.write(yaml.dump(table.model_dump(),
+                                        Dumper=yaml.Dumper))
 #            print(yaml.dump(table.model_dump(), Dumper=yaml.Dumper))
 
 
@@ -264,11 +312,17 @@ class Schemer:
             else:
                 infile = open(fromfile, 'r', encoding=get_option(options, 'encoding'))
 
-        logging.debug('Start identifying scheme for %s' % (fromfile))
-        scheme = generate_scheme_from_file(fileobj=infile, filetype=f_type, delimiter=options['delimiter'], encoding=options['encoding'])
+        logging.debug('Start identifying scheme for %s', fromfile)
+        scheme = generate_scheme_from_file(fileobj=infile, filetype=f_type,
+                                          delimiter=options['delimiter'],
+                                          encoding=options['encoding'])
         if options['output']:
-            f = open(options['output'], 'w', encoding='utf8')
-            f.write(orjson.dumps(scheme, option=orjson.OPT_INDENT_2).decode('utf8'))
-            f.close()
+            with open(options['output'], 'w', encoding='utf8') as f:
+                f.write(orjson.dumps(scheme,
+                                    option=orjson.OPT_INDENT_2).decode('utf8'))
+        if not options['zipfile']:
+            infile.close()
+        if options['zipfile']:
+            z.close()
         else:
             print(str(orjson.dumps(scheme, option=orjson.OPT_INDENT_2).decode('utf8')))

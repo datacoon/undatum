@@ -1,23 +1,28 @@
 # -*- coding: utf8 -*-
+"""Data validation module."""
 import csv
-import zipfile
-import sys
-import orjson
-import bson
 import logging
-#from xmlr import xmliter
-from ..utils import get_file_type, get_option, get_dict_value
+import sys
+import zipfile
+
+import bson
 import dictquery as dq
+import orjson
+
+from ..utils import get_file_type, get_option, get_dict_value
 from ..validate import VALIDATION_RULEMAP
 
 
 class Validator:
+    """Data validation handler."""
     def __init__(self):
         pass
 
-    def validate(self, fromfile, options={}):
-        """Validates selected field against validation rule"""
-        logging.debug('Processing %s' % fromfile)
+    def validate(self, fromfile, options=None):
+        """Validates selected field against validation rule."""
+        if options is None:
+            options = {}
+        logging.debug('Processing %s', fromfile)
         f_type = get_file_type(fromfile) if options['format_in'] is None else options['format_in']
         if options['zipfile']:
             z = zipfile.ZipFile(fromfile, mode='r')
@@ -42,7 +47,7 @@ class Validator:
             out = sys.stdout
         fields = options['fields'].split(',')
         val_func = VALIDATION_RULEMAP[options['rule']]
-        logging.info('uniq: looking for fields: %s' % (options['fields']))
+        logging.info('uniq: looking for fields: %s', options['fields'])
         validated = []
         stats = {'total': 0, 'invalid': 0, 'novalue' : 0}
         if f_type == 'csv':
@@ -52,7 +57,7 @@ class Validator:
             for r in reader:
                 n += 1
                 if n % 1000 == 0:
-                    logging.info('uniq: processing %d records of %s' % (n, fromfile))
+                    logging.info('uniq: processing %d records of %s', n, fromfile)
                 if options['filter'] is not None:
                     if not dq.match(r, options['filter']):
                         continue
@@ -67,7 +72,7 @@ class Validator:
             for l in infile:
                 n += 1
                 if n % 10000 == 0:
-                    logging.info('uniq: processing %d records of %s' % (n, fromfile))
+                    logging.info('uniq: processing %d records of %s', n, fromfile)
                 r = orjson.loads(l)
                 if options['filter'] is not None:
                     if not dq.match(r, options['filter']):
@@ -88,7 +93,7 @@ class Validator:
             for r in bson_iter:
                 n += 1
                 if n % 1000 == 0:
-                    logging.info('uniq: processing %d records of %s' % (n, fromfile))
+                    logging.info('uniq: processing %d records of %s', n, fromfile)
                 if options['filter'] is not None:
                     if not dq.match(r, options['filter']):
                         continue
@@ -103,12 +108,21 @@ class Validator:
                     stats['novalue'] += 1
         else:
             logging.error('Invalid filed format provided')
+            if not options['zipfile']:
+                infile.close()
             return
-        infile.close()
+        if not options['zipfile']:
+            infile.close()
         stats['share'] = 100.0 * stats['invalid'] / stats['total']
-        logging.debug('validate: complete, %d records (%.2f%%) not valid and %d (%.2f%%) not found of %d against %s' % (stats['invalid'], stats['share'], stats['novalue'], 100.0 * stats['novalue'] / stats['total'], stats['total'], options['rule']))
+        novalue_share = 100.0 * stats['novalue'] / stats['total']
+        logging.debug('validate: complete, %d records (%.2f%%) not valid and %d '
+                     '(%.2f%%) not found of %d against %s',
+                     stats['invalid'], stats['share'], stats['novalue'],
+                     novalue_share, stats['total'], options['rule'])
         if options['mode'] != 'stats':
-            writer = csv.DictWriter(out, fieldnames=[fields[0], fields[0] + '_valid'], delimiter=get_option(options, 'delimiter'))
+            fieldnames = [fields[0], fields[0] + '_valid']
+            writer = csv.DictWriter(out, fieldnames=fieldnames,
+                                    delimiter=get_option(options, 'delimiter'))
             for row in validated:
                 if options['mode'] == 'invalid':
                     if not row[fields[0] + '_valid']:
@@ -117,4 +131,7 @@ class Validator:
                     writer.writerow(row)
         else:
             out.write(str(orjson.dumps(stats, option=orjson.OPT_INDENT_2)))
-
+        if to_file:
+            out.close()
+        if options['zipfile']:
+            z.close()

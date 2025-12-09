@@ -4,11 +4,12 @@
 
 """
 import sys
+from .core import app
 
 
 def main():
+    """Main entry point for the application."""
     try:
-        from .core import app
         app()
     except KeyboardInterrupt:
         print("Ctrl-C pressed. Aborting")
@@ -16,4 +17,4 @@ def main():
 
 
 if __name__ == '__main__':
-    app()
+    main()
