@@ -7,6 +7,7 @@ command handlers for data conversion, analysis, validation, and more.
 """
 import glob
 import logging
+from typing import Annotated
 
 import typer
 
@@ -37,35 +38,27 @@ def enable_verbose():
         level=logging.INFO)
 
 @app.command()
-def convert(input_file: str, output: str, delimiter: str = ',',
-            compression: str = 'brotli', encoding: str = 'utf8',
-            verbose: bool = False, flatten_data: bool = False,
-            prefix_strip: bool = True, fields: str = None,
-            start_line: int = 0, skip_end_rows: int = 0,
-            start_page: int = 0, tagname: str = None,
-            format_in: str = None, format_out: str = None,
-            zipfile: bool = False):
+def convert(
+    input_file: Annotated[str, typer.Argument(help="Path to input file to convert.")],
+    output: Annotated[str, typer.Argument(help="Path to output file.")],
+    delimiter: Annotated[str, typer.Option(help="CSV delimiter character.")] = ',',
+    compression: Annotated[str, typer.Option(help="Compression type (e.g., 'brotli', 'gzip', 'xz').")] = 'brotli',
+    encoding: Annotated[str, typer.Option(help="File encoding (e.g., 'utf8', 'latin1').")] = 'utf8',
+    verbose: Annotated[bool, typer.Option(help="Enable verbose logging output.")] = False,
+    flatten_data: Annotated[bool, typer.Option(help="Flatten nested data structures into flat records.")] = False,
+    prefix_strip: Annotated[bool, typer.Option(help="Strip XML namespace prefixes from element names.")] = True,
+    fields: Annotated[str, typer.Option(help="Comma-separated list of field names to include in output.")] = None,
+    start_line: Annotated[int, typer.Option(help="Line number (0-based) to start reading from.")] = 0,
+    skip_end_rows: Annotated[int, typer.Option(help="Number of rows to skip at the end of the file.")] = 0,
+    start_page: Annotated[int, typer.Option(help="Page number (0-based) to start from for Excel files.")] = 0,
+    tagname: Annotated[str, typer.Option(help="XML tag name that contains individual records.")] = None,
+    format_in: Annotated[str, typer.Option(help="Override input file format detection (e.g., 'csv', 'jsonl', 'xml').")] = None,
+    format_out: Annotated[str, typer.Option(help="Override output file format (e.g., 'csv', 'jsonl', 'parquet').")] = None,
+    zipfile: Annotated[bool, typer.Option(help="Treat input file as a ZIP archive.")] = False
+):
     """Convert one file to another format.
 
     Supports conversion between XML, CSV, JSON, JSONL, BSON, Parquet, ORC, and AVRO formats.
-
-    Args:
-        input_file: Path to input file.
-        output: Path to output file.
-        delimiter: CSV delimiter character (default: ',').
-        compression: Compression type (default: 'brotli').
-        encoding: File encoding (default: 'utf8').
-        verbose: Enable verbose logging.
-        flatten_data: Flatten nested structures.
-        prefix_strip: Strip XML namespace prefixes.
-        fields: Comma-separated list of fields to include.
-        start_line: Line number to start reading from.
-        skip_end_rows: Number of rows to skip at end.
-        start_page: Page number to start from (for Excel files).
-        tagname: XML tag name containing records.
-        format_in: Input format override.
-        format_out: Output format override.
-        zipfile: Whether input is a zip file.
     """
     if verbose:
         enable_verbose()
@@ -88,36 +81,28 @@ def convert(input_file: str, output: str, delimiter: str = ',',
     acmd.convert(input_file, output, options)
 
 @app.command()
-def convertold(input_file: str, output: str, delimiter: str = ',',
-               compression: str = 'brotli', encoding: str = 'utf8',
-               verbose: bool = False, flatten_data: bool = False,
-               prefix_strip: bool = True, fields: str = None,
-               start_line: int = 0, skip_end_rows: int = 0,
-               start_page: int = 0, tagname: str = None,
-               format_in: str = None, format_out: str = None,
-               zipfile: bool = False):
+def convertold(
+    input_file: Annotated[str, typer.Argument(help="Path to input file to convert.")],
+    output: Annotated[str, typer.Argument(help="Path to output file.")],
+    delimiter: Annotated[str, typer.Option(help="CSV delimiter character.")] = ',',
+    compression: Annotated[str, typer.Option(help="Compression type (e.g., 'brotli', 'gzip', 'xz').")] = 'brotli',
+    encoding: Annotated[str, typer.Option(help="File encoding (e.g., 'utf8', 'latin1').")] = 'utf8',
+    verbose: Annotated[bool, typer.Option(help="Enable verbose logging output.")] = False,
+    flatten_data: Annotated[bool, typer.Option(help="Flatten nested data structures into flat records.")] = False,
+    prefix_strip: Annotated[bool, typer.Option(help="Strip XML namespace prefixes from element names.")] = True,
+    fields: Annotated[str, typer.Option(help="Comma-separated list of field names to include in output.")] = None,
+    start_line: Annotated[int, typer.Option(help="Line number (0-based) to start reading from.")] = 0,
+    skip_end_rows: Annotated[int, typer.Option(help="Number of rows to skip at the end of the file.")] = 0,
+    start_page: Annotated[int, typer.Option(help="Page number (0-based) to start from for Excel files.")] = 0,
+    tagname: Annotated[str, typer.Option(help="XML tag name that contains individual records.")] = None,
+    format_in: Annotated[str, typer.Option(help="Override input file format detection (e.g., 'csv', 'jsonl', 'xml').")] = None,
+    format_out: Annotated[str, typer.Option(help="Override output file format (e.g., 'csv', 'jsonl', 'parquet').")] = None,
+    zipfile: Annotated[bool, typer.Option(help="Treat input file as a ZIP archive.")] = False
+):
     """Convert one file to another using legacy conversion method.
 
     .. deprecated:: 1.0.15
         This command uses the old conversion implementation. Use 'convert' instead.
-
-    Args:
-        input_file: Path to input file.
-        output: Path to output file.
-        delimiter: CSV delimiter character (default: ',').
-        compression: Compression type (default: 'brotli').
-        encoding: File encoding (default: 'utf8').
-        verbose: Enable verbose logging.
-        flatten_data: Flatten nested structures.
-        prefix_strip: Strip XML namespace prefixes.
-        fields: Comma-separated list of fields to include.
-        start_line: Line number to start reading from.
-        skip_end_rows: Number of rows to skip at end.
-        start_page: Page number to start from (for Excel files).
-        tagname: XML tag name containing records.
-        format_in: Input format override.
-        format_out: Output format override.
-        zipfile: Whether input is a zip file.
     """
     if verbose:
         enable_verbose()
@@ -140,20 +125,19 @@ def convertold(input_file: str, output: str, delimiter: str = ',',
     acmd.convert_old(input_file, output, options)
 
 @app.command()
-def uniq(input_file: str, output: str = None, fields: str = None,
-         delimiter: str = ',', encoding: str = None, verbose: bool = False,
-         filetype: str = None, engine: str = "auto"):
+def uniq(
+    input_file: Annotated[str, typer.Argument(help="Path to input file.")],
+    output: Annotated[str, typer.Option(help="Optional output file path. If not specified, prints to stdout.")] = None,
+    fields: Annotated[str, typer.Option(help="Comma-separated list of field names to extract unique values from.")] = None,
+    delimiter: Annotated[str, typer.Option(help="CSV delimiter character.")] = ',',
+    encoding: Annotated[str, typer.Option(help="File encoding (e.g., 'utf8', 'latin1').")] = None,
+    verbose: Annotated[bool, typer.Option(help="Enable verbose logging output.")] = False,
+    filetype: Annotated[str, typer.Option(help="Override file type detection (e.g., 'csv', 'jsonl').")] = None,
+    engine: Annotated[str, typer.Option(help="Processing engine: 'auto' (default), 'duckdb', or 'iterable'.")] = "auto"
+):
     """Extract all unique values from specified field(s).
 
-    Args:
-        input_file: Path to input file.
-        output: Optional output file path.
-        fields: Comma-separated list of field names.
-        delimiter: CSV delimiter character.
-        encoding: File encoding.
-        verbose: Enable verbose logging.
-        filetype: File type override.
-        engine: Processing engine ('auto', 'duckdb', or 'iterable').
+    Returns unique values or unique combinations if multiple fields are specified.
     """
     if verbose:
         enable_verbose()
@@ -170,25 +154,22 @@ def uniq(input_file: str, output: str = None, fields: str = None,
 
 
 @app.command()
-def headers(input_file: str, output: str = None, fields: str = None,  # pylint: disable=unused-argument
-           delimiter: str = ',', encoding: str = None, limit: int = 10000,
-           verbose: bool = False, format_in: str = None,
-           format_out: str = None, zipfile: bool = False,
-           filter_expr: str = None):  # pylint: disable=unused-argument
+def headers(
+    input_file: Annotated[str, typer.Argument(help="Path to input file.")],
+    output: Annotated[str, typer.Option(help="Optional output file path. If not specified, prints to stdout.")] = None,
+    fields: Annotated[str, typer.Option(help="Field filter (kept for API compatibility, not currently used).")] = None,  # pylint: disable=unused-argument
+    delimiter: Annotated[str, typer.Option(help="CSV delimiter character.")] = ',',
+    encoding: Annotated[str, typer.Option(help="File encoding (e.g., 'utf8', 'latin1').")] = None,
+    limit: Annotated[int, typer.Option(help="Maximum number of records to scan for field detection.")] = 10000,
+    verbose: Annotated[bool, typer.Option(help="Enable verbose logging output.")] = False,
+    format_in: Annotated[str, typer.Option(help="Override input file format detection (e.g., 'csv', 'jsonl', 'xml').")] = None,
+    format_out: Annotated[str, typer.Option(help="Override output format (e.g., 'csv', 'json').")] = None,
+    zipfile: Annotated[bool, typer.Option(help="Treat input file as a ZIP archive.")] = False,
+    filter_expr: Annotated[str, typer.Option(help="Filter expression (kept for API compatibility, not currently used).")] = None  # pylint: disable=unused-argument
+):
     """Returns fieldnames of the file. Supports XML, CSV, JSON, BSON.
 
-    Args:
-        input_file: Path to input file.
-        output: Optional output file path.
-        fields: Field filter (kept for API compatibility, not currently used).
-        delimiter: CSV delimiter character.
-        encoding: File encoding.
-        limit: Maximum number of records to scan.
-        verbose: Enable verbose logging.
-        format_in: Input format override.
-        format_out: Output format override.
-        zipfile: Whether input is a zip file.
-        filter_expr: Filter expression (kept for API compatibility, not currently used).
+    Scans the input file and returns all detected field/column names.
     """
     if verbose:
         enable_verbose()
@@ -206,26 +187,22 @@ def headers(input_file: str, output: str = None, fields: str = None,  # pylint: 
     acmd.headers(input_file, options)
 
 @app.command()
-def stats(input_file: str, output: str = None, dictshare: int = None,
-         format_in: str = None, format_out: str = None, delimiter: str = None,
-         verbose: bool = False, zipfile: bool = False,
-         checkdates: bool = True, encoding: str = None):
+def stats(
+    input_file: Annotated[str, typer.Argument(help="Path to input file.")],
+    output: Annotated[str, typer.Option(help="Optional output file path. If not specified, prints to stdout.")] = None,
+    dictshare: Annotated[int, typer.Option(help="Dictionary share threshold (0-100) for type detection.")] = None,
+    format_in: Annotated[str, typer.Option(help="Override input file format detection (e.g., 'csv', 'jsonl').")] = None,
+    format_out: Annotated[str, typer.Option(help="Override output format (e.g., 'json', 'yaml').")] = None,
+    delimiter: Annotated[str, typer.Option(help="CSV delimiter character.")] = None,
+    verbose: Annotated[bool, typer.Option(help="Enable verbose logging output.")] = False,
+    zipfile: Annotated[bool, typer.Option(help="Treat input file as a ZIP archive.")] = False,
+    checkdates: Annotated[bool, typer.Option(help="Enable automatic date field detection.")] = True,
+    encoding: Annotated[str, typer.Option(help="File encoding (e.g., 'utf8', 'latin1').")] = None
+):
     """Generate detailed statistics about a dataset.
 
     Provides field types, uniqueness counts, min/max/average lengths,
     and optional date field detection.
-
-    Args:
-        input_file: Path to input file.
-        output: Optional output file path.
-        dictshare: Dictionary share threshold for type detection.
-        format_in: Input format override.
-        format_out: Output format override.
-        delimiter: CSV delimiter character.
-        verbose: Enable verbose logging.
-        zipfile: Whether input is a zip file.
-        checkdates: Enable automatic date field detection.
-        encoding: File encoding.
     """
     if verbose:
         enable_verbose()
@@ -245,19 +222,18 @@ def stats(input_file: str, output: str = None, dictshare: int = None,
 
 
 @app.command()
-def flatten(input_file: str, output: str = None, delimiter: str = ',',
-           encoding: str = 'utf8', format_in: str = None,
-           filter_expr: str = None, verbose: bool = False):
+def flatten(
+    input_file: Annotated[str, typer.Argument(help="Path to input file.")],
+    output: Annotated[str, typer.Option(help="Optional output file path. If not specified, prints to stdout.")] = None,
+    delimiter: Annotated[str, typer.Option(help="CSV delimiter character.")] = ',',
+    encoding: Annotated[str, typer.Option(help="File encoding (e.g., 'utf8', 'latin1').")] = 'utf8',
+    format_in: Annotated[str, typer.Option(help="Override input file format detection (e.g., 'jsonl', 'xml').")] = None,
+    filter_expr: Annotated[str, typer.Option(help="Filter expression to apply before flattening.")] = None,
+    verbose: Annotated[bool, typer.Option(help="Enable verbose logging output.")] = False
+):
     """Flatten nested data records into one value per row.
 
-    Args:
-        input_file: Path to input file.
-        output: Optional output file path.
-        delimiter: CSV delimiter character.
-        encoding: File encoding.
-        format_in: Input format override.
-        filter_expr: Filter expression to apply.
-        verbose: Enable verbose logging.
+    Converts nested structures (arrays, objects) into flat records.
     """
     if verbose:
         enable_verbose()
@@ -273,20 +249,19 @@ def flatten(input_file: str, output: str = None, delimiter: str = ',',
 
 
 @app.command()
-def frequency(input_file: str, output: str = None, fields: str = None,
-             delimiter: str = ",", encoding: str = None, verbose: bool = False,
-             filetype: str = None, engine: str = "auto"):
+def frequency(
+    input_file: Annotated[str, typer.Argument(help="Path to input file.")],
+    output: Annotated[str, typer.Option(help="Optional output file path. If not specified, prints to stdout.")] = None,
+    fields: Annotated[str, typer.Option(help="Comma-separated list of field names to calculate frequency for.")] = None,
+    delimiter: Annotated[str, typer.Option(help="CSV delimiter character.")] = ",",
+    encoding: Annotated[str, typer.Option(help="File encoding (e.g., 'utf8', 'latin1').")] = None,
+    verbose: Annotated[bool, typer.Option(help="Enable verbose logging output.")] = False,
+    filetype: Annotated[str, typer.Option(help="Override file type detection (e.g., 'csv', 'jsonl').")] = None,
+    engine: Annotated[str, typer.Option(help="Processing engine: 'auto' (default), 'duckdb', or 'iterable'.")] = "auto"
+):
     """Calculate frequency distribution for specified fields.
 
-    Args:
-        input_file: Path to input file.
-        output: Optional output file path.
-        fields: Comma-separated list of field names.
-        delimiter: CSV delimiter character.
-        encoding: File encoding.
-        verbose: Enable verbose logging.
-        filetype: File type override.
-        engine: Processing engine ('auto', 'duckdb', or 'iterable').
+    Counts occurrences of each unique value in the specified field(s).
     """
     if verbose:
         enable_verbose()
@@ -303,25 +278,21 @@ def frequency(input_file: str, output: str = None, fields: str = None,
 
 
 @app.command()
-def select(input_file: str, output: str = None, fields: str = None,
-          delimiter: str = ",", encoding: str = None, verbose: bool = False,
-          format_in: str = None, format_out: str = None,
-          zipfile: bool = False, filter_expr: str = None):
+def select(
+    input_file: Annotated[str, typer.Argument(help="Path to input file.")],
+    output: Annotated[str, typer.Option(help="Optional output file path. If not specified, prints to stdout.")] = None,
+    fields: Annotated[str, typer.Option(help="Comma-separated list of field names to select and reorder.")] = None,
+    delimiter: Annotated[str, typer.Option(help="CSV delimiter character.")] = ",",
+    encoding: Annotated[str, typer.Option(help="File encoding (e.g., 'utf8', 'latin1').")] = None,
+    verbose: Annotated[bool, typer.Option(help="Enable verbose logging output.")] = False,
+    format_in: Annotated[str, typer.Option(help="Override input file format detection (e.g., 'csv', 'jsonl').")] = None,
+    format_out: Annotated[str, typer.Option(help="Override output format (e.g., 'csv', 'jsonl').")] = None,
+    zipfile: Annotated[bool, typer.Option(help="Treat input file as a ZIP archive.")] = False,
+    filter_expr: Annotated[str, typer.Option(help="Filter expression to apply (e.g., \"`status` == 'active'\").")] = None
+):
     """Select or reorder columns from file.
 
     Supports CSV, JSONL, and BSON formats. Can also filter records.
-
-    Args:
-        input_file: Path to input file.
-        output: Optional output file path.
-        fields: Comma-separated list of field names to select.
-        delimiter: CSV delimiter character.
-        encoding: File encoding.
-        verbose: Enable verbose logging.
-        format_in: Input format override.
-        format_out: Output format override.
-        zipfile: Whether input is a zip file.
-        filter_expr: Filter expression to apply.
     """
     if verbose:
         enable_verbose()
@@ -340,28 +311,23 @@ def select(input_file: str, output: str = None, fields: str = None,
 
 
 @app.command()
-def split(input_file: str, output: str = None, fields: str = None,
-         delimiter: str = ',', encoding: str = "utf8", verbose: bool = False,
-         format_in: str = None, zipfile: bool = False, gzipfile: str = None,
-         chunksize: int = 10000, filter_expr: str = None,
-         dirname: str = None):
+def split(
+    input_file: Annotated[str, typer.Argument(help="Path to input file.")],
+    output: Annotated[str, typer.Option(help="Optional output file path prefix. If not specified, uses input filename.")] = None,
+    fields: Annotated[str, typer.Option(help="Comma-separated field names to split by (creates one file per unique value combination).")] = None,
+    delimiter: Annotated[str, typer.Option(help="CSV delimiter character.")] = ',',
+    encoding: Annotated[str, typer.Option(help="File encoding (e.g., 'utf8', 'latin1').")] = "utf8",
+    verbose: Annotated[bool, typer.Option(help="Enable verbose logging output.")] = False,
+    format_in: Annotated[str, typer.Option(help="Override input file format detection (e.g., 'csv', 'jsonl').")] = None,
+    zipfile: Annotated[bool, typer.Option(help="Treat input file as a ZIP archive.")] = False,
+    gzipfile: Annotated[str, typer.Option(help="Gzip compression option for output files.")] = None,
+    chunksize: Annotated[int, typer.Option(help="Number of records per chunk when splitting by size (default: 10000).")] = 10000,
+    filter_expr: Annotated[str, typer.Option(help="Filter expression to apply before splitting.")] = None,
+    dirname: Annotated[str, typer.Option(help="Directory path to write output files to.")] = None
+):
     """Split a data file into multiple chunks.
 
     Can split by chunk size or by unique field values.
-
-    Args:
-        input_file: Path to input file.
-        output: Optional output file path prefix.
-        fields: Comma-separated field names to split by (instead of chunk size).
-        delimiter: CSV delimiter character.
-        encoding: File encoding.
-        verbose: Enable verbose logging.
-        format_in: Input format override.
-        zipfile: Whether input is a zip file.
-        gzipfile: Gzip compression option.
-        chunksize: Number of records per chunk (when not splitting by fields).
-        filter_expr: Filter expression to apply.
-        dirname: Directory to write output files.
     """
     if verbose:
         enable_verbose()
@@ -382,27 +348,22 @@ def split(input_file: str, output: str = None, fields: str = None,
 
 
 @app.command()
-def validate(input_file: str, output: str = None, fields: str = None,
-            delimiter: str = ',', encoding: str = 'utf8',
-            verbose: bool = False, format_in: str = None,
-            zipfile: bool = False, rule: str = None,
-            filter_expr: str = None, mode: str = "invalid"):
+def validate(
+    input_file: Annotated[str, typer.Argument(help="Path to input file.")],
+    output: Annotated[str, typer.Option(help="Optional output file path. If not specified, prints to stdout.")] = None,
+    fields: Annotated[str, typer.Option(help="Comma-separated list of field names to validate.")] = None,
+    delimiter: Annotated[str, typer.Option(help="CSV delimiter character.")] = ',',
+    encoding: Annotated[str, typer.Option(help="File encoding (e.g., 'utf8', 'latin1').")] = 'utf8',
+    verbose: Annotated[bool, typer.Option(help="Enable verbose logging output.")] = False,
+    format_in: Annotated[str, typer.Option(help="Override input file format detection (e.g., 'csv', 'jsonl').")] = None,
+    zipfile: Annotated[bool, typer.Option(help="Treat input file as a ZIP archive.")] = False,
+    rule: Annotated[str, typer.Option(help="Validation rule name (e.g., 'common.email', 'common.url', 'ru.org.inn', 'ru.org.ogrn').")] = None,
+    filter_expr: Annotated[str, typer.Option(help="Filter expression to apply before validation.")] = None,
+    mode: Annotated[str, typer.Option(help="Output mode: 'invalid' (default, show invalid records), 'stats' (show statistics), or 'valid' (show valid records).")] = "invalid"
+):
     """Validate fields against built-in or custom validation rules.
 
     Available rules: common.email, common.url, ru.org.inn, ru.org.ogrn
-
-    Args:
-        input_file: Path to input file.
-        output: Optional output file path.
-        fields: Comma-separated list of field names to validate.
-        delimiter: CSV delimiter character.
-        encoding: File encoding.
-        verbose: Enable verbose logging.
-        format_in: Input format override.
-        zipfile: Whether input is a zip file.
-        rule: Validation rule name to apply.
-        filter_expr: Filter expression to apply.
-        mode: Output mode: 'invalid' (default), 'stats', or 'valid'.
     """
     if verbose:
         enable_verbose()
@@ -422,23 +383,21 @@ def validate(input_file: str, output: str = None, fields: str = None,
 
 
 @app.command()
-def apply(input_file: str, output: str = None, fields: str = None,
-         delimiter: str = ",", encoding: str = 'utf8', verbose: bool = False,
-         format_in: str = None, zipfile: bool = False, script: str = None,
-         filter_expr: str = None):
+def apply(
+    input_file: Annotated[str, typer.Argument(help="Path to input file.")],
+    output: Annotated[str, typer.Option(help="Optional output file path. If not specified, prints to stdout.")] = None,
+    fields: Annotated[str, typer.Option(help="Comma-separated list of field names (kept for compatibility).")] = None,
+    delimiter: Annotated[str, typer.Option(help="CSV delimiter character.")] = ",",
+    encoding: Annotated[str, typer.Option(help="File encoding (e.g., 'utf8', 'latin1').")] = 'utf8',
+    verbose: Annotated[bool, typer.Option(help="Enable verbose logging output.")] = False,
+    format_in: Annotated[str, typer.Option(help="Override input file format detection (e.g., 'csv', 'jsonl').")] = None,
+    zipfile: Annotated[bool, typer.Option(help="Treat input file as a ZIP archive.")] = False,
+    script: Annotated[str, typer.Option(help="Path to Python script file containing transformation function.")] = None,
+    filter_expr: Annotated[str, typer.Option(help="Filter expression to apply before transformation.")] = None
+):
     """Apply a transformation script to each record in the file.
 
-    Args:
-        input_file: Path to input file.
-        output: Optional output file path.
-        fields: Comma-separated list of field names (kept for compatibility).
-        delimiter: CSV delimiter character.
-        encoding: File encoding.
-        verbose: Enable verbose logging.
-        format_in: Input format override.
-        zipfile: Whether input is a zip file.
-        script: Path to Python script file to apply.
-        filter_expr: Filter expression to apply.
+    Executes a Python script that transforms each record.
     """
     if verbose:
         enable_verbose()
@@ -457,21 +416,19 @@ def apply(input_file: str, output: str = None, fields: str = None,
 
 
 @app.command()
-def scheme(input_file: str, output: str = None, delimiter: str = ',',
-          encoding: str = 'utf8', verbose: bool = False,
-          format_in: str = None, zipfile: bool = False,
-          stype: str = 'cerberus'):
+def scheme(
+    input_file: Annotated[str, typer.Argument(help="Path to input file.")],
+    output: Annotated[str, typer.Option(help="Optional output file path. If not specified, prints to stdout.")] = None,
+    delimiter: Annotated[str, typer.Option(help="CSV delimiter character.")] = ',',
+    encoding: Annotated[str, typer.Option(help="File encoding (e.g., 'utf8', 'latin1').")] = 'utf8',
+    verbose: Annotated[bool, typer.Option(help="Enable verbose logging output.")] = False,
+    format_in: Annotated[str, typer.Option(help="Override input file format detection (e.g., 'csv', 'jsonl').")] = None,
+    zipfile: Annotated[bool, typer.Option(help="Treat input file as a ZIP archive.")] = False,
+    stype: Annotated[str, typer.Option(help="Schema type: 'cerberus' (default) or other schema formats.")] = 'cerberus'
+):
     """Generate data schema from file.
 
-    Args:
-        input_file: Path to input file.
-        output: Optional output file path.
-        delimiter: CSV delimiter character.
-        encoding: File encoding.
-        verbose: Enable verbose logging.
-        format_in: Input format override.
-        zipfile: Whether input is a zip file.
-        stype: Schema type: 'cerberus' (default) or other formats.
+    Creates a schema definition based on the structure of the input data.
     """
     if verbose:
         enable_verbose()
@@ -488,17 +445,23 @@ def scheme(input_file: str, output: str = None, delimiter: str = ',',
 
 
 @app.command()
-def analyze(input_file: str, verbose: bool = False, engine: str = "auto",
-           use_pandas: bool = False, outtype: str = "text",
-           output: str = None, autodoc: bool = False,
-           lang: str = "English", ai_provider: str = None,
-           ai_model: str = None, ai_base_url: str = None):
+def analyze(
+    input_file: Annotated[str, typer.Argument(help="Path to input file to analyze.")],
+    verbose: Annotated[bool, typer.Option(help="Enable verbose logging output.")] = False,
+    engine: Annotated[str, typer.Option(help="Processing engine: 'auto' (default), 'duckdb', or 'iterable'.")] = "auto",
+    use_pandas: Annotated[bool, typer.Option(help="Use pandas for data processing (may use more memory).")] = False,
+    outtype: Annotated[str, typer.Option(help="Output format: 'text' (default), 'json', or 'yaml'.")] = "text",
+    output: Annotated[str, typer.Option(help="Optional output file path. If not specified, prints to stdout.")] = None,
+    autodoc: Annotated[bool, typer.Option(help="Enable AI-powered automatic field and dataset documentation.")] = False,
+    lang: Annotated[str, typer.Option(help="Language for AI-generated documentation (default: 'English').")] = "English",
+    ai_provider: Annotated[str, typer.Option(help="AI provider to use: 'openai', 'openrouter', 'ollama', 'lmstudio', or 'perplexity'.")] = None,
+    ai_model: Annotated[str, typer.Option(help="Model name to use (provider-specific, e.g., 'gpt-4o-mini' for OpenAI).")] = None,
+    ai_base_url: Annotated[str, typer.Option(help="Base URL for AI API (optional, uses provider-specific defaults if not specified).")] = None
+):
     """Analyzes given data file and returns human readable insights.
 
-    Args:
-        ai_provider: AI provider to use (openai, openrouter, ollama, lmstudio, perplexity)
-        ai_model: Model name to use (provider-specific)
-        ai_base_url: Base URL for API (optional, provider-specific defaults)
+    Provides detailed analysis of file structure, encoding, fields, data types,
+    and optionally AI-generated field descriptions and dataset summaries.
     """
     if verbose:
         enable_verbose()
@@ -525,17 +488,17 @@ def analyze(input_file: str, verbose: bool = False, engine: str = "auto",
 
 
 @app.command()
-def schema(input_file: str, verbose: bool = False, outtype: str = "text",
-          output: str = None, autodoc: bool = False, lang: str = "English"):
+def schema(
+    input_file: Annotated[str, typer.Argument(help="Path to input file.")],
+    verbose: Annotated[bool, typer.Option(help="Enable verbose logging output.")] = False,
+    outtype: Annotated[str, typer.Option(help="Output format: 'text' (default), 'json', or 'yaml'.")] = "text",
+    output: Annotated[str, typer.Option(help="Optional output file path. If not specified, prints to stdout.")] = None,
+    autodoc: Annotated[bool, typer.Option(help="Enable AI-powered automatic field documentation.")] = False,
+    lang: Annotated[str, typer.Option(help="Language for AI-generated documentation (default: 'English').")] = "English"
+):
     """Extract schema from a data file.
 
-    Args:
-        input_file: Path to input file.
-        verbose: Enable verbose logging.
-        outtype: Output type: 'text', 'json', 'yaml' (default: 'text').
-        output: Optional output file path.
-        autodoc: Enable AI-powered field documentation.
-        lang: Language for AI documentation (default: 'English').
+    Generates a schema definition describing the structure and types of fields in the data.
     """
     if verbose:
         enable_verbose()
@@ -550,20 +513,19 @@ def schema(input_file: str, verbose: bool = False, outtype: str = "text",
 
 
 @app.command()
-def schema_bulk(input_file: str, verbose: bool = False,
-               outtype: str = "text", output: str = None,
-               mode: str = "distinct", autodoc: bool = False,
-               lang: str = "English"):
+def schema_bulk(
+    input_file: Annotated[str, typer.Argument(help="Glob pattern or directory path for input files (e.g., 'data/*.csv' or 'data/').")],
+    verbose: Annotated[bool, typer.Option(help="Enable verbose logging output.")] = False,
+    outtype: Annotated[str, typer.Option(help="Output format: 'text' (default), 'json', or 'yaml'.")] = "text",
+    output: Annotated[str, typer.Option(help="Output directory path for schema files.")] = None,
+    mode: Annotated[str, typer.Option(help="Extraction mode: 'distinct' (extract unique schemas, default) or 'perfile' (one schema per file).")] = "distinct",
+    autodoc: Annotated[bool, typer.Option(help="Enable AI-powered automatic field documentation.")] = False,
+    lang: Annotated[str, typer.Option(help="Language for AI-generated documentation (default: 'English').")] = "English"
+):
     """Extract schemas from multiple files.
 
-    Args:
-        input_file: Glob pattern or directory path for input files.
-        verbose: Enable verbose logging.
-        outtype: Output type: 'text', 'json', 'yaml' (default: 'text').
-        output: Output directory path.
-        mode: Extraction mode: 'distinct' (unique schemas) or 'perfile' (one per file).
-        autodoc: Enable AI-powered field documentation.
-        lang: Language for AI documentation (default: 'English').
+    Processes multiple files and extracts their schemas, either as distinct unique schemas
+    or one schema per file.
     """
     if verbose:
         enable_verbose()
@@ -579,29 +541,25 @@ def schema_bulk(input_file: str, verbose: bool = False,
 
 
 @app.command()
-def ingest(input_file: str, uri: str, db: str, table: str,
-          verbose: bool = False, batch: int = DEFAULT_BATCH_SIZE,
-          dbtype: str = "mongodb", totals: bool = False, drop: bool = False,
-          timeout: int = -30, skip: int = None, api_key: str = None,
-          doc_id: str = None):
+def ingest(
+    input_file: Annotated[str, typer.Argument(help="Path to input file or glob pattern (e.g., 'data/*.jsonl').")],
+    uri: Annotated[str, typer.Argument(help="Database connection URI (e.g., 'mongodb://localhost:27017' or 'https://elasticsearch:9200').")],
+    db: Annotated[str, typer.Argument(help="Database name.")],
+    table: Annotated[str, typer.Argument(help="Collection or table name.")],
+    verbose: Annotated[bool, typer.Option(help="Enable verbose logging output.")] = False,
+    batch: Annotated[int, typer.Option(help="Batch size for ingestion (number of records per batch, default: 1000).")] = DEFAULT_BATCH_SIZE,
+    dbtype: Annotated[str, typer.Option(help="Database type: 'mongodb' (default) or 'elasticsearch'.")] = "mongodb",
+    totals: Annotated[bool, typer.Option(help="Show total record counts during ingestion.")] = False,
+    drop: Annotated[bool, typer.Option(help="Drop existing collection/table before ingestion.")] = False,
+    timeout: Annotated[int, typer.Option(help="Connection timeout in seconds (default: -30).")] = -30,
+    skip: Annotated[int, typer.Option(help="Number of records to skip at the beginning.")] = None,
+    api_key: Annotated[str, typer.Option(help="API key for database authentication.")] = None,
+    doc_id: Annotated[str, typer.Option(help="Field name to use as document ID (for MongoDB).")] = None
+):
     """Ingest data into a database.
 
-    Supports MongoDB and Elasticsearch databases.
-
-    Args:
-        input_file: Path to input file or glob pattern.
-        uri: Database connection URI.
-        db: Database name.
-        table: Collection/table name.
-        verbose: Enable verbose logging.
-        batch: Batch size for ingestion (default: 1000).
-        dbtype: Database type: 'mongodb' (default) or 'elasticsearch'.
-        totals: Show total counts.
-        drop: Drop existing collection/table before ingestion.
-        timeout: Connection timeout in seconds.
-        skip: Number of records to skip.
-        api_key: API key for database authentication.
-        doc_id: Document ID field name.
+    Supports MongoDB and Elasticsearch databases. Reads data from files and inserts
+    them into the specified database collection or table.
     """
     if verbose:
         enable_verbose()
@@ -620,25 +578,23 @@ def ingest(input_file: str, uri: str, db: str, table: str,
 
 
 @app.command()
-def query(input_file: str, output: str = None, fields: str = None,
-         delimiter: str = ',', encoding: str = None, verbose: bool = False,
-         format_in: str = None, format_out: str = None,
-         zipfile: bool = False, query_expr: str = None):
+def query(
+    input_file: Annotated[str, typer.Argument(help="Path to input file.")],
+    output: Annotated[str, typer.Option(help="Optional output file path. If not specified, prints to stdout.")] = None,
+    fields: Annotated[str, typer.Option(help="Comma-separated list of field names (kept for compatibility).")] = None,
+    delimiter: Annotated[str, typer.Option(help="CSV delimiter character.")] = ',',
+    encoding: Annotated[str, typer.Option(help="File encoding (e.g., 'utf8', 'latin1').")] = None,
+    verbose: Annotated[bool, typer.Option(help="Enable verbose logging output.")] = False,
+    format_in: Annotated[str, typer.Option(help="Override input file format detection (e.g., 'csv', 'jsonl').")] = None,
+    format_out: Annotated[str, typer.Option(help="Override output format (e.g., 'csv', 'jsonl').")] = None,
+    zipfile: Annotated[bool, typer.Option(help="Treat input file as a ZIP archive.")] = False,
+    query_expr: Annotated[str, typer.Option(help="MistQL query expression to execute on the data.")] = None
+):
     """Query data using MistQL query language.
 
     .. note:: Experimental feature. Requires 'mistql' package: pip install mistql
 
-    Args:
-        input_file: Path to input file.
-        output: Optional output file path.
-        fields: Comma-separated list of field names (kept for compatibility).
-        delimiter: CSV delimiter character.
-        encoding: File encoding.
-        verbose: Enable verbose logging.
-        format_in: Input format override.
-        format_out: Output format override.
-        zipfile: Whether input is a zip file.
-        query_expr: MistQL query expression.
+    Executes MistQL queries on the input data and returns the results.
     """
     if verbose:
         enable_verbose()

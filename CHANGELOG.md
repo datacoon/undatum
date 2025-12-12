@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.17] - 2025-12-12
+
+### Changed
+- **Improved CLI documentation**: Enhanced all command-line interface functions with detailed help text using Typer's `Annotated` types
+- **Code refactoring**: Refactored analyzer output writing into separate `_write_analysis_output()` function for better maintainability
+- **Better file handling**: Improved file output handling in analyzer command with proper context managers
+
+### Fixed
+- Fixed analyzer output not writing to files correctly when `--output` option was used
+- Improved consistency between stdout and file output formatting
+
 ## [1.0.16] - 2025-12-12
 
 ### Added
@@ -116,7 +127,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - First public release on PyPI and updated github code
 
-[Unreleased]: https://github.com/datacoon/undatum/compare/v1.0.16...HEAD
+[Unreleased]: https://github.com/datacoon/undatum/compare/v1.0.17...HEAD
+[1.0.17]: https://github.com/datacoon/undatum/compare/v1.0.16...v1.0.17
 [1.0.16]: https://github.com/datacoon/undatum/compare/v1.0.15...v1.0.16
 [1.0.15]: https://github.com/datacoon/undatum/compare/v1.0.14...v1.0.15
 [1.0.14]: https://github.com/datacoon/undatum/compare/v1.0.13...v1.0.14

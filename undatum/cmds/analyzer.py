@@ -11,6 +11,7 @@ import csv
 import io
 import json
 import os
+import sys
 import tempfile
 from collections import OrderedDict
 from typing import Optional
@@ -586,6 +587,88 @@ def _format_number(num):
     return f"{num:,}"
 
 
+def _write_analysis_output(report, options, output_stream):
+    """Write analysis report to output stream in the specified format."""
+    from tabulate import tabulate
+    
+    if options['outtype'] == 'json':
+        json_output = json.dumps(report.model_dump(), indent=4, ensure_ascii=False)
+        output_stream.write(json_output)
+        output_stream.write('\n')
+    elif options['outtype'] == 'yaml':
+        yaml_output = yaml.dump(report.model_dump(), Dumper=yaml.Dumper)
+        output_stream.write(yaml_output)
+    elif options['outtype'] == 'markdown':
+        raise NotImplementedError("Markdown output not implemented")
+    else:
+        # Text output format
+        # Print header
+        print("=" * 70, file=output_stream)
+        print("ANALYSIS REPORT", file=output_stream)
+        print("=" * 70, file=output_stream)
+        print(file=output_stream)
+        
+        # File information section
+        print("File Information", file=output_stream)
+        print("-" * 70, file=output_stream)
+        headers = ['Attribute', 'Value']
+        reptable = []
+        reptable.append(['Filename', str(report.filename)])
+        reptable.append(['File size', _format_file_size(report.file_size)])
+        reptable.append(['File type', report.file_type or 'N/A'])
+        reptable.append(['Compression', str(report.compression) if report.compression else 'None'])
+        reptable.append(['Total tables', _format_number(report.total_tables)])
+        reptable.append(['Total records', _format_number(report.total_records)])
+        for k, v in report.metadata.items():
+            reptable.append([k.replace('_', ' ').title(), str(v)])
+        print(tabulate(reptable, headers=headers, tablefmt='grid'), file=output_stream)
+        print(file=output_stream)
+
+        # Tables section
+        if report.tables:
+            print("=" * 70, file=output_stream)
+            print("TABLE STRUCTURES", file=output_stream)
+            print("=" * 70, file=output_stream)
+            print(file=output_stream)
+            
+            tabheaders = ['Field Name', 'Type', 'Is Array', 'Description']
+            for idx, rtable in enumerate(report.tables, 1):
+                if len(report.tables) > 1:
+                    print(f"Table {idx}: {rtable.id}", file=output_stream)
+                else:
+                    print(f"Table: {rtable.id}", file=output_stream)
+                print("-" * 70, file=output_stream)
+                print(f"  Records: {_format_number(rtable.num_records)}", file=output_stream)
+                print(f"  Columns: {_format_number(rtable.num_cols)}", file=output_stream)
+                print(f"  Structure: {'Flat' if rtable.is_flat else 'Nested'}", file=output_stream)
+                print(file=output_stream)
+                
+                table = []
+                for field in rtable.fields:
+                    desc = field.description if field.description else '-'
+                    table.append([
+                        field.name,
+                        field.ftype,
+                        'Yes' if field.is_array else 'No',
+                        desc
+                    ])
+                print(tabulate(table, headers=tabheaders, tablefmt='grid'), file=output_stream)
+                
+                if rtable.description:
+                    print(file=output_stream)
+                    print("Summary:", file=output_stream)
+                    print("-" * 70, file=output_stream)
+                    # Wrap description text for better readability
+                    desc_lines = rtable.description.split('\n')
+                    for line in desc_lines:
+                        if line.strip():
+                            print(f"  {line.strip()}", file=output_stream)
+                
+                if idx < len(report.tables):
+                    print(file=output_stream)
+                    print(file=output_stream)
+
+
 class Analyzer:
     """Data analysis handler."""
     def __init__(self):
@@ -594,9 +677,6 @@ class Analyzer:
 
     def analyze(self, filename, options):
         """Analyzes given data file and returns it's parameters"""
-        from tabulate import tabulate
-
-        table = None
         encoding = options.get('encoding')
         report = analyze(filename, encoding=encoding,
                         engine=options['engine'],
@@ -604,84 +684,14 @@ class Analyzer:
                         autodoc=options['autodoc'], lang=options['lang'],
                         ai_provider=options.get('ai_provider'),
                         ai_config=options.get('ai_config'))
-        if options['outtype'] == 'json':
-            if options['output'] is not None:
-                with open(options['output'], 'w', encoding='utf8') as f:
-                    f.write(json.dumps(report.model_dump()))
-            else:
-                print(json.dumps(report.model_dump(), indent=4, ensure_ascii=False))
-        if options['outtype'] == 'yaml':
-            if options['output'] is not None:
-                with open(options['output'], 'w', encoding='utf8') as f:
-                    f.write(yaml.dump(report.model_dump(), Dumper=yaml.Dumper))
-            else:
-                print(yaml.dump(report.model_dump(), Dumper=yaml.Dumper))
-
-        elif options['outtype'] == 'markdown':
-            raise NotImplementedError("Markdown output not implemented")
+        
+        # Determine output destination
+        output_file = options.get('output')
+        
+        if output_file:
+            # Use context manager for file output
+            with open(output_file, 'w', encoding='utf8') as output_stream:
+                _write_analysis_output(report, options, output_stream)
         else:
-            # Print header
-            print("=" * 70)
-            print("ANALYSIS REPORT")
-            print("=" * 70)
-            print()
-            
-            # File information section
-            print("File Information")
-            print("-" * 70)
-            headers = ['Attribute', 'Value']
-            reptable = []
-            reptable.append(['Filename', str(report.filename)])
-            reptable.append(['File size', _format_file_size(report.file_size)])
-            reptable.append(['File type', report.file_type or 'N/A'])
-            reptable.append(['Compression', str(report.compression) if report.compression else 'None'])
-            reptable.append(['Total tables', _format_number(report.total_tables)])
-            reptable.append(['Total records', _format_number(report.total_records)])
-            for k, v in report.metadata.items():
-                reptable.append([k.replace('_', ' ').title(), str(v)])
-            print(tabulate(reptable, headers=headers, tablefmt='grid'))
-            print()
-
-            # Tables section
-            if report.tables:
-                print("=" * 70)
-                print("TABLE STRUCTURES")
-                print("=" * 70)
-                print()
-                
-                tabheaders = ['Field Name', 'Type', 'Is Array', 'Description']
-                for idx, rtable in enumerate(report.tables, 1):
-                    if len(report.tables) > 1:
-                        print(f"Table {idx}: {rtable.id}")
-                    else:
-                        print(f"Table: {rtable.id}")
-                    print("-" * 70)
-                    print(f"  Records: {_format_number(rtable.num_records)}")
-                    print(f"  Columns: {_format_number(rtable.num_cols)}")
-                    print(f"  Structure: {'Flat' if rtable.is_flat else 'Nested'}")
-                    print()
-                    
-                    table = []
-                    for field in rtable.fields:
-                        desc = field.description if field.description else '-'
-                        table.append([
-                            field.name,
-                            field.ftype,
-                            'Yes' if field.is_array else 'No',
-                            desc
-                        ])
-                    print(tabulate(table, headers=tabheaders, tablefmt='grid'))
-                    
-                    if rtable.description:
-                        print()
-                        print("Summary:")
-                        print("-" * 70)
-                        # Wrap description text for better readability
-                        desc_lines = rtable.description.split('\n')
-                        for line in desc_lines:
-                            if line.strip():
-                                print(f"  {line.strip()}")
-                    
-                    if idx < len(report.tables):
-                        print()
-                        print()
+            # Write to stdout
+            _write_analysis_output(report, options, sys.stdout)
