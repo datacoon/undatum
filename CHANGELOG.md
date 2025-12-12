@@ -7,16 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.16] - 2025-12-12
+
 ### Added
+- **Multi-provider AI support**: Added support for OpenAI, OpenRouter, Ollama, LM Studio, and Perplexity APIs
+- **Structured AI output**: Replaced fragile text parsing with JSON Schema-based structured output for reliable AI responses
+- **Flexible AI configuration**: Support for environment variables, config files (`undatum.yaml` or `~/.undatum/config.yaml`), and CLI arguments with proper precedence
+- **AI provider factory**: New `get_ai_service()` function for easy provider instantiation
+- **Enhanced error handling**: Proper exception classes (`AIServiceError`, `AIConfigurationError`, `AIAPIError`) with clear error messages
+- **CLI arguments for AI**: Added `--ai-provider`, `--ai-model`, and `--ai-base-url` options to `analyze` command
+- **Configuration management**: New `undatum/ai/config.py` module for unified configuration handling
+- **Backward compatibility**: Old `get_fields_info()` and `get_description()` functions maintained for compatibility
 - Enhanced code quality improvements and Pylint score improvements
 - Better error handling and resource management
 
 ### Changed
+- **AI system refactoring**: Completely refactored AI documentation system from Perplexity-only to multi-provider architecture
+- **Structured responses**: All AI providers now use JSON Schema (`response_format: json_object`) instead of parsing CSV from markdown code blocks
+- **Provider architecture**: Implemented abstract base class `AIService` with concrete provider implementations
 - Improved code quality: fixed indentation, trailing whitespace, and formatting issues
 - Refactored file operations to use `with` statements for better resource management
 - Updated string formatting to use f-strings and lazy logging
 - Fixed dangerous default arguments in function signatures
 - Improved type hints and code documentation
+- Updated `analyze` command to accept AI provider configuration
+- Updated `schemer` command to use new AI service interface
 
 ### Fixed
 - Fixed critical bug: added missing `_process_json_data` function in analyzer module
@@ -26,6 +41,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed dictionary iteration patterns (removed unnecessary `.keys()` calls)
 - Fixed `isinstance()` calls to use tuple syntax for better performance
 - Improved file handling with proper context managers
+- **Fixed fragile AI response parsing**: Replaced error-prone text extraction with proper JSON parsing
+- **Fixed AI service initialization**: Added proper error handling and fallback when AI service fails to initialize
 
 ## [1.0.15] - 2024-XX-XX
 
@@ -99,7 +116,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - First public release on PyPI and updated github code
 
-[Unreleased]: https://github.com/datacoon/undatum/compare/v1.0.15...HEAD
+[Unreleased]: https://github.com/datacoon/undatum/compare/v1.0.16...HEAD
+[1.0.16]: https://github.com/datacoon/undatum/compare/v1.0.15...v1.0.16
 [1.0.15]: https://github.com/datacoon/undatum/compare/v1.0.14...v1.0.15
 [1.0.14]: https://github.com/datacoon/undatum/compare/v1.0.13...v1.0.14
 [1.0.13]: https://github.com/datacoon/undatum/compare/v1.0.12...v1.0.13
