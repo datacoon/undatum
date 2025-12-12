@@ -1,4 +1,6 @@
 ************* Module undatum.core
+undatum/core.py:324:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/core.py:331:0: C0303: Trailing whitespace (trailing-whitespace)
 undatum/core.py:37:0: R0913: Too many arguments (16/5) (too-many-arguments)
 undatum/core.py:37:0: R0917: Too many positional arguments (16/5) (too-many-positional-arguments)
 undatum/core.py:37:0: R0914: Too many local variables (18/15) (too-many-locals)
@@ -10,690 +12,356 @@ undatum/core.py:97:0: R0917: Too many positional arguments (8/5) (too-many-posit
 undatum/core.py:116:0: R0913: Too many arguments (11/5) (too-many-arguments)
 undatum/core.py:116:0: R0917: Too many positional arguments (11/5) (too-many-positional-arguments)
 undatum/core.py:116:49: W0613: Unused argument 'fields' (unused-argument)
-undatum/core.py:120:11: W0613: Unused argument 'filter_expr' (unused-argument)
-undatum/core.py:137:0: R0913: Too many arguments (10/5) (too-many-arguments)
-undatum/core.py:137:0: R0917: Too many positional arguments (10/5) (too-many-positional-arguments)
-undatum/core.py:159:0: R0913: Too many arguments (7/5) (too-many-arguments)
-undatum/core.py:159:0: R0917: Too many positional arguments (7/5) (too-many-positional-arguments)
-undatum/core.py:177:0: R0913: Too many arguments (8/5) (too-many-arguments)
-undatum/core.py:177:0: R0917: Too many positional arguments (8/5) (too-many-positional-arguments)
-undatum/core.py:196:0: R0913: Too many arguments (10/5) (too-many-arguments)
-undatum/core.py:196:0: R0917: Too many positional arguments (10/5) (too-many-positional-arguments)
-undatum/core.py:218:0: R0913: Too many arguments (12/5) (too-many-arguments)
-undatum/core.py:218:0: R0917: Too many positional arguments (12/5) (too-many-positional-arguments)
-undatum/core.py:243:0: R0913: Too many arguments (11/5) (too-many-arguments)
-undatum/core.py:243:0: R0917: Too many positional arguments (11/5) (too-many-positional-arguments)
-undatum/core.py:267:0: R0913: Too many arguments (10/5) (too-many-arguments)
-undatum/core.py:267:0: R0917: Too many positional arguments (10/5) (too-many-positional-arguments)
-undatum/core.py:289:0: R0913: Too many arguments (8/5) (too-many-arguments)
-undatum/core.py:289:0: R0917: Too many positional arguments (8/5) (too-many-positional-arguments)
-undatum/core.py:309:0: R0913: Too many arguments (8/5) (too-many-arguments)
-undatum/core.py:309:0: R0917: Too many positional arguments (8/5) (too-many-positional-arguments)
-undatum/core.py:329:0: R0913: Too many arguments (6/5) (too-many-arguments)
-undatum/core.py:329:0: R0917: Too many positional arguments (6/5) (too-many-positional-arguments)
-undatum/core.py:345:0: R0913: Too many arguments (7/5) (too-many-arguments)
-undatum/core.py:345:0: R0917: Too many positional arguments (7/5) (too-many-positional-arguments)
-undatum/core.py:368:0: R0913: Too many arguments (13/5) (too-many-arguments)
-undatum/core.py:368:0: R0917: Too many positional arguments (13/5) (too-many-positional-arguments)
-undatum/core.py:368:0: R0914: Too many local variables (16/15) (too-many-locals)
-undatum/core.py:391:0: R0913: Too many arguments (10/5) (too-many-arguments)
-undatum/core.py:391:0: R0917: Too many positional arguments (10/5) (too-many-positional-arguments)
+undatum/core.py:138:0: R0913: Too many arguments (10/5) (too-many-arguments)
+undatum/core.py:138:0: R0917: Too many positional arguments (10/5) (too-many-positional-arguments)
+undatum/core.py:160:0: R0913: Too many arguments (7/5) (too-many-arguments)
+undatum/core.py:160:0: R0917: Too many positional arguments (7/5) (too-many-positional-arguments)
+undatum/core.py:178:0: R0913: Too many arguments (8/5) (too-many-arguments)
+undatum/core.py:178:0: R0917: Too many positional arguments (8/5) (too-many-positional-arguments)
+undatum/core.py:197:0: R0913: Too many arguments (10/5) (too-many-arguments)
+undatum/core.py:197:0: R0917: Too many positional arguments (10/5) (too-many-positional-arguments)
+undatum/core.py:219:0: R0913: Too many arguments (12/5) (too-many-arguments)
+undatum/core.py:219:0: R0917: Too many positional arguments (12/5) (too-many-positional-arguments)
+undatum/core.py:244:0: R0913: Too many arguments (11/5) (too-many-arguments)
+undatum/core.py:244:0: R0917: Too many positional arguments (11/5) (too-many-positional-arguments)
+undatum/core.py:268:0: R0913: Too many arguments (10/5) (too-many-arguments)
+undatum/core.py:268:0: R0917: Too many positional arguments (10/5) (too-many-positional-arguments)
+undatum/core.py:290:0: R0913: Too many arguments (8/5) (too-many-arguments)
+undatum/core.py:290:0: R0917: Too many positional arguments (8/5) (too-many-positional-arguments)
+undatum/core.py:310:0: R0913: Too many arguments (11/5) (too-many-arguments)
+undatum/core.py:310:0: R0917: Too many positional arguments (11/5) (too-many-positional-arguments)
+undatum/core.py:347:0: R0913: Too many arguments (6/5) (too-many-arguments)
+undatum/core.py:347:0: R0917: Too many positional arguments (6/5) (too-many-positional-arguments)
+undatum/core.py:363:0: R0913: Too many arguments (7/5) (too-many-arguments)
+undatum/core.py:363:0: R0917: Too many positional arguments (7/5) (too-many-positional-arguments)
+undatum/core.py:386:0: R0913: Too many arguments (13/5) (too-many-arguments)
+undatum/core.py:386:0: R0917: Too many positional arguments (13/5) (too-many-positional-arguments)
+undatum/core.py:386:0: R0914: Too many local variables (16/15) (too-many-locals)
+undatum/core.py:409:0: R0913: Too many arguments (10/5) (too-many-arguments)
+undatum/core.py:409:0: R0917: Too many positional arguments (10/5) (too-many-positional-arguments)
 ************* Module undatum.utils
 undatum/utils.py:4:0: E0401: Unable to import 'chardet' (import-error)
 undatum/utils.py:117:0: R0912: Too many branches (13/12) (too-many-branches)
 ************* Module undatum.validate.commonrules
 undatum/validate/commonrules.py:4:0: E0401: Unable to import 'validators.url' (import-error)
 ************* Module undatum.formats.docx
-undatum/formats/docx.py:99:0: C0301: Line too long (106/100) (line-too-long)
 undatum/formats/docx.py:8:0: E0401: Unable to import 'xlwt' (import-error)
 undatum/formats/docx.py:9:0: E0401: Unable to import 'docx' (import-error)
 undatum/formats/docx.py:10:0: E0401: Unable to import 'docx.oxml.simpletypes' (import-error)
 undatum/formats/docx.py:11:0: E0401: Unable to import 'docx.table' (import-error)
 undatum/formats/docx.py:18:14: W0212: Access to a protected member _tbl of a client class (protected-access)
-undatum/formats/docx.py:46:12: W1514: Using open without explicitly specifying an encoding (unspecified-encoding)
-undatum/formats/docx.py:46:12: R1732: Consider using 'with' for resource-allocating operations (consider-using-with)
-undatum/formats/docx.py:56:8: W0612: Unused variable 'ws' (unused-variable)
 undatum/formats/docx.py:99:0: R0913: Too many arguments (6/5) (too-many-arguments)
 undatum/formats/docx.py:99:0: R0917: Too many positional arguments (6/5) (too-many-positional-arguments)
-undatum/formats/docx.py:99:0: R0914: Too many local variables (16/15) (too-many-locals)
-undatum/formats/docx.py:131:16: R1732: Consider using 'with' for resource-allocating operations (consider-using-with)
-undatum/formats/docx.py:122:16: W0612: Unused variable 'ws' (unused-variable)
 undatum/formats/docx.py:144:27: W0613: Unused argument 'extract_data' (unused-argument)
 ************* Module undatum.cmds.validator
 undatum/cmds/validator.py:8:0: E0401: Unable to import 'bson' (import-error)
 undatum/cmds/validator.py:9:0: E0401: Unable to import 'dictquery' (import-error)
 undatum/cmds/validator.py:10:0: E0401: Unable to import 'orjson' (import-error)
-undatum/cmds/validator.py:21:4: W0102: Dangerous default value {} as argument (dangerous-default-value)
 undatum/cmds/validator.py:21:4: R0914: Too many local variables (25/15) (too-many-locals)
-undatum/cmds/validator.py:23:8: W1201: Use lazy % formatting in logging functions (logging-not-lazy)
-undatum/cmds/validator.py:23:22: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
-undatum/cmds/validator.py:48:8: W1201: Use lazy % formatting in logging functions (logging-not-lazy)
-undatum/cmds/validator.py:48:21: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
-undatum/cmds/validator.py:58:20: W1201: Use lazy % formatting in logging functions (logging-not-lazy)
-undatum/cmds/validator.py:58:33: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
-undatum/cmds/validator.py:73:20: W1201: Use lazy % formatting in logging functions (logging-not-lazy)
-undatum/cmds/validator.py:73:33: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
-undatum/cmds/validator.py:94:20: W1201: Use lazy % formatting in logging functions (logging-not-lazy)
-undatum/cmds/validator.py:94:33: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
-undatum/cmds/validator.py:21:4: R0912: Too many branches (37/12) (too-many-branches)
-undatum/cmds/validator.py:21:4: R0915: Too many statements (94/50) (too-many-statements)
-undatum/cmds/validator.py:26:16: R1732: Consider using 'with' for resource-allocating operations (consider-using-with)
-undatum/cmds/validator.py:36:25: R1732: Consider using 'with' for resource-allocating operations (consider-using-with)
-undatum/cmds/validator.py:43:18: R1732: Consider using 'with' for resource-allocating operations (consider-using-with)
+undatum/cmds/validator.py:21:4: R0912: Too many branches (42/12) (too-many-branches)
+undatum/cmds/validator.py:21:4: R0915: Too many statements (103/50) (too-many-statements)
+undatum/cmds/validator.py:28:16: R1732: Consider using 'with' for resource-allocating operations (consider-using-with)
+undatum/cmds/validator.py:38:25: R1732: Consider using 'with' for resource-allocating operations (consider-using-with)
+undatum/cmds/validator.py:45:18: R1732: Consider using 'with' for resource-allocating operations (consider-using-with)
 undatum/cmds/validator.py:16:0: R0903: Too few public methods (1/2) (too-few-public-methods)
 ************* Module undatum.cmds.query
-undatum/cmds/query.py:21:4: W0102: Dangerous default value {} as argument (dangerous-default-value)
-undatum/cmds/query.py:23:8: E0401: Unable to import 'mistql' (import-error)
-undatum/cmds/query.py:23:8: C0415: Import outside toplevel (mistql.query) (import-outside-toplevel)
-undatum/cmds/query.py:34:22: R1732: Consider using 'with' for resource-allocating operations (consider-using-with)
-undatum/cmds/query.py:64:8: W1201: Use lazy % formatting in logging functions (logging-not-lazy)
-undatum/cmds/query.py:64:22: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
-undatum/cmds/query.py:21:4: R0912: Too many branches (14/12) (too-many-branches)
-undatum/cmds/query.py:38:22: R1732: Consider using 'with' for resource-allocating operations (consider-using-with)
+undatum/cmds/query.py:25:8: E0401: Unable to import 'mistql' (import-error)
+undatum/cmds/query.py:25:8: C0415: Import outside toplevel (mistql.query) (import-outside-toplevel)
+undatum/cmds/query.py:21:4: R0912: Too many branches (16/12) (too-many-branches)
+undatum/cmds/query.py:40:22: R1732: Consider using 'with' for resource-allocating operations (consider-using-with)
 undatum/cmds/query.py:15:0: R0903: Too few public methods (1/2) (too-few-public-methods)
 ************* Module undatum.cmds.selector
 undatum/cmds/selector.py:9:0: E0401: Unable to import 'bson' (import-error)
 undatum/cmds/selector.py:10:0: E0401: Unable to import 'dictquery' (import-error)
 undatum/cmds/selector.py:12:0: E0401: Unable to import 'orjson' (import-error)
 undatum/cmds/selector.py:13:0: E0401: Unable to import 'iterable.helpers.detect' (import-error)
-undatum/cmds/selector.py:26:0: C0116: Missing function or method docstring (missing-function-docstring)
-undatum/cmds/selector.py:43:4: W1203: Use lazy % formatting in logging functions (logging-fstring-interpolation)
-undatum/cmds/selector.py:67:33: R1736: Unnecessary list index lookup, use '_' instead (unnecessary-list-index-lookup)
-undatum/cmds/selector.py:51:60: W0613: Unused argument 'dq_instance' (unused-argument)
-undatum/cmds/selector.py:75:58: W0613: Unused argument 'dq_instance' (unused-argument)
-undatum/cmds/selector.py:88:0: R0914: Too many local variables (18/15) (too-many-locals)
-undatum/cmds/selector.py:109:33: R1736: Unnecessary list index lookup, use '_' instead (unnecessary-list-index-lookup)
-undatum/cmds/selector.py:122:58: W0613: Unused argument 'dq_instance' (unused-argument)
-undatum/cmds/selector.py:139:4: W0102: Dangerous default value {} as argument (dangerous-default-value)
-undatum/cmds/selector.py:141:8: W1201: Use lazy % formatting in logging functions (logging-not-lazy)
-undatum/cmds/selector.py:141:22: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
-undatum/cmds/selector.py:163:12: W1201: Use lazy % formatting in logging functions (logging-not-lazy)
-undatum/cmds/selector.py:163:25: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
-undatum/cmds/selector.py:169:8: W1201: Use lazy % formatting in logging functions (logging-not-lazy)
-undatum/cmds/selector.py:169:22: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
-undatum/cmds/selector.py:151:18: R1732: Consider using 'with' for resource-allocating operations (consider-using-with)
-undatum/cmds/selector.py:174:4: W0102: Dangerous default value {} as argument (dangerous-default-value)
-undatum/cmds/selector.py:194:16: R1732: Consider using 'with' for resource-allocating operations (consider-using-with)
-undatum/cmds/selector.py:201:4: W0102: Dangerous default value {} as argument (dangerous-default-value)
-undatum/cmds/selector.py:203:8: W1201: Use lazy % formatting in logging functions (logging-not-lazy)
-undatum/cmds/selector.py:203:22: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
-undatum/cmds/selector.py:235:8: W1201: Use lazy % formatting in logging functions (logging-not-lazy)
-undatum/cmds/selector.py:235:22: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
-undatum/cmds/selector.py:213:18: R1732: Consider using 'with' for resource-allocating operations (consider-using-with)
-undatum/cmds/selector.py:240:4: W0102: Dangerous default value {} as argument (dangerous-default-value)
-undatum/cmds/selector.py:252:22: R1732: Consider using 'with' for resource-allocating operations (consider-using-with)
-undatum/cmds/selector.py:275:20: W1201: Use lazy % formatting in logging functions (logging-not-lazy)
-undatum/cmds/selector.py:275:33: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
-undatum/cmds/selector.py:286:8: W1201: Use lazy % formatting in logging functions (logging-not-lazy)
-undatum/cmds/selector.py:286:22: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
-undatum/cmds/selector.py:240:4: R0912: Too many branches (15/12) (too-many-branches)
-undatum/cmds/selector.py:256:22: R1732: Consider using 'with' for resource-allocating operations (consider-using-with)
-undatum/cmds/selector.py:290:4: W0102: Dangerous default value {} as argument (dangerous-default-value)
-undatum/cmds/selector.py:297:4: W0102: Dangerous default value {} as argument (dangerous-default-value)
-undatum/cmds/selector.py:297:4: R0914: Too many local variables (25/15) (too-many-locals)
-undatum/cmds/selector.py:309:12: C0415: Import outside toplevel (gzip) (import-outside-toplevel)
-undatum/cmds/selector.py:333:60: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
-undatum/cmds/selector.py:340:24: W1201: Use lazy % formatting in logging functions (logging-not-lazy)
-undatum/cmds/selector.py:340:37: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
-undatum/cmds/selector.py:348:68: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
-undatum/cmds/selector.py:334:22: R1732: Consider using 'with' for resource-allocating operations (consider-using-with)
-undatum/cmds/selector.py:359:60: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
-undatum/cmds/selector.py:365:24: W1201: Use lazy % formatting in logging functions (logging-not-lazy)
-undatum/cmds/selector.py:365:37: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
-undatum/cmds/selector.py:374:68: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
-undatum/cmds/selector.py:375:24: W1201: Use lazy % formatting in logging functions (logging-not-lazy)
-undatum/cmds/selector.py:375:37: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
-undatum/cmds/selector.py:360:22: R1732: Consider using 'with' for resource-allocating operations (consider-using-with)
-undatum/cmds/selector.py:381:24: W1201: Use lazy % formatting in logging functions (logging-not-lazy)
-undatum/cmds/selector.py:381:37: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
-undatum/cmds/selector.py:390:24: W0101: Unreachable code (unreachable)
-undatum/cmds/selector.py:399:36: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
-undatum/cmds/selector.py:403:40: R1732: Consider using 'with' for resource-allocating operations (consider-using-with)
-undatum/cmds/selector.py:417:20: W1201: Use lazy % formatting in logging functions (logging-not-lazy)
-undatum/cmds/selector.py:417:33: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
-undatum/cmds/selector.py:422:8: W1201: Use lazy % formatting in logging functions (logging-not-lazy)
-undatum/cmds/selector.py:422:22: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
-undatum/cmds/selector.py:297:4: R0912: Too many branches (38/12) (too-many-branches)
-undatum/cmds/selector.py:297:4: R0915: Too many statements (106/50) (too-many-statements)
-undatum/cmds/selector.py:301:16: R1732: Consider using 'with' for resource-allocating operations (consider-using-with)
-undatum/cmds/selector.py:324:33: R1732: Consider using 'with' for resource-allocating operations (consider-using-with)
-undatum/cmds/selector.py:376:30: R1732: Consider using 'with' for resource-allocating operations (consider-using-with)
+undatum/cmds/selector.py:44:4: W1203: Use lazy % formatting in logging functions (logging-fstring-interpolation)
+undatum/cmds/selector.py:69:33: R1736: Unnecessary list index lookup, use '_' instead (unnecessary-list-index-lookup)
+undatum/cmds/selector.py:91:0: R0914: Too many local variables (18/15) (too-many-locals)
+undatum/cmds/selector.py:112:33: R1736: Unnecessary list index lookup, use '_' instead (unnecessary-list-index-lookup)
+undatum/cmds/selector.py:169:12: W1201: Use lazy % formatting in logging functions (logging-not-lazy)
+undatum/cmds/selector.py:169:25: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
+undatum/cmds/selector.py:175:8: W1201: Use lazy % formatting in logging functions (logging-not-lazy)
+undatum/cmds/selector.py:175:22: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
+undatum/cmds/selector.py:157:18: R1732: Consider using 'with' for resource-allocating operations (consider-using-with)
+undatum/cmds/selector.py:244:8: W1201: Use lazy % formatting in logging functions (logging-not-lazy)
+undatum/cmds/selector.py:244:22: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
+undatum/cmds/selector.py:222:18: R1732: Consider using 'with' for resource-allocating operations (consider-using-with)
+undatum/cmds/selector.py:263:22: R1732: Consider using 'with' for resource-allocating operations (consider-using-with)
+undatum/cmds/selector.py:286:20: W1201: Use lazy % formatting in logging functions (logging-not-lazy)
+undatum/cmds/selector.py:286:33: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
+undatum/cmds/selector.py:297:8: W1201: Use lazy % formatting in logging functions (logging-not-lazy)
+undatum/cmds/selector.py:297:22: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
+undatum/cmds/selector.py:249:4: R0912: Too many branches (16/12) (too-many-branches)
+undatum/cmds/selector.py:267:22: R1732: Consider using 'with' for resource-allocating operations (consider-using-with)
+undatum/cmds/selector.py:310:4: R0914: Too many local variables (25/15) (too-many-locals)
+undatum/cmds/selector.py:324:12: C0415: Import outside toplevel (gzip) (import-outside-toplevel)
+undatum/cmds/selector.py:348:60: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
+undatum/cmds/selector.py:355:24: W1201: Use lazy % formatting in logging functions (logging-not-lazy)
+undatum/cmds/selector.py:355:37: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
+undatum/cmds/selector.py:363:68: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
+undatum/cmds/selector.py:349:22: R1732: Consider using 'with' for resource-allocating operations (consider-using-with)
+undatum/cmds/selector.py:374:60: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
+undatum/cmds/selector.py:380:24: W1201: Use lazy % formatting in logging functions (logging-not-lazy)
+undatum/cmds/selector.py:380:37: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
+undatum/cmds/selector.py:389:68: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
+undatum/cmds/selector.py:390:24: W1201: Use lazy % formatting in logging functions (logging-not-lazy)
+undatum/cmds/selector.py:390:37: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
+undatum/cmds/selector.py:375:22: R1732: Consider using 'with' for resource-allocating operations (consider-using-with)
+undatum/cmds/selector.py:396:24: W1201: Use lazy % formatting in logging functions (logging-not-lazy)
+undatum/cmds/selector.py:396:37: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
+undatum/cmds/selector.py:405:24: W0101: Unreachable code (unreachable)
+undatum/cmds/selector.py:414:36: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
+undatum/cmds/selector.py:418:40: R1732: Consider using 'with' for resource-allocating operations (consider-using-with)
+undatum/cmds/selector.py:432:20: W1201: Use lazy % formatting in logging functions (logging-not-lazy)
+undatum/cmds/selector.py:432:33: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
+undatum/cmds/selector.py:437:8: W1201: Use lazy % formatting in logging functions (logging-not-lazy)
+undatum/cmds/selector.py:437:22: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
+undatum/cmds/selector.py:310:4: R0912: Too many branches (39/12) (too-many-branches)
+undatum/cmds/selector.py:310:4: R0915: Too many statements (108/50) (too-many-statements)
+undatum/cmds/selector.py:316:16: R1732: Consider using 'with' for resource-allocating operations (consider-using-with)
+undatum/cmds/selector.py:339:33: R1732: Consider using 'with' for resource-allocating operations (consider-using-with)
+undatum/cmds/selector.py:391:30: R1732: Consider using 'with' for resource-allocating operations (consider-using-with)
 ************* Module undatum.cmds.analyzer
-undatum/cmds/analyzer.py:4:0: C0301: Line too long (103/100) (line-too-long)
-undatum/cmds/analyzer.py:37:41: C0303: Trailing whitespace (trailing-whitespace)
 undatum/cmds/analyzer.py:37:0: C0325: Unnecessary parens after '=' keyword (superfluous-parens)
-undatum/cmds/analyzer.py:42:28: C0303: Trailing whitespace (trailing-whitespace)
-undatum/cmds/analyzer.py:50:0: C0301: Line too long (177/100) (line-too-long)
-undatum/cmds/analyzer.py:65:0: W0311: Bad indentation. Found 9 spaces, expected 8 (bad-indentation)
-undatum/cmds/analyzer.py:66:0: W0311: Bad indentation. Found 9 spaces, expected 8 (bad-indentation)
-undatum/cmds/analyzer.py:67:0: W0311: Bad indentation. Found 9 spaces, expected 8 (bad-indentation)
-undatum/cmds/analyzer.py:69:0: C0301: Line too long (110/100) (line-too-long)
-undatum/cmds/analyzer.py:71:0: C0301: Line too long (104/100) (line-too-long)
-undatum/cmds/analyzer.py:72:0: W0311: Bad indentation. Found 9 spaces, expected 8 (bad-indentation)
-undatum/cmds/analyzer.py:74:0: C0301: Line too long (178/100) (line-too-long)
-undatum/cmds/analyzer.py:76:0: C0301: Line too long (172/100) (line-too-long)
-undatum/cmds/analyzer.py:77:0: W0311: Bad indentation. Found 9 spaces, expected 8 (bad-indentation)
-undatum/cmds/analyzer.py:79:0: C0301: Line too long (237/100) (line-too-long)
-undatum/cmds/analyzer.py:81:231: C0303: Trailing whitespace (trailing-whitespace)
-undatum/cmds/analyzer.py:81:0: C0301: Line too long (231/100) (line-too-long)
-undatum/cmds/analyzer.py:82:0: W0311: Bad indentation. Found 9 spaces, expected 8 (bad-indentation)
-undatum/cmds/analyzer.py:84:0: C0301: Line too long (253/100) (line-too-long)
-undatum/cmds/analyzer.py:86:0: C0301: Line too long (247/100) (line-too-long)
-undatum/cmds/analyzer.py:87:0: W0311: Bad indentation. Found 9 spaces, expected 8 (bad-indentation)
-undatum/cmds/analyzer.py:89:20: C0303: Trailing whitespace (trailing-whitespace)
-undatum/cmds/analyzer.py:98:0: C0301: Line too long (196/100) (line-too-long)
-undatum/cmds/analyzer.py:101:16: C0303: Trailing whitespace (trailing-whitespace)
-undatum/cmds/analyzer.py:112:32: C0303: Trailing whitespace (trailing-whitespace)
-undatum/cmds/analyzer.py:160:27: C0303: Trailing whitespace (trailing-whitespace)
-undatum/cmds/analyzer.py:180:57: C0303: Trailing whitespace (trailing-whitespace)
-undatum/cmds/analyzer.py:184:0: C0301: Line too long (143/100) (line-too-long)
-undatum/cmds/analyzer.py:189:0: W0311: Bad indentation. Found 7 spaces, expected 8 (bad-indentation)
-undatum/cmds/analyzer.py:190:0: W0311: Bad indentation. Found 7 spaces, expected 8 (bad-indentation)
-undatum/cmds/analyzer.py:191:0: W0311: Bad indentation. Found 7 spaces, expected 8 (bad-indentation)
-undatum/cmds/analyzer.py:192:0: W0311: Bad indentation. Found 7 spaces, expected 8 (bad-indentation)
-undatum/cmds/analyzer.py:197:0: C0301: Line too long (107/100) (line-too-long)
-undatum/cmds/analyzer.py:202:40: C0303: Trailing whitespace (trailing-whitespace)
-undatum/cmds/analyzer.py:205:47: C0303: Trailing whitespace (trailing-whitespace)
-undatum/cmds/analyzer.py:214:30: C0303: Trailing whitespace (trailing-whitespace)
-undatum/cmds/analyzer.py:220:36: C0303: Trailing whitespace (trailing-whitespace)
-undatum/cmds/analyzer.py:226:0: C0301: Line too long (268/100) (line-too-long)
-undatum/cmds/analyzer.py:233:45: C0303: Trailing whitespace (trailing-whitespace)
-undatum/cmds/analyzer.py:237:46: C0303: Trailing whitespace (trailing-whitespace)
-undatum/cmds/analyzer.py:239:0: C0303: Trailing whitespace (trailing-whitespace)
-undatum/cmds/analyzer.py:240:109: C0303: Trailing whitespace (trailing-whitespace)
-undatum/cmds/analyzer.py:240:0: C0301: Line too long (109/100) (line-too-long)
-undatum/cmds/analyzer.py:242:28: C0303: Trailing whitespace (trailing-whitespace)
-undatum/cmds/analyzer.py:244:0: C0301: Line too long (105/100) (line-too-long)
-undatum/cmds/analyzer.py:247:12: C0303: Trailing whitespace (trailing-whitespace)
-undatum/cmds/analyzer.py:248:0: C0301: Line too long (126/100) (line-too-long)
-undatum/cmds/analyzer.py:252:0: C0301: Line too long (125/100) (line-too-long)
-undatum/cmds/analyzer.py:254:0: C0301: Line too long (124/100) (line-too-long)
-undatum/cmds/analyzer.py:256:99: C0303: Trailing whitespace (trailing-whitespace)
-undatum/cmds/analyzer.py:257:62: C0303: Trailing whitespace (trailing-whitespace)
-undatum/cmds/analyzer.py:264:0: C0301: Line too long (102/100) (line-too-long)
-undatum/cmds/analyzer.py:267:38: C0303: Trailing whitespace (trailing-whitespace)
-undatum/cmds/analyzer.py:274:0: C0301: Line too long (103/100) (line-too-long)
-undatum/cmds/analyzer.py:281:34: C0303: Trailing whitespace (trailing-whitespace)
-undatum/cmds/analyzer.py:283:0: C0301: Line too long (118/100) (line-too-long)
-undatum/cmds/analyzer.py:286:37: C0303: Trailing whitespace (trailing-whitespace)
-undatum/cmds/analyzer.py:287:75: C0303: Trailing whitespace (trailing-whitespace)
-undatum/cmds/analyzer.py:290:0: C0301: Line too long (184/100) (line-too-long)
-undatum/cmds/analyzer.py:296:48: C0303: Trailing whitespace (trailing-whitespace)
-undatum/cmds/analyzer.py:308:0: C0301: Line too long (169/100) (line-too-long)
-undatum/cmds/analyzer.py:314:53: C0303: Trailing whitespace (trailing-whitespace)
-undatum/cmds/analyzer.py:327:51: C0303: Trailing whitespace (trailing-whitespace)
-undatum/cmds/analyzer.py:329:0: C0301: Line too long (169/100) (line-too-long)
-undatum/cmds/analyzer.py:350:0: C0301: Line too long (169/100) (line-too-long)
-undatum/cmds/analyzer.py:360:0: C0301: Line too long (173/100) (line-too-long)
-undatum/cmds/analyzer.py:382:0: C0301: Line too long (169/100) (line-too-long)
-undatum/cmds/analyzer.py:390:0: C0301: Line too long (177/100) (line-too-long)
-undatum/cmds/analyzer.py:399:0: C0301: Line too long (181/100) (line-too-long)
-undatum/cmds/analyzer.py:407:0: C0301: Line too long (177/100) (line-too-long)
-undatum/cmds/analyzer.py:411:0: C0303: Trailing whitespace (trailing-whitespace)
-undatum/cmds/analyzer.py:414:35: C0303: Trailing whitespace (trailing-whitespace)
-undatum/cmds/analyzer.py:440:163: C0303: Trailing whitespace (trailing-whitespace)
-undatum/cmds/analyzer.py:440:0: C0301: Line too long (163/100) (line-too-long)
-undatum/cmds/analyzer.py:441:40: C0303: Trailing whitespace (trailing-whitespace)
-undatum/cmds/analyzer.py:448:40: C0303: Trailing whitespace (trailing-whitespace)
-undatum/cmds/analyzer.py:476:0: C0301: Line too long (117/100) (line-too-long)
-undatum/cmds/analyzer.py:478:0: C0301: Line too long (152/100) (line-too-long)
-undatum/cmds/analyzer.py:481:41: C0303: Trailing whitespace (trailing-whitespace)
-undatum/cmds/analyzer.py:15:0: E0401: Unable to import 'jsonlines' (import-error)
+undatum/cmds/analyzer.py:325:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/cmds/analyzer.py:339:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/cmds/analyzer.py:387:0: C0301: Line too long (103/100) (line-too-long)
+undatum/cmds/analyzer.py:555:59: C0303: Trailing whitespace (trailing-whitespace)
+undatum/cmds/analyzer.py:562:40: C0303: Trailing whitespace (trailing-whitespace)
+undatum/cmds/analyzer.py:597:41: C0303: Trailing whitespace (trailing-whitespace)
 undatum/cmds/analyzer.py:17:0: E0401: Unable to import 'xlrd' (import-error)
 undatum/cmds/analyzer.py:18:0: E0401: Unable to import 'xmltodict' (import-error)
 undatum/cmds/analyzer.py:20:0: E0401: Unable to import 'iterable.helpers.detect' (import-error)
-undatum/cmds/analyzer.py:22:0: E0401: Unable to import 'pydantic' (import-error)
-undatum/cmds/analyzer.py:23:0: E0401: Unable to import 'pyzstd' (import-error)
-undatum/cmds/analyzer.py:36:0: C0116: Missing function or method docstring (missing-function-docstring)
+undatum/cmds/analyzer.py:23:0: E0401: Unable to import 'pydantic' (import-error)
+undatum/cmds/analyzer.py:24:0: E0401: Unable to import 'pyzstd' (import-error)
 undatum/cmds/analyzer.py:50:0: R0913: Too many arguments (8/5) (too-many-arguments)
 undatum/cmds/analyzer.py:50:0: R0917: Too many positional arguments (8/5) (too-many-positional-arguments)
-undatum/cmds/analyzer.py:50:0: R0914: Too many local variables (19/15) (too-many-locals)
-undatum/cmds/analyzer.py:95:20: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
+undatum/cmds/analyzer.py:50:0: R0914: Too many local variables (21/15) (too-many-locals)
 undatum/cmds/analyzer.py:50:0: R0912: Too many branches (22/12) (too-many-branches)
-undatum/cmds/analyzer.py:103:0: W0102: Dangerous default value OrderedDict() (collections.OrderedDict) as argument (dangerous-default-value)
-undatum/cmds/analyzer.py:109:19: R1701: Consider merging these isinstance calls to isinstance(listitem, (OrderedDict, dict)) (consider-merging-isinstance)
-undatum/cmds/analyzer.py:114:25: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
-undatum/cmds/analyzer.py:117:13: R1701: Consider merging these isinstance calls to isinstance(value, (OrderedDict, dict)) (consider-merging-isinstance)
-undatum/cmds/analyzer.py:128:0: W0102: Dangerous default value OrderedDict() (collections.OrderedDict) as argument (dangerous-default-value)
-undatum/cmds/analyzer.py:131:25: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
-undatum/cmds/analyzer.py:134:13: R1701: Consider merging these isinstance calls to isinstance(value, (OrderedDict, dict)) (consider-merging-isinstance)
-undatum/cmds/analyzer.py:145:0: R0903: Too few public methods (0/2) (too-few-public-methods)
-undatum/cmds/analyzer.py:155:0: R0903: Too few public methods (0/2) (too-few-public-methods)
-undatum/cmds/analyzer.py:164:0: R0903: Too few public methods (0/2) (too-few-public-methods)
-undatum/cmds/analyzer.py:184:0: R0913: Too many arguments (7/5) (too-many-arguments)
-undatum/cmds/analyzer.py:184:0: R0917: Too many positional arguments (7/5) (too-many-positional-arguments)
-undatum/cmds/analyzer.py:184:0: R0914: Too many local variables (19/15) (too-many-locals)
-undatum/cmds/analyzer.py:184:37: W0622: Redefining built-in 'id' (redefined-builtin)
-undatum/cmds/analyzer.py:197:16: R1732: Consider using 'with' for resource-allocating operations (consider-using-with)
-undatum/cmds/analyzer.py:226:0: R0913: Too many arguments (12/5) (too-many-arguments)
-undatum/cmds/analyzer.py:226:0: R0917: Too many positional arguments (12/5) (too-many-positional-arguments)
-undatum/cmds/analyzer.py:226:0: R0914: Too many local variables (51/15) (too-many-locals)
-undatum/cmds/analyzer.py:252:41: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
-undatum/cmds/analyzer.py:254:41: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
-undatum/cmds/analyzer.py:256:41: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
-undatum/cmds/analyzer.py:274:32: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
-undatum/cmds/analyzer.py:283:31: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
-undatum/cmds/analyzer.py:304:34: R1734: Consider using [] instead of list() (use-list-literal)
-undatum/cmds/analyzer.py:247:4: R1702: Too many nested blocks (7/5) (too-many-nested-blocks)
-undatum/cmds/analyzer.py:322:34: R1734: Consider using [] instead of list() (use-list-literal)
-undatum/cmds/analyzer.py:247:4: R1702: Too many nested blocks (7/5) (too-many-nested-blocks)
-undatum/cmds/analyzer.py:247:4: R1702: Too many nested blocks (6/5) (too-many-nested-blocks)
-undatum/cmds/analyzer.py:247:4: R1702: Too many nested blocks (7/5) (too-many-nested-blocks)
-undatum/cmds/analyzer.py:247:4: R1702: Too many nested blocks (8/5) (too-many-nested-blocks)
-undatum/cmds/analyzer.py:420:34: C0201: Consider iterating the dictionary directly instead of calling .keys() (consider-iterating-dictionary)
-undatum/cmds/analyzer.py:226:0: R0912: Too many branches (50/12) (too-many-branches)
-undatum/cmds/analyzer.py:226:0: R0915: Too many statements (169/50) (too-many-statements)
-undatum/cmds/analyzer.py:376:34: R1732: Consider using 'with' for resource-allocating operations (consider-using-with)
-undatum/cmds/analyzer.py:226:144: W0613: Unused argument 'stats' (unused-argument)
-undatum/cmds/analyzer.py:324:32: W0612: Unused variable 'ct' (unused-variable)
-undatum/cmds/analyzer.py:348:24: W0612: Unused variable 'short_data_key' (unused-variable)
-undatum/cmds/analyzer.py:413:8: W0612: Unused variable 'tables' (unused-variable)
-undatum/cmds/analyzer.py:436:8: E0401: Unable to import 'tabulate' (import-error)
-undatum/cmds/analyzer.py:436:8: C0415: Import outside toplevel (tabulate.tabulate) (import-outside-toplevel)
-undatum/cmds/analyzer.py:443:20: R1732: Consider using 'with' for resource-allocating operations (consider-using-with)
-undatum/cmds/analyzer.py:457:12: E0702: Raising str while only classes or instances are allowed (raising-bad-type)
-undatum/cmds/analyzer.py:476:22: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
-undatum/cmds/analyzer.py:450:20: R1732: Consider using 'with' for resource-allocating operations (consider-using-with)
-undatum/cmds/analyzer.py:428:0: R0903: Too few public methods (1/2) (too-few-public-methods)
-undatum/cmds/analyzer.py:15:0: W0611: Unused import jsonlines (unused-import)
-undatum/cmds/analyzer.py:26:0: W0611: Unused SUPPORTED_FILE_TYPES imported from constants (unused-import)
-undatum/cmds/analyzer.py:28:0: W0611: Unused buf_count_newlines_gen imported from utils (unused-import)
-undatum/cmds/analyzer.py:28:0: W0611: Unused detect_delimiter imported from utils (unused-import)
-undatum/cmds/analyzer.py:28:0: W0611: Unused detect_encoding imported from utils (unused-import)
-undatum/cmds/analyzer.py:28:0: W0611: Unused get_dict_keys imported from utils (unused-import)
-undatum/cmds/analyzer.py:28:0: W0611: Unused get_file_type imported from utils (unused-import)
-undatum/cmds/analyzer.py:28:0: W0611: Unused _is_flat imported from utils (unused-import)
+undatum/cmds/analyzer.py:50:0: R0915: Too many statements (51/50) (too-many-statements)
+undatum/cmds/analyzer.py:176:0: R0913: Too many arguments (8/5) (too-many-arguments)
+undatum/cmds/analyzer.py:176:0: R0917: Too many positional arguments (8/5) (too-many-positional-arguments)
+undatum/cmds/analyzer.py:195:12: R1704: Redefining argument with the local name 'fullkey' (redefined-argument-from-local)
+undatum/cmds/analyzer.py:210:0: R0903: Too few public methods (0/2) (too-few-public-methods)
+undatum/cmds/analyzer.py:220:0: R0903: Too few public methods (0/2) (too-few-public-methods)
+undatum/cmds/analyzer.py:229:0: R0903: Too few public methods (0/2) (too-few-public-methods)
+undatum/cmds/analyzer.py:249:0: R0913: Too many arguments (8/5) (too-many-arguments)
+undatum/cmds/analyzer.py:249:0: R0917: Too many positional arguments (8/5) (too-many-positional-arguments)
+undatum/cmds/analyzer.py:249:0: R0914: Too many local variables (21/15) (too-many-locals)
+undatum/cmds/analyzer.py:267:16: R1732: Consider using 'with' for resource-allocating operations (consider-using-with)
+undatum/cmds/analyzer.py:299:0: R0913: Too many arguments (14/5) (too-many-arguments)
+undatum/cmds/analyzer.py:299:0: R0917: Too many positional arguments (14/5) (too-many-positional-arguments)
+undatum/cmds/analyzer.py:299:0: R0914: Too many local variables (57/15) (too-many-locals)
+undatum/cmds/analyzer.py:334:15: W0718: Catching too general exception Exception (broad-exception-caught)
+undatum/cmds/analyzer.py:336:12: C0415: Import outside toplevel (warnings) (import-outside-toplevel)
+undatum/cmds/analyzer.py:347:4: R1702: Too many nested blocks (7/5) (too-many-nested-blocks)
+undatum/cmds/analyzer.py:347:4: R1702: Too many nested blocks (7/5) (too-many-nested-blocks)
+undatum/cmds/analyzer.py:347:4: R1702: Too many nested blocks (6/5) (too-many-nested-blocks)
+undatum/cmds/analyzer.py:299:0: R0912: Too many branches (49/12) (too-many-branches)
+undatum/cmds/analyzer.py:299:0: R0915: Too many statements (160/50) (too-many-statements)
+undatum/cmds/analyzer.py:301:30: W0613: Unused argument 'stats' (unused-argument)
+undatum/cmds/analyzer.py:544:4: R0914: Too many local variables (16/15) (too-many-locals)
+undatum/cmds/analyzer.py:546:8: E0401: Unable to import 'tabulate' (import-error)
+undatum/cmds/analyzer.py:546:8: C0415: Import outside toplevel (tabulate.tabulate) (import-outside-toplevel)
+undatum/cmds/analyzer.py:538:0: R0903: Too few public methods (1/2) (too-few-public-methods)
 ************* Module undatum.cmds.converter
-undatum/cmds/converter.py:29:14: C0303: Trailing whitespace (trailing-whitespace)
-undatum/cmds/converter.py:115:0: C0301: Line too long (108/100) (line-too-long)
-undatum/cmds/converter.py:136:0: C0301: Line too long (102/100) (line-too-long)
-undatum/cmds/converter.py:152:0: C0301: Line too long (103/100) (line-too-long)
-undatum/cmds/converter.py:169:0: C0301: Line too long (115/100) (line-too-long)
-undatum/cmds/converter.py:204:37: C0303: Trailing whitespace (trailing-whitespace)
-undatum/cmds/converter.py:231:37: C0303: Trailing whitespace (trailing-whitespace)
-undatum/cmds/converter.py:279:25: C0303: Trailing whitespace (trailing-whitespace)
-undatum/cmds/converter.py:345:0: C0301: Line too long (136/100) (line-too-long)
-undatum/cmds/converter.py:346:54: C0303: Trailing whitespace (trailing-whitespace)
-undatum/cmds/converter.py:348:35: C0303: Trailing whitespace (trailing-whitespace)
-undatum/cmds/converter.py:352:43: C0303: Trailing whitespace (trailing-whitespace)
-undatum/cmds/converter.py:364:0: C0301: Line too long (131/100) (line-too-long)
-undatum/cmds/converter.py:367:0: C0301: Line too long (107/100) (line-too-long)
-undatum/cmds/converter.py:371:99: C0303: Trailing whitespace (trailing-whitespace)
-undatum/cmds/converter.py:374:0: C0301: Line too long (107/100) (line-too-long)
-undatum/cmds/converter.py:379:0: C0301: Line too long (125/100) (line-too-long)
-undatum/cmds/converter.py:381:16: C0303: Trailing whitespace (trailing-whitespace)
-undatum/cmds/converter.py:383:0: C0301: Line too long (128/100) (line-too-long)
-undatum/cmds/converter.py:390:0: C0301: Line too long (161/100) (line-too-long)
-undatum/cmds/converter.py:394:12: C0303: Trailing whitespace (trailing-whitespace)
-undatum/cmds/converter.py:406:0: C0301: Line too long (128/100) (line-too-long)
-undatum/cmds/converter.py:411:0: C0301: Line too long (161/100) (line-too-long)
-undatum/cmds/converter.py:416:0: C0301: Line too long (129/100) (line-too-long)
-undatum/cmds/converter.py:421:0: C0303: Trailing whitespace (trailing-whitespace)
-undatum/cmds/converter.py:422:54: C0303: Trailing whitespace (trailing-whitespace)
-undatum/cmds/converter.py:437:12: C0303: Trailing whitespace (trailing-whitespace)
-undatum/cmds/converter.py:483:76: C0303: Trailing whitespace (trailing-whitespace)
-undatum/cmds/converter.py:492:18: C0303: Trailing whitespace (trailing-whitespace)
-undatum/cmds/converter.py:512:18: C0303: Trailing whitespace (trailing-whitespace)
-undatum/cmds/converter.py:515:43: C0303: Trailing whitespace (trailing-whitespace)
-undatum/cmds/converter.py:516:37: C0303: Trailing whitespace (trailing-whitespace)
-undatum/cmds/converter.py:523:26: C0303: Trailing whitespace (trailing-whitespace)
-undatum/cmds/converter.py:530:0: C0301: Line too long (104/100) (line-too-long)
-undatum/cmds/converter.py:531:0: C0301: Line too long (102/100) (line-too-long)
 undatum/cmds/converter.py:10:0: E0401: Unable to import 'bson' (import-error)
 undatum/cmds/converter.py:11:0: E0401: Unable to import 'orjson' (import-error)
 undatum/cmds/converter.py:13:0: E0401: Unable to import 'bson' (import-error)
 undatum/cmds/converter.py:14:0: E0401: Unable to import 'iterable.helpers.detect' (import-error)
 undatum/cmds/converter.py:16:0: E0401: Unable to import 'xlrd' (import-error)
-undatum/cmds/converter.py:24:0: C0116: Missing function or method docstring (missing-function-docstring)
-undatum/cmds/converter.py:44:33: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
-undatum/cmds/converter.py:46:33: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
-undatum/cmds/converter.py:48:33: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
-undatum/cmds/converter.py:50:33: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
-undatum/cmds/converter.py:52:33: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
-undatum/cmds/converter.py:54:33: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
-undatum/cmds/converter.py:66:0: C0116: Missing function or method docstring (missing-function-docstring)
-undatum/cmds/converter.py:92:0: C0116: Missing function or method docstring (missing-function-docstring)
-undatum/cmds/converter.py:92:0: W0102: Dangerous default value {} as argument (dangerous-default-value)
-undatum/cmds/converter.py:92:0: W0102: Dangerous default value {} as argument (dangerous-default-value)
-undatum/cmds/converter.py:108:12: W1201: Use lazy % formatting in logging functions (logging-not-lazy)
-undatum/cmds/converter.py:108:25: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
-undatum/cmds/converter.py:109:4: W1201: Use lazy % formatting in logging functions (logging-not-lazy)
-undatum/cmds/converter.py:109:17: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
-undatum/cmds/converter.py:94:10: R1732: Consider using 'with' for resource-allocating operations (consider-using-with)
-undatum/cmds/converter.py:95:11: R1732: Consider using 'with' for resource-allocating operations (consider-using-with)
-undatum/cmds/converter.py:97:8: W0612: Unused variable 'event' (unused-variable)
-undatum/cmds/converter.py:114:0: C0116: Missing function or method docstring (missing-function-docstring)
-undatum/cmds/converter.py:114:0: W0102: Dangerous default value {} as argument (dangerous-default-value)
-undatum/cmds/converter.py:114:0: W0102: Dangerous default value {} as argument (dangerous-default-value)
-undatum/cmds/converter.py:132:12: W1201: Use lazy % formatting in logging functions (logging-not-lazy)
-undatum/cmds/converter.py:132:25: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
-undatum/cmds/converter.py:119:9: R1732: Consider using 'with' for resource-allocating operations (consider-using-with)
-undatum/cmds/converter.py:136:0: C0116: Missing function or method docstring (missing-function-docstring)
-undatum/cmds/converter.py:136:0: W0102: Dangerous default value {} as argument (dangerous-default-value)
-undatum/cmds/converter.py:136:0: W0102: Dangerous default value {} as argument (dangerous-default-value)
-undatum/cmds/converter.py:147:12: W1201: Use lazy % formatting in logging functions (logging-not-lazy)
-undatum/cmds/converter.py:147:25: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
-undatum/cmds/converter.py:138:13: R1732: Consider using 'with' for resource-allocating operations (consider-using-with)
-undatum/cmds/converter.py:139:13: R1732: Consider using 'with' for resource-allocating operations (consider-using-with)
-undatum/cmds/converter.py:152:0: C0116: Missing function or method docstring (missing-function-docstring)
-undatum/cmds/converter.py:152:0: W0102: Dangerous default value {} as argument (dangerous-default-value)
-undatum/cmds/converter.py:152:0: W0102: Dangerous default value {} as argument (dangerous-default-value)
-undatum/cmds/converter.py:162:21: W1406: The u prefix for strings is no longer necessary in Python >=3.0 (redundant-u-string-prefix)
-undatum/cmds/converter.py:164:12: W1201: Use lazy % formatting in logging functions (logging-not-lazy)
-undatum/cmds/converter.py:164:25: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
-undatum/cmds/converter.py:154:13: R1732: Consider using 'with' for resource-allocating operations (consider-using-with)
-undatum/cmds/converter.py:155:13: R1732: Consider using 'with' for resource-allocating operations (consider-using-with)
-undatum/cmds/converter.py:169:0: C0116: Missing function or method docstring (missing-function-docstring)
-undatum/cmds/converter.py:169:0: W0102: Dangerous default value {} as argument (dangerous-default-value)
-undatum/cmds/converter.py:169:0: W0102: Dangerous default value {} as argument (dangerous-default-value)
-undatum/cmds/converter.py:178:14: R1734: Consider using [] instead of list() (use-list-literal)
-undatum/cmds/converter.py:188:12: W1201: Use lazy % formatting in logging functions (logging-not-lazy)
-undatum/cmds/converter.py:188:25: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
-undatum/cmds/converter.py:172:13: R1732: Consider using 'with' for resource-allocating operations (consider-using-with)
-undatum/cmds/converter.py:194:0: C0116: Missing function or method docstring (missing-function-docstring)
-undatum/cmds/converter.py:194:0: W0102: Dangerous default value {} as argument (dangerous-default-value)
-undatum/cmds/converter.py:194:0: W0102: Dangerous default value {} as argument (dangerous-default-value)
-undatum/cmds/converter.py:195:4: C0415: Import outside toplevel (openpyxl.load_workbook) (import-outside-toplevel)
-undatum/cmds/converter.py:206:14: R1734: Consider using [] instead of list() (use-list-literal)
-undatum/cmds/converter.py:217:12: W1201: Use lazy % formatting in logging functions (logging-not-lazy)
-undatum/cmds/converter.py:217:26: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
-undatum/cmds/converter.py:218:4: W0104: Statement seems to have no effect (pointless-statement)
-undatum/cmds/converter.py:198:13: R1732: Consider using 'with' for resource-allocating operations (consider-using-with)
-undatum/cmds/converter.py:221:0: C0116: Missing function or method docstring (missing-function-docstring)
-undatum/cmds/converter.py:221:0: W0102: Dangerous default value {} as argument (dangerous-default-value)
-undatum/cmds/converter.py:221:0: W0102: Dangerous default value {} as argument (dangerous-default-value)
-undatum/cmds/converter.py:222:4: C0415: Import outside toplevel (openpyxl.load_workbook) (import-outside-toplevel)
-undatum/cmds/converter.py:233:14: R1734: Consider using [] instead of list() (use-list-literal)
-undatum/cmds/converter.py:243:12: W1201: Use lazy % formatting in logging functions (logging-not-lazy)
-undatum/cmds/converter.py:243:26: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
-undatum/cmds/converter.py:244:4: W0104: Statement seems to have no effect (pointless-statement)
-undatum/cmds/converter.py:225:13: R1732: Consider using 'with' for resource-allocating operations (consider-using-with)
-undatum/cmds/converter.py:247:0: C0116: Missing function or method docstring (missing-function-docstring)
-undatum/cmds/converter.py:247:0: W0102: Dangerous default value {} as argument (dangerous-default-value)
-undatum/cmds/converter.py:247:0: W0102: Dangerous default value {} as argument (dangerous-default-value)
-undatum/cmds/converter.py:255:14: R1734: Consider using [] instead of list() (use-list-literal)
-undatum/cmds/converter.py:260:12: W1201: Use lazy % formatting in logging functions (logging-not-lazy)
-undatum/cmds/converter.py:260:25: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
-undatum/cmds/converter.py:261:4: W0104: Statement seems to have no effect (pointless-statement)
-undatum/cmds/converter.py:250:13: R1732: Consider using 'with' for resource-allocating operations (consider-using-with)
-undatum/cmds/converter.py:267:11: R1701: Consider merging these isinstance calls to isinstance(v, (dict, list, tuple)) (consider-merging-isinstance)
-undatum/cmds/converter.py:266:8: W0612: Unused variable 'k' (unused-variable)
-undatum/cmds/converter.py:272:0: C0116: Missing function or method docstring (missing-function-docstring)
-undatum/cmds/converter.py:273:8: R1732: Consider using 'with' for resource-allocating operations (consider-using-with)
-undatum/cmds/converter.py:295:0: C0116: Missing function or method docstring (missing-function-docstring)
-undatum/cmds/converter.py:295:0: W0102: Dangerous default value {} as argument (dangerous-default-value)
-undatum/cmds/converter.py:295:0: W0102: Dangerous default value {} as argument (dangerous-default-value)
-undatum/cmds/converter.py:319:12: W1201: Use lazy % formatting in logging functions (logging-not-lazy)
-undatum/cmds/converter.py:319:25: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
-undatum/cmds/converter.py:322:4: W0107: Unnecessary pass statement (unnecessary-pass)
-undatum/cmds/converter.py:302:10: R1732: Consider using 'with' for resource-allocating operations (consider-using-with)
-undatum/cmds/converter.py:305:8: R1732: Consider using 'with' for resource-allocating operations (consider-using-with)
-undatum/cmds/converter.py:325:0: C0116: Missing function or method docstring (missing-function-docstring)
-undatum/cmds/converter.py:325:0: R1710: Either all return statements in a function should return an expression, or none of them should. (inconsistent-return-statements)
-undatum/cmds/converter.py:329:0: C0116: Missing function or method docstring (missing-function-docstring)
-undatum/cmds/converter.py:329:0: W0102: Dangerous default value {} as argument (dangerous-default-value)
-undatum/cmds/converter.py:329:0: W0102: Dangerous default value {} as argument (dangerous-default-value)
-undatum/cmds/converter.py:339:12: W1201: Use lazy % formatting in logging functions (logging-not-lazy)
-undatum/cmds/converter.py:339:25: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
-undatum/cmds/converter.py:331:13: R1732: Consider using 'with' for resource-allocating operations (consider-using-with)
-undatum/cmds/converter.py:332:13: R1732: Consider using 'with' for resource-allocating operations (consider-using-with)
-undatum/cmds/converter.py:344:0: W0102: Dangerous default value {} as argument (dangerous-default-value)
-undatum/cmds/converter.py:344:0: W0102: Dangerous default value {} as argument (dangerous-default-value)
-undatum/cmds/converter.py:359:12: W1201: Use lazy % formatting in logging functions (logging-not-lazy)
-undatum/cmds/converter.py:359:25: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
-undatum/cmds/converter.py:347:13: R1732: Consider using 'with' for resource-allocating operations (consider-using-with)
-undatum/cmds/converter.py:353:13: R1732: Consider using 'with' for resource-allocating operations (consider-using-with)
-undatum/cmds/converter.py:364:0: C0116: Missing function or method docstring (missing-function-docstring)
-undatum/cmds/converter.py:364:0: W0102: Dangerous default value {} as argument (dangerous-default-value)
-undatum/cmds/converter.py:364:0: W0102: Dangerous default value {} as argument (dangerous-default-value)
-undatum/cmds/converter.py:370:0: C0116: Missing function or method docstring (missing-function-docstring)
-undatum/cmds/converter.py:370:0: W0102: Dangerous default value {} as argument (dangerous-default-value)
-undatum/cmds/converter.py:370:0: W0102: Dangerous default value {} as argument (dangerous-default-value)
-undatum/cmds/converter.py:379:0: W0102: Dangerous default value {} as argument (dangerous-default-value)
-undatum/cmds/converter.py:379:0: W0102: Dangerous default value {} as argument (dangerous-default-value)
-undatum/cmds/converter.py:381:4: C0415: Import outside toplevel (pyorc) (import-outside-toplevel)
-undatum/cmds/converter.py:381:4: E0401: Unable to import 'pyorc' (import-error)
-undatum/cmds/converter.py:383:93: C0201: Consider iterating the dictionary directly instead of calling .keys() (consider-iterating-dictionary)
-undatum/cmds/converter.py:388:29: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
-undatum/cmds/converter.py:390:34: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
-undatum/cmds/converter.py:397:18: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
-undatum/cmds/converter.py:384:13: R1732: Consider using 'with' for resource-allocating operations (consider-using-with)
-undatum/cmds/converter.py:389:13: R1732: Consider using 'with' for resource-allocating operations (consider-using-with)
-undatum/cmds/converter.py:401:0: W0102: Dangerous default value {} as argument (dangerous-default-value)
-undatum/cmds/converter.py:401:0: W0102: Dangerous default value {} as argument (dangerous-default-value)
-undatum/cmds/converter.py:404:4: C0415: Import outside toplevel (pyorc) (import-outside-toplevel)
-undatum/cmds/converter.py:404:4: E0401: Unable to import 'pyorc' (import-error)
-undatum/cmds/converter.py:406:93: C0201: Consider iterating the dictionary directly instead of calling .keys() (consider-iterating-dictionary)
-undatum/cmds/converter.py:411:34: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
-undatum/cmds/converter.py:410:13: R1732: Consider using 'with' for resource-allocating operations (consider-using-with)
-undatum/cmds/converter.py:416:0: W0102: Dangerous default value {} as argument (dangerous-default-value)
-undatum/cmds/converter.py:416:0: W0102: Dangerous default value {} as argument (dangerous-default-value)
-undatum/cmds/converter.py:416:0: R0914: Too many local variables (16/15) (too-many-locals)
-undatum/cmds/converter.py:418:4: C0415: Import outside toplevel (avro.schema) (import-outside-toplevel)
-undatum/cmds/converter.py:418:4: E0401: Unable to import 'avro.schema' (import-error)
-undatum/cmds/converter.py:419:4: E0401: Unable to import 'avro.datafile' (import-error)
-undatum/cmds/converter.py:419:4: C0415: Import outside toplevel (avro.datafile.DataFileWriter) (import-outside-toplevel)
-undatum/cmds/converter.py:420:4: E0401: Unable to import 'avro.io' (import-error)
-undatum/cmds/converter.py:420:4: C0415: Import outside toplevel (avro.io.DatumWriter) (import-outside-toplevel)
-undatum/cmds/converter.py:423:4: W0104: Statement seems to have no effect (pointless-statement)
-undatum/cmds/converter.py:440:18: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
-undatum/cmds/converter.py:424:13: R1732: Consider using 'with' for resource-allocating operations (consider-using-with)
-undatum/cmds/converter.py:432:13: R1732: Consider using 'with' for resource-allocating operations (consider-using-with)
-undatum/cmds/converter.py:466:0: C0116: Missing function or method docstring (missing-function-docstring)
-undatum/cmds/converter.py:469:11: R1701: Consider merging these isinstance calls to isinstance(v, (dict, list, tuple)) (consider-merging-isinstance)
-undatum/cmds/converter.py:478:8: W0107: Unnecessary pass statement (unnecessary-pass)
-undatum/cmds/converter.py:480:4: C0116: Missing function or method docstring (missing-function-docstring)
-undatum/cmds/converter.py:480:4: W0102: Dangerous default value {} as argument (dangerous-default-value)
-undatum/cmds/converter.py:480:4: R0914: Too many local variables (17/15) (too-many-locals)
-undatum/cmds/converter.py:501:25: C0201: Consider iterating the dictionary directly instead of calling .keys() (consider-iterating-dictionary)
-undatum/cmds/converter.py:480:4: R0912: Too many branches (15/12) (too-many-branches)
-undatum/cmds/converter.py:529:4: C0116: Missing function or method docstring (missing-function-docstring)
-undatum/cmds/converter.py:529:4: W0102: Dangerous default value {} as argument (dangerous-default-value)
-undatum/cmds/converter.py:532:14: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
-undatum/cmds/converter.py:535:12: W1201: Use lazy % formatting in logging functions (logging-not-lazy)
-undatum/cmds/converter.py:535:26: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
-undatum/cmds/converter.py:537:12: W1201: Use lazy % formatting in logging functions (logging-not-lazy)
-undatum/cmds/converter.py:537:25: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
+undatum/cmds/converter.py:45:33: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
+undatum/cmds/converter.py:47:33: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
+undatum/cmds/converter.py:49:33: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
+undatum/cmds/converter.py:51:33: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
+undatum/cmds/converter.py:53:33: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
+undatum/cmds/converter.py:55:33: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
+undatum/cmds/converter.py:103:12: W0612: Unused variable 'event' (unused-variable)
+undatum/cmds/converter.py:198:18: R1734: Consider using [] instead of list() (use-list-literal)
+undatum/cmds/converter.py:218:4: C0415: Import outside toplevel (openpyxl.load_workbook) (import-outside-toplevel)
+undatum/cmds/converter.py:230:18: R1734: Consider using [] instead of list() (use-list-literal)
+undatum/cmds/converter.py:250:4: C0415: Import outside toplevel (openpyxl.load_workbook) (import-outside-toplevel)
+undatum/cmds/converter.py:262:18: R1734: Consider using [] instead of list() (use-list-literal)
+undatum/cmds/converter.py:288:18: R1734: Consider using [] instead of list() (use-list-literal)
+undatum/cmds/converter.py:298:8: W0612: Unused variable 'k' (unused-variable)
+undatum/cmds/converter.py:393:13: R1732: Consider using 'with' for resource-allocating operations (consider-using-with)
+undatum/cmds/converter.py:440:0: R0914: Too many local variables (16/15) (too-many-locals)
+undatum/cmds/converter.py:447:4: C0415: Import outside toplevel (pyorc) (import-outside-toplevel)
+undatum/cmds/converter.py:447:4: E0401: Unable to import 'pyorc' (import-error)
+undatum/cmds/converter.py:451:33: C0201: Consider iterating the dictionary directly instead of calling .keys() (consider-iterating-dictionary)
+undatum/cmds/converter.py:456:33: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
+undatum/cmds/converter.py:478:4: C0415: Import outside toplevel (pyorc) (import-outside-toplevel)
+undatum/cmds/converter.py:478:4: E0401: Unable to import 'pyorc' (import-error)
+undatum/cmds/converter.py:482:33: C0201: Consider iterating the dictionary directly instead of calling .keys() (consider-iterating-dictionary)
+undatum/cmds/converter.py:494:0: R0914: Too many local variables (16/15) (too-many-locals)
+undatum/cmds/converter.py:501:4: C0415: Import outside toplevel (avro.schema) (import-outside-toplevel)
+undatum/cmds/converter.py:501:4: E0401: Unable to import 'avro.schema' (import-error)
+undatum/cmds/converter.py:502:4: E0401: Unable to import 'avro.datafile' (import-error)
+undatum/cmds/converter.py:502:4: C0415: Import outside toplevel (avro.datafile.DataFileWriter) (import-outside-toplevel)
+undatum/cmds/converter.py:503:4: E0401: Unable to import 'avro.io' (import-error)
+undatum/cmds/converter.py:503:4: C0415: Import outside toplevel (avro.io.DatumWriter) (import-outside-toplevel)
+undatum/cmds/converter.py:562:8: W0107: Unnecessary pass statement (unnecessary-pass)
+undatum/cmds/converter.py:564:4: R0914: Too many local variables (17/15) (too-many-locals)
+undatum/cmds/converter.py:588:25: C0201: Consider iterating the dictionary directly instead of calling .keys() (consider-iterating-dictionary)
+undatum/cmds/converter.py:564:4: R0912: Too many branches (16/12) (too-many-branches)
+undatum/cmds/converter.py:624:14: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
+undatum/cmds/converter.py:627:12: W1201: Use lazy % formatting in logging functions (logging-not-lazy)
+undatum/cmds/converter.py:627:26: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
+undatum/cmds/converter.py:629:12: W1201: Use lazy % formatting in logging functions (logging-not-lazy)
+undatum/cmds/converter.py:629:25: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
 ************* Module undatum.cmds.schemer
-undatum/cmds/schemer.py:29:41: C0303: Trailing whitespace (trailing-whitespace)
-undatum/cmds/schemer.py:29:0: C0325: Unnecessary parens after '=' keyword (superfluous-parens)
-undatum/cmds/schemer.py:34:28: C0303: Trailing whitespace (trailing-whitespace)
-undatum/cmds/schemer.py:47:0: C0301: Line too long (177/100) (line-too-long)
-undatum/cmds/schemer.py:62:0: W0311: Bad indentation. Found 9 spaces, expected 8 (bad-indentation)
-undatum/cmds/schemer.py:63:0: W0311: Bad indentation. Found 9 spaces, expected 8 (bad-indentation)
-undatum/cmds/schemer.py:64:0: W0311: Bad indentation. Found 9 spaces, expected 8 (bad-indentation)
-undatum/cmds/schemer.py:66:0: C0301: Line too long (109/100) (line-too-long)
-undatum/cmds/schemer.py:68:0: C0301: Line too long (103/100) (line-too-long)
+undatum/cmds/schemer.py:30:41: C0303: Trailing whitespace (trailing-whitespace)
+undatum/cmds/schemer.py:30:0: C0325: Unnecessary parens after '=' keyword (superfluous-parens)
+undatum/cmds/schemer.py:35:28: C0303: Trailing whitespace (trailing-whitespace)
 undatum/cmds/schemer.py:69:0: W0311: Bad indentation. Found 9 spaces, expected 8 (bad-indentation)
-undatum/cmds/schemer.py:71:0: C0301: Line too long (177/100) (line-too-long)
-undatum/cmds/schemer.py:73:0: C0301: Line too long (171/100) (line-too-long)
-undatum/cmds/schemer.py:74:0: W0311: Bad indentation. Found 9 spaces, expected 8 (bad-indentation)
-undatum/cmds/schemer.py:76:0: C0301: Line too long (236/100) (line-too-long)
-undatum/cmds/schemer.py:78:230: C0303: Trailing whitespace (trailing-whitespace)
-undatum/cmds/schemer.py:78:0: C0301: Line too long (230/100) (line-too-long)
-undatum/cmds/schemer.py:79:0: W0311: Bad indentation. Found 9 spaces, expected 8 (bad-indentation)
-undatum/cmds/schemer.py:81:0: C0301: Line too long (252/100) (line-too-long)
-undatum/cmds/schemer.py:83:0: C0301: Line too long (246/100) (line-too-long)
-undatum/cmds/schemer.py:84:0: W0311: Bad indentation. Found 9 spaces, expected 8 (bad-indentation)
-undatum/cmds/schemer.py:86:20: C0303: Trailing whitespace (trailing-whitespace)
-undatum/cmds/schemer.py:91:0: C0301: Line too long (196/100) (line-too-long)
-undatum/cmds/schemer.py:94:16: C0303: Trailing whitespace (trailing-whitespace)
-undatum/cmds/schemer.py:112:27: C0303: Trailing whitespace (trailing-whitespace)
-undatum/cmds/schemer.py:120:57: C0303: Trailing whitespace (trailing-whitespace)
-undatum/cmds/schemer.py:124:0: C0301: Line too long (143/100) (line-too-long)
-undatum/cmds/schemer.py:129:0: W0311: Bad indentation. Found 7 spaces, expected 8 (bad-indentation)
-undatum/cmds/schemer.py:130:0: W0311: Bad indentation. Found 7 spaces, expected 8 (bad-indentation)
-undatum/cmds/schemer.py:131:0: W0311: Bad indentation. Found 7 spaces, expected 8 (bad-indentation)
-undatum/cmds/schemer.py:132:0: W0311: Bad indentation. Found 7 spaces, expected 8 (bad-indentation)
-undatum/cmds/schemer.py:137:0: C0301: Line too long (107/100) (line-too-long)
-undatum/cmds/schemer.py:142:40: C0303: Trailing whitespace (trailing-whitespace)
-undatum/cmds/schemer.py:145:47: C0303: Trailing whitespace (trailing-whitespace)
-undatum/cmds/schemer.py:154:30: C0303: Trailing whitespace (trailing-whitespace)
-undatum/cmds/schemer.py:157:69: C0303: Trailing whitespace (trailing-whitespace)
-undatum/cmds/schemer.py:158:31: C0303: Trailing whitespace (trailing-whitespace)
-undatum/cmds/schemer.py:159:36: C0303: Trailing whitespace (trailing-whitespace)
-undatum/cmds/schemer.py:167:54: C0303: Trailing whitespace (trailing-whitespace)
-undatum/cmds/schemer.py:173:30: C0303: Trailing whitespace (trailing-whitespace)
-undatum/cmds/schemer.py:177:69: C0303: Trailing whitespace (trailing-whitespace)
-undatum/cmds/schemer.py:204:0: C0301: Line too long (118/100) (line-too-long)
-undatum/cmds/schemer.py:207:66: C0303: Trailing whitespace (trailing-whitespace)
-undatum/cmds/schemer.py:215:57: C0303: Trailing whitespace (trailing-whitespace)
-undatum/cmds/schemer.py:217:103: C0303: Trailing whitespace (trailing-whitespace)
-undatum/cmds/schemer.py:217:0: C0301: Line too long (103/100) (line-too-long)
-undatum/cmds/schemer.py:223:113: C0303: Trailing whitespace (trailing-whitespace)
-undatum/cmds/schemer.py:223:0: C0301: Line too long (113/100) (line-too-long)
-undatum/cmds/schemer.py:227:41: C0303: Trailing whitespace (trailing-whitespace)
-undatum/cmds/schemer.py:228:99: C0303: Trailing whitespace (trailing-whitespace)
-undatum/cmds/schemer.py:234:109: C0303: Trailing whitespace (trailing-whitespace)
-undatum/cmds/schemer.py:234:0: C0301: Line too long (109/100) (line-too-long)
-undatum/cmds/schemer.py:246:0: C0301: Line too long (104/100) (line-too-long)
-undatum/cmds/schemer.py:273:0: C0301: Line too long (137/100) (line-too-long)
+undatum/cmds/schemer.py:70:0: W0311: Bad indentation. Found 9 spaces, expected 8 (bad-indentation)
+undatum/cmds/schemer.py:71:0: W0311: Bad indentation. Found 9 spaces, expected 8 (bad-indentation)
+undatum/cmds/schemer.py:78:0: W0311: Bad indentation. Found 9 spaces, expected 8 (bad-indentation)
+undatum/cmds/schemer.py:87:0: W0311: Bad indentation. Found 9 spaces, expected 8 (bad-indentation)
+undatum/cmds/schemer.py:98:0: W0311: Bad indentation. Found 9 spaces, expected 8 (bad-indentation)
+undatum/cmds/schemer.py:109:0: W0311: Bad indentation. Found 9 spaces, expected 8 (bad-indentation)
+undatum/cmds/schemer.py:123:16: C0303: Trailing whitespace (trailing-whitespace)
+undatum/cmds/schemer.py:149:57: C0303: Trailing whitespace (trailing-whitespace)
+undatum/cmds/schemer.py:153:0: C0301: Line too long (143/100) (line-too-long)
+undatum/cmds/schemer.py:158:0: W0311: Bad indentation. Found 7 spaces, expected 8 (bad-indentation)
+undatum/cmds/schemer.py:159:0: W0311: Bad indentation. Found 7 spaces, expected 8 (bad-indentation)
+undatum/cmds/schemer.py:160:0: W0311: Bad indentation. Found 7 spaces, expected 8 (bad-indentation)
+undatum/cmds/schemer.py:161:0: W0311: Bad indentation. Found 7 spaces, expected 8 (bad-indentation)
+undatum/cmds/schemer.py:166:0: C0301: Line too long (107/100) (line-too-long)
+undatum/cmds/schemer.py:171:40: C0303: Trailing whitespace (trailing-whitespace)
+undatum/cmds/schemer.py:174:47: C0303: Trailing whitespace (trailing-whitespace)
+undatum/cmds/schemer.py:183:30: C0303: Trailing whitespace (trailing-whitespace)
+undatum/cmds/schemer.py:187:27: C0303: Trailing whitespace (trailing-whitespace)
+undatum/cmds/schemer.py:188:31: C0303: Trailing whitespace (trailing-whitespace)
+undatum/cmds/schemer.py:189:36: C0303: Trailing whitespace (trailing-whitespace)
+undatum/cmds/schemer.py:198:54: C0303: Trailing whitespace (trailing-whitespace)
+undatum/cmds/schemer.py:204:30: C0303: Trailing whitespace (trailing-whitespace)
+undatum/cmds/schemer.py:209:27: C0303: Trailing whitespace (trailing-whitespace)
+undatum/cmds/schemer.py:261:78: C0303: Trailing whitespace (trailing-whitespace)
 undatum/cmds/schemer.py:13:0: E0401: Unable to import 'orjson' (import-error)
 undatum/cmds/schemer.py:16:0: E0401: Unable to import 'xxhash' (import-error)
 undatum/cmds/schemer.py:18:0: E0401: Unable to import 'pydantic' (import-error)
 undatum/cmds/schemer.py:19:0: E0401: Unable to import 'pyzstd' (import-error)
 undatum/cmds/schemer.py:20:0: E0401: Unable to import 'qddate' (import-error)
-undatum/cmds/schemer.py:28:0: C0116: Missing function or method docstring (missing-function-docstring)
-undatum/cmds/schemer.py:43:0: C0116: Missing function or method docstring (missing-function-docstring)
-undatum/cmds/schemer.py:47:0: R0913: Too many arguments (8/5) (too-many-arguments)
-undatum/cmds/schemer.py:47:0: R0917: Too many positional arguments (8/5) (too-many-positional-arguments)
-undatum/cmds/schemer.py:47:0: R0914: Too many local variables (18/15) (too-many-locals)
-undatum/cmds/schemer.py:47:0: R0912: Too many branches (22/12) (too-many-branches)
-undatum/cmds/schemer.py:97:0: R0903: Too few public methods (0/2) (too-few-public-methods)
-undatum/cmds/schemer.py:127:4: W0201: Attribute 'num_records' defined outside __init__ (attribute-defined-outside-init)
-undatum/cmds/schemer.py:159:4: W0201: Attribute 'num_records' defined outside __init__ (attribute-defined-outside-init)
-undatum/cmds/schemer.py:107:0: R0903: Too few public methods (0/2) (too-few-public-methods)
-undatum/cmds/schemer.py:124:0: R0913: Too many arguments (7/5) (too-many-arguments)
-undatum/cmds/schemer.py:124:0: R0917: Too many positional arguments (7/5) (too-many-positional-arguments)
-undatum/cmds/schemer.py:124:0: R0914: Too many local variables (19/15) (too-many-locals)
-undatum/cmds/schemer.py:124:37: W0622: Redefining built-in 'id' (redefined-builtin)
-undatum/cmds/schemer.py:157:54: C0321: More than one statement on a single line (multiple-statements)
-undatum/cmds/schemer.py:137:16: R1732: Consider using 'with' for resource-allocating operations (consider-using-with)
-undatum/cmds/schemer.py:163:0: C0116: Missing function or method docstring (missing-function-docstring)
-undatum/cmds/schemer.py:177:54: C0321: More than one statement on a single line (multiple-statements)
-undatum/cmds/schemer.py:191:8: W0107: Unnecessary pass statement (unnecessary-pass)
-undatum/cmds/schemer.py:193:4: C0116: Missing function or method docstring (missing-function-docstring)
-undatum/cmds/schemer.py:193:39: W0613: Unused argument 'options' (unused-argument)
-undatum/cmds/schemer.py:213:36: C0201: Consider iterating the dictionary directly instead of calling .keys() (consider-iterating-dictionary)
-undatum/cmds/schemer.py:223:46: C0201: Consider iterating the dictionary directly instead of calling .keys() (consider-iterating-dictionary)
-undatum/cmds/schemer.py:223:67: C0321: More than one statement on a single line (multiple-statements)
-undatum/cmds/schemer.py:208:8: R1702: Too many nested blocks (6/5) (too-many-nested-blocks)
-undatum/cmds/schemer.py:234:42: C0201: Consider iterating the dictionary directly instead of calling .keys() (consider-iterating-dictionary)
-undatum/cmds/schemer.py:234:63: C0321: More than one statement on a single line (multiple-statements)
-undatum/cmds/schemer.py:237:16: W0104: Statement seems to have no effect (pointless-statement)
-undatum/cmds/schemer.py:244:22: W1309: Using an f-string that does not have any interpolated variables (f-string-without-interpolation)
-undatum/cmds/schemer.py:235:20: R1732: Consider using 'with' for resource-allocating operations (consider-using-with)
-undatum/cmds/schemer.py:248:20: W0104: Statement seems to have no effect (pointless-statement)
-undatum/cmds/schemer.py:198:4: R0912: Too many branches (20/12) (too-many-branches)
-undatum/cmds/schemer.py:246:24: R1732: Consider using 'with' for resource-allocating operations (consider-using-with)
-undatum/cmds/schemer.py:261:12: W0104: Statement seems to have no effect (pointless-statement)
-undatum/cmds/schemer.py:272:8: W1201: Use lazy % formatting in logging functions (logging-not-lazy)
-undatum/cmds/schemer.py:272:22: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
-undatum/cmds/schemer.py:259:16: R1732: Consider using 'with' for resource-allocating operations (consider-using-with)
-undatum/cmds/schemer.py:270:25: R1732: Consider using 'with' for resource-allocating operations (consider-using-with)
-undatum/cmds/schemer.py:275:16: R1732: Consider using 'with' for resource-allocating operations (consider-using-with)
+undatum/cmds/schemer.py:49:0: R0913: Too many arguments (8/5) (too-many-arguments)
+undatum/cmds/schemer.py:49:0: R0917: Too many positional arguments (8/5) (too-many-positional-arguments)
+undatum/cmds/schemer.py:49:0: R0914: Too many local variables (20/15) (too-many-locals)
+undatum/cmds/schemer.py:49:0: R0912: Too many branches (22/12) (too-many-branches)
+undatum/cmds/schemer.py:126:0: R0903: Too few public methods (0/2) (too-few-public-methods)
+undatum/cmds/schemer.py:156:4: W0201: Attribute 'num_records' defined outside __init__ (attribute-defined-outside-init)
+undatum/cmds/schemer.py:189:4: W0201: Attribute 'num_records' defined outside __init__ (attribute-defined-outside-init)
+undatum/cmds/schemer.py:136:0: R0903: Too few public methods (0/2) (too-few-public-methods)
+undatum/cmds/schemer.py:153:0: R0913: Too many arguments (7/5) (too-many-arguments)
+undatum/cmds/schemer.py:153:0: R0917: Too many positional arguments (7/5) (too-many-positional-arguments)
+undatum/cmds/schemer.py:153:0: R0914: Too many local variables (19/15) (too-many-locals)
+undatum/cmds/schemer.py:153:37: W0622: Redefining built-in 'id' (redefined-builtin)
+undatum/cmds/schemer.py:166:16: R1732: Consider using 'with' for resource-allocating operations (consider-using-with)
+undatum/cmds/schemer.py:223:8: W0107: Unnecessary pass statement (unnecessary-pass)
+undatum/cmds/schemer.py:225:39: W0613: Unused argument 'options' (unused-argument)
+undatum/cmds/schemer.py:231:4: R0914: Too many local variables (17/15) (too-many-locals)
+undatum/cmds/schemer.py:249:36: C0201: Consider iterating the dictionary directly instead of calling .keys() (consider-iterating-dictionary)
+undatum/cmds/schemer.py:244:8: R1702: Too many nested blocks (6/5) (too-many-nested-blocks)
+undatum/cmds/schemer.py:231:4: R0912: Too many branches (20/12) (too-many-branches)
+undatum/cmds/schemer.py:304:12: W0104: Statement seems to have no effect (pointless-statement)
+undatum/cmds/schemer.py:302:16: R1732: Consider using 'with' for resource-allocating operations (consider-using-with)
+undatum/cmds/schemer.py:313:25: R1732: Consider using 'with' for resource-allocating operations (consider-using-with)
 ************* Module undatum.cmds.transformer
-undatum/cmds/transformer.py:19:14: C0303: Trailing whitespace (trailing-whitespace)
-undatum/cmds/transformer.py:61:19: C0303: Trailing whitespace (trailing-whitespace)
-undatum/cmds/transformer.py:63:91: C0303: Trailing whitespace (trailing-whitespace)
-undatum/cmds/transformer.py:67:30: C0303: Trailing whitespace (trailing-whitespace)
-undatum/cmds/transformer.py:73:0: C0301: Line too long (101/100) (line-too-long)
-undatum/cmds/transformer.py:74:0: C0303: Trailing whitespace (trailing-whitespace)
-undatum/cmds/transformer.py:80:0: C0305: Trailing newlines (trailing-newlines)
+undatum/cmds/transformer.py:20:14: C0303: Trailing whitespace (trailing-whitespace)
+undatum/cmds/transformer.py:62:19: C0303: Trailing whitespace (trailing-whitespace)
+undatum/cmds/transformer.py:64:91: C0303: Trailing whitespace (trailing-whitespace)
+undatum/cmds/transformer.py:68:30: C0303: Trailing whitespace (trailing-whitespace)
+undatum/cmds/transformer.py:74:0: C0301: Line too long (101/100) (line-too-long)
+undatum/cmds/transformer.py:75:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/cmds/transformer.py:81:0: C0305: Trailing newlines (trailing-newlines)
 undatum/cmds/transformer.py:4:0: E0401: Unable to import 'orjson' (import-error)
 undatum/cmds/transformer.py:9:0: E0401: Unable to import 'iterable.helpers.detect' (import-error)
-undatum/cmds/transformer.py:14:0: C0116: Missing function or method docstring (missing-function-docstring)
-undatum/cmds/transformer.py:31:4: W0102: Dangerous default value {} as argument (dangerous-default-value)
-undatum/cmds/transformer.py:31:4: R0914: Too many local variables (18/15) (too-many-locals)
-undatum/cmds/transformer.py:68:16: W1201: Use lazy % formatting in logging functions (logging-not-lazy)
-undatum/cmds/transformer.py:68:29: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
-undatum/cmds/transformer.py:71:16: E0606: Possibly using variable 'write_iterable' before assignment (possibly-used-before-assignment)
-undatum/cmds/transformer.py:75:8: W1201: Use lazy % formatting in logging functions (logging-not-lazy)
-undatum/cmds/transformer.py:75:22: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
-undatum/cmds/transformer.py:25:0: R0903: Too few public methods (1/2) (too-few-public-methods)
+undatum/cmds/transformer.py:32:4: W0102: Dangerous default value {} as argument (dangerous-default-value)
+undatum/cmds/transformer.py:32:4: R0914: Too many local variables (18/15) (too-many-locals)
+undatum/cmds/transformer.py:69:16: W1201: Use lazy % formatting in logging functions (logging-not-lazy)
+undatum/cmds/transformer.py:69:29: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
+undatum/cmds/transformer.py:72:16: E0606: Possibly using variable 'write_iterable' before assignment (possibly-used-before-assignment)
+undatum/cmds/transformer.py:76:8: W1201: Use lazy % formatting in logging functions (logging-not-lazy)
+undatum/cmds/transformer.py:76:22: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
+undatum/cmds/transformer.py:26:0: R0903: Too few public methods (1/2) (too-few-public-methods)
 undatum/cmds/transformer.py:5:0: C0411: standard import "logging" should be placed before third party import "orjson" (wrong-import-order)
 undatum/cmds/transformer.py:8:0: C0411: standard import "runpy.run_path" should be placed before third party import "orjson" and local import "utils.get_option" (wrong-import-order)
 undatum/cmds/transformer.py:9:0: C0411: third party import "iterable.helpers.detect.open_iterable" should be placed before local import "utils.get_option" (wrong-import-order)
 ************* Module undatum.cmds.textproc
-undatum/cmds/textproc.py:16:14: C0303: Trailing whitespace (trailing-whitespace)
-undatum/cmds/textproc.py:57:0: C0305: Trailing newlines (trailing-newlines)
+undatum/cmds/textproc.py:59:0: C0305: Trailing newlines (trailing-newlines)
 undatum/cmds/textproc.py:4:0: E0401: Unable to import 'iterable.helpers.detect' (import-error)
-undatum/cmds/textproc.py:11:0: C0116: Missing function or method docstring (missing-function-docstring)
-undatum/cmds/textproc.py:19:0: C0116: Missing function or method docstring (missing-function-docstring)
-undatum/cmds/textproc.py:33:19: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
-undatum/cmds/textproc.py:44:8: W0106: Expression "get_file_type(filename) if options['format_in'] is None else options['format_in']" is assigned to nothing (expression-not-assigned)
-undatum/cmds/textproc.py:46:33: E0602: Undefined variable 'fromfile' (undefined-variable)
-undatum/cmds/textproc.py:37:0: R0903: Too few public methods (1/2) (too-few-public-methods)
+undatum/cmds/textproc.py:35:19: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
+undatum/cmds/textproc.py:46:8: W0106: Expression "get_file_type(filename) if options['format_in'] is None else options['format_in']" is assigned to nothing (expression-not-assigned)
+undatum/cmds/textproc.py:48:33: E0602: Undefined variable 'fromfile' (undefined-variable)
+undatum/cmds/textproc.py:39:0: R0903: Too few public methods (1/2) (too-few-public-methods)
 undatum/cmds/textproc.py:4:0: C0411: third party import "iterable.helpers.detect.open_iterable" should be placed before local import "utils.get_file_type" (wrong-import-order)
 ************* Module undatum.cmds.statistics
-undatum/cmds/statistics.py:20:14: C0303: Trailing whitespace (trailing-whitespace)
-undatum/cmds/statistics.py:33:0: C0301: Line too long (106/100) (line-too-long)
-undatum/cmds/statistics.py:68:0: C0301: Line too long (101/100) (line-too-long)
-undatum/cmds/statistics.py:142:0: C0301: Line too long (113/100) (line-too-long)
-undatum/cmds/statistics.py:151:0: C0305: Trailing newlines (trailing-newlines)
-undatum/cmds/statistics.py:109:53: W0511: TODO: Shouldn't be "str" by default (fixme)
+undatum/cmds/statistics.py:21:14: C0303: Trailing whitespace (trailing-whitespace)
+undatum/cmds/statistics.py:34:0: C0301: Line too long (106/100) (line-too-long)
+undatum/cmds/statistics.py:69:0: C0301: Line too long (101/100) (line-too-long)
+undatum/cmds/statistics.py:143:0: C0301: Line too long (113/100) (line-too-long)
+undatum/cmds/statistics.py:152:0: C0305: Trailing newlines (trailing-newlines)
+undatum/cmds/statistics.py:110:53: W0511: TODO: Shouldn't be "str" by default (fixme)
 undatum/cmds/statistics.py:6:0: E0401: Unable to import 'qddate' (import-error)
 undatum/cmds/statistics.py:8:0: E0401: Unable to import 'iterable.helpers.detect' (import-error)
-undatum/cmds/statistics.py:15:0: C0116: Missing function or method docstring (missing-function-docstring)
-undatum/cmds/statistics.py:30:8: W0107: Unnecessary pass statement (unnecessary-pass)
-undatum/cmds/statistics.py:32:4: R0914: Too many local variables (33/15) (too-many-locals)
-undatum/cmds/statistics.py:34:8: W0622: Redefining built-in 'print' (redefined-builtin)
-undatum/cmds/statistics.py:34:8: C0415: Import outside toplevel (rich.print) (import-outside-toplevel)
-undatum/cmds/statistics.py:35:8: C0415: Import outside toplevel (rich.table.Table) (import-outside-toplevel)
-undatum/cmds/statistics.py:55:8: W1201: Use lazy % formatting in logging functions (logging-not-lazy)
-undatum/cmds/statistics.py:55:22: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
-undatum/cmds/statistics.py:59:34: C0321: More than one statement on a single line (multiple-statements)
-undatum/cmds/statistics.py:59:34: W1201: Use lazy % formatting in logging functions (logging-not-lazy)
-undatum/cmds/statistics.py:59:48: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
-undatum/cmds/statistics.py:63:32: C0321: More than one statement on a single line (multiple-statements)
-undatum/cmds/statistics.py:64:35: C0321: More than one statement on a single line (multiple-statements)
+undatum/cmds/statistics.py:31:8: W0107: Unnecessary pass statement (unnecessary-pass)
+undatum/cmds/statistics.py:33:4: R0914: Too many local variables (33/15) (too-many-locals)
+undatum/cmds/statistics.py:35:8: W0622: Redefining built-in 'print' (redefined-builtin)
+undatum/cmds/statistics.py:35:8: C0415: Import outside toplevel (rich.print) (import-outside-toplevel)
+undatum/cmds/statistics.py:36:8: C0415: Import outside toplevel (rich.table.Table) (import-outside-toplevel)
+undatum/cmds/statistics.py:56:8: W1201: Use lazy % formatting in logging functions (logging-not-lazy)
+undatum/cmds/statistics.py:56:22: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
+undatum/cmds/statistics.py:60:34: C0321: More than one statement on a single line (multiple-statements)
+undatum/cmds/statistics.py:60:34: W1201: Use lazy % formatting in logging functions (logging-not-lazy)
+undatum/cmds/statistics.py:60:48: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
+undatum/cmds/statistics.py:64:32: C0321: More than one statement on a single line (multiple-statements)
 undatum/cmds/statistics.py:65:35: C0321: More than one statement on a single line (multiple-statements)
-undatum/cmds/statistics.py:67:33: C0201: Consider iterating the dictionary directly instead of calling .keys() (consider-iterating-dictionary)
-undatum/cmds/statistics.py:85:33: C0201: Consider iterating the dictionary directly instead of calling .keys() (consider-iterating-dictionary)
-undatum/cmds/statistics.py:134:25: R1719: The if expression can be replaced with 'test' (simplifiable-if-expression)
-undatum/cmds/statistics.py:135:25: R1719: The if expression can be replaced with 'not test' (simplifiable-if-expression)
-undatum/cmds/statistics.py:32:4: R0912: Too many branches (24/12) (too-many-branches)
-undatum/cmds/statistics.py:32:4: R0915: Too many statements (96/50) (too-many-statements)
-undatum/cmds/statistics.py:23:0: R0903: Too few public methods (1/2) (too-few-public-methods)
+undatum/cmds/statistics.py:66:35: C0321: More than one statement on a single line (multiple-statements)
+undatum/cmds/statistics.py:68:33: C0201: Consider iterating the dictionary directly instead of calling .keys() (consider-iterating-dictionary)
+undatum/cmds/statistics.py:86:33: C0201: Consider iterating the dictionary directly instead of calling .keys() (consider-iterating-dictionary)
+undatum/cmds/statistics.py:135:25: R1719: The if expression can be replaced with 'test' (simplifiable-if-expression)
+undatum/cmds/statistics.py:136:25: R1719: The if expression can be replaced with 'not test' (simplifiable-if-expression)
+undatum/cmds/statistics.py:33:4: R0912: Too many branches (24/12) (too-many-branches)
+undatum/cmds/statistics.py:33:4: R0915: Too many statements (96/50) (too-many-statements)
+undatum/cmds/statistics.py:24:0: R0903: Too few public methods (1/2) (too-few-public-methods)
 undatum/cmds/statistics.py:5:0: C0411: standard import "logging" should be placed before local imports "utils.get_option", "constants.DEFAULT_DICT_SHARE" (wrong-import-order)
 undatum/cmds/statistics.py:6:0: C0411: third party import "qddate.DateParser" should be placed before local imports "utils.get_option", "constants.DEFAULT_DICT_SHARE" (wrong-import-order)
 undatum/cmds/statistics.py:8:0: C0411: third party import "iterable.helpers.detect.open_iterable" should be placed before local imports "utils.get_option", "constants.DEFAULT_DICT_SHARE" (wrong-import-order)
 ************* Module undatum.cmds.ingester
-undatum/cmds/ingester.py:24:14: C0303: Trailing whitespace (trailing-whitespace)
-undatum/cmds/ingester.py:38:0: C0301: Line too long (148/100) (line-too-long)
-undatum/cmds/ingester.py:76:0: C0303: Trailing whitespace (trailing-whitespace)
-undatum/cmds/ingester.py:92:0: C0301: Line too long (101/100) (line-too-long)
-undatum/cmds/ingester.py:93:0: W0311: Bad indentation. Found 21 spaces, expected 20 (bad-indentation)
-undatum/cmds/ingester.py:99:0: C0301: Line too long (105/100) (line-too-long)
-undatum/cmds/ingester.py:101:76: C0303: Trailing whitespace (trailing-whitespace)
-undatum/cmds/ingester.py:106:18: C0303: Trailing whitespace (trailing-whitespace)
-undatum/cmds/ingester.py:113:26: C0303: Trailing whitespace (trailing-whitespace)
-undatum/cmds/ingester.py:115:0: C0305: Trailing newlines (trailing-newlines)
+undatum/cmds/ingester.py:25:14: C0303: Trailing whitespace (trailing-whitespace)
+undatum/cmds/ingester.py:39:0: C0301: Line too long (148/100) (line-too-long)
+undatum/cmds/ingester.py:77:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/cmds/ingester.py:93:0: C0301: Line too long (101/100) (line-too-long)
+undatum/cmds/ingester.py:94:0: W0311: Bad indentation. Found 21 spaces, expected 20 (bad-indentation)
+undatum/cmds/ingester.py:100:0: C0301: Line too long (105/100) (line-too-long)
+undatum/cmds/ingester.py:102:76: C0303: Trailing whitespace (trailing-whitespace)
+undatum/cmds/ingester.py:107:18: C0303: Trailing whitespace (trailing-whitespace)
+undatum/cmds/ingester.py:114:26: C0303: Trailing whitespace (trailing-whitespace)
+undatum/cmds/ingester.py:116:0: C0305: Trailing newlines (trailing-newlines)
 undatum/cmds/ingester.py:5:0: E0401: Unable to import 'iterable.helpers.detect' (import-error)
 undatum/cmds/ingester.py:8:0: E0401: Unable to import 'pymongo' (import-error)
 undatum/cmds/ingester.py:9:0: E0401: Unable to import 'elasticsearch' (import-error)
-undatum/cmds/ingester.py:19:0: C0116: Missing function or method docstring (missing-function-docstring)
-undatum/cmds/ingester.py:32:4: C0116: Missing function or method docstring (missing-function-docstring)
-undatum/cmds/ingester.py:33:8: E0711: NotImplemented raised - should raise NotImplementedError (notimplemented-raised)
-undatum/cmds/ingester.py:33:8: E0702: Raising NotImplementedType while only classes or instances are allowed (raising-bad-type)
-undatum/cmds/ingester.py:27:0: R0903: Too few public methods (1/2) (too-few-public-methods)
-undatum/cmds/ingester.py:41:8: W0107: Unnecessary pass statement (unnecessary-pass)
-undatum/cmds/ingester.py:49:8: W0612: Unused variable 'result' (unused-variable)
-undatum/cmds/ingester.py:35:0: R0903: Too few public methods (1/2) (too-few-public-methods)
-undatum/cmds/ingester.py:62:4: C0116: Missing function or method docstring (missing-function-docstring)
-undatum/cmds/ingester.py:63:8: W0612: Unused variable 'result' (unused-variable)
-undatum/cmds/ingester.py:52:0: R0903: Too few public methods (1/2) (too-few-public-methods)
-undatum/cmds/ingester.py:70:8: W0107: Unnecessary pass statement (unnecessary-pass)
-undatum/cmds/ingester.py:72:4: C0116: Missing function or method docstring (missing-function-docstring)
-undatum/cmds/ingester.py:72:4: W0102: Dangerous default value {} as argument (dangerous-default-value)
-undatum/cmds/ingester.py:72:4: R0913: Too many arguments (6/5) (too-many-arguments)
-undatum/cmds/ingester.py:72:4: R0917: Too many positional arguments (6/5) (too-many-positional-arguments)
-undatum/cmds/ingester.py:77:4: W0102: Dangerous default value {} as argument (dangerous-default-value)
-undatum/cmds/ingester.py:77:4: R0913: Too many arguments (6/5) (too-many-arguments)
-undatum/cmds/ingester.py:77:4: R0917: Too many positional arguments (6/5) (too-many-positional-arguments)
-undatum/cmds/ingester.py:77:4: R0914: Too many local variables (20/15) (too-many-locals)
-undatum/cmds/ingester.py:102:8: W1203: Use lazy % formatting in logging functions (logging-fstring-interpolation)
-undatum/cmds/ingester.py:108:29: C0321: More than one statement on a single line (multiple-statements)
+undatum/cmds/ingester.py:33:4: C0116: Missing function or method docstring (missing-function-docstring)
+undatum/cmds/ingester.py:34:8: E0711: NotImplemented raised - should raise NotImplementedError (notimplemented-raised)
+undatum/cmds/ingester.py:34:8: E0702: Raising NotImplementedType while only classes or instances are allowed (raising-bad-type)
+undatum/cmds/ingester.py:28:0: R0903: Too few public methods (1/2) (too-few-public-methods)
+undatum/cmds/ingester.py:42:8: W0107: Unnecessary pass statement (unnecessary-pass)
+undatum/cmds/ingester.py:50:8: W0612: Unused variable 'result' (unused-variable)
+undatum/cmds/ingester.py:36:0: R0903: Too few public methods (1/2) (too-few-public-methods)
+undatum/cmds/ingester.py:63:4: C0116: Missing function or method docstring (missing-function-docstring)
+undatum/cmds/ingester.py:64:8: W0612: Unused variable 'result' (unused-variable)
+undatum/cmds/ingester.py:53:0: R0903: Too few public methods (1/2) (too-few-public-methods)
+undatum/cmds/ingester.py:71:8: W0107: Unnecessary pass statement (unnecessary-pass)
+undatum/cmds/ingester.py:73:4: C0116: Missing function or method docstring (missing-function-docstring)
+undatum/cmds/ingester.py:73:4: W0102: Dangerous default value {} as argument (dangerous-default-value)
+undatum/cmds/ingester.py:73:4: R0913: Too many arguments (6/5) (too-many-arguments)
+undatum/cmds/ingester.py:73:4: R0917: Too many positional arguments (6/5) (too-many-positional-arguments)
+undatum/cmds/ingester.py:78:4: W0102: Dangerous default value {} as argument (dangerous-default-value)
+undatum/cmds/ingester.py:78:4: R0913: Too many arguments (6/5) (too-many-arguments)
+undatum/cmds/ingester.py:78:4: R0917: Too many positional arguments (6/5) (too-many-positional-arguments)
+undatum/cmds/ingester.py:78:4: R0914: Too many local variables (20/15) (too-many-locals)
+undatum/cmds/ingester.py:103:8: W1203: Use lazy % formatting in logging functions (logging-fstring-interpolation)
+undatum/cmds/ingester.py:109:29: C0321: More than one statement on a single line (multiple-statements)
 undatum/cmds/ingester.py:4:0: C0411: standard import "logging" should be placed before third party import "duckdb" (wrong-import-order)
 ************* Module undatum.common.functions
 undatum/common/functions.py:12:0: R0911: Too many return statements (10/6) (too-many-return-statements)
@@ -792,6 +460,27 @@ undatum/common/scheme.py:203:4: R1702: Too many nested blocks (6/5) (too-many-ne
 undatum/common/scheme.py:6:0: C0411: standard import "csv" should be placed before third party imports "bson", "orjson" (wrong-import-order)
 undatum/common/scheme.py:7:0: C0411: standard import "logging" should be placed before third party imports "bson", "orjson" (wrong-import-order)
 undatum/common/scheme.py:8:0: C0411: standard import "copy.copy" should be placed before third party imports "bson", "orjson" (wrong-import-order)
+************* Module undatum.ai.config
+undatum/ai/config.py:22:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/config.py:27:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/config.py:40:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/config.py:62:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/config.py:66:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/config.py:73:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/config.py:86:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/config.py:91:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/config.py:95:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/config.py:118:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/config.py:121:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/config.py:124:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/config.py:127:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/config.py:159:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/config.py:165:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/config.py:169:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/config.py:175:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/config.py:183:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/config.py:4:0: C0411: standard import "pathlib.Path" should be placed before third party import "yaml" (wrong-import-order)
+undatum/ai/config.py:5:0: C0411: standard import "typing.Optional" should be placed before third party import "yaml" (wrong-import-order)
 ************* Module undatum.ai.perplexity
 undatum/ai/perplexity.py:26:0: C0301: Line too long (129/100) (line-too-long)
 undatum/ai/perplexity.py:45:37: C0303: Trailing whitespace (trailing-whitespace)
@@ -809,72 +498,204 @@ undatum/ai/perplexity.py:4:0: C0411: standard import "sys" should be placed befo
 undatum/ai/perplexity.py:5:0: C0411: standard import "os" should be placed before third party import "requests" (wrong-import-order)
 undatum/ai/perplexity.py:6:0: C0411: standard import "io.StringIO" should be placed before third party import "requests" (wrong-import-order)
 ************* Module undatum.ai.__init__
-undatum/ai/__init__.py:1:0: R0801: Similar lines in 2 files
-==undatum.cmds.analyzer:[177:216]
-==undatum.cmds.schemer:[117:156]
-MAX_SAMPLE_SIZE = 200
-DELIMITED_FILES = ['csv', 'tsv']
-DUCKABLE_FILE_TYPES = ['csv', 'jsonl', 'json', 'parquet']
-DUCKABLE_CODECS  = ['zst', 'gzip', 'raw']
-
-
-def table_from_objects(objects:list, id:str, objects_limit:int, use_pandas:bool=False, filetype='csv', autodoc:bool=False, lang:str='English'):
-    """Reconstructs table schema from list of objects"""
-    table = TableSchema(id=id)
-    table.num_records = len(objects)
-    if autodoc:
-       f = io.StringIO()
-       writer = csv.writer(f)
-       writer.writerows(objects[:MAX_SAMPLE_SIZE])
-       table.description = get_description(f.getvalue(), language=lang)
-    if use_pandas:
-        df = pd.DataFrame(objects)
-        columns_raw = duckdb_decompose(frame=df, path='*', limit=objects_limit)
-    else:
-        tfile = tempfile.NamedTemporaryFile(suffix='.' + filetype, mode='w', encoding='utf8', delete=False)
-        tfile.close()
-        tfile_real = ZstdFile(tfile.name, mode='w', level_or_option=9)
-        wrapper = io.TextIOWrapper(tfile_real, encoding='utf8', write_through=True)
-        if filetype == 'csv':
-            writer = csv.writer(wrapper)
-            writer.writerows(objects[:objects_limit])
-        elif filetype == 'jsonl':
-            for row in objects[:objects_limit]:
-                wrapper.write(json.dumps(row) + '\n')
-        tfile_real.close()
-        # Getting structure
-        columns_raw = duckdb_decompose(tfile.name, filetype=filetype, path='*', limit=objects_limit)
-        os.remove(tfile.name)
-    is_flat = True
-    table.num_cols = len(columns_raw)
-
-    for column in columns_raw:
-        field = FieldSchema(name=column[0], ftype=column[1], is_array=column[2])
-        table.fields.append(field) (duplicate-code)
-undatum/ai/__init__.py:1:0: R0801: Similar lines in 2 files
-==undatum.cmds.query:[23:41]
-==undatum.cmds.selector:[241:259]
-        f_type = get_file_type(fromfile) if options['format_in'] is None else options['format_in']
-        iterable = IterableData(fromfile, options=options)
-        to_file = get_option(options, 'output')
-
-        if to_file:
-            to_type = get_file_type(to_file)
-            if not to_file:
-                print('Output file type not supported')
-                return
-            if to_type == 'bson':
-                out = open(to_file, 'wb')
-            if to_type == 'jsonl':
-                out = open(to_file, 'wb')
-            else:
-                out = open(to_file, 'w', encoding='utf8')
-        else:
-            to_type = f_type
-            out = sys.stdout (duplicate-code)
-undatum/ai/__init__.py:1:0: R0801: Similar lines in 2 files
-==undatum.cmds.analyzer:[36:51]
-==undatum.cmds.schemer:[28:43]
+undatum/ai/__init__.py:52:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/__init__.py:58:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/__init__.py:65:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/__init__.py:71:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/__init__.py:77:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/__init__.py:80:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/__init__.py:83:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/__init__.py:107:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/__init__.py:111:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/__init__.py:128:0: C0303: Trailing whitespace (trailing-whitespace)
+************* Module undatum.ai
+undatum/ai/__init__.py:61:8: C0415: Import outside toplevel (os) (import-outside-toplevel)
+undatum/ai/__init__.py:88:8: W0707: Consider explicitly re-raising using 'raise AIConfigurationError(f'Failed to configure {provider_name} provider: {str(e)}') from e' (raise-missing-from)
+************* Module undatum.ai.providers
+undatum/ai/providers.py:14:88: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:15:0: C0301: Line too long (102/100) (line-too-long)
+undatum/ai/providers.py:33:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:39:0: C0301: Line too long (102/100) (line-too-long)
+undatum/ai/providers.py:40:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:44:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:48:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:58:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:62:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:64:0: C0301: Line too long (120/100) (line-too-long)
+undatum/ai/providers.py:66:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:68:0: C0301: Line too long (113/100) (line-too-long)
+undatum/ai/providers.py:70:0: C0301: Line too long (102/100) (line-too-long)
+undatum/ai/providers.py:71:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:74:0: C0301: Line too long (125/100) (line-too-long)
+undatum/ai/providers.py:79:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:95:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:104:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:110:0: C0301: Line too long (171/100) (line-too-long)
+undatum/ai/providers.py:114:0: C0301: Line too long (279/100) (line-too-long)
+undatum/ai/providers.py:122:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:127:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:131:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:134:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:138:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:144:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:149:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:151:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:155:68: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:160:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:168:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:174:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:179:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:185:0: C0301: Line too long (157/100) (line-too-long)
+undatum/ai/providers.py:197:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:202:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:206:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:209:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:215:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:248:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:264:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:275:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:281:0: C0301: Line too long (171/100) (line-too-long)
+undatum/ai/providers.py:285:0: C0301: Line too long (279/100) (line-too-long)
+undatum/ai/providers.py:293:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:298:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:302:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:305:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:311:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:316:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:318:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:327:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:337:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:342:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:348:0: C0301: Line too long (157/100) (line-too-long)
+undatum/ai/providers.py:360:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:367:0: C0301: Line too long (191/100) (line-too-long)
+undatum/ai/providers.py:368:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:373:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:377:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:380:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:385:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:402:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:418:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:423:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:428:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:434:0: C0301: Line too long (176/100) (line-too-long)
+undatum/ai/providers.py:440:0: C0301: Line too long (121/100) (line-too-long)
+undatum/ai/providers.py:448:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:453:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:456:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:462:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:467:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:469:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:476:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:480:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:486:0: C0301: Line too long (162/100) (line-too-long)
+undatum/ai/providers.py:501:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:506:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:509:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:514:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:529:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:543:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:552:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:565:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:573:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:579:0: C0301: Line too long (205/100) (line-too-long)
+undatum/ai/providers.py:591:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:603:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:607:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:617:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:619:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:625:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:630:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:632:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:644:0: C0301: Line too long (112/100) (line-too-long)
+undatum/ai/providers.py:645:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:652:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:657:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:663:0: C0301: Line too long (191/100) (line-too-long)
+undatum/ai/providers.py:676:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:688:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:692:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:702:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:710:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:713:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:730:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:747:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:752:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:761:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:767:0: C0301: Line too long (205/100) (line-too-long)
+undatum/ai/providers.py:779:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:784:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:786:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:796:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:798:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:804:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:809:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:811:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:817:0: C0301: Line too long (113/100) (line-too-long)
+undatum/ai/providers.py:818:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:826:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:832:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:838:0: C0301: Line too long (191/100) (line-too-long)
+undatum/ai/providers.py:851:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:856:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:858:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:868:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:876:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:879:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/providers.py:96:4: R0914: Too many local variables (16/15) (too-many-locals)
+undatum/ai/providers.py:152:8: W0706: The except handler raises immediately (try-except-raise)
+undatum/ai/providers.py:155:12: W0707: Consider explicitly re-raising using 'raise AIAPIError(f'OpenAI API request failed: {str(e)}', status_code=getattr(e.response, 'status_code', None), response=getattr(e.response, 'text', None)) from e' (raise-missing-from)
+undatum/ai/providers.py:159:12: W0707: Consider explicitly re-raising using 'raise AIAPIError(f'Failed to parse OpenAI response: {str(e)}') from e' (raise-missing-from)
+undatum/ai/providers.py:161:4: R0914: Too many local variables (18/15) (too-many-locals)
+undatum/ai/providers.py:165:8: C0103: Variable name "MAX_DATA_LENGTH" doesn't conform to snake_case naming style (invalid-name)
+undatum/ai/providers.py:216:8: W0706: The except handler raises immediately (try-except-raise)
+undatum/ai/providers.py:210:12: R1705: Unnecessary "else" after "return", remove the "else" and de-indent the code inside it (no-else-return)
+undatum/ai/providers.py:234:12: W0707: Consider explicitly re-raising using 'raise AIAPIError(error_msg, status_code=getattr(e.response, 'status_code', None), response=getattr(e.response, 'text', None)) from e' (raise-missing-from)
+undatum/ai/providers.py:243:16: W0707: Consider explicitly re-raising using 'except (KeyError, IndexError) as exc' and 'raise AIAPIError('Failed to extract description from OpenAI response') from exc' (raise-missing-from)
+undatum/ai/providers.py:161:4: R0912: Too many branches (13/12) (too-many-branches)
+undatum/ai/providers.py:265:4: R0914: Too many local variables (16/15) (too-many-locals)
+undatum/ai/providers.py:319:8: W0706: The except handler raises immediately (try-except-raise)
+undatum/ai/providers.py:322:12: W0707: Consider explicitly re-raising using 'raise AIAPIError(f'OpenRouter API request failed: {str(e)}', status_code=getattr(e.response, 'status_code', None), response=getattr(e.response, 'text', None)) from e' (raise-missing-from)
+undatum/ai/providers.py:326:12: W0707: Consider explicitly re-raising using 'raise AIAPIError(f'Failed to parse OpenRouter response: {str(e)}') from e' (raise-missing-from)
+undatum/ai/providers.py:362:8: C0103: Variable name "MAX_DATA_LENGTH" doesn't conform to snake_case naming style (invalid-name)
+undatum/ai/providers.py:386:8: W0706: The except handler raises immediately (try-except-raise)
+undatum/ai/providers.py:381:12: R1705: Unnecessary "else" after "return", remove the "else" and de-indent the code inside it (no-else-return)
+undatum/ai/providers.py:389:12: W0707: Consider explicitly re-raising using 'raise AIAPIError(f'OpenRouter API request failed: {str(e)}', status_code=getattr(e.response, 'status_code', None), response=getattr(e.response, 'text', None)) from e' (raise-missing-from)
+undatum/ai/providers.py:397:16: W0707: Consider explicitly re-raising using 'except (KeyError, IndexError) as exc' and 'raise AIAPIError('Failed to extract description from OpenRouter response') from exc' (raise-missing-from)
+undatum/ai/providers.py:471:12: W0707: Consider explicitly re-raising using 'raise AIAPIError(f'Ollama API request failed: {str(e)}', status_code=getattr(e.response, 'status_code', None), response=getattr(e.response, 'text', None)) from e' (raise-missing-from)
+undatum/ai/providers.py:475:12: W0707: Consider explicitly re-raising using 'raise AIAPIError(f'Failed to parse Ollama response: {str(e)}') from e' (raise-missing-from)
+undatum/ai/providers.py:510:12: R1705: Unnecessary "else" after "return", remove the "else" and de-indent the code inside it (no-else-return)
+undatum/ai/providers.py:516:12: W0707: Consider explicitly re-raising using 'raise AIAPIError(f'Ollama API request failed: {str(e)}', status_code=getattr(e.response, 'status_code', None), response=getattr(e.response, 'text', None)) from e' (raise-missing-from)
+undatum/ai/providers.py:524:16: W0707: Consider explicitly re-raising using 'except (KeyError, IndexError) as exc' and 'raise AIAPIError('Failed to extract description from Ollama response') from exc' (raise-missing-from)
+undatum/ai/providers.py:562:15: W0718: Catching too general exception Exception (broad-exception-caught)
+undatum/ai/providers.py:566:4: R0914: Too many local variables (18/15) (too-many-locals)
+undatum/ai/providers.py:640:12: W0707: Consider explicitly re-raising using 'raise AIAPIError(error_msg, status_code=getattr(e.response, 'status_code', None), response=getattr(e.response, 'text', None)) from e' (raise-missing-from)
+undatum/ai/providers.py:644:12: W0707: Consider explicitly re-raising using 'raise AIAPIError(f'Failed to parse LM Studio response: {str(e)}. Response content: {content[:200]}') from e' (raise-missing-from)
+undatum/ai/providers.py:566:4: R0912: Too many branches (13/12) (too-many-branches)
+undatum/ai/providers.py:649:8: C0103: Variable name "MAX_DATA_LENGTH" doesn't conform to snake_case naming style (invalid-name)
+undatum/ai/providers.py:721:12: W0707: Consider explicitly re-raising using 'raise AIAPIError(error_msg, status_code=getattr(e.response, 'status_code', None), response=getattr(e.response, 'text', None)) from e' (raise-missing-from)
+undatum/ai/providers.py:725:12: W0707: Consider explicitly re-raising using 'raise AIAPIError(f'Failed to extract description from LM Studio response: {str(e)}') from e' (raise-missing-from)
+undatum/ai/providers.py:753:4: R0914: Too many local variables (16/15) (too-many-locals)
+undatum/ai/providers.py:813:12: W0707: Consider explicitly re-raising using 'raise AIAPIError(f'Perplexity API request failed: {str(e)}', status_code=getattr(e.response, 'status_code', None), response=getattr(e.response, 'text', None)) from e' (raise-missing-from)
+undatum/ai/providers.py:817:12: W0707: Consider explicitly re-raising using 'raise AIAPIError(f'Failed to parse Perplexity response: {str(e)}. Response content: {content[:200]}') from e' (raise-missing-from)
+undatum/ai/providers.py:823:8: C0103: Variable name "MAX_DATA_LENGTH" doesn't conform to snake_case naming style (invalid-name)
+undatum/ai/providers.py:881:12: W0707: Consider explicitly re-raising using 'raise AIAPIError(f'Perplexity API request failed: {str(e)}', status_code=getattr(e.response, 'status_code', None), response=getattr(e.response, 'text', None)) from e' (raise-missing-from)
+undatum/ai/providers.py:885:12: W0707: Consider explicitly re-raising using 'raise AIAPIError(f'Failed to extract description from Perplexity response: {str(e)}') from e' (raise-missing-from)
+undatum/ai/providers.py:11:0: W0611: Unused FIELD_INFO_SCHEMA imported from schemas (unused-import)
+undatum/ai/providers.py:11:0: W0611: Unused DATASET_DESCRIPTION_SCHEMA imported from schemas (unused-import)
+************* Module undatum.ai.base
+undatum/ai/base.py:18:0: C0301: Line too long (104/100) (line-too-long)
+undatum/ai/base.py:26:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/base.py:41:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/base.py:58:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/base.py:75:0: C0303: Trailing whitespace (trailing-whitespace)
+undatum/ai/base.py:8:4: W0107: Unnecessary pass statement (unnecessary-pass)
+undatum/ai/base.py:13:4: W0107: Unnecessary pass statement (unnecessary-pass)
+undatum/ai/base.py:57:8: W0107: Unnecessary pass statement (unnecessary-pass)
+undatum/ai/base.py:74:8: W0107: Unnecessary pass statement (unnecessary-pass)
+undatum/ai/base.py:1:0: R0801: Similar lines in 2 files
+==undatum.cmds.analyzer:[36:53]
+==undatum.cmds.schemer:[29:45]
     is_array = (column_type[-2:] == '[]')
     if is_array:
         text = column_type[:-2]
@@ -889,10 +710,43 @@ undatum/ai/__init__.py:1:0: R0801: Similar lines in 2 files
     return [atype, str(is_array)]
 
 
-def get_schema_key(fields): (duplicate-code)
-undatum/ai/__init__.py:1:0: R0801: Similar lines in 2 files
-==undatum.cmds.schemer:[261:271]
-==undatum.cmds.validator:[27:36]
+def get_schema_key(fields):
+    """Generate hash key for schema based on field names.""" (duplicate-code)
+undatum/ai/base.py:1:0: R0801: Similar lines in 2 files
+==undatum.cmds.query:[22:36]
+==undatum.cmds.selector:[250:263]
+        if options is None:
+            options = {}
+        f_type = get_file_type(fromfile) if options['format_in'] is None else options['format_in']
+        iterable = IterableData(fromfile, options=options)
+        to_file = get_option(options, 'output')
+
+        if to_file:
+            to_type = get_file_type(to_file)
+            if not to_file:
+                print('Output file type not supported')
+                return
+            if to_type == 'bson':
+                out = open(to_file, 'wb') (duplicate-code)
+undatum/ai/base.py:1:0: R0801: Similar lines in 2 files
+==undatum.cmds.analyzer:[117:130]
+==undatum.cmds.schemer:[113:125]
+        table.append(item)
+        if recursive and item[1] == 'STRUCT':
+            sub_path = row[0] if len(root) == 0 else item[0]
+            subtable = duckdb_decompose(filename, frame, filetype=filetype,
+                                       path=sub_path, limit=limit,
+                                       recursive=recursive, root=item[0],
+                                       ignore_errors=ignore_errors)
+            for subitem in subtable:
+                table.append(subitem)
+    return table
+
+def _seek_dict_lists(data, level=0, path=None, candidates=None):
+    """Seek list structures in dictionary recursively.""" (duplicate-code)
+undatum/ai/base.py:1:0: R0801: Similar lines in 2 files
+==undatum.cmds.schemer:[304:314]
+==undatum.cmds.validator:[29:38]
             if f_type == 'bson':
                 infile = z.open(fnames[0], 'rb')
             else:
@@ -901,10 +755,9 @@ undatum/ai/__init__.py:1:0: R0801: Similar lines in 2 files
             if f_type == 'bson':
                 infile = open(fromfile, 'rb')
             else:
-                infile = open(fromfile, 'r', encoding=get_option(options, 'encoding'))
- (duplicate-code)
-undatum/ai/__init__.py:1:0: R0801: Similar lines in 2 files
-==undatum.cmds.selector:[181:190]
+                infile = open(fromfile, 'r', encoding=get_option(options, 'encoding')) (duplicate-code)
+undatum/ai/base.py:1:0: R0801: Similar lines in 2 files
+==undatum.cmds.selector:[189:198]
 ==undatum.utils:[174:183]
         for item in iterable:
             if limit and n > limit:
@@ -915,28 +768,39 @@ undatum/ai/__init__.py:1:0: R0801: Similar lines in 2 files
                 k = ".".join(i[:-1])
                 if k not in keys:
                     keys.append(k) (duplicate-code)
-undatum/ai/__init__.py:1:0: R0801: Similar lines in 2 files
-==undatum.cmds.analyzer:[144:156]
-==undatum.cmds.schemer:[96:108]
-class FieldSchema(BaseModel):
-    """Schema definition for a data field."""
-    name: str
-    ftype: str
-    is_array:bool = False
-    description: Optional[str] = None
-    sem_type:str = None
-    sem_url:str = None
+undatum/ai/base.py:1:0: R0801: Similar lines in 2 files
+==undatum.cmds.analyzer:[105:113]
+==undatum.cmds.schemer:[105:113]
+                        f"recursive:=true) from (select unnest(\"{path_parts[1]}\", "
+                        f"recursive:=true) from (select unnest(\"{path_parts[0]}\", "
+                        f"recursive:=true) from frame limit {limit}))")
+        data = duckdb.sql(query).fetchall()
+    table = []
+    for row in data:
+        item = [row[0] if len(root) == 0 else root + '.' + row[0]]
+        item.extend(column_type_parse(row[1])) (duplicate-code)
+undatum/ai/base.py:1:0: R0801: Similar lines in 2 files
+==undatum.cmds.analyzer:[288:311]
+==undatum.cmds.schemer:[184:195]
+        table.fields.append(field)
+        if field.ftype == 'STRUCT' or field.is_array:
+            is_flat = False
+        table.is_flat = is_flat
+    table.num_records = len(objects)
+    return table
 
 
-class TableSchema(BaseModel):
-    """Table """ (duplicate-code)
-undatum/ai/__init__.py:1:0: R0801: Similar lines in 2 files
-==undatum.cmds.statistics:[11:22]
-==undatum.cmds.textproc:[7:19]
+def build_schema(filename:str, objects_limit:int=100000):
+    """Build schema from file by analyzing sample of objects."""
+    fileext = filename.rsplit('.', 1)[-1].lower() (duplicate-code)
+undatum/ai/base.py:1:0: R0801: Similar lines in 2 files
+==undatum.cmds.statistics:[11:23]
+==undatum.cmds.textproc:[7:21]
 ITERABLE_OPTIONS_KEYS = ['tagname', 'delimiter', 'encoding', 'start_line', 'page']
 
 
 def get_iterable_options(options):
+    """Extract iterable-specific options from options dictionary."""
     out = {}
     for k in ITERABLE_OPTIONS_KEYS:
         if k in options.keys():
@@ -944,13 +808,15 @@ def get_iterable_options(options):
     return out
 
 
-def get_keys(adict, prefix=None): (duplicate-code)
-undatum/ai/__init__.py:1:0: R0801: Similar lines in 2 files
-==undatum.cmds.converter:[21:32]
-==undatum.cmds.ingester:[16:26]
+def get_keys(adict, prefix=None):
+    """Extract all keys from nested dictionary.""" (duplicate-code)
+undatum/ai/base.py:1:0: R0801: Similar lines in 2 files
+==undatum.cmds.converter:[21:33]
+==undatum.cmds.ingester:[16:27]
 DEFAULT_BATCH_SIZE = 50000
 
 def get_iterable_options(options):
+    """Extract iterable-specific options from options dictionary."""
     out = {}
     for k in ITERABLE_OPTIONS_KEYS:
         if k in options.keys():
@@ -959,103 +825,113 @@ def get_iterable_options(options):
 
 
  (duplicate-code)
-undatum/ai/__init__.py:1:0: R0801: Similar lines in 2 files
-==undatum.cmds.analyzer:[95:104]
-==undatum.cmds.schemer:[88:96]
-        table.append(item)
-        if recursive and item[1] == 'STRUCT':
-            subtable = duckdb_decompose(filename, frame, filetype=filetype, path=row[0] if len(root) == 0 else item[0], limit=limit, recursive=recursive, root=item[0], ignore_errors=ignore_errors)
-            for subitem in subtable:
-                table.append(subitem)
-    return table
-
-def _seek_dict_lists(data, level=0, path=None, candidates=OrderedDict()):
-#    print(level, path, candidates) (duplicate-code)
-undatum/ai/__init__.py:1:0: R0801: Similar lines in 2 files
-==undatum.cmds.analyzer:[54:60]
-==undatum.cmds.schemer:[51:57]
+undatum/ai/base.py:1:0: R0801: Similar lines in 2 files
+==undatum.cmds.analyzer:[272:279]
+==undatum.cmds.schemer:[169:175]
+        if filetype == 'csv':
+            writer = csv.writer(wrapper)
+            writer.writerows(objects[:objects_limit])
+        elif filetype == 'jsonl':
+            for row in objects[:objects_limit]:
+                wrapper.write(json.dumps(row) + '\n') (duplicate-code)
+undatum/ai/base.py:1:0: R0801: Similar lines in 2 files
+==undatum.cmds.analyzer:[66:72]
+==undatum.cmds.schemer:[66:72]
+            data = duckdb.sql(query_str).fetchall()
+    else:
+        path_parts = path.split('.')
+        query = None
+        if len(path_parts) == 1:
+            if filename is not None: (duplicate-code)
+undatum/ai/base.py:1:0: R0801: Similar lines in 2 files
+==undatum.cmds.analyzer:[56:62]
+==undatum.cmds.schemer:[56:62]
     elif filetype in ['json', 'jsonl']:
         read_func = f"read_json('{filename}'{text_ignore})"
     else:
         read_func = f"'{filename}'"
     if path == '*':
         if filename is not None: (duplicate-code)
-undatum/ai/__init__.py:1:0: R0801: Similar lines in 2 files
-==undatum.cmds.selector:[22:35]
-==undatum.cmds.transformer:[10:20]
+undatum/ai/base.py:1:0: R0801: Similar lines in 2 files
+==undatum.cmds.selector:[22:36]
+==undatum.cmds.transformer:[10:21]
 ITERABLE_OPTIONS_KEYS = ['tagname', 'delimiter', 'encoding', 'start_line', 'page']
 
 
 def get_iterable_options(options):
+    """Extract iterable-specific options from options dictionary."""
     out = {}
     for k in ITERABLE_OPTIONS_KEYS:
         if k in options.keys():
             out[k] = options[k]
     return out
-
-
-def _detect_engine(fromfile, engine, filetype):
-    """Detect the appropriate engine for processing.""" (duplicate-code)
-undatum/ai/__init__.py:1:0: R0801: Similar lines in 2 files
-==undatum.cmds.transformer:[47:54]
-==undatum.utils:[177:183]
-        n += 1
-        dk = dict_generator(item)
-        for i in dk:
-            k = ".".join(i[:-1])
-            if k not in keys:
-                keys.append(k) (duplicate-code)
-undatum/ai/__init__.py:1:0: R0801: Similar lines in 2 files
-==undatum.cmds.ingester:[19:26]
-==undatum.cmds.transformer:[14:20]
-    out = {}
-    for k in ITERABLE_OPTIONS_KEYS:
-        if k in options.keys():
-            out[k] = options[k]
-    return out
-
  (duplicate-code)
-undatum/ai/__init__.py:1:0: R0801: Similar lines in 2 files
-==undatum.cmds.schemer:[186:193]
-==undatum.cmds.statistics:[25:36]
+undatum/ai/base.py:1:0: R0801: Similar lines in 2 files
+==undatum.cmds.query:[37:43]
+==undatum.cmds.selector:[264:270]
+                out = open(to_file, 'wb')
+            else:
+                out = open(to_file, 'w', encoding='utf8')
+        else:
+            to_type = f_type
+            out = sys.stdout (duplicate-code)
+undatum/ai/base.py:1:0: R0801: Similar lines in 2 files
+==undatum.cmds.transformer:[48:55]
+==undatum.utils:[177:183]
+            n += 1
+            dk = dict_generator(item)
+            for i in dk:
+                k = ".".join(i[:-1])
+                if k not in keys:
+                    keys.append(k)
+ (duplicate-code)
+undatum/ai/base.py:1:0: R0801: Similar lines in 2 files
+==undatum.cmds.ingester:[20:27]
+==undatum.cmds.transformer:[15:21]
+    out = {}
+    for k in ITERABLE_OPTIONS_KEYS:
+        if k in options.keys():
+            out[k] = options[k]
+    return out
+ (duplicate-code)
+undatum/ai/base.py:1:0: R0801: Similar lines in 2 files
+==undatum.cmds.schemer:[218:226]
+==undatum.cmds.statistics:[26:37]
         if nodates:
             self.qd = None
         else:
             self.qd = DateParser(generate=True)
         pass
 
-    def stats(self, fromfile, options):
-        """Produces statistics and structure analysis of JSONlines, BSON or CSV file and produces stats"""
-        from rich import print
-        from rich.table import Table
- (duplicate-code)
-undatum/ai/__init__.py:1:0: R0801: Similar lines in 2 files
-==undatum.cmds.analyzer:[157:163]
-==undatum.cmds.schemer:[109:114]
+    def extract_schema(self, fromfile, options):
+        """Extract schema from file and output as YAML.""" (duplicate-code)
+undatum/ai/base.py:1:0: R0801: Similar lines in 2 files
+==undatum.cmds.analyzer:[254:259]
+==undatum.cmds.schemer:[155:160]
+    table.num_records = len(objects)
+    if autodoc:
+       f = io.StringIO()
+       writer = csv.writer(f)
+       writer.writerows(objects[:MAX_SAMPLE_SIZE]) (duplicate-code)
+undatum/ai/base.py:1:0: R0801: Similar lines in 2 files
+==undatum.cmds.analyzer:[222:228]
+==undatum.cmds.schemer:[138:143]
     num_cols: int = -1
-    is_flat:bool = True
-    id:Optional[str] = None
-    fields:Optional[list[FieldSchema]] = []
-    description:Optional[str] = None (duplicate-code)
-undatum/ai/__init__.py:1:0: R0801: Similar lines in 2 files
-==undatum.cmds.analyzer:[86:91]
-==undatum.cmds.schemer:[83:88]
-         data = duckdb.sql(query).fetchall()
-    table = []
-    for row in data:
-        item = [row[0] if len(root) ==0 else root+ '.' + row[0], ]
-        item.extend(column_type_parse(row[1])) (duplicate-code)
-undatum/ai/__init__.py:1:0: R0801: Similar lines in 2 files
-==undatum.cmds.analyzer:[63:68]
-==undatum.cmds.schemer:[60:65]
-    else:
-         path_parts = path.split('.')
-         query = None
-         if len(path_parts) == 1:
+    is_flat: bool = True
+    id: Optional[str] = None
+    fields: Optional[list[FieldSchema]] = []
+    description: Optional[str] = None (duplicate-code)
+undatum/ai/base.py:1:0: R0801: Similar lines in 2 files
+==undatum.cmds.analyzer:[94:99]
+==undatum.cmds.schemer:[94:99]
+                        f"recursive:=true) from (select unnest(\"{path_parts[1]}\", "
+                        f"recursive:=true) from (select unnest(\"{path_parts[0]}\", "
+                        f"recursive:=true) from frame limit {limit}))")
+        elif len(path_parts) == 4:
             if filename is not None: (duplicate-code)
-undatum/ai/__init__.py:1:0: R0801: Similar lines in 2 files
-==undatum.cmds.converter:[24:32]
-==undatum.cmds.selector:[26:35]
+undatum/ai/base.py:1:0: R0801: Similar lines in 2 files
+==undatum.cmds.converter:[25:33]
+==undatum.cmds.selector:[27:36]
     out = {}
     for k in ITERABLE_OPTIONS_KEYS:
         if k in options.keys():
@@ -1065,25 +941,24 @@ undatum/ai/__init__.py:1:0: R0801: Similar lines in 2 files
 
 def _detect_engine(fromfile, engine, filetype):
     """Detect the appropriate engine for processing.""" (duplicate-code)
-undatum/ai/__init__.py:1:0: R0801: Similar lines in 2 files
-==undatum.cmds.selector:[407:413]
-==undatum.cmds.validator:[87:92]
+undatum/ai/base.py:1:0: R0801: Similar lines in 2 files
+==undatum.cmds.selector:[422:428]
+==undatum.cmds.validator:[89:94]
         elif f_type == 'bson':
             bson_iter = bson.decode_file_iter(infile)
             n = 0
             for r in bson_iter:
-                n += 1
-                #                print(r) (duplicate-code)
-undatum/ai/__init__.py:1:0: R0801: Similar lines in 2 files
-==undatum.cmds.selector:[147:152]
-==undatum.cmds.validator:[39:44]
+                n += 1 (duplicate-code)
+undatum/ai/base.py:1:0: R0801: Similar lines in 2 files
+==undatum.cmds.selector:[153:158]
+==undatum.cmds.validator:[41:46]
             if not to_file:
                 logging.debug('Output file type not supported')
                 return
             out = open(to_file, 'w', encoding='utf8')
         else: (duplicate-code)
-undatum/ai/__init__.py:1:0: R0801: Similar lines in 2 files
-==undatum.cmds.converter:[493:498]
+undatum/ai/base.py:1:0: R0801: Similar lines in 2 files
+==undatum.cmds.converter:[580:585]
 ==undatum.utils:[178:183]
                 dk = dict_generator(item)
                 for i in dk:
@@ -1091,269 +966,6 @@ undatum/ai/__init__.py:1:0: R0801: Similar lines in 2 files
                     if k not in keys:
                         keys.append(k) (duplicate-code)
 
-
-Report
-======
-2770 statements analysed.
-
-Statistics by type
-------------------
-
-+---------+-------+-----------+-----------+------------+---------+
-|type     |number |old number |difference |%documented |%badname |
-+=========+=======+===========+===========+============+=========+
-|module   |27     |27         |=          |100.00      |0.00     |
-+---------+-------+-----------+-----------+------------+---------+
-|class    |21     |21         |=          |100.00      |0.00     |
-+---------+-------+-----------+-----------+------------+---------+
-|method   |44     |44         |=          |75.00       |0.00     |
-+---------+-------+-----------+-----------+------------+---------+
-|function |102    |102        |=          |71.57       |0.00     |
-+---------+-------+-----------+-----------+------------+---------+
-
-
-
-External dependencies
----------------------
-::
-
-    duckdb (undatum.cmds.analyzer,undatum.cmds.ingester,undatum.cmds.schemer,undatum.cmds.selector)
-    openpyxl (undatum.cmds.analyzer,undatum.cmds.converter,undatum.formats.docx)
-    pandas (undatum.cmds.analyzer,undatum.cmds.converter,undatum.cmds.schemer)
-    requests (undatum.ai.perplexity)
-    rich (undatum.cmds.statistics)
-      \-table (undatum.cmds.statistics)
-    tqdm (undatum.cmds.converter,undatum.cmds.ingester,undatum.cmds.schemer)
-    typer (undatum.core)
-    undatum 
-      \-ai 
-      | \-perplexity (undatum.cmds.analyzer,undatum.cmds.schemer)
-      \-common 
-      | \-iterable (undatum.cmds.query,undatum.cmds.selector)
-      | \-scheme (undatum.cmds.schemer)
-      \-constants (undatum.cmds.analyzer,undatum.cmds.selector,undatum.cmds.statistics,undatum.common.iterable)
-      \-formats 
-      | \-docx (undatum.cmds.analyzer)
-      \-utils (undatum.cmds.analyzer,undatum.cmds.converter,undatum.cmds.query,undatum.cmds.schemer,undatum.cmds.selector,undatum.cmds.statistics,undatum.cmds.textproc,undatum.cmds.transformer,undatum.cmds.validator,undatum.common.iterable)
-      \-validate (undatum.cmds.validator)
-    yaml (undatum.cmds.analyzer,undatum.cmds.schemer)
-
-
-
-4032 lines have been analyzed
-
-Raw metrics
------------
-
-+----------+-------+------+---------+-----------+
-|type      |number |%     |previous |difference |
-+==========+=======+======+=========+===========+
-|code      |3076   |76.29 |3076     |=          |
-+----------+-------+------+---------+-----------+
-|docstring |460    |11.41 |460      |=          |
-+----------+-------+------+---------+-----------+
-|comment   |75     |1.86  |75       |=          |
-+----------+-------+------+---------+-----------+
-|empty     |421    |10.44 |421      |=          |
-+----------+-------+------+---------+-----------+
-
-
-
-Duplication
------------
-
-+-------------------------+------+---------+-----------+
-|                         |now   |previous |difference |
-+=========================+======+=========+===========+
-|nb duplicated lines      |0     |0        |0          |
-+-------------------------+------+---------+-----------+
-|percent duplicated lines |0.000 |0.000    |=          |
-+-------------------------+------+---------+-----------+
-
-
-
-Messages by category
---------------------
-
-+-----------+-------+---------+-----------+
-|type       |number |previous |difference |
-+===========+=======+=========+===========+
-|convention |361    |361      |361        |
-+-----------+-------+---------+-----------+
-|refactor   |220    |220      |220        |
-+-----------+-------+---------+-----------+
-|warning    |179    |179      |179        |
-+-----------+-------+---------+-----------+
-|error      |53     |53       |53         |
-+-----------+-------+---------+-----------+
-
-
-
-% errors / warnings by module
------------------------------
-
-+-----------------------------+------+--------+---------+-----------+
-|module                       |error |warning |refactor |convention |
-+=============================+======+========+=========+===========+
-|undatum.cmds.converter       |18.87 |31.84   |15.00    |24.93      |
-+-----------------------------+------+--------+---------+-----------+
-|undatum.cmds.analyzer        |15.09 |14.53   |13.64    |22.16      |
-+-----------------------------+------+--------+---------+-----------+
-|undatum.cmds.schemer         |9.43  |11.73   |7.73     |14.96      |
-+-----------------------------+------+--------+---------+-----------+
-|undatum.cmds.ingester        |9.43  |4.47    |3.64     |4.16       |
-+-----------------------------+------+--------+---------+-----------+
-|undatum.cmds.selector        |7.55  |13.41   |8.18     |5.54       |
-+-----------------------------+------+--------+---------+-----------+
-|undatum.formats.docx         |7.55  |2.79    |2.27     |0.28       |
-+-----------------------------+------+--------+---------+-----------+
-|undatum.cmds.validator       |5.66  |3.35    |3.18     |1.39       |
-+-----------------------------+------+--------+---------+-----------+
-|undatum.cmds.transformer     |5.66  |1.68    |0.91     |3.60       |
-+-----------------------------+------+--------+---------+-----------+
-|undatum.common.iterable      |3.77  |6.15    |7.27     |7.48       |
-+-----------------------------+------+--------+---------+-----------+
-|undatum.common.scheme        |3.77  |3.35    |5.45     |4.43       |
-+-----------------------------+------+--------+---------+-----------+
-|undatum.cmds.statistics      |3.77  |2.79    |2.73     |5.26       |
-+-----------------------------+------+--------+---------+-----------+
-|undatum.cmds.textproc        |3.77  |0.56    |0.45     |1.66       |
-+-----------------------------+------+--------+---------+-----------+
-|undatum.cmds.query           |1.89  |1.12    |1.82     |0.55       |
-+-----------------------------+------+--------+---------+-----------+
-|undatum.utils                |1.89  |0.00    |0.45     |0.00       |
-+-----------------------------+------+--------+---------+-----------+
-|undatum.validate.commonrules |1.89  |0.00    |0.00     |0.00       |
-+-----------------------------+------+--------+---------+-----------+
-|undatum.core                 |0.00  |1.12    |16.82    |0.00       |
-+-----------------------------+------+--------+---------+-----------+
-|undatum.ai.perplexity        |0.00  |1.12    |0.00     |3.60       |
-+-----------------------------+------+--------+---------+-----------+
-|undatum.ai.__init__          |0.00  |0.00    |9.55     |0.00       |
-+-----------------------------+------+--------+---------+-----------+
-|undatum.common.functions     |0.00  |0.00    |0.91     |0.00       |
-+-----------------------------+------+--------+---------+-----------+
-
-
-
-Messages
---------
-
-+--------------------------------+------------+
-|message id                      |occurrences |
-+================================+============+
-|line-too-long                   |94          |
-+--------------------------------+------------+
-|trailing-whitespace             |89          |
-+--------------------------------+------------+
-|consider-using-f-string         |71          |
-+--------------------------------+------------+
-|consider-using-with             |57          |
-+--------------------------------+------------+
-|import-error                    |48          |
-+--------------------------------+------------+
-|dangerous-default-value         |48          |
-+--------------------------------+------------+
-|logging-not-lazy                |42          |
-+--------------------------------+------------+
-|missing-function-docstring      |40          |
-+--------------------------------+------------+
-|too-many-positional-arguments   |27          |
-+--------------------------------+------------+
-|too-many-arguments              |27          |
-+--------------------------------+------------+
-|wrong-import-order              |24          |
-+--------------------------------+------------+
-|bad-indentation                 |23          |
-+--------------------------------+------------+
-|duplicate-code                  |21          |
-+--------------------------------+------------+
-|too-many-branches               |18          |
-+--------------------------------+------------+
-|too-many-locals                 |17          |
-+--------------------------------+------------+
-|too-few-public-methods          |16          |
-+--------------------------------+------------+
-|import-outside-toplevel         |12          |
-+--------------------------------+------------+
-|unused-import                   |10          |
-+--------------------------------+------------+
-|too-many-nested-blocks          |10          |
-+--------------------------------+------------+
-|multiple-statements             |10          |
-+--------------------------------+------------+
-|consider-iterating-dictionary   |10          |
-+--------------------------------+------------+
-|unused-variable                 |9           |
-+--------------------------------+------------+
-|unused-argument                 |9           |
-+--------------------------------+------------+
-|unnecessary-pass                |9           |
-+--------------------------------+------------+
-|pointless-statement             |7           |
-+--------------------------------+------------+
-|consider-merging-isinstance     |7           |
-+--------------------------------+------------+
-|use-list-literal                |6           |
-+--------------------------------+------------+
-|too-many-statements             |5           |
-+--------------------------------+------------+
-|wrong-import-position           |4           |
-+--------------------------------+------------+
-|trailing-newlines               |4           |
-+--------------------------------+------------+
-|attribute-defined-outside-init  |4           |
-+--------------------------------+------------+
-|redundant-u-string-prefix       |3           |
-+--------------------------------+------------+
-|redefined-builtin               |3           |
-+--------------------------------+------------+
-|unspecified-encoding            |2           |
-+--------------------------------+------------+
-|unnecessary-list-index-lookup   |2           |
-+--------------------------------+------------+
-|superfluous-parens              |2           |
-+--------------------------------+------------+
-|simplifiable-if-expression      |2           |
-+--------------------------------+------------+
-|raising-bad-type                |2           |
-+--------------------------------+------------+
-|missing-timeout                 |2           |
-+--------------------------------+------------+
-|logging-fstring-interpolation   |2           |
-+--------------------------------+------------+
-|inconsistent-return-statements  |2           |
-+--------------------------------+------------+
-|unreachable                     |1           |
-+--------------------------------+------------+
-|undefined-variable              |1           |
-+--------------------------------+------------+
-|too-many-return-statements      |1           |
-+--------------------------------+------------+
-|too-many-instance-attributes    |1           |
-+--------------------------------+------------+
-|protected-access                |1           |
-+--------------------------------+------------+
-|possibly-used-before-assignment |1           |
-+--------------------------------+------------+
-|notimplemented-raised           |1           |
-+--------------------------------+------------+
-|no-else-return                  |1           |
-+--------------------------------+------------+
-|missing-final-newline           |1           |
-+--------------------------------+------------+
-|fixme                           |1           |
-+--------------------------------+------------+
-|f-string-without-interpolation  |1           |
-+--------------------------------+------------+
-|expression-not-assigned         |1           |
-+--------------------------------+------------+
-|bare-except                     |1           |
-+--------------------------------+------------+
-
-
-
-
 ------------------------------------------------------------------
-Your code has been rated at 6.30/10 (previous run: 6.30/10, +0.00)
+Your code has been rated at 7.36/10 (previous run: 7.36/10, +0.00)
 

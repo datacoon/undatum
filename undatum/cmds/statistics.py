@@ -18,7 +18,7 @@ def get_iterable_options(options):
     for k in ITERABLE_OPTIONS_KEYS:
         if k in options.keys():
             out[k] = options[k]
-    return out            
+    return out
 
 
 class StatProcessor:
@@ -65,7 +65,7 @@ class StatProcessor:
                 if i[0].isdigit(): continue
                 if len(i[0]) == 1: continue
                 v = i[-1]
-                if k not in list(fielddata.keys()):
+                if k not in fielddata:  # Use direct dict membership check instead of list()
                     fielddata[k] = {'key': k, 'uniq': {}, 'n_uniq': 0, 'total': 0, 'share_uniq': 0.0,
                                     'minlen': None, 'maxlen': 0, 'avglen': 0, 'totallen': 0}
                 fd = fielddata[k]
@@ -83,7 +83,7 @@ class StatProcessor:
                 fd['maxlen'] = fl if fl > fd['maxlen'] else fd['maxlen']
                 fd['totallen'] += fl
                 fielddata[k] = fd
-                if k not in list(fieldtypes.keys()):
+                if k not in fieldtypes:  # Use direct dict membership check instead of list()
                     fieldtypes[k] = {'key': k, 'types': {}}
                 fd = fieldtypes[k]
                 thetype = guess_datatype(v, self.qd)['base']
@@ -91,45 +91,51 @@ class StatProcessor:
                 fd['types'][thetype] = uniqval + 1
                 fieldtypes[k] = fd
         #        print count
-        for k, v in list(fielddata.items()):
+        for k, v in fielddata.items():  # Use dict.items() directly, no list() conversion
             fielddata[k]['share_uniq'] = (v['n_uniq'] * 100.0) / v['total']
             fielddata[k]['avglen'] = v['totallen'] / v['total']
         profile['count'] = count
         profile['num_fields'] = nfields
+
+        # Determine field types first so we can use them when building dicts
+        finfields = {}
+        for fd in fieldtypes.values():  # Use dict.values() directly, no list() conversion
+            fdt = list(fd['types'].keys())  # Keep list() here as we need to check membership and modify
+            if 'empty' in fdt:
+                del fd['types']['empty']
+            types_keys = list(fd['types'].keys())  # Need list for len() and indexing
+            if len(types_keys) != 1:
+                ftype = 'str'
+            else:
+                ftype = types_keys[0]
+            finfields[fd['key']] = ftype
+
+        profile['fieldtypes'] = finfields
+
         dictkeys = []
         dicts = {}
         #        print(profile)
         profile['fields'] = []
-        for fd in list(fielddata.values()):
+        for fd in fielddata.values():  # Use dict.values() directly, no list() conversion
             #            print(fd['key'])  # , fd['n_uniq'], fd['share_uniq'], fieldtypes[fd['key']]
             field = {'key': fd['key'], 'is_uniq': 0 if fd['share_uniq'] < 100 else 1}
             profile['fields'].append(field)
             if fd['share_uniq'] < dictshare:
                 dictkeys.append(fd['key'])
+                # Use determined field type instead of defaulting to 'str'
+                field_type = finfields.get(fd['key'], 'str')
                 dicts[fd['key']] = {'items': fd['uniq'], 'count': fd['n_uniq'],
-                                    'type': 'str'}  # TODO: Shouldn't be "str" by default
+                                    'type': field_type}
         #            for k, v in fd['uniq'].items():
         #                print fd['key'], k, v
         profile['dictkeys'] = dictkeys
 
-        finfields = {}
-        for k, v in list(fielddata.items()):
+        for k, v in fielddata.items():  # Use dict.items() directly, no list() conversion
             del v['uniq']
             fielddata[k] = v
         profile['debug'] = {'fieldtypes': fieldtypes.copy(), 'fielddata': fielddata}
-        for fd in list(fieldtypes.values()):
-            fdt = list(fd['types'].keys())
-            if 'empty' in fdt:
-                del fd['types']['empty']
-            if len(list(fd['types'].keys())) != 1:
-                ftype = 'str'
-            else:
-                ftype = list(fd['types'].keys())[0]
-            finfields[fd['key']] = ftype
-
-        profile['fieldtypes'] = finfields
         table = []
-        for fd in list(fielddata.values()):
+        for fd in fielddata.values():  # Use dict.values() directly, no list() conversion
             field = [fd['key'], ]
             field.append(finfields[fd['key']])
             field.append(True if fd['key'] in dictkeys else False)

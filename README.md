@@ -14,6 +14,7 @@
 - **Advanced statistics**: Field analysis, frequency calculations, and date detection
 - **Flexible filtering**: Query and filter data using expressions
 - **Schema generation**: Automatic schema detection and generation
+- **AI-powered documentation**: Automatic field and dataset descriptions using multiple LLM providers (OpenAI, OpenRouter, Ollama, LM Studio, Perplexity) with structured JSON output
 
 ## Installation
 
@@ -54,10 +55,19 @@ undatum frequency --fields status data.csv
 
 ### `analyze`
 
-Analyzes data files and provides human-readable insights about structure, encoding, fields, and data types.
+Analyzes data files and provides human-readable insights about structure, encoding, fields, and data types. With `--autodoc`, automatically generates field descriptions and dataset summaries using AI.
 
 ```bash
+# Basic analysis
 undatum analyze data.jsonl
+
+# With AI-powered documentation
+undatum analyze data.jsonl --autodoc
+
+# Using specific AI provider
+undatum analyze data.jsonl --autodoc --ai-provider openai --ai-model gpt-4o-mini
+
+# Output to file
 undatum analyze data.jsonl --output report.yaml --autodoc
 ```
 
@@ -66,6 +76,71 @@ undatum analyze data.jsonl --output report.yaml --autodoc
 - Number of records and fields
 - Field types and structure
 - Table detection for nested data (JSON/XML)
+- AI-generated field descriptions (with `--autodoc`)
+- AI-generated dataset summary (with `--autodoc`)
+
+**AI Provider Options:**
+- `--ai-provider`: Choose provider (openai, openrouter, ollama, lmstudio, perplexity)
+- `--ai-model`: Specify model name (provider-specific)
+- `--ai-base-url`: Custom API endpoint URL
+
+**Supported AI Providers:**
+
+1. **OpenAI** (default if `OPENAI_API_KEY` is set)
+   ```bash
+   export OPENAI_API_KEY=sk-...
+   undatum analyze data.csv --autodoc --ai-provider openai --ai-model gpt-4o-mini
+   ```
+
+2. **OpenRouter** (supports multiple models via unified API)
+   ```bash
+   export OPENROUTER_API_KEY=sk-or-...
+   undatum analyze data.csv --autodoc --ai-provider openrouter --ai-model openai/gpt-4o-mini
+   ```
+
+3. **Ollama** (local models, no API key required)
+   ```bash
+   # Start Ollama and pull a model first: ollama pull llama3.2
+   undatum analyze data.csv --autodoc --ai-provider ollama --ai-model llama3.2
+   # Or set custom URL: export OLLAMA_BASE_URL=http://localhost:11434
+   ```
+
+4. **LM Studio** (local models, OpenAI-compatible API)
+   ```bash
+   # Start LM Studio and load a model
+   undatum analyze data.csv --autodoc --ai-provider lmstudio --ai-model local-model
+   # Or set custom URL: export LMSTUDIO_BASE_URL=http://localhost:1234/v1
+   ```
+
+5. **Perplexity** (backward compatible, uses `PERPLEXITY_API_KEY`)
+   ```bash
+   export PERPLEXITY_API_KEY=pplx-...
+   undatum analyze data.csv --autodoc --ai-provider perplexity
+   ```
+
+**Configuration Methods:**
+
+AI provider can be configured via:
+1. **Environment variables** (lowest precedence):
+   ```bash
+   export UNDATUM_AI_PROVIDER=openai
+   export OPENAI_API_KEY=sk-...
+   ```
+
+2. **Config file** (medium precedence):
+   Create `undatum.yaml` in your project root or `~/.undatum/config.yaml`:
+   ```yaml
+   ai:
+     provider: openai
+     api_key: ${OPENAI_API_KEY}  # Can reference env vars
+     model: gpt-4o-mini
+     timeout: 30
+   ```
+
+3. **CLI arguments** (highest precedence):
+   ```bash
+   undatum analyze data.csv --autodoc --ai-provider openai --ai-model gpt-4o-mini
+   ```
 
 ### `convert`
 
@@ -288,6 +363,59 @@ Binary JSON format used by MongoDB. Efficient for binary data storage.
 
 XML files can be converted to JSON Lines by specifying the tag name containing records.
 
+## AI Provider Troubleshooting
+
+### Common Issues
+
+**Provider not found:**
+```bash
+# Error: No AI provider specified
+# Solution: Set environment variable or use --ai-provider
+export UNDATUM_AI_PROVIDER=openai
+# or
+undatum analyze data.csv --autodoc --ai-provider openai
+```
+
+**API key not found:**
+```bash
+# Error: API key is required
+# Solution: Set provider-specific API key
+export OPENAI_API_KEY=sk-...
+export OPENROUTER_API_KEY=sk-or-...
+export PERPLEXITY_API_KEY=pplx-...
+```
+
+**Ollama connection failed:**
+```bash
+# Error: Connection refused
+# Solution: Ensure Ollama is running and model is pulled
+ollama serve
+ollama pull llama3.2
+# Or specify custom URL
+export OLLAMA_BASE_URL=http://localhost:11434
+```
+
+**LM Studio connection failed:**
+```bash
+# Error: Connection refused
+# Solution: Start LM Studio server and load a model
+# In LM Studio: Start Server, then:
+export LMSTUDIO_BASE_URL=http://localhost:1234/v1
+```
+
+**Structured output errors:**
+- All providers now use JSON Schema for reliable parsing
+- If a provider doesn't support structured output, it will fall back gracefully
+- Check provider documentation for model compatibility
+
+### Provider-Specific Notes
+
+- **OpenAI**: Requires API key, supports `gpt-4o-mini`, `gpt-4o`, `gpt-3.5-turbo`, etc.
+- **OpenRouter**: Unified API for multiple providers, supports models from OpenAI, Anthropic, Google, etc.
+- **Ollama**: Local models, no API key needed, but requires Ollama to be installed and running
+- **LM Studio**: Local models, OpenAI-compatible API, requires LM Studio to be running
+- **Perplexity**: Requires API key, uses `sonar` model by default
+
 ## Performance Tips
 
 1. **Use appropriate formats**: Parquet/ORC for analytics, JSONL for streaming
@@ -295,6 +423,88 @@ XML files can be converted to JSON Lines by specifying the tag name containing r
 3. **Chunking**: Split large files for parallel processing
 4. **Filtering**: Apply filters early to reduce data volume
 5. **Streaming**: undatum streams data by default for low memory usage
+6. **AI Documentation**: Use local providers (Ollama/LM Studio) for faster, free documentation generation
+7. **Batch Processing**: AI descriptions are generated per-table, consider splitting large datasets
+
+## AI-Powered Documentation
+
+The `analyze` command can automatically generate field descriptions and dataset summaries using AI when `--autodoc` is enabled. This feature supports multiple LLM providers and uses structured JSON output for reliable parsing.
+
+### Quick Examples
+
+```bash
+# Basic AI documentation (auto-detects provider from environment)
+undatum analyze data.csv --autodoc
+
+# Use OpenAI with specific model
+undatum analyze data.csv --autodoc --ai-provider openai --ai-model gpt-4o-mini
+
+# Use local Ollama model
+undatum analyze data.csv --autodoc --ai-provider ollama --ai-model llama3.2
+
+# Use OpenRouter to access various models
+undatum analyze data.csv --autodoc --ai-provider openrouter --ai-model anthropic/claude-3-haiku
+
+# Output to YAML with AI descriptions
+undatum analyze data.csv --autodoc --output schema.yaml --outtype yaml
+```
+
+### Configuration File Example
+
+Create `undatum.yaml` in your project:
+
+```yaml
+ai:
+  provider: openai
+  model: gpt-4o-mini
+  timeout: 30
+```
+
+Or use `~/.undatum/config.yaml` for global settings:
+
+```yaml
+ai:
+  provider: ollama
+  model: llama3.2
+  ollama_base_url: http://localhost:11434
+```
+
+### Language Support
+
+Generate descriptions in different languages:
+
+```bash
+# English (default)
+undatum analyze data.csv --autodoc --lang English
+
+# Russian
+undatum analyze data.csv --autodoc --lang Russian
+
+# Spanish
+undatum analyze data.csv --autodoc --lang Spanish
+```
+
+### What Gets Generated
+
+With `--autodoc` enabled, the analyzer will:
+
+1. **Field Descriptions**: Generate clear, concise descriptions for each field explaining what it represents
+2. **Dataset Summary**: Provide an overall description of the dataset based on sample data
+
+Example output:
+
+```yaml
+tables:
+  - id: data.csv
+    fields:
+      - name: customer_id
+        ftype: VARCHAR
+        description: "Unique identifier for each customer"
+      - name: purchase_date
+        ftype: DATE
+        description: "Date when the purchase was made"
+    description: "Customer purchase records containing transaction details"
+```
 
 ## Examples
 
@@ -330,8 +540,24 @@ undatum frequency --fields email data.jsonl | grep -v "1$"
 undatum validate --rule common.email --fields email data.jsonl
 undatum validate --rule common.url --fields website data.jsonl
 
-# Generate schema for documentation
-undatum schema data.jsonl --output schema.yaml
+# Generate schema with AI documentation
+undatum schema data.jsonl --output schema.yaml --autodoc
+```
+
+### AI Documentation Workflow
+
+```bash
+# 1. Analyze dataset with AI-generated descriptions
+undatum analyze sales_data.csv --autodoc --ai-provider openai --output analysis.yaml
+
+# 2. Review generated field descriptions
+cat analysis.yaml
+
+# 3. Use descriptions in schema generation
+undatum schema sales_data.csv --autodoc --output documented_schema.yaml
+
+# 4. Bulk schema extraction with AI documentation
+undatum schema_bulk ./data_dir --autodoc --output ./schemas --mode distinct
 ```
 
 ## Contributing

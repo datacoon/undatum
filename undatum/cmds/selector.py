@@ -185,7 +185,7 @@ class Selector:
         iterableargs = get_iterable_options(options)
 
         iterable = open_iterable(fromfile, mode='r', iterableargs=iterableargs)
-        keys = []
+        keys_set = set()  # Use set for O(1) lookup instead of O(n) list operations
         n = 0
         for item in iterable:
             if limit and n > limit:
@@ -194,9 +194,9 @@ class Selector:
             dk = dict_generator(item)
             for i in dk:
                 k = ".".join(i[:-1])
-                if k not in keys:
-                    keys.append(k)
+                keys_set.add(k)
         iterable.close()
+        keys = list(keys_set)  # Convert to list for backward compatibility
         output = get_option(options, 'output')
         if output:
             with open(output, 'w', encoding=get_option(options, 'encoding')) as f:

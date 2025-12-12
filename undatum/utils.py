@@ -1,21 +1,43 @@
 # -*- coding: utf8 -*-
-"""Utility functions for file operations and data processing."""
+"""Utility functions for file operations and data processing.
+
+This module provides helper functions for encoding detection, delimiter detection,
+file type identification, dictionary manipulation, and data type guessing.
+"""
 from collections import OrderedDict
+from typing import Any, Dict, List, Optional, Union
+
 import chardet
-from .constants import SUPPORTED_FILE_TYPES
-from .constants import DEFAULT_OPTIONS
+
+from .constants import DEFAULT_OPTIONS, SUPPORTED_FILE_TYPES
 
 
-def detect_encoding(filename, limit=1000000):
-    """Detect encoding of a file."""
+def detect_encoding(filename: str, limit: int = 1000000) -> Dict[str, Any]:
+    """Detect encoding of a file.
+
+    Args:
+        filename: Path to the file to analyze.
+        limit: Maximum number of bytes to read for detection (default: 1000000).
+
+    Returns:
+        Dictionary with encoding detection results from chardet.
+    """
     with open(filename, 'rb') as f:
         chunk = f.read(limit)
     detected = chardet.detect(chunk)
     return detected
 
 
-def detect_delimiter(filename, encoding='utf8'):
-    """Detect delimiter used in a CSV-like file."""
+def detect_delimiter(filename: str, encoding: str = 'utf8') -> str:
+    """Detect delimiter used in a CSV-like file.
+
+    Args:
+        filename: Path to the CSV file to analyze.
+        encoding: File encoding (default: 'utf8').
+
+    Returns:
+        Most likely delimiter character (',', ';', '\\t', or '|').
+    """
     with open(filename, 'r', encoding=encoding) as f:
         line = f.readline()
     dict1 = {',': line.count(','), ';': line.count(';'),
@@ -24,24 +46,47 @@ def detect_delimiter(filename, encoding='utf8'):
     return delimiter
 
 
-def get_file_type(filename):
-    """Get file type based on extension."""
+def get_file_type(filename: str) -> Optional[str]:
+    """Get file type based on extension.
+
+    Args:
+        filename: Path to the file.
+
+    Returns:
+        File extension if supported, None otherwise.
+    """
     ext = filename.rsplit('.', 1)[-1].lower()
     if ext in SUPPORTED_FILE_TYPES:
         return ext
     return None
 
 
-def get_option(options, name):
-    """Returns value of the option."""
+def get_option(options: Dict[str, Any], name: str) -> Any:
+    """Get option value from options dict or default options.
+
+    Args:
+        options: Dictionary of user-provided options.
+        name: Option name to retrieve.
+
+    Returns:
+        Option value if found, None otherwise.
+    """
     if name in options:
         return options[name]
     if name in DEFAULT_OPTIONS:
         return DEFAULT_OPTIONS[name]
     return None
 
-def get_dict_value(d, keys):
-    """Get dictionary value by nested keys."""
+def get_dict_value(d: Union[Dict[str, Any], List[Dict[str, Any]], None], keys: List[str]) -> List[Any]:
+    """Get dictionary value by nested keys.
+
+    Args:
+        d: Dictionary or list of dictionaries to search.
+        keys: List of nested keys to traverse.
+
+    Returns:
+        List of values found at the specified key path.
+    """
     out = []
     if d is None:
         return out
@@ -64,13 +109,24 @@ def get_dict_value(d, keys):
     return out
 
 
-def strip_dict_fields(record, fields, startkey=0):
-    """Strip dictionary fields based on field list."""
-    keys = list(record.keys())
-    localf = []
+def strip_dict_fields(record: Dict[str, Any], fields: List[List[str]], startkey: int = 0) -> Dict[str, Any]:
+    """Strip dictionary fields based on field list.
+
+    Args:
+        record: Dictionary to process.
+        fields: List of field paths (nested keys as lists).
+        startkey: Starting index for field path (default: 0).
+
+    Returns:
+        Modified dictionary with only specified fields retained.
+    """
+    # Create set for O(1) lookup instead of O(n) list lookup
+    localf = set()
     for field in fields:
         if len(field) > startkey:
-            localf.append(field[startkey])
+            localf.add(field[startkey])
+    # Iterate over copy of keys to avoid modification during iteration
+    keys = list(record.keys())
     for k in keys:
         if k not in localf:
             del record[k]
@@ -81,16 +137,22 @@ def strip_dict_fields(record, fields, startkey=0):
     return record
 
 
-def dict_generator(indict, pre=None):
-    """Processes python dictionary and return list of key values.
+def dict_generator(indict: Union[Dict[str, Any], Any], pre: Optional[List[str]] = None):
+    """Process dictionary and yield flattened key-value pairs.
 
-    :param indict: Input dictionary
-    :param pre: Prefix keys
-    :return: Generator of key-value pairs
+    Recursively traverses nested dictionaries and lists, yielding
+    key paths with their values. Skips '_id' keys.
+
+    Args:
+        indict: Input dictionary to process.
+        pre: Prefix keys list for nested structures (default: None).
+
+    Yields:
+        Lists containing key path and value: [key1, key2, ..., value]
     """
     pre = pre[:] if pre else []
     if isinstance(indict, dict):
-        for key, value in list(indict.items()):
+        for key, value in indict.items():  # Use dict.items() directly, no list() conversion
             if key == "_id":
                 continue
             if isinstance(value, dict):
@@ -105,8 +167,15 @@ def dict_generator(indict, pre=None):
         yield indict
 
 
-def guess_int_size(i):
-    """Guess integer size type."""
+def guess_int_size(i: int) -> str:
+    """Guess appropriate integer size type based on value.
+
+    Args:
+        i: Integer value to analyze.
+
+    Returns:
+        String indicating size type: 'uint8', 'uint16', or 'uint32'.
+    """
     if i < 255:
         return 'uint8'
     if i < 65535:
@@ -114,12 +183,19 @@ def guess_int_size(i):
     return 'uint32'
 
 
-def guess_datatype(s, qd):
-    """Guesses type of data by string provided.
+def guess_datatype(s: Union[str, int, float, None], qd: Any) -> Dict[str, Any]:
+    """Guess data type of a string value.
 
-    :param s: String to analyze
-    :param qd: Query date matcher
-    :return: Dictionary with datatype information
+    Analyzes a string to determine if it represents an integer, float,
+    date, empty value, or remains a string.
+
+    Args:
+        s: Value to analyze (can be string, int, float, or None).
+        qd: Query date matcher object for date detection.
+
+    Returns:
+        Dictionary with 'base' key indicating detected type and optional
+        'subtype' or 'pat' keys for additional information.
     """
     attrs = {'base': 'str'}
     if s is None:
@@ -154,8 +230,18 @@ def guess_datatype(s, qd):
     return attrs
 
 
-def buf_count_newlines_gen(fname):
-    """Count newlines in a file using buffered reading."""
+def buf_count_newlines_gen(fname: str) -> int:
+    """Count newlines in a file using buffered reading.
+
+    Efficiently counts newline characters in large files by reading
+    in chunks rather than loading entire file into memory.
+
+    Args:
+        fname: Path to the file to analyze.
+
+    Returns:
+        Integer count of newline characters in the file.
+    """
     def _make_gen(reader):
         while True:
             b = reader(2 ** 16)
@@ -168,10 +254,21 @@ def buf_count_newlines_gen(fname):
     return count
 
 
-def get_dict_keys(iterable, limit=1000):
-    """Get all dictionary keys from an iterable of dictionaries."""
+def get_dict_keys(iterable: Any, limit: int = 1000) -> List[str]:
+    """Get all unique dictionary keys from an iterable of dictionaries.
+
+    Extracts all nested keys from dictionaries, flattening them with dot notation.
+    Uses set for O(1) lookup performance instead of O(n) list operations.
+
+    Args:
+        iterable: Iterable of dictionaries to process.
+        limit: Maximum number of items to process (default: 1000).
+
+    Returns:
+        List of unique flattened key paths (e.g., ['field1', 'field2.subfield']).
+    """
     n = 0
-    keys = []
+    keys_set = set()  # Use set for O(1) lookup instead of O(n) list operations
     for item in iterable:
         if limit and n > limit:
             break
@@ -179,13 +276,19 @@ def get_dict_keys(iterable, limit=1000):
         dk = dict_generator(item)
         for i in dk:
             k = ".".join(i[:-1])
-            if k not in keys:
-                keys.append(k)
-    return keys
+            keys_set.add(k)
+    return list(keys_set)  # Convert to list for backward compatibility
 
 
-def _is_flat(item):
-    """Measures if object is flat."""
+def _is_flat(item: Dict[str, Any]) -> bool:
+    """Check if dictionary contains only flat (non-nested) values.
+
+    Args:
+        item: Dictionary to check.
+
+    Returns:
+        True if dictionary contains no nested structures, False otherwise.
+    """
     for v in item.values():
         if isinstance(v, (tuple, list)):
             return False

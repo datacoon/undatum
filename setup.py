@@ -3,27 +3,28 @@
 
 import sys
 import codecs
+import re
+import os
 
 from setuptools import setup, find_packages
-from setuptools.command.test import test as TestCommand
-
-import undatum
 
 
-class PyTest(TestCommand):
-    # `$ python setup.py test' simply installs minimal requirements
-    # and runs the tests with no fancy stuff like parallel execution.
-    def finalize_options(self):
-        TestCommand.finalize_options(self)
-        self.test_args = [
-            '--doctest-modules', '--verbose',
-            './undatum', './tests'
-        ]
-        self.test_suite = True
-
-    def run_tests(self):
-        import pytest
-        sys.exit(pytest.main(self.test_args))
+def read_version():
+    """Read version from __init__.py without importing the module."""
+    init_path = os.path.join(os.path.dirname(__file__), 'undatum', '__init__.py')
+    with open(init_path, 'r', encoding='utf-8') as f:
+        content = f.read()
+        version_match = re.search(r"__version__\s*=\s*['\"]([^'\"]+)['\"]", content)
+        author_match = re.search(r"__author__\s*=\s*['\"]([^'\"]+)['\"]", content)
+        licence_match = re.search(r"__licence__\s*=\s*['\"]([^'\"]+)['\"]", content)
+        doc_match = re.search(r'"""(.*?)"""', content, re.DOTALL)
+        
+        version = version_match.group(1) if version_match else '1.0.15'
+        author = author_match.group(1) if author_match else 'Ivan Begtin'
+        licence = licence_match.group(1) if licence_match else 'MIT'
+        doc = doc_match.group(1).strip() if doc_match else 'undatum: a command-line tool for data processing'
+        
+        return version, author, licence, doc
 
 
 tests_require = [
@@ -75,23 +76,26 @@ extras_require = {
 
 
 def long_description():
-    with codecs.open('README.rst', encoding='utf8') as f:
+    with codecs.open('README.md', encoding='utf8') as f:
         return f.read()
 
 
+# Read version and metadata
+__version__, __author__, __licence__, __doc__ = read_version()
+
 setup(
     name='undatum',
-    version=undatum.__version__,
-    description=undatum.__doc__.strip(),
+    version=__version__,
+    description=__doc__,
     long_description=long_description(),
-    long_description_content_type='text/x-rst',
+    long_description_content_type='text/markdown',
     url='https://github.com/datacoon/undatum/',
     download_url='https://github.com/datacoon/undatum/',
     packages=find_packages(exclude=('tests', 'tests.*')),
     include_package_data=True,
-    author=undatum.__author__,
+    author=__author__,
     author_email='ivan@begtin.tech',
-    license=undatum.__licence__,
+    license=__licence__,
     entry_points={
         'console_scripts': [
             'undatum = undatum.__main__:main',
@@ -102,7 +106,6 @@ setup(
     install_requires=install_requires,
     tests_require=tests_require,
     python_requires='>=3.8',
-    cmdclass={'test': PyTest},
     zip_safe=False,
     keywords='json jsonl csv bson cli dataset',
     classifiers=[

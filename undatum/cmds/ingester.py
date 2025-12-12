@@ -22,7 +22,7 @@ def get_iterable_options(options):
     for k in ITERABLE_OPTIONS_KEYS:
         if k in options.keys():
             out[k] = options[k]
-    return out            
+    return out
 
 
 class BasicIngester:
@@ -74,7 +74,7 @@ class Ingester:
         for filename in fromfiles:
             self.ingest_single(filename, uri, db, table, options=options)
 
-  
+
     def ingest_single(self, fromfile, uri, db, table, options={}):
         """Loads single file data contents to the schemaless database like MongoDB"""
         dbtype = options['dbtype']
@@ -99,18 +99,18 @@ class Ingester:
             id_key = options['doc_id']
             processor = ElasticIngester(uri=uri, api_key=api_key, search_index=table, document_id=id_key)
         iterableargs = get_iterable_options(options)
-        it_in = open_iterable(fromfile, mode='r', iterableargs=iterableargs)       
+        it_in = open_iterable(fromfile, mode='r', iterableargs=iterableargs)
         logging.info(f'Ingesting data: filename {fromfile}, uri: {uri}, db {db}, table {table}')
         n = 0
         batch = []
         for row in tqdm(it_in, total=totals):
-            n += 1 
+            n += 1
             if skip is not None and skip > 0:
                 if n < skip: continue
             batch.append(row)
             if n % self.batch_size == 0:
                 processor.ingest(batch)
                 batch = []
-        if len(batch) > 0: 
+        if len(batch) > 0:
             processor.ingest(batch)
 

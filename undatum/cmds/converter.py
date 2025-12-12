@@ -1,9 +1,7 @@
 # -*- coding: utf8 -*-
 """File format conversion module."""
 import csv
-import json
 import logging
-# from xmlr import xmliter
 import xml.etree.ElementTree as etree
 from collections import defaultdict
 
@@ -72,9 +70,9 @@ def etree_to_dict(t, prefix_strip=True):
     if children:
         dd = defaultdict(list)
         for dc in map(etree_to_dict, children):
-            #            print(dir(dc))
             for k, v in dc.items():
                 if prefix_strip:
+                    # Remove XML namespace prefix (e.g., '{http://...}tagname' -> 'tagname')
                     k = k.rsplit('}', 1)[-1]
                 dd[k].append(v)
         d = {tag: {k: v[0] if len(v) == 1 else v for k, v in dd.items()}}
@@ -218,7 +216,11 @@ def xlsx_to_jsonl(fromname, toname, options=None, default_options=None):
     from openpyxl import load_workbook as load_xlsx
     options = __copy_options(options, default_options)
     source = load_xlsx(fromname)
-    sheet = source.active  # FIXME! Use start_page instead
+    # Use start_page to select the correct worksheet
+    start_page = options.get('start_page', 0)
+    if start_page >= len(source.worksheets):
+        raise ValueError(f"start_page {start_page} exceeds available worksheets ({len(source.worksheets)})")
+    sheet = source.worksheets[start_page]
     with open(toname, 'wb') as output:
         n = 0
         fields = (options['fields'].split(',')
@@ -238,7 +240,7 @@ def xlsx_to_jsonl(fromname, toname, options=None, default_options=None):
             output.write(line)
             output.write(LINEEND)
             if n % 10000 == 0:
-                logging.debug('xlsx2jsonl: processed %d records', n)
+                logging.debug('xlsx2bson: processed %d records', n)
     source.close()
 
 def xlsx_to_bson(fromname, toname, options=None, default_options=None):
@@ -562,18 +564,33 @@ class Converter:
         pass
 
     def convert(self, fromfile, tofile, options=None, limit=DEFAULT_HEADERS_DETECT_LIMIT):
-        """Convert file from one format to another."""
+        """Convert file from one format to another.
+
+        Processes files in two phases:
+        1. Schema extraction: Samples records to determine field structure
+        2. Conversion: Streams records from source to destination format
+
+        Uses sets for efficient key tracking during schema extraction.
+
+        Args:
+            fromfile: Path to input file.
+            tofile: Path to output file.
+            options: Dictionary of conversion options (encoding, delimiter, etc.).
+            limit: Maximum records to sample for schema detection.
+
+        Raises:
+            ValueError: If file format is not supported.
+            IOError: If file cannot be read or written.
+        """
         if options is None:
             options = {}
         iterableargs = get_iterable_options(options)
-#        print(iterableargs)
         it_in = open_iterable(fromfile, mode='r', iterableargs=iterableargs)
         is_flatten = get_option(options, 'flatten')
-        keys = []
+        keys_set = set()  # Use set for O(1) lookup instead of O(n) list operations
         n = 0
         logging.info('Extracting schema')
         for item in tqdm(it_in, total=limit):
-#            print(item)
             if limit is not None and n > limit:
                 break
             n += 1
@@ -581,14 +598,13 @@ class Converter:
                 dk = dict_generator(item)
                 for i in dk:
                     k = ".".join(i[:-1])
-                    if k not in keys:
-                        keys.append(k)
+                    keys_set.add(k)
             else:
                 item = make_flat(item)
                 for k in item.keys():
-                    if k not in keys:
-                        keys.append(k)
+                    keys_set.add(k)
 
+        keys = list(keys_set)  # Convert to list for backward compatibility
         it_in.reset()
         it_out = open_iterable(tofile, mode='w', iterableargs={'keys' : keys})
 

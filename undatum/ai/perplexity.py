@@ -42,7 +42,7 @@ def get_fields_info(fields, language='English'):
     f.write(a_text)
     f.seek(0)
     table = {}
-    dr = csv.reader(f, delimiter=',')    
+    dr = csv.reader(f, delimiter=',')
     n = 0
     for r in dr:
         n += 1
@@ -61,7 +61,7 @@ def get_description(data, language='English'):
             {"role": "system", "content": "Be precise and concise, provide data output only CSV or JSON, accrording to request"},
             {"role": "user", "content": (
                 f"""
-I have the following CSV data: 
+I have the following CSV data:
 {data}
 Please provide short description in about this data in {language}. Consider this data as sample of the bigger dataset.Don't generate any code and data examples""")},
         ],

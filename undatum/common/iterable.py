@@ -206,7 +206,7 @@ class DataWriter:
                     self.writer.write(item)
 #                    handle.write(orjson.dumps(item, option=orjson.OPT_APPEND_NEWLINE).decode('utf8'))
             else:
-                if self.output_type == 'iterable':                    
+                if self.output_type == 'iterable':
                     for item in outdata:
                         self.writer.write(item)
                 elif self.output_type == 'duckdb':

@@ -21,18 +21,18 @@ from qddate import DateParser
 
 from ..common.scheme import generate_scheme_from_file
 from ..utils import get_file_type, get_option
-from ..ai.perplexity import get_fields_info, get_description
+from ..ai import get_fields_info, get_description
 
 
 
 def column_type_parse(column_type):
     """Parse column type string to extract array flag and base type."""
-    is_array = (column_type[-2:] == '[]') 
+    is_array = (column_type[-2:] == '[]')
     if is_array:
         text = column_type[:-2]
     else:
         text = column_type
-    if text[:6] == 'STRUCT':        
+    if text[:6] == 'STRUCT':
         atype = text[:6]
     elif text[:4] == 'JSON':
         atype = 'VARCHAR'
@@ -120,7 +120,7 @@ def duckdb_decompose(filename: str = None, frame: pd.DataFrame = None,
                                        ignore_errors=ignore_errors)
             for subitem in subtable:
                 table.append(subitem)
-    return table    
+    return table
 
 
 class FieldSchema(BaseModel):
@@ -146,7 +146,7 @@ class TableSchema(BaseModel):
 
 MAX_SAMPLE_SIZE = 200
 DELIMITED_FILES = ['csv', 'tsv']
-DUCKABLE_FILE_TYPES = ['csv', 'jsonl', 'json', 'parquet']  
+DUCKABLE_FILE_TYPES = ['csv', 'jsonl', 'json', 'parquet']
 DUCKABLE_CODECS  = ['zst', 'gzip', 'raw']
 
 
@@ -168,10 +168,10 @@ def table_from_objects(objects:list, id:str, objects_limit:int, use_pandas:bool=
         tfile_real = ZstdFile(tfile.name, mode='w', level_or_option=9)
         wrapper = io.TextIOWrapper(tfile_real, encoding='utf8', write_through=True)
         if filetype == 'csv':
-            writer = csv.writer(wrapper) 
+            writer = csv.writer(wrapper)
             writer.writerows(objects[:objects_limit])
         elif filetype == 'jsonl':
-            for row in objects[:objects_limit]:            
+            for row in objects[:objects_limit]:
                 wrapper.write(json.dumps(row) + '\n')
         tfile_real.close()
         # Getting structure
@@ -180,13 +180,13 @@ def table_from_objects(objects:list, id:str, objects_limit:int, use_pandas:bool=
     is_flat = True
     table.num_cols = len(columns_raw)
 
-    for column in columns_raw:                          
+    for column in columns_raw:
         field = FieldSchema(name=column[0], ftype=column[1], is_array=column[2])
         table.fields.append(field)
         if field.ftype == 'STRUCT' or field.is_array:
-            is_flat = False                    
-        table.is_flat = is_flat                            
-    table.num_records = len(objects)    
+            is_flat = False
+        table.is_flat = is_flat
+    table.num_records = len(objects)
     return table
 
 
@@ -195,18 +195,18 @@ def build_schema(filename:str, objects_limit:int=100000):
     fileext = filename.rsplit('.', 1)[-1].lower()
     filetype = fileext
     # Getting total count
-    table = TableSchema(id=os.path.basename(filename))               
+    table = TableSchema(id=os.path.basename(filename))
     # Getting structure
     columns_raw = duckdb_decompose(filename, filetype=filetype, path='*', limit=objects_limit)
     is_flat = True
     table.num_cols = len(columns_raw)
     fieldsnames = []
-    for column in columns_raw:                          
+    for column in columns_raw:
         field = FieldSchema(name=column[0], ftype=column[1], is_array=column[2])
         fieldsnames.append(column[0])
         table.fields.append(field)
         if field.ftype == 'STRUCT' or field.is_array:
-            is_flat = False                    
+            is_flat = False
         table.is_flat = is_flat
     table.key = get_schema_key(fieldsnames)
     return table
@@ -258,7 +258,7 @@ class Schemer:
                                                       language=options['lang'])
                         for column in table.fields:
                             if column.name in descriptions.keys():
-                                column.description = descriptions[column.name]                
+                                column.description = descriptions[column.name]
                 else:
                     tables[table.key].files.append(fbase)
             elif mode == 'perfile':

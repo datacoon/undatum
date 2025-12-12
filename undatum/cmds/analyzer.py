@@ -1,8 +1,11 @@
 # -*- coding: utf8 -*-
 """Data analysis and insights module.
 
-FIXME: A lot of unoptimized code here, it could be better, shorter and some
-functions could be improved
+This module provides data analysis capabilities including schema detection,
+field type inference, and AI-powered documentation generation.
+
+Note: Some functions have been optimized for performance (e.g., using sets
+for key tracking), but further optimizations may be possible for very large datasets.
 """
 import csv
 import io
@@ -23,7 +26,7 @@ from openpyxl import load_workbook
 from pydantic import BaseModel
 from pyzstd import ZstdFile
 
-from ..ai.perplexity import get_fields_info, get_description
+from ..ai import get_fields_info, get_description, get_ai_service, AIService
 from ..formats.docx import analyze_docx
 from ..utils import get_dict_value
 
@@ -47,10 +50,42 @@ def column_type_parse(column_type):
         atype = text
     return [atype, str(is_array)]
 
-def duckdb_decompose(filename:str=None, frame:pd.DataFrame=None,
-                     filetype:str=None, path:str="*", limit:int=10000000,
-                     recursive:bool=True, root:str="", ignore_errors:bool=True):
-    """Decomposes file or data frame structure."""
+def duckdb_decompose(filename: str = None, frame: pd.DataFrame = None,
+                     filetype: str = None, path: str = "*", limit: int = 10000000,
+                     recursive: bool = True, root: str = "", ignore_errors: bool = True):
+    """Decompose file or DataFrame structure using DuckDB.
+
+    This function uses DuckDB's summarize and unnest functions to extract
+    schema information from nested data structures. It handles up to 4 levels
+    of nesting by constructing recursive SQL queries.
+
+    The function builds SQL queries dynamically based on the nesting depth:
+    - Level 1: Direct field access
+    - Level 2-4: Nested unnest operations
+    - Recursive: Processes STRUCT types by calling itself recursively
+
+    Args:
+        filename: Path to input file. If None, frame must be provided.
+        frame: Pandas DataFrame. Used when filename is None.
+        filetype: File type ('csv', 'tsv', 'json', 'jsonl'). Determines read function.
+        path: Path expression for nested fields (default: '*' for all fields).
+        limit: Maximum records to process (default: 10000000).
+        recursive: Whether to recursively process STRUCT types (default: True).
+        root: Root path prefix for nested queries (used internally for recursion).
+        ignore_errors: Whether to ignore parsing errors in DuckDB (default: True).
+
+    Returns:
+        List of lists containing field information:
+        [field_path, base_type, is_array, unique_count, total_count, uniqueness_percentage]
+
+    Raises:
+        ValueError: If both filename and frame are None.
+        duckdb.Error: If DuckDB query fails.
+
+    Example:
+        >>> result = duckdb_decompose('data.jsonl', filetype='json')
+        >>> print(result[0])  # ['field1', 'VARCHAR', 'False', '100', '1000', '10.00']
+    """
     text_ignore = ', ignore_errors=true' if ignore_errors else ''
     if filetype in ['csv', 'tsv']:
         read_func = f"read_csv('{filename}'{text_ignore})"
@@ -174,7 +209,7 @@ def _seek_xml_lists(data, level=0, path=None, candidates=None):
 
 
 def _process_json_data(data, report, fullkey, objects_limit, use_pandas,
-                      autodoc, lang):
+                      autodoc, lang, ai_service: Optional[AIService] = None):
     """Process JSON data and add tables to report."""
     candidates = _seek_dict_lists(data, level=0)
     if len(candidates) == 1:
@@ -185,7 +220,8 @@ def _process_json_data(data, report, fullkey, objects_limit, use_pandas,
                                   objects_limit=objects_limit,
                                   use_pandas=use_pandas,
                                   filetype='jsonl',
-                                  autodoc=autodoc, lang=lang)
+                                  autodoc=autodoc, lang=lang,
+                                  ai_service=ai_service)
         report.tables.append(table)
         report.total_tables = len(report.tables)
         report.total_records = table.num_records
@@ -198,7 +234,8 @@ def _process_json_data(data, report, fullkey, objects_limit, use_pandas,
                                       objects_limit=objects_limit,
                                       use_pandas=use_pandas,
                                       filetype='jsonl',
-                                      autodoc=autodoc, lang=lang)
+                                      autodoc=autodoc, lang=lang,
+                                      ai_service=ai_service)
             total += table.num_records
             report.tables.append(table)
         report.total_records = total
@@ -246,7 +283,8 @@ DUCKABLE_CODECS = ['zst', 'gzip', 'raw']
 
 def table_from_objects(objects: list, table_id: str, objects_limit: int,
                       use_pandas: bool = False, filetype='csv',
-                      autodoc: bool = False, lang: str = 'English'):
+                      autodoc: bool = False, lang: str = 'English',
+                      ai_service: Optional[AIService] = None):
     """Reconstructs table schema from list of objects."""
     table = TableSchema(id=table_id)
     table.num_records = len(objects)
@@ -254,7 +292,7 @@ def table_from_objects(objects: list, table_id: str, objects_limit: int,
         f = io.StringIO()
         writer = csv.writer(f)
         writer.writerows(objects[:MAX_SAMPLE_SIZE])
-        table.description = get_description(f.getvalue(), language=lang)
+        table.description = get_description(f.getvalue(), language=lang, ai_service=ai_service)
     if use_pandas:
         df = pd.DataFrame(objects)
         columns_raw = duckdb_decompose(frame=df, path='*',
@@ -297,8 +335,14 @@ def analyze(filename: str, filetype: str = None, compression: str = 'raw',
            objects_limit: int = OBJECTS_ANALYZE_LIMIT, encoding: str = None,
            scan: bool = True, stats: bool = True, engine: str = "auto",  # noqa: ARG001
            use_pandas: bool = False, ignore_errors: bool = True,
-           autodoc: bool = False, lang: str = 'English'):
-    """Analyzes any type of data file and provides meaningful insights."""
+           autodoc: bool = False, lang: str = 'English',
+           ai_provider: Optional[str] = None, ai_config: Optional[dict] = None):
+    """Analyzes any type of data file and provides meaningful insights.
+
+    Args:
+        ai_provider: AI provider name (openai, openrouter, ollama, lmstudio, perplexity)
+        ai_config: Optional AI configuration dictionary
+    """
     fileext = filename.rsplit('.', 1)[-1].lower()
     filesize = os.path.getsize(filename)
     if filetype is None:
@@ -313,6 +357,21 @@ def analyze(filename: str, filetype: str = None, compression: str = 'raw',
 
     report = ReportSchema(filename=filename, file_size=filesize,
                          file_type=filetype, compression=compression)
+
+    # Initialize AI service if autodoc is enabled
+    ai_service = None
+    if autodoc:
+        try:
+            config = ai_config or {}
+            if ai_provider:
+                config['provider'] = ai_provider
+            ai_service = get_ai_service(provider=ai_provider, config=config)
+        except Exception as e:
+            # If AI service fails to initialize, disable autodoc
+            import warnings
+            warnings.warn(f"Failed to initialize AI service: {e}. Disabling autodoc.")
+            autodoc = False
+
     if filetype in TEXT_DATA_TYPES:
         if encoding is None:
             encoding = detect_encoding_any(filename)
@@ -360,7 +419,7 @@ def analyze(filename: str, filetype: str = None, compression: str = 'raw',
             writer = csv.writer(f)
             writer.writerows(sample[:MAX_SAMPLE_SIZE])
             if autodoc:
-                table.description = get_description(f.getvalue(), language=lang)
+                table.description = get_description(f.getvalue(), language=lang, ai_service=ai_service)
         else:
             if engine == 'duckdb':
                 report.success = False
@@ -377,7 +436,8 @@ def analyze(filename: str, filetype: str = None, compression: str = 'raw',
                                                    objects_limit=objects_limit,
                                                    use_pandas=use_pandas,
                                                    filetype='csv',
-                                                   autodoc=autodoc, lang=lang)
+                                                   autodoc=autodoc, lang=lang,
+                                                   ai_service=ai_service)
                         total += table.num_records
                         report.tables.append(table)
                     report.total_records = total
@@ -400,7 +460,8 @@ def analyze(filename: str, filetype: str = None, compression: str = 'raw',
                                                    objects_limit=objects_limit,
                                                    use_pandas=use_pandas,
                                                    filetype='csv',
-                                                   autodoc=autodoc, lang=lang)
+                                                   autodoc=autodoc, lang=lang,
+                                                   ai_service=ai_service)
                         total += table.num_records
                         report.tables.append(table)
                     report.total_records = total
@@ -424,7 +485,8 @@ def analyze(filename: str, filetype: str = None, compression: str = 'raw',
                                                   objects_limit=objects_limit,
                                                   use_pandas=use_pandas,
                                                   filetype='csv',
-                                                  autodoc=autodoc, lang=lang)
+                                                  autodoc=autodoc, lang=lang,
+                                                  ai_service=ai_service)
                         report.tables.append(table)
                         total += table.num_records
                     report.total_records = total
@@ -450,7 +512,8 @@ def analyze(filename: str, filetype: str = None, compression: str = 'raw',
                                                   objects_limit=objects_limit,
                                                   use_pandas=use_pandas,
                                                   filetype='jsonl',
-                                                  autodoc=autodoc, lang=lang)
+                                                  autodoc=autodoc, lang=lang,
+                                                  ai_service=ai_service)
                         report.tables.append(table)
                         report.total_tables = len(report.tables)
                         report.total_records = table.num_records
@@ -486,7 +549,7 @@ def analyze(filename: str, filetype: str = None, compression: str = 'raw',
                         data = json.load(fileobj)
                     _process_json_data(data, report, fullkey,
                                      objects_limit, use_pandas,
-                                     autodoc, lang)
+                                     autodoc, lang, ai_service)
                     if codec is not None:
                         codec.close()
                     elif fileobj is not None:
@@ -497,7 +560,7 @@ def analyze(filename: str, filetype: str = None, compression: str = 'raw',
             fields = []
             for column in table.fields:
                 fields.append(column.name)
-            descriptions = get_fields_info(fields, language=lang)
+            descriptions = get_fields_info(fields, language=lang, ai_service=ai_service)
             for column in table.fields:
                 if column.name in descriptions:
                     column.description = descriptions[column.name]
@@ -505,6 +568,22 @@ def analyze(filename: str, filetype: str = None, compression: str = 'raw',
 
 
 
+
+
+def _format_file_size(size_bytes):
+    """Format file size in human-readable format."""
+    for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
+        if size_bytes < 1024.0:
+            return f"{size_bytes:.2f} {unit}"
+        size_bytes /= 1024.0
+    return f"{size_bytes:.2f} PB"
+
+
+def _format_number(num):
+    """Format number with commas for readability."""
+    if num is None or num == -1:
+        return "N/A"
+    return f"{num:,}"
 
 
 class Analyzer:
@@ -522,14 +601,16 @@ class Analyzer:
         report = analyze(filename, encoding=encoding,
                         engine=options['engine'],
                         use_pandas=options['use_pandas'],
-                        autodoc=options['autodoc'], lang=options['lang']) 
+                        autodoc=options['autodoc'], lang=options['lang'],
+                        ai_provider=options.get('ai_provider'),
+                        ai_config=options.get('ai_config'))
         if options['outtype'] == 'json':
             if options['output'] is not None:
                 with open(options['output'], 'w', encoding='utf8') as f:
                     f.write(json.dumps(report.model_dump()))
             else:
                 print(json.dumps(report.model_dump(), indent=4, ensure_ascii=False))
-        if options['outtype'] == 'yaml': 
+        if options['outtype'] == 'yaml':
             if options['output'] is not None:
                 with open(options['output'], 'w', encoding='utf8') as f:
                     f.write(yaml.dump(report.model_dump(), Dumper=yaml.Dumper))
@@ -539,30 +620,68 @@ class Analyzer:
         elif options['outtype'] == 'markdown':
             raise NotImplementedError("Markdown output not implemented")
         else:
-            print('Analysis report')
+            # Print header
+            print("=" * 70)
+            print("ANALYSIS REPORT")
+            print("=" * 70)
+            print()
+            
+            # File information section
+            print("File Information")
+            print("-" * 70)
             headers = ['Attribute', 'Value']
             reptable = []
             reptable.append(['Filename', str(report.filename)])
-            reptable.append(['File size', str(report.file_size)])
-            reptable.append(['File type', report.file_type])
-            reptable.append(['Compression', str(report.compression)])
-            reptable.append(['Total tables', str(report.total_tables)])
-            reptable.append(['Total records', str(report.total_records)])
+            reptable.append(['File size', _format_file_size(report.file_size)])
+            reptable.append(['File type', report.file_type or 'N/A'])
+            reptable.append(['Compression', str(report.compression) if report.compression else 'None'])
+            reptable.append(['Total tables', _format_number(report.total_tables)])
+            reptable.append(['Total records', _format_number(report.total_records)])
             for k, v in report.metadata.items():
-                reptable.append([k, v])
-            print(tabulate(reptable, headers=headers))
+                reptable.append([k.replace('_', ' ').title(), str(v)])
+            print(tabulate(reptable, headers=headers, tablefmt='grid'))
+            print()
 
-            tabheaders = ['Name', 'Type', 'Is Array', 'Description']
-            for rtable in report.tables:
+            # Tables section
+            if report.tables:
+                print("=" * 70)
+                print("TABLE STRUCTURES")
+                print("=" * 70)
                 print()
-                table = []
-                msg = (f"Table {rtable.id} (items {rtable.num_records}, "
-                      f"columns {rtable.num_cols}) structure")
-                print(msg)
-                for field in rtable.fields:
-                    table.append([field.name, field.ftype, str(field.is_array),
-                                 field.description])
-                print(tabulate(table, headers=tabheaders))
-                print("Summary:")
-                print(rtable.description)                
                 
+                tabheaders = ['Field Name', 'Type', 'Is Array', 'Description']
+                for idx, rtable in enumerate(report.tables, 1):
+                    if len(report.tables) > 1:
+                        print(f"Table {idx}: {rtable.id}")
+                    else:
+                        print(f"Table: {rtable.id}")
+                    print("-" * 70)
+                    print(f"  Records: {_format_number(rtable.num_records)}")
+                    print(f"  Columns: {_format_number(rtable.num_cols)}")
+                    print(f"  Structure: {'Flat' if rtable.is_flat else 'Nested'}")
+                    print()
+                    
+                    table = []
+                    for field in rtable.fields:
+                        desc = field.description if field.description else '-'
+                        table.append([
+                            field.name,
+                            field.ftype,
+                            'Yes' if field.is_array else 'No',
+                            desc
+                        ])
+                    print(tabulate(table, headers=tabheaders, tablefmt='grid'))
+                    
+                    if rtable.description:
+                        print()
+                        print("Summary:")
+                        print("-" * 70)
+                        # Wrap description text for better readability
+                        desc_lines = rtable.description.split('\n')
+                        for line in desc_lines:
+                            if line.strip():
+                                print(f"  {line.strip()}")
+                    
+                    if idx < len(report.tables):
+                        print()
+                        print()
