@@ -25,9 +25,20 @@ pip install --upgrade pip setuptools
 pip install undatum
 ```
 
+Dependencies are declared in `pyproject.toml` and will be installed automatically by modern versions of `pip` (23+). If you see missing-module errors after installation, upgrade `pip` and retry.
+
 ### Requirements
 
 - Python 3.8 or greater
+
+### Install from source
+
+```bash
+python -m pip install --upgrade pip setuptools wheel
+python -m pip install .
+# or build distributables
+python setup.py sdist bdist_wheel
+```
 
 ## Quick Start
 
