@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.18] - 2025-12-15
+
 ### Fixed
 - Declared runtime dependencies in `pyproject.toml` and aligned `setup.py` so `pip install undatum` installs all required packages in clean environments
 
@@ -130,7 +132,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - First public release on PyPI and updated github code
 
-[Unreleased]: https://github.com/datacoon/undatum/compare/v1.0.17...HEAD
+[Unreleased]: https://github.com/datacoon/undatum/compare/v1.0.18...HEAD
+[1.0.18]: https://github.com/datacoon/undatum/compare/v1.0.17...v1.0.18
 [1.0.17]: https://github.com/datacoon/undatum/compare/v1.0.16...v1.0.17
 [1.0.16]: https://github.com/datacoon/undatum/compare/v1.0.15...v1.0.16
 [1.0.15]: https://github.com/datacoon/undatum/compare/v1.0.14...v1.0.15
