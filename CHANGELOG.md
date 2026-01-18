@@ -7,6 +7,79 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-01-18
+
+### Added
+- **Phase 1 Data Commands**: Added 7 new fundamental data processing commands:
+  - `count` - Count rows in data files with DuckDB optimization for supported formats
+  - `table` - Pretty-print data as aligned table for inspection using Rich library
+  - `head` - Extract first N rows from files
+  - `tail` - Extract last N rows using efficient buffering
+  - `enum` - Add row numbers, UUIDs, or constant values to records
+  - `reverse` - Reverse the order of rows in files
+  - `fixlengths` - Normalize field counts by padding or truncating rows
+- **Phase 2 Data Commands**: Added 9 new data cleaning and transformation commands:
+  - `sort` - Sort rows by one or more columns with ascending/descending and numeric options
+  - `sample` - Random sampling using reservoir sampling algorithm (fixed count or percentage)
+  - `search` - Regex-based search and filtering across fields
+  - `dedup` - Remove duplicate rows with key-field and keep-first/last options
+  - `fill` - Fill empty/null values with constants or forward/backward fill strategies
+  - `rename` - Rename fields by exact mapping or regex patterns
+  - `explode` - Split columns by separator into multiple rows
+  - `replace` - String replacement in fields with simple and regex support
+  - `cat` - Concatenate files by rows (vertical) or columns (horizontal)
+- **Phase 3 Data Commands**: Added 7 new advanced data processing commands:
+  - `join` - Relational joins between files (inner, left, right, full outer) with hash-based and DuckDB SQL implementations
+  - `diff` - Compare two files and show differences (added, removed, changed rows) with key-based comparison
+  - `exclude` - Remove rows from input file where keys match exclusion file using hash lookup
+  - `transpose` - Swap rows and columns with proper header handling
+  - `sniff` - Detect file properties (delimiter, encoding, types, record count) with text/JSON/YAML output
+  - `slice` - Extract specific rows by range or index list with DuckDB optimization
+  - `fmt` - Reformat CSV data with delimiter, quote style, escape character, and line ending options
+- **Schema Command Improvements**: Enhanced schema command with:
+  - Full output format support (text/json/yaml) - previously ignored options now work
+  - Working AI documentation with provider selection
+  - Record counting included in schema output
+  - Improved file format detection (XLSX, XLS, XML, DOCX)
+  - Compression detection and reporting
+  - Engine selection (auto/duckdb/iterable) for performance
+  - Comprehensive error handling
+  - Glob pattern support in bulk mode
+  - Shared utilities (`schema_utils.py`) eliminating code duplication with analyzer
+- **Schema Format Exports**: Added support for industry-standard schema formats:
+  - `jsonschema` - JSON Schema (W3C/IETF standard) for API validation and OpenAPI specs
+  - `avro` - Apache Avro schema format for Kafka message schemas and Hadoop pipelines
+  - `parquet` - Parquet schema format for data lake schemas and Parquet file metadata
+  - `cerberus` - Cerberus validation schema format (for backward compatibility with deprecated `scheme` command)
+- **Stats Command DuckDB Optimization**: Added DuckDB engine support for statistics generation:
+  - 10-100x faster statistics for CSV, JSONL, JSON, and Parquet files
+  - Leverages DuckDB's `SUMMARIZE` and SQL aggregations for columnar processing
+  - Automatic engine selection with fallback to iterable engine for unsupported formats
+- **Database Ingestion Improvements**: Enhanced `ingest` command with:
+  - MySQL support with auto-create table, upsert, and batch operations
+  - SQLite support (file and in-memory) with PRAGMA optimizations, auto-create table, and upsert
+  - Improved PostgreSQL, DuckDB, MongoDB, and Elasticsearch support
+
+### Changed
+- **Migrated to external iterabledata library**: All commands now use `open_iterable()` from the external `iterabledata` library instead of local `IterableData` class
+- **Improved resource management**: All iterable operations now use try/finally blocks for proper resource cleanup
+- **Batch write operations**: Commands now use `write_bulk()` for improved performance on large datasets
+- **Iterator reset support**: Commands that need multiple passes over data now use `reset()` method when available
+- **Schema command consolidation**: `scheme` command now redirects to `schema --format cerberus` with deprecation warning, unified schema interface with format selection
+- **Stats command performance**: DuckDB engine provides dramatic performance improvements for supported formats
+
+### Deprecated
+- **Local IterableData class**: The `undatum.common.iterable.IterableData` class is deprecated and will be removed in a future version. Use `open_iterable()` from `iterable.helpers.detect` instead.
+- **Local DataWriter class**: The `undatum.common.iterable.DataWriter` class is deprecated and will be removed in a future version. Use `open_iterable()` with `mode='w'` instead.
+- **`scheme` command**: The `scheme` command is deprecated. Use `undatum schema --format cerberus` instead. The `scheme` command will show a deprecation warning but continues to work for backward compatibility.
+
+### Fixed
+- Fixed resource leaks in `statistics`, `textproc`, and `ingester` commands by properly closing iterable objects
+- Fixed bug in `textproc.flatten()` where `fromfile` was used instead of `filename` parameter
+- Fixed schema command output format options being ignored
+- Fixed schema command AI documentation not working
+- Fixed schema command missing record counting
+
 ## [1.0.18] - 2025-12-15
 
 ### Fixed
@@ -132,7 +205,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - First public release on PyPI and updated github code
 
-[Unreleased]: https://github.com/datacoon/undatum/compare/v1.0.18...HEAD
+[Unreleased]: https://github.com/datacoon/undatum/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/datacoon/undatum/compare/v1.0.18...v1.1.0
 [1.0.18]: https://github.com/datacoon/undatum/compare/v1.0.17...v1.0.18
 [1.0.17]: https://github.com/datacoon/undatum/compare/v1.0.16...v1.0.17
 [1.0.16]: https://github.com/datacoon/undatum/compare/v1.0.15...v1.0.16
