@@ -1,68 +1,73 @@
-# -*- coding: utf8 -*-
 """Data query module using mistql."""
-# import json
 import logging
-import sys
 
+from iterable.helpers.detect import open_iterable
 
-# from xmlr import xmliter
 from ..utils import get_file_type, get_option, strip_dict_fields
-from ..common.iterable import IterableData
-LINEEND = '\n'.encode('utf8')
 
-DEFAULT_CHUNK_SIZE = 50
+LINEEND = b'\n'
+
+ITERABLE_OPTIONS_KEYS = ['tagname', 'delimiter', 'encoding', 'start_line', 'page']
+
+
+def get_iterable_options(options):
+    """Extract iterable-specific options from options dictionary."""
+    out = {}
+    for k in ITERABLE_OPTIONS_KEYS:
+        if k in options.keys():
+            out[k] = options[k]
+    return out
+
 
 class DataQuery:
     """Data query handler using mistql."""
     def __init__(self):
         pass
 
-
     def query(self, fromfile, options=None):
         """Use mistql to query data."""
         if options is None:
             options = {}
         from mistql import query
-        f_type = get_file_type(fromfile) if options['format_in'] is None else options['format_in']
-        iterable = IterableData(fromfile, options=options)
+        iterableargs = get_iterable_options(options)
         to_file = get_option(options, 'output')
 
         if to_file:
-            to_type = get_file_type(to_file)
+            get_file_type(to_file)
             if not to_file:
-                print('Output file type not supported')
+                logging.error('Output file type not supported')
                 return
-            if to_type == 'bson':
-                out = open(to_file, 'wb')
-            elif to_type == 'jsonl':
-                out = open(to_file, 'wb')
-            else:
-                out = open(to_file, 'w', encoding='utf8')
+            out_iterable = open_iterable(to_file, mode='w', iterableargs={})
         else:
-            to_type = f_type
-            out = sys.stdout
-        fields = options['fields'].split(',') if options['fields'] else None
-#        writer = DataWriter(out, filetype=to_type, fieldnames=fields)
-        if iterable:
+            out_iterable = None
+
+        fields_value = get_option(options, 'fields')
+        fields = fields_value.split(',') if fields_value else None
+        fields_list = [field.split('.') for field in fields] if fields else None
+
+        iterable = open_iterable(fromfile, mode='r', iterableargs=iterableargs)
+        try:
             n = 0
-            fields = [field.split('.') for field in fields] if fields else None
-            for r in iterable.iter():
+            for r in iterable:
                 n += 1
-                if fields:
-                    r_selected = strip_dict_fields(r, fields, 0)
+                if fields_list:
+                    r_selected = strip_dict_fields(r, fields_list, 0)
                 else:
                     r_selected = r
-                if options['query'] is not None:
+                if options.get('query') is not None:
                     res = query(options['query'], r_selected)
-                    #                    print(options['filter'], r)
                     if not res:
                         continue
                 else:
                     res = r_selected
-                print(res)
-        else:
-            logging.info('File type not supported')
-            return
+
+                if out_iterable:
+                    out_iterable.write(res)
+                else:
+                    print(res)
+        finally:
+            iterable.close()
+
         logging.debug('query: %d records processed', n)
-        if to_file:
-            out.close()
+        if out_iterable:
+            out_iterable.close()

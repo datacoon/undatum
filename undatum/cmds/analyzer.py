@@ -1,4 +1,3 @@
-# -*- coding: utf8 -*-
 """Data analysis and insights module.
 
 This module provides data analysis capabilities including schema detection,
@@ -21,13 +20,14 @@ import pandas as pd
 import xlrd
 import xmltodict
 import yaml
-from iterable.helpers.detect import (detect_encoding_any, detect_file_type,
-                                     TEXT_DATA_TYPES)
+from iterable.helpers.detect import TEXT_DATA_TYPES, detect_encoding_any, detect_file_type
 from openpyxl import load_workbook
 from pydantic import BaseModel
 from pyzstd import ZstdFile
 
-from ..ai import get_fields_info, get_description, get_ai_service, AIService
+from ..ai import AIService, get_ai_service, get_description, get_fields_info
+from ..common.schema_utils import duckdb_decompose
+from ..constants import DUCKABLE_CODECS, DUCKABLE_FILE_TYPES
 from ..formats.docx import analyze_docx
 from ..utils import get_dict_value
 
@@ -35,132 +35,6 @@ OBJECTS_ANALYZE_LIMIT = 10000
 
 
 DUCKDB_TYPES = ['VARCHAR', 'DATE', 'JSON', 'BIGINT', 'DOUBLE', 'BOOLEAN']
-
-def column_type_parse(column_type):
-    """Parse column type string to extract array flag and base type."""
-    is_array = (column_type[-2:] == '[]')
-    if is_array:
-        text = column_type[:-2]
-    else:
-        text = column_type
-    if text[:6] == 'STRUCT':
-        atype = text[:6]
-    elif text[:4] == 'JSON':
-        atype = 'VARCHAR'
-    else:
-        atype = text
-    return [atype, str(is_array)]
-
-def duckdb_decompose(filename: str = None, frame: pd.DataFrame = None,
-                     filetype: str = None, path: str = "*", limit: int = 10000000,
-                     recursive: bool = True, root: str = "", ignore_errors: bool = True):
-    """Decompose file or DataFrame structure using DuckDB.
-
-    This function uses DuckDB's summarize and unnest functions to extract
-    schema information from nested data structures. It handles up to 4 levels
-    of nesting by constructing recursive SQL queries.
-
-    The function builds SQL queries dynamically based on the nesting depth:
-    - Level 1: Direct field access
-    - Level 2-4: Nested unnest operations
-    - Recursive: Processes STRUCT types by calling itself recursively
-
-    Args:
-        filename: Path to input file. If None, frame must be provided.
-        frame: Pandas DataFrame. Used when filename is None.
-        filetype: File type ('csv', 'tsv', 'json', 'jsonl'). Determines read function.
-        path: Path expression for nested fields (default: '*' for all fields).
-        limit: Maximum records to process (default: 10000000).
-        recursive: Whether to recursively process STRUCT types (default: True).
-        root: Root path prefix for nested queries (used internally for recursion).
-        ignore_errors: Whether to ignore parsing errors in DuckDB (default: True).
-
-    Returns:
-        List of lists containing field information:
-        [field_path, base_type, is_array, unique_count, total_count, uniqueness_percentage]
-
-    Raises:
-        ValueError: If both filename and frame are None.
-        duckdb.Error: If DuckDB query fails.
-
-    Example:
-        >>> result = duckdb_decompose('data.jsonl', filetype='json')
-        >>> print(result[0])  # ['field1', 'VARCHAR', 'False', '100', '1000', '10.00']
-    """
-    text_ignore = ', ignore_errors=true' if ignore_errors else ''
-    if filetype in ['csv', 'tsv']:
-        read_func = f"read_csv('{filename}'{text_ignore})"
-    elif filetype in ['json', 'jsonl']:
-        read_func = f"read_json('{filename}'{text_ignore})"
-    else:
-        read_func = f"'{filename}'"
-    if path == '*':
-        if filename is not None:
-            query_str = f"summarize select {path} from {read_func} limit {limit}"
-            data = duckdb.sql(query_str).fetchall()
-        else:
-            query_str = f"summarize select {path} from frame limit {limit}"
-            data = duckdb.sql(query_str).fetchall()
-    else:
-        path_parts = path.split('.')
-        query = None
-        if len(path_parts) == 1:
-            if filename is not None:
-                query = (f"summarize select unnest(\"{path}\", recursive:=true) "
-                        f"from {read_func} limit {limit}")
-            else:
-                query = (f"summarize select unnest(\"{path}\", recursive:=true) "
-                        f"from frame limit {limit}")
-        elif len(path_parts) == 2:
-            if filename is not None:
-                query = (f"summarize select unnest(\"{path_parts[1]}\", "
-                        f"recursive:=true) from (select unnest(\"{path_parts[0]}\", "
-                        f"recursive:=true) from {read_func} limit {limit})")
-            else:
-                query = (f"summarize select unnest(\"{path_parts[1]}\", "
-                        f"recursive:=true) from (select unnest(\"{path_parts[0]}\", "
-                        f"recursive:=true) from frame limit {limit})")
-        elif len(path_parts) == 3:
-            if filename is not None:
-                query = (f"summarize select unnest(\"{path_parts[2]}\", "
-                        f"recursive:=true) from (select unnest(\"{path_parts[1]}\", "
-                        f"recursive:=true) from (select unnest(\"{path_parts[0]}\", "
-                        f"recursive:=true) from {read_func} limit {limit}))")
-            else:
-                query = (f"summarize select unnest(\"{path_parts[2]}\", "
-                        f"recursive:=true) from (select unnest(\"{path_parts[1]}\", "
-                        f"recursive:=true) from (select unnest(\"{path_parts[0]}\", "
-                        f"recursive:=true) from frame limit {limit}))")
-        elif len(path_parts) == 4:
-            if filename is not None:
-                query = (f"summarize select unnest(\"{path_parts[2]}.{path_parts[3]}\", "
-                        f"recursive:=true) from (select unnest(\"{path_parts[1]}\", "
-                        f"recursive:=true) from (select unnest(\"{path_parts[0]}\", "
-                        f"recursive:=true) from {read_func} limit {limit}))")
-            else:
-                query = (f"summarize select unnest(\"{path_parts[2]}.{path_parts[3]}\", "
-                        f"recursive:=true) from (select unnest(\"{path_parts[1]}\", "
-                        f"recursive:=true) from (select unnest(\"{path_parts[0]}\", "
-                        f"recursive:=true) from frame limit {limit}))")
-        data = duckdb.sql(query).fetchall()
-    table = []
-    for row in data:
-        item = [row[0] if len(root) == 0 else root + '.' + row[0]]
-        item.extend(column_type_parse(row[1]))
-        item.append(str(row[4]))
-        item.append(str(row[10]))
-        uniq_share = row[4] * 100.0 / row[10] if row[10] > 0 else 0
-        item.append(f'{uniq_share:0.2f}')
-        table.append(item)
-        if recursive and item[1] == 'STRUCT':
-            sub_path = row[0] if len(root) == 0 else item[0]
-            subtable = duckdb_decompose(filename, frame, filetype=filetype,
-                                       path=sub_path, limit=limit,
-                                       recursive=recursive, root=item[0],
-                                       ignore_errors=ignore_errors)
-            for subitem in subtable:
-                table.append(subitem)
-    return table
 
 def _seek_dict_lists(data, level=0, path=None, candidates=None):
     """Seek list structures in dictionary recursively."""
@@ -251,6 +125,8 @@ class FieldSchema(BaseModel):
     description: Optional[str] = None
     sem_type:str = None
     sem_url:str = None
+    semantic_types: Optional[list[dict]] = None
+    pii: Optional[bool] = None
 
 
 class TableSchema(BaseModel):
@@ -278,8 +154,6 @@ class ReportSchema(BaseModel):
 
 MAX_SAMPLE_SIZE = 200
 DELIMITED_FILES = ['csv', 'tsv']
-DUCKABLE_FILE_TYPES = ['csv', 'jsonl', 'json', 'parquet']
-DUCKABLE_CODECS = ['zst', 'gzip', 'raw']
 
 
 def table_from_objects(objects: list, table_id: str, objects_limit: int,
@@ -297,7 +171,8 @@ def table_from_objects(objects: list, table_id: str, objects_limit: int,
     if use_pandas:
         df = pd.DataFrame(objects)
         columns_raw = duckdb_decompose(frame=df, path='*',
-                                      limit=objects_limit)
+                                      limit=objects_limit,
+                                      use_summarize=True)
     else:
         suffix = '.' + filetype
         tfile = tempfile.NamedTemporaryFile(suffix=suffix, mode='w',
@@ -314,7 +189,8 @@ def table_from_objects(objects: list, table_id: str, objects_limit: int,
                     wrapper.write(json.dumps(row) + '\n')
         # Getting structure
         columns_raw = duckdb_decompose(tfile.name, filetype=filetype,
-                                       path='*', limit=objects_limit)
+                                       path='*', limit=objects_limit,
+                                       use_summarize=True)
         os.remove(tfile.name)
     is_flat = True
     table.num_cols = len(columns_raw)
@@ -370,7 +246,7 @@ def analyze(filename: str, filetype: str = None, compression: str = 'raw',
         except Exception as e:
             # If AI service fails to initialize, disable autodoc
             import warnings
-            warnings.warn(f"Failed to initialize AI service: {e}. Disabling autodoc.")
+            warnings.warn(f"Failed to initialize AI service: {e}. Disabling autodoc.", stacklevel=2)
             autodoc = False
 
     if filetype in TEXT_DATA_TYPES:
@@ -404,7 +280,8 @@ def analyze(filename: str, filetype: str = None, compression: str = 'raw',
 
             # Getting structure
             columns_raw = duckdb_decompose(filename, filetype=filetype,
-                                          path='*', limit=objects_limit)
+                                          path='*', limit=objects_limit,
+                                          use_summarize=True)
             is_flat = True
             table.num_cols = len(columns_raw)
             for column in columns_raw:
@@ -451,7 +328,7 @@ def analyze(filename: str, filetype: str = None, compression: str = 'raw',
                         objects = []
                         max_num = (objects_limit if objects_limit < sheet.max_row
                                   else sheet.max_row)
-                        for n in range(0, max_num):
+                        for _n in range(0, max_num):
                             row = next(sheet.iter_rows())
                             tmp = []
                             for cell in row:
@@ -590,7 +467,7 @@ def _format_number(num):
 def _write_analysis_output(report, options, output_stream):
     """Write analysis report to output stream in the specified format."""
     from tabulate import tabulate
-    
+
     if options['outtype'] == 'json':
         json_output = json.dumps(report.model_dump(), indent=4, ensure_ascii=False)
         output_stream.write(json_output)
@@ -607,7 +484,7 @@ def _write_analysis_output(report, options, output_stream):
         print("ANALYSIS REPORT", file=output_stream)
         print("=" * 70, file=output_stream)
         print(file=output_stream)
-        
+
         # File information section
         print("File Information", file=output_stream)
         print("-" * 70, file=output_stream)
@@ -630,7 +507,7 @@ def _write_analysis_output(report, options, output_stream):
             print("TABLE STRUCTURES", file=output_stream)
             print("=" * 70, file=output_stream)
             print(file=output_stream)
-            
+
             tabheaders = ['Field Name', 'Type', 'Is Array', 'Description']
             for idx, rtable in enumerate(report.tables, 1):
                 if len(report.tables) > 1:
@@ -642,7 +519,7 @@ def _write_analysis_output(report, options, output_stream):
                 print(f"  Columns: {_format_number(rtable.num_cols)}", file=output_stream)
                 print(f"  Structure: {'Flat' if rtable.is_flat else 'Nested'}", file=output_stream)
                 print(file=output_stream)
-                
+
                 table = []
                 for field in rtable.fields:
                     desc = field.description if field.description else '-'
@@ -653,7 +530,7 @@ def _write_analysis_output(report, options, output_stream):
                         desc
                     ])
                 print(tabulate(table, headers=tabheaders, tablefmt='grid'), file=output_stream)
-                
+
                 if rtable.description:
                     print(file=output_stream)
                     print("Summary:", file=output_stream)
@@ -663,7 +540,7 @@ def _write_analysis_output(report, options, output_stream):
                     for line in desc_lines:
                         if line.strip():
                             print(f"  {line.strip()}", file=output_stream)
-                
+
                 if idx < len(report.tables):
                     print(file=output_stream)
                     print(file=output_stream)
@@ -684,10 +561,10 @@ class Analyzer:
                         autodoc=options['autodoc'], lang=options['lang'],
                         ai_provider=options.get('ai_provider'),
                         ai_config=options.get('ai_config'))
-        
+
         # Determine output destination
         output_file = options.get('output')
-        
+
         if output_file:
             # Use context manager for file output
             with open(output_file, 'w', encoding='utf8') as output_stream:

@@ -1,4 +1,3 @@
-# -*- coding: utf8 -*-
 """Data validation module."""
 import csv
 import logging
@@ -6,10 +5,10 @@ import sys
 import zipfile
 
 import bson
-import dictquery as dq
 import orjson
 
-from ..utils import get_file_type, get_option, get_dict_value
+from ..common.filter import match_filter
+from ..utils import get_dict_value, get_file_type, get_option
 from ..validate import VALIDATION_RULEMAP
 
 
@@ -23,8 +22,10 @@ class Validator:
         if options is None:
             options = {}
         logging.debug('Processing %s', fromfile)
-        f_type = get_file_type(fromfile) if options['format_in'] is None else options['format_in']
-        if options['zipfile']:
+        format_in = get_option(options, 'format_in')
+        f_type = get_file_type(fromfile) if format_in is None else format_in
+        zipfile_enabled = options.get('zipfile', False)
+        if zipfile_enabled:
             z = zipfile.ZipFile(fromfile, mode='r')
             fnames = z.namelist()
             if f_type == 'bson':
@@ -35,7 +36,7 @@ class Validator:
             if f_type == 'bson':
                 infile = open(fromfile, 'rb')
             else:
-                infile = open(fromfile, 'r', encoding=get_option(options, 'encoding'))
+                infile = open(fromfile, encoding=get_option(options, 'encoding'))
         to_file = get_option(options, 'output')
         if to_file:
             get_file_type(to_file)
@@ -45,9 +46,15 @@ class Validator:
             out = open(to_file, 'w', encoding='utf8')
         else:
             out = sys.stdout
-        fields = options['fields'].split(',')
-        val_func = VALIDATION_RULEMAP[options['rule']]
-        logging.info('uniq: looking for fields: %s', options['fields'])
+        fields_value = get_option(options, 'fields')
+        if not fields_value:
+            raise ValueError("validate requires 'fields' option (comma-separated list of fields)")
+        fields = fields_value.split(',')
+        rule = get_option(options, 'rule')
+        if not rule:
+            raise ValueError("validate requires 'rule' option")
+        val_func = VALIDATION_RULEMAP[rule]
+        logging.info('uniq: looking for fields: %s', fields_value)
         validated = []
         stats = {'total': 0, 'invalid': 0, 'novalue' : 0}
         if f_type == 'csv':
@@ -58,8 +65,9 @@ class Validator:
                 n += 1
                 if n % 1000 == 0:
                     logging.info('uniq: processing %d records of %s', n, fromfile)
-                if options['filter'] is not None:
-                    if not dq.match(r, options['filter']):
+                filter_expr = options.get('filter')
+                if filter_expr is not None:
+                    if not match_filter(r, filter_expr):
                         continue
                 res = val_func(r[fields[0]])
                 stats['total'] += 1
@@ -74,8 +82,9 @@ class Validator:
                 if n % 10000 == 0:
                     logging.info('uniq: processing %d records of %s', n, fromfile)
                 r = orjson.loads(l)
-                if options['filter'] is not None:
-                    if not dq.match(r, options['filter']):
+                filter_expr = options.get('filter')
+                if filter_expr is not None:
+                    if not match_filter(r, filter_expr):
                         continue
                 stats['total'] += 1
                 values = get_dict_value(r, fields[0].split('.'))
@@ -94,8 +103,9 @@ class Validator:
                 n += 1
                 if n % 1000 == 0:
                     logging.info('uniq: processing %d records of %s', n, fromfile)
-                if options['filter'] is not None:
-                    if not dq.match(r, options['filter']):
+                filter_expr = options.get('filter')
+                if filter_expr is not None:
+                    if not match_filter(r, filter_expr):
                         continue
                 stats['total'] += 1
                 values = get_dict_value(r, fields[0].split('.'))
@@ -108,17 +118,17 @@ class Validator:
                     stats['novalue'] += 1
         else:
             logging.error('Invalid filed format provided')
-            if not options['zipfile']:
+            if not zipfile_enabled:
                 infile.close()
             return
-        if not options['zipfile']:
+        if not zipfile_enabled:
             infile.close()
         stats['share'] = 100.0 * stats['invalid'] / stats['total']
         novalue_share = 100.0 * stats['novalue'] / stats['total']
         logging.debug('validate: complete, %d records (%.2f%%) not valid and %d '
                      '(%.2f%%) not found of %d against %s',
                      stats['invalid'], stats['share'], stats['novalue'],
-                     novalue_share, stats['total'], options['rule'])
+                     novalue_share, stats['total'], rule)
         if options['mode'] != 'stats':
             fieldnames = [fields[0], fields[0] + '_valid']
             writer = csv.DictWriter(out, fieldnames=fieldnames,

@@ -1,18 +1,17 @@
-# -*- coding: utf8 -*-
 """Utility functions for file operations and data processing.
 
 This module provides helper functions for encoding detection, delimiter detection,
 file type identification, dictionary manipulation, and data type guessing.
 """
 from collections import OrderedDict
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Optional, Union
 
 import chardet
 
 from .constants import DEFAULT_OPTIONS, SUPPORTED_FILE_TYPES
 
 
-def detect_encoding(filename: str, limit: int = 1000000) -> Dict[str, Any]:
+def detect_encoding(filename: str, limit: int = 1000000) -> dict[str, Any]:
     """Detect encoding of a file.
 
     Args:
@@ -38,7 +37,7 @@ def detect_delimiter(filename: str, encoding: str = 'utf8') -> str:
     Returns:
         Most likely delimiter character (',', ';', '\\t', or '|').
     """
-    with open(filename, 'r', encoding=encoding) as f:
+    with open(filename, encoding=encoding) as f:
         line = f.readline()
     dict1 = {',': line.count(','), ';': line.count(';'),
              '\t': line.count('\t'), '|': line.count('|')}
@@ -61,7 +60,7 @@ def get_file_type(filename: str) -> Optional[str]:
     return None
 
 
-def get_option(options: Dict[str, Any], name: str) -> Any:
+def get_option(options: dict[str, Any], name: str) -> Any:
     """Get option value from options dict or default options.
 
     Args:
@@ -77,7 +76,7 @@ def get_option(options: Dict[str, Any], name: str) -> Any:
         return DEFAULT_OPTIONS[name]
     return None
 
-def get_dict_value(d: Union[Dict[str, Any], List[Dict[str, Any]], None], keys: List[str]) -> List[Any]:
+def get_dict_value(d: Union[dict[str, Any], list[dict[str, Any]], None], keys: list[str]) -> list[Any]:
     """Get dictionary value by nested keys.
 
     Args:
@@ -109,7 +108,7 @@ def get_dict_value(d: Union[Dict[str, Any], List[Dict[str, Any]], None], keys: L
     return out
 
 
-def strip_dict_fields(record: Dict[str, Any], fields: List[List[str]], startkey: int = 0) -> Dict[str, Any]:
+def strip_dict_fields(record: dict[str, Any], fields: list[list[str]], startkey: int = 0) -> dict[str, Any]:
     """Strip dictionary fields based on field list.
 
     Args:
@@ -137,7 +136,7 @@ def strip_dict_fields(record: Dict[str, Any], fields: List[List[str]], startkey:
     return record
 
 
-def dict_generator(indict: Union[Dict[str, Any], Any], pre: Optional[List[str]] = None):
+def dict_generator(indict: Union[dict[str, Any], Any], pre: Optional[list[str]] = None):
     """Process dictionary and yield flattened key-value pairs.
 
     Recursively traverses nested dictionaries and lists, yielding
@@ -183,7 +182,7 @@ def guess_int_size(i: int) -> str:
     return 'uint32'
 
 
-def guess_datatype(s: Union[str, int, float, None], qd: Any) -> Dict[str, Any]:
+def guess_datatype(s: Union[str, int, float, None], qd: Any) -> dict[str, Any]:
     """Guess data type of a string value.
 
     Analyzes a string to determine if it represents an integer, float,
@@ -254,7 +253,7 @@ def buf_count_newlines_gen(fname: str) -> int:
     return count
 
 
-def get_dict_keys(iterable: Any, limit: int = 1000) -> List[str]:
+def get_dict_keys(iterable: Any, limit: int = 1000) -> list[str]:
     """Get all unique dictionary keys from an iterable of dictionaries.
 
     Extracts all nested keys from dictionaries, flattening them with dot notation.
@@ -280,7 +279,7 @@ def get_dict_keys(iterable: Any, limit: int = 1000) -> List[str]:
     return list(keys_set)  # Convert to list for backward compatibility
 
 
-def _is_flat(item: Dict[str, Any]) -> bool:
+def _is_flat(item: dict[str, Any]) -> bool:
     """Check if dictionary contains only flat (non-nested) values.
 
     Args:
@@ -296,3 +295,31 @@ def _is_flat(item: Dict[str, Any]) -> bool:
             if not _is_flat(v):
                 return False
     return True
+
+
+def normalize_for_json(obj: Any) -> Any:
+    """Convert non-JSON-serializable types to JSON-serializable ones.
+    
+    Recursively converts UUID objects and other non-serializable types to strings.
+    This is needed when writing data from formats like Parquet (which preserve
+    UUIDs as UUID objects) to JSON formats like JSONL.
+    
+    Args:
+        obj: Object to normalize (can be dict, list, tuple, or primitive type)
+        
+    Returns:
+        Normalized object with non-serializable types converted to strings
+    """
+    try:
+        import uuid
+        if isinstance(obj, uuid.UUID):
+            return str(obj)
+    except ImportError:
+        pass  # uuid module not available
+    
+    if isinstance(obj, dict):
+        return {key: normalize_for_json(value) for key, value in obj.items()}
+    elif isinstance(obj, (list, tuple)):
+        return [normalize_for_json(item) for item in obj]
+    else:
+        return obj

@@ -3,12 +3,52 @@ import json
 import os
 import re
 import time
-from typing import Dict, Optional, Callable
+from typing import Callable, Optional
 
 import requests
 
-from .base import AIService, AIConfigurationError, AIAPIError
-from .schemas import FIELD_INFO_SCHEMA, DATASET_DESCRIPTION_SCHEMA
+from ..constants import EU_DATA_THEMES
+
+
+def _truncate_sample(data: str, max_length: int) -> str:
+    if len(data) <= max_length:
+        return data
+    return data[:max_length] + "\n... (truncated)"
+
+
+def _metadata_prompt(data: str, fields: list[str], language: str) -> str:
+    fields_str = ", ".join(fields)
+    themes_str = json.dumps(EU_DATA_THEMES, ensure_ascii=False)
+    return (
+        "I have the following CSV data sample:\n"
+        f"{data}\n"
+        f"Field names: {fields_str}\n\n"
+        f"Generate structured dataset metadata in {language}. "
+        "Return a JSON object with these keys only:\n"
+        "- title (string)\n"
+        "- keywords (array of strings)\n"
+        "- geographic_coverage (object with countries, regions, coordinates_present)\n"
+        "- temporal_coverage (object with start, end, granularity)\n"
+        "- languages (array of objects with code and confidence)\n"
+        "- data_theme (object with label and uri, or null)\n"
+        "- confidence (object with per-section confidence 0-1)\n"
+        "- evidence (object mapping keys to brief evidence strings)\n\n"
+        "Use the EU Data Theme vocabulary list for data_theme selection:\n"
+        f"{themes_str}\n"
+        "If you cannot determine a field, set it to null or empty."
+    )
+
+
+def _extract_json_payload(text: str) -> dict:
+    json_match = re.search(r'```(?:json)?\s*(\{.*?\})\s*```', text, re.DOTALL)
+    if json_match:
+        return json.loads(json_match.group(1))
+    json_match = re.search(r'\{.*\}', text, re.DOTALL)
+    if json_match:
+        return json.loads(json_match.group(0))
+    return json.loads(text)
+
+from .base import AIAPIError, AIConfigurationError, AIService
 
 
 def retry_with_backoff(func: Callable, max_retries: int = 3, initial_delay: float = 1.0,
@@ -93,7 +133,7 @@ class OpenAIProvider(AIService):
         super().__init__(api_key, base_url, model, timeout)
         self._validate_config()
 
-    def get_fields_info(self, fields: list[str], language: str = 'English') -> Dict[str, str]:
+    def get_fields_info(self, fields: list[str], language: str = 'English') -> dict[str, str]:
         """Get field descriptions using OpenAI API."""
         fields_str = ', '.join(fields)
         url = f"{self.base_url}/chat/completions"
@@ -154,9 +194,9 @@ class OpenAIProvider(AIService):
         except requests.exceptions.RequestException as e:
             raise AIAPIError(f"OpenAI API request failed: {str(e)}",
                            status_code=getattr(e.response, 'status_code', None),
-                           response=getattr(e.response, 'text', None))
+                           response=getattr(e.response, 'text', None)) from e
         except json.JSONDecodeError as e:
-            raise AIAPIError(f"Failed to parse OpenAI response: {str(e)}")
+            raise AIAPIError(f"Failed to parse OpenAI response: {str(e)}") from e
 
     def get_description(self, data: str, language: str = 'English') -> str:
         """Get dataset description using OpenAI API."""
@@ -233,14 +273,66 @@ Return your response as a JSON object with a "description" key."""
                         error_msg += f"\nResponse: {error_text[:500]}"
             raise AIAPIError(error_msg,
                            status_code=getattr(e.response, 'status_code', None),
-                           response=getattr(e.response, 'text', None))
+                           response=getattr(e.response, 'text', None)) from e
         except json.JSONDecodeError:
             # If JSON parsing fails, try to extract description from text
             try:
                 content = response_data["choices"][0]["message"]["content"]
                 return content
-            except (KeyError, IndexError):
-                raise AIAPIError("Failed to extract description from OpenAI response")
+            except (KeyError, IndexError) as e:
+                raise AIAPIError("Failed to extract description from OpenAI response") from e
+
+    def get_structured_metadata(self, data: str, fields: list[str],
+                                language: str = 'English') -> dict:
+        """Get structured metadata using OpenAI API."""
+        MAX_DATA_LENGTH = 3000
+        data = _truncate_sample(data, MAX_DATA_LENGTH)
+        url = f"{self.base_url}/chat/completions"
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json"
+        }
+        user_content = _metadata_prompt(data, fields, language)
+
+        payload = {
+            "model": self.model,
+            "messages": [
+                {
+                    "role": "system",
+                    "content": (
+                        f"You are a data documentation assistant. "
+                        f"Return structured dataset metadata in {language} as valid JSON."
+                    )
+                },
+                {
+                    "role": "user",
+                    "content": user_content
+                }
+            ],
+            "response_format": {
+                "type": "json_object"
+            },
+            "temperature": 0.2
+        }
+
+        def _make_request():
+            response = requests.post(url, headers=headers, json=payload, timeout=self.timeout)
+            response.raise_for_status()
+            return response
+
+        try:
+            response = retry_with_backoff(_make_request)
+            response_data = response.json()
+            content = response_data["choices"][0]["message"]["content"]
+            return _extract_json_payload(content)
+        except AIAPIError:
+            raise
+        except requests.exceptions.RequestException as e:
+            raise AIAPIError(f"OpenAI API request failed: {str(e)}",
+                           status_code=getattr(e.response, 'status_code', None),
+                           response=getattr(e.response, 'text', None)) from e
+        except json.JSONDecodeError as e:
+            raise AIAPIError(f"Failed to parse OpenAI response: {str(e)}") from e
 
 
 class OpenRouterProvider(AIService):
@@ -262,7 +354,7 @@ class OpenRouterProvider(AIService):
         super().__init__(api_key, base_url, model, timeout)
         self._validate_config()
 
-    def get_fields_info(self, fields: list[str], language: str = 'English') -> Dict[str, str]:
+    def get_fields_info(self, fields: list[str], language: str = 'English') -> dict[str, str]:
         """Get field descriptions using OpenRouter API."""
         fields_str = ', '.join(fields)
         url = f"{self.base_url}/chat/completions"
@@ -321,9 +413,9 @@ class OpenRouterProvider(AIService):
         except requests.exceptions.RequestException as e:
             raise AIAPIError(f"OpenRouter API request failed: {str(e)}",
                            status_code=getattr(e.response, 'status_code', None),
-                           response=getattr(e.response, 'text', None))
+                           response=getattr(e.response, 'text', None)) from e
         except json.JSONDecodeError as e:
-            raise AIAPIError(f"Failed to parse OpenRouter response: {str(e)}")
+            raise AIAPIError(f"Failed to parse OpenRouter response: {str(e)}") from e
 
     def get_description(self, data: str, language: str = 'English') -> str:
         """Get dataset description using OpenRouter API."""
@@ -388,13 +480,67 @@ Please provide a short description of this dataset in {language}. Consider this 
         except requests.exceptions.RequestException as e:
             raise AIAPIError(f"OpenRouter API request failed: {str(e)}",
                            status_code=getattr(e.response, 'status_code', None),
-                           response=getattr(e.response, 'text', None))
+                           response=getattr(e.response, 'text', None)) from e
         except json.JSONDecodeError:
             try:
                 content = response_data["choices"][0]["message"]["content"]
                 return content
-            except (KeyError, IndexError):
-                raise AIAPIError("Failed to extract description from OpenRouter response")
+            except (KeyError, IndexError) as e:
+                raise AIAPIError("Failed to extract description from OpenRouter response") from e
+
+    def get_structured_metadata(self, data: str, fields: list[str],
+                                language: str = 'English') -> dict:
+        """Get structured metadata using OpenRouter API."""
+        MAX_DATA_LENGTH = 5000
+        data = _truncate_sample(data, MAX_DATA_LENGTH)
+        url = f"{self.base_url}/chat/completions"
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json",
+            "HTTP-Referer": "https://github.com/datacoon/undatum",
+            "X-Title": "Undatum Data Analysis"
+        }
+        user_content = _metadata_prompt(data, fields, language)
+
+        payload = {
+            "model": self.model,
+            "messages": [
+                {
+                    "role": "system",
+                    "content": (
+                        f"You are a data documentation assistant. "
+                        f"Return structured dataset metadata in {language} as valid JSON."
+                    )
+                },
+                {
+                    "role": "user",
+                    "content": user_content
+                }
+            ],
+            "response_format": {
+                "type": "json_object"
+            },
+            "temperature": 0.2
+        }
+
+        def _make_request():
+            response = requests.post(url, headers=headers, json=payload, timeout=self.timeout)
+            response.raise_for_status()
+            return response
+
+        try:
+            response = retry_with_backoff(_make_request)
+            response_data = response.json()
+            content = response_data["choices"][0]["message"]["content"]
+            return _extract_json_payload(content)
+        except AIAPIError:
+            raise
+        except requests.exceptions.RequestException as e:
+            raise AIAPIError(f"OpenRouter API request failed: {str(e)}",
+                           status_code=getattr(e.response, 'status_code', None),
+                           response=getattr(e.response, 'text', None)) from e
+        except json.JSONDecodeError as e:
+            raise AIAPIError(f"Failed to parse OpenRouter response: {str(e)}") from e
 
 
 class OllamaProvider(AIService):
@@ -421,7 +567,7 @@ class OllamaProvider(AIService):
         if not self.model:
             raise AIConfigurationError("Model is required for OllamaProvider")
 
-    def get_fields_info(self, fields: list[str], language: str = 'English') -> Dict[str, str]:
+    def get_fields_info(self, fields: list[str], language: str = 'English') -> dict[str, str]:
         """Get field descriptions using Ollama API."""
         fields_str = ', '.join(fields)
         url = f"{self.base_url}/api/chat"
@@ -450,12 +596,12 @@ Example format: {{"fields": [{{"name": "field1", "description": "..."}}, {{"name
         try:
             response = requests.post(url, json=payload, timeout=self.timeout)
             response.raise_for_status()
-            
+
             # Handle potential streaming response or malformed JSON
             # Ollama may return multiple JSON objects even with stream=False
             response_text = response.text.strip()
             data = None
-            
+
             try:
                 data = response.json()
             except (ValueError, json.JSONDecodeError) as e:
@@ -478,7 +624,7 @@ Example format: {{"fields": [{{"name": "field1", "description": "..."}}, {{"name
                                 break
                         except json.JSONDecodeError:
                             continue
-                    
+
                     # If we still don't have data, try to extract JSON object with regex
                     if data is None:
                         json_match = re.search(r'\{.*\}', response_text, re.DOTALL)
@@ -487,14 +633,14 @@ Example format: {{"fields": [{{"name": "field1", "description": "..."}}, {{"name
                                 data = json.loads(json_match.group(0))
                             except json.JSONDecodeError:
                                 pass
-                    
+
                     if data is None:
-                        raise AIAPIError(f"Failed to parse Ollama response: {str(e)}. Response: {response_text[:500]}")
+                        raise AIAPIError(f"Failed to parse Ollama response: {str(e)}. Response: {response_text[:500]}") from e
                 else:
-                    raise AIAPIError(f"Empty response from Ollama: {str(e)}")
+                    raise AIAPIError(f"Empty response from Ollama: {str(e)}") from e
 
             content = data.get("message", {}).get("content", "")
-            
+
             # Try to extract JSON from content if it contains markdown code blocks
             json_match = re.search(r'```(?:json)?\s*(\{.*?\})\s*```', content, re.DOTALL)
             if json_match:
@@ -504,7 +650,7 @@ Example format: {{"fields": [{{"name": "field1", "description": "..."}}, {{"name
                 json_match = re.search(r'\{.*\}', content, re.DOTALL)
                 if json_match:
                     content = json_match.group(0)
-            
+
             result = json.loads(content)
 
             field_dict = {}
@@ -523,9 +669,9 @@ Example format: {{"fields": [{{"name": "field1", "description": "..."}}, {{"name
         except requests.exceptions.RequestException as e:
             raise AIAPIError(f"Ollama API request failed: {str(e)}",
                            status_code=getattr(e.response, 'status_code', None),
-                           response=getattr(e.response, 'text', None))
+                           response=getattr(e.response, 'text', None)) from e
         except json.JSONDecodeError as e:
-            raise AIAPIError(f"Failed to parse Ollama response: {str(e)}. Content: {content[:200] if 'content' in locals() else 'N/A'}")
+            raise AIAPIError(f"Failed to parse Ollama response: {str(e)}. Content: {content[:200] if 'content' in locals() else 'N/A'}") from e
 
     def get_description(self, data: str, language: str = 'English') -> str:
         """Get dataset description using Ollama API."""
@@ -556,12 +702,12 @@ Return JSON with format: {{"description": "..."}}"""
         try:
             response = requests.post(url, json=payload, timeout=self.timeout)
             response.raise_for_status()
-            
+
             # Handle potential streaming response or malformed JSON
             # Ollama may return multiple JSON objects even with stream=False
             response_text = response.text.strip()
             data = None
-            
+
             try:
                 data = response.json()
             except (ValueError, json.JSONDecodeError) as e:
@@ -584,7 +730,7 @@ Return JSON with format: {{"description": "..."}}"""
                                 break
                         except json.JSONDecodeError:
                             continue
-                    
+
                     # If we still don't have data, try to extract JSON object with regex
                     if data is None:
                         json_match = re.search(r'\{.*\}', response_text, re.DOTALL)
@@ -593,14 +739,14 @@ Return JSON with format: {{"description": "..."}}"""
                                 data = json.loads(json_match.group(0))
                             except json.JSONDecodeError:
                                 pass
-                    
+
                     if data is None:
-                        raise AIAPIError(f"Failed to parse Ollama response: {str(e)}. Response: {response_text[:500]}")
+                        raise AIAPIError(f"Failed to parse Ollama response: {str(e)}. Response: {response_text[:500]}") from e
                 else:
-                    raise AIAPIError(f"Empty response from Ollama: {str(e)}")
+                    raise AIAPIError(f"Empty response from Ollama: {str(e)}") from e
 
             content = data.get("message", {}).get("content", "")
-            
+
             # Try to extract JSON from content if it contains markdown code blocks
             json_match = re.search(r'```(?:json)?\s*(\{.*?\})\s*```', content, re.DOTALL)
             if json_match:
@@ -610,7 +756,7 @@ Return JSON with format: {{"description": "..."}}"""
                 json_match = re.search(r'\{.*\}', content, re.DOTALL)
                 if json_match:
                     content = json_match.group(0)
-            
+
             # Try to parse as JSON
             try:
                 result = json.loads(content)
@@ -624,12 +770,12 @@ Return JSON with format: {{"description": "..."}}"""
                 # This handles cases where the model returns plain text instead of JSON
                 if content:
                     return content
-                raise AIAPIError(f"Failed to parse Ollama JSON response: {str(json_err)}. Content: {content[:200]}")
+                raise AIAPIError(f"Failed to parse Ollama JSON response: {str(json_err)}. Content: {content[:200]}") from json_err
 
         except requests.exceptions.RequestException as e:
             raise AIAPIError(f"Ollama API request failed: {str(e)}",
                            status_code=getattr(e.response, 'status_code', None),
-                           response=getattr(e.response, 'text', None))
+                           response=getattr(e.response, 'text', None)) from e
         except json.JSONDecodeError as e:
             # This should not happen now, but keep as fallback
             try:
@@ -638,7 +784,87 @@ Return JSON with format: {{"description": "..."}}"""
                     return content
             except (KeyError, IndexError, NameError):
                 pass
-            raise AIAPIError(f"Failed to extract description from Ollama response: {str(e)}")
+            raise AIAPIError(f"Failed to extract description from Ollama response: {str(e)}") from e
+
+    def get_structured_metadata(self, data: str, fields: list[str],
+                                language: str = 'English') -> dict:
+        """Get structured metadata using Ollama API."""
+        MAX_DATA_LENGTH = 3000
+        data = _truncate_sample(data, MAX_DATA_LENGTH)
+        url = f"{self.base_url}/api/chat"
+
+        payload = {
+            "model": self.model,
+            "messages": [
+                {
+                    "role": "system",
+                    "content": (
+                        f"You are a data documentation assistant. "
+                        f"Return structured dataset metadata in {language} as valid JSON only."
+                    )
+                },
+                {
+                    "role": "user",
+                    "content": _metadata_prompt(data, fields, language)
+                }
+            ],
+            "format": "json",
+            "stream": False,
+            "options": {
+                "temperature": 0.2
+            }
+        }
+
+        try:
+            response = requests.post(url, json=payload, timeout=self.timeout)
+            response.raise_for_status()
+
+            response_text = response.text.strip()
+            payload_data = None
+
+            try:
+                payload_data = response.json()
+            except (ValueError, json.JSONDecodeError) as e:
+                if response_text:
+                    lines = response_text.strip().split('\n')
+                    for line in reversed(lines):
+                        line = line.strip()
+                        if not line:
+                            continue
+                        try:
+                            parsed = json.loads(line)
+                            if isinstance(parsed, dict) and (
+                                'message' in parsed or 'content' in parsed or 'response' in parsed
+                            ):
+                                payload_data = parsed
+                                break
+                        except json.JSONDecodeError:
+                            continue
+                    if payload_data is None:
+                        json_match = re.search(r'\{.*\}', response_text, re.DOTALL)
+                        if json_match:
+                            try:
+                                payload_data = json.loads(json_match.group(0))
+                            except json.JSONDecodeError:
+                                pass
+                    if payload_data is None:
+                        raise AIAPIError(
+                            f"Failed to parse Ollama response: {str(e)}. Response: {response_text[:500]}"
+                        ) from e
+                else:
+                    raise AIAPIError(f"Empty response from Ollama: {str(e)}") from e
+
+            content = payload_data.get("message", {}).get("content", "")
+            return _extract_json_payload(content)
+        except requests.exceptions.RequestException as e:
+            raise AIAPIError(f"Ollama API request failed: {str(e)}",
+                           status_code=getattr(e.response, 'status_code', None),
+                           response=getattr(e.response, 'text', None)) from e
+        except json.JSONDecodeError as e:
+            raise AIAPIError(
+                f"Failed to parse Ollama response: {str(e)}. "
+                f"Content: {content[:200] if 'content' in locals() else 'N/A'}"
+            ) from e
 
 
 class LMStudioProvider(AIService):
@@ -680,7 +906,7 @@ class LMStudioProvider(AIService):
             pass
         return []
 
-    def get_fields_info(self, fields: list[str], language: str = 'English') -> Dict[str, str]:
+    def get_fields_info(self, fields: list[str], language: str = 'English') -> dict[str, str]:
         """Get field descriptions using LM Studio API."""
         fields_str = ', '.join(fields)
         url = f"{self.base_url}/chat/completions"
@@ -756,9 +982,9 @@ Return only the JSON, nothing else."""
                 error_msg += "\nMake sure LM Studio server is running and a model is loaded."
             raise AIAPIError(error_msg,
                            status_code=getattr(e.response, 'status_code', None),
-                           response=getattr(e.response, 'text', None))
+                           response=getattr(e.response, 'text', None)) from e
         except json.JSONDecodeError as e:
-            raise AIAPIError(f"Failed to parse LM Studio response: {str(e)}. Response content: {content[:200]}")
+            raise AIAPIError(f"Failed to parse LM Studio response: {str(e)}. Response content: {content[:200]}") from e
 
     def get_description(self, data: str, language: str = 'English') -> str:
         """Get dataset description using LM Studio API."""
@@ -837,9 +1063,65 @@ Return only the JSON, nothing else."""
                 error_msg += "\nMake sure LM Studio server is running and a model is loaded."
             raise AIAPIError(error_msg,
                            status_code=getattr(e.response, 'status_code', None),
-                           response=getattr(e.response, 'text', None))
+                           response=getattr(e.response, 'text', None)) from e
         except (KeyError, IndexError) as e:
-            raise AIAPIError(f"Failed to extract description from LM Studio response: {str(e)}")
+            raise AIAPIError(f"Failed to extract description from LM Studio response: {str(e)}") from e
+
+    def get_structured_metadata(self, data: str, fields: list[str],
+                                language: str = 'English') -> dict:
+        """Get structured metadata using LM Studio API."""
+        MAX_DATA_LENGTH = 5000
+        data = _truncate_sample(data, MAX_DATA_LENGTH)
+
+        url = f"{self.base_url}/chat/completions"
+        headers = {
+            "Content-Type": "application/json"
+        }
+        user_content = _metadata_prompt(data, fields, language)
+
+        payload = {
+            "model": self.model,
+            "messages": [
+                {
+                    "role": "system",
+                    "content": (
+                        f"You are a data documentation assistant. "
+                        f"Return structured dataset metadata in {language} as valid JSON only."
+                    )
+                },
+                {
+                    "role": "user",
+                    "content": user_content
+                }
+            ],
+            "temperature": 0.2
+        }
+
+        try:
+            payload["response_format"] = {"type": "json_object"}
+            response = requests.post(url, headers=headers, json=payload, timeout=self.timeout)
+            response.raise_for_status()
+        except requests.exceptions.RequestException:
+            payload.pop("response_format", None)
+            response = requests.post(url, headers=headers, json=payload, timeout=self.timeout)
+            response.raise_for_status()
+
+        try:
+            response_data = response.json()
+            content = response_data["choices"][0]["message"]["content"].strip()
+            return _extract_json_payload(content)
+        except requests.exceptions.RequestException as e:
+            available_models = self._get_available_models()
+            error_msg = f"LM Studio API request failed: {str(e)}"
+            if available_models:
+                error_msg += f"\nAvailable models: {', '.join(available_models)}"
+            elif e.response and e.response.status_code == 404:
+                error_msg += "\nMake sure LM Studio server is running and a model is loaded."
+            raise AIAPIError(error_msg,
+                           status_code=getattr(e.response, 'status_code', None),
+                           response=getattr(e.response, 'text', None)) from e
+        except json.JSONDecodeError as e:
+            raise AIAPIError(f"Failed to parse LM Studio response: {str(e)}. Response content: {content[:200]}") from e
 
 
 class PerplexityProvider(AIService):
@@ -867,7 +1149,7 @@ class PerplexityProvider(AIService):
         super().__init__(api_key, base_url, model, timeout)
         self._validate_config()
 
-    def get_fields_info(self, fields: list[str], language: str = 'English') -> Dict[str, str]:
+    def get_fields_info(self, fields: list[str], language: str = 'English') -> dict[str, str]:
         """Get field descriptions using Perplexity API."""
         fields_str = ', '.join(fields)
         url = f"{self.base_url}/chat/completions"
@@ -929,9 +1211,9 @@ Return only the JSON, nothing else."""
         except requests.exceptions.RequestException as e:
             raise AIAPIError(f"Perplexity API request failed: {str(e)}",
                            status_code=getattr(e.response, 'status_code', None),
-                           response=getattr(e.response, 'text', None))
+                           response=getattr(e.response, 'text', None)) from e
         except json.JSONDecodeError as e:
-            raise AIAPIError(f"Failed to parse Perplexity response: {str(e)}. Response content: {content[:200]}")
+            raise AIAPIError(f"Failed to parse Perplexity response: {str(e)}. Response content: {content[:200]}") from e
 
     def get_description(self, data: str, language: str = 'English') -> str:
         """Get dataset description using Perplexity API."""
@@ -997,6 +1279,49 @@ Return only the JSON, nothing else."""
         except requests.exceptions.RequestException as e:
             raise AIAPIError(f"Perplexity API request failed: {str(e)}",
                            status_code=getattr(e.response, 'status_code', None),
-                           response=getattr(e.response, 'text', None))
+                           response=getattr(e.response, 'text', None)) from e
         except (KeyError, IndexError) as e:
-            raise AIAPIError(f"Failed to extract description from Perplexity response: {str(e)}")
+            raise AIAPIError(f"Failed to extract description from Perplexity response: {str(e)}") from e
+
+    def get_structured_metadata(self, data: str, fields: list[str],
+                                language: str = 'English') -> dict:
+        """Get structured metadata using Perplexity API."""
+        MAX_DATA_LENGTH = 5000
+        data = _truncate_sample(data, MAX_DATA_LENGTH)
+        url = f"{self.base_url}/chat/completions"
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json"
+        }
+        user_content = _metadata_prompt(data, fields, language)
+
+        payload = {
+            "model": self.model,
+            "messages": [
+                {
+                    "role": "system",
+                    "content": (
+                        f"You are a data documentation assistant. "
+                        f"Return structured dataset metadata in {language} as valid JSON only, no markdown."
+                    )
+                },
+                {
+                    "role": "user",
+                    "content": user_content
+                }
+            ],
+            "temperature": 0.2
+        }
+
+        try:
+            response = requests.post(url, headers=headers, json=payload, timeout=self.timeout)
+            response.raise_for_status()
+            response_data = response.json()
+            content = response_data["choices"][0]["message"]["content"].strip()
+            return _extract_json_payload(content)
+        except requests.exceptions.RequestException as e:
+            raise AIAPIError(f"Perplexity API request failed: {str(e)}",
+                           status_code=getattr(e.response, 'status_code', None),
+                           response=getattr(e.response, 'text', None)) from e
+        except json.JSONDecodeError as e:
+            raise AIAPIError(f"Failed to parse Perplexity response: {str(e)}. Response content: {content[:200]}") from e

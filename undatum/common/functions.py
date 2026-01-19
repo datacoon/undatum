@@ -1,4 +1,3 @@
-# -*- coding: utf8 -*-
 """Common utility functions for dictionary operations.
 
 This module provides helper functions for accessing nested dictionary

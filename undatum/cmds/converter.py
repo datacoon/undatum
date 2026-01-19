@@ -1,6 +1,6 @@
-# -*- coding: utf8 -*-
 """File format conversion module."""
 import csv
+import json
 import logging
 import xml.etree.ElementTree as etree
 from collections import defaultdict
@@ -13,7 +13,7 @@ from iterable.helpers.detect import open_iterable
 from tqdm import tqdm
 from xlrd import open_workbook as load_xls
 
-from ..utils import get_file_type, get_option, dict_generator
+from ..utils import dict_generator, get_file_type, get_option
 
 ITERABLE_OPTIONS_KEYS = ['tagname', 'delimiter', 'encoding', 'start_line', 'page']
 
@@ -32,7 +32,7 @@ def get_iterable_options(options):
 PREFIX_STRIP = True
 PREFIX = ""
 
-LINEEND = '\n'.encode('utf8')
+LINEEND = b'\n'
 
 def df_to_pyorc_schema(df):
     """Extracts column information from pandas dataframe and generate pyorc schema"""
@@ -40,17 +40,17 @@ def df_to_pyorc_schema(df):
     for k, v in df.dtypes.to_dict().items():
         v = str(v)
         if v == 'float64':
-            struct_schema.append('%s:float' % (k))
+            struct_schema.append(f'{k}:float')
         elif v == 'float32':
-            struct_schema.append('%s:float' % (k))
+            struct_schema.append(f'{k}:float')
         elif v == 'datetime64[ns]':
-            struct_schema.append('%s:timestamp' % (k))
+            struct_schema.append(f'{k}:timestamp')
         elif v == 'int32':
-            struct_schema.append('%s:int' % (k))
+            struct_schema.append(f'{k}:int')
         elif v == 'int64':
-            struct_schema.append('%s:int' % (k))
+            struct_schema.append(f'{k}:int')
         else:
-            struct_schema.append('%s:string' %(k))
+            struct_schema.append(f'{k}:string')
     return struct_schema
 
 
@@ -98,7 +98,7 @@ def xml_to_jsonl(fromname, toname, options=None, default_options=None):
     options = __copy_options(options, default_options)
     with open(fromname, 'rb') as ins, open(toname, 'wb') as outf:
         n = 0
-        for event, elem in etree.iterparse(ins):
+        for _event, elem in etree.iterparse(ins):
             shorttag = elem.tag.rsplit('}', 1)[-1]
             if shorttag == options['tagname']:
                 n += 1
@@ -147,7 +147,7 @@ def csv_to_bson(fromname, toname, options=None, default_options=None):
     if default_options is None:
         default_options = {'encoding': 'utf8', 'delimiter': ','}
     options = __copy_options(options, default_options)
-    with open(fromname, 'r', encoding=options['encoding']) as source:
+    with open(fromname, encoding=options['encoding']) as source:
         reader = csv.DictReader(source, delimiter=options['delimiter'])
         with open(toname, 'wb') as output:
             n = 0
@@ -166,14 +166,14 @@ def csv_to_jsonl(fromname, toname, options=None, default_options=None):
     if default_options is None:
         default_options = {'encoding': 'utf8', 'delimiter': ','}
     options = __copy_options(options, default_options)
-    with open(fromname, 'r', encoding=options['encoding']) as source:
+    with open(fromname, encoding=options['encoding']) as source:
         reader = csv.DictReader(source, delimiter=options['delimiter'])
         with open(toname, 'wb') as output:
             n = 0
             for j in reader:
                 n += 1
                 output.write(json.dumps(j, ensure_ascii=False).encode('utf8'))
-                output.write('\n'.encode('utf8'))
+                output.write(b'\n')
                 if n % 10000 == 0:
                     logging.info('csv2jsonl: processed %d records', n)
 
@@ -193,7 +193,7 @@ def xls_to_jsonl(fromname, toname, options=None, default_options=None):
                  if options['fields'] is not None else None)
         for rownum in range(options['start_line'], sheet.nrows):
             n += 1
-            tmp = list()
+            tmp = []
             for i in range(0, sheet.ncols):
                 tmp.append(sheet.row_values(rownum)[i])
             if n == 1 and fields is None:
@@ -229,7 +229,7 @@ def xlsx_to_jsonl(fromname, toname, options=None, default_options=None):
             n += 1
             if n < options['start_line']:
                 continue
-            tmp = list()
+            tmp = []
 
             for cell in row:
                 tmp.append(cell.value)
@@ -261,7 +261,7 @@ def xlsx_to_bson(fromname, toname, options=None, default_options=None):
             n += 1
             if n < options['start_line']:
                 continue
-            tmp = list()
+            tmp = []
 
             for cell in row:
                 tmp.append(cell.value)
@@ -287,7 +287,7 @@ def xls_to_bson(fromname, toname, options=None, default_options=None):
         n = 0
         for rownum in range(options['start_line'], sheet.nrows):
             n += 1
-            tmp = list()
+            tmp = []
             for i in range(0, sheet.ncols):
                 tmp.append(sheet.row_values(rownum)[i])
             output.write(bson.BSON.encode(dict(zip(options['fields'], tmp))))
@@ -297,7 +297,7 @@ def xls_to_bson(fromname, toname, options=None, default_options=None):
 
 def _is_flat(item):
     """Check if dictionary item is flat (no nested structures)."""
-    for k, v in item.items():
+    for _k, v in item.items():
         if isinstance(v, (dict, tuple, list)):
             return False
     return True
@@ -308,7 +308,7 @@ def express_analyze_jsonl(filename, itemlimit=100):
     isflat = True
     n = 0
     keys = set()
-    with open(filename, 'r', encoding='utf8') as f:
+    with open(filename, encoding='utf8') as f:
         for line in f:
             n += 1
             if n > itemlimit:
@@ -342,7 +342,7 @@ def jsonl_to_csv(fromname, toname, options=None, default_options=None):
     with open(toname, 'w', encoding='utf8') as out:
         writer = csv.writer(out, delimiter=options['delimiter'])
         writer.writerow(keys)
-        with open(fromname, 'r', encoding='utf8') as f:
+        with open(fromname, encoding='utf8') as f:
             n = 0
             for line in f:
                 n += 1
@@ -451,11 +451,11 @@ def csv_to_orc(fromname, toname, options=None, default_options=None):
     comp_key = options['compression']
     compression = (PYORC_COMPRESSION_MAP[comp_key]
                   if comp_key in PYORC_COMPRESSION_MAP.keys() else 0)
-    with open(fromname, 'r', encoding=options['encoding']) as source:
+    with open(fromname, encoding=options['encoding']) as source:
         reader = csv.DictReader(source, delimiter=options['delimiter'])
         struct_schema = []
         for field in reader.fieldnames:
-            struct_schema.append('%s:string' % (field))
+            struct_schema.append(f'{field}:string')
         schema_str = ','.join(struct_schema)
         with open(toname, 'wb') as output:
             writer = pyorc.Writer(output, f"struct<{schema_str}>",
@@ -505,7 +505,7 @@ def csv_to_avro(fromname, toname, options=None, default_options=None):
     from avro.io import DatumWriter
 
     options = __copy_options(options, default_options)
-    with open(fromname, 'r', encoding=options['encoding']) as source:
+    with open(fromname, encoding=options['encoding']) as source:
         reader = csv.DictReader(source, delimiter=options['delimiter'])
 
         schema_dict = {"namespace": "data.avro", "type": "record",
@@ -585,48 +585,70 @@ class Converter:
         if options is None:
             options = {}
         iterableargs = get_iterable_options(options)
-        it_in = open_iterable(fromfile, mode='r', iterableargs=iterableargs)
         is_flatten = get_option(options, 'flatten')
         keys_set = set()  # Use set for O(1) lookup instead of O(n) list operations
-        n = 0
-        logging.info('Extracting schema')
-        for item in tqdm(it_in, total=limit):
-            if limit is not None and n > limit:
-                break
-            n += 1
-            if not is_flatten:
-                dk = dict_generator(item)
-                for i in dk:
-                    k = ".".join(i[:-1])
-                    keys_set.add(k)
-            else:
-                item = make_flat(item)
-                for k in item.keys():
-                    keys_set.add(k)
+
+        # First pass: extract schema
+        it_in = open_iterable(fromfile, mode='r', iterableargs=iterableargs)
+        try:
+            n = 0
+            logging.info('Extracting schema')
+            for item in tqdm(it_in, total=limit):
+                if limit is not None and n > limit:
+                    break
+                n += 1
+                if not is_flatten:
+                    dk = dict_generator(item)
+                    for i in dk:
+                        k = ".".join(i[:-1])
+                        keys_set.add(k)
+                else:
+                    item = make_flat(item)
+                    for k in item.keys():
+                        keys_set.add(k)
+        finally:
+            it_in.close()
 
         keys = list(keys_set)  # Convert to list for backward compatibility
-        it_in.reset()
-        it_out = open_iterable(tofile, mode='w', iterableargs={'keys' : keys})
 
-        logging.info('Converting data')
-        n = 0
-        batch = []
-        for row in tqdm(it_in):
-            n += 1
-            if is_flatten:
-                for k in keys:
-                    if k not in row.keys():
-                        row[k] = None
-                batch.append(make_flat(row))
-            else:
-                batch.append(row)
-            if n % self.batch_size == 0:
-                it_out.write_bulk(batch)
+        # Second pass: convert data
+        it_out = open_iterable(tofile, mode='w', iterableargs={'keys': keys})
+        try:
+            it_in = open_iterable(fromfile, mode='r', iterableargs=iterableargs)
+            try:
+                # Try to use reset() if available
+                if hasattr(it_in, 'reset'):
+                    it_in.reset()
+
+                logging.info('Converting data')
+                n = 0
                 batch = []
-        if len(batch) > 0:
-            it_out.write_bulk(batch)
-        it_in.close()
-        it_out.close()
+                for row in tqdm(it_in):
+                    n += 1
+                    if is_flatten:
+                        for k in keys:
+                            if k not in row.keys():
+                                row[k] = None
+                        batch.append(make_flat(row))
+                    else:
+                        batch.append(row)
+                    if n % self.batch_size == 0:
+                        if hasattr(it_out, 'write_bulk'):
+                            it_out.write_bulk(batch)
+                        else:
+                            for item in batch:
+                                it_out.write(item)
+                        batch = []
+                if len(batch) > 0:
+                    if hasattr(it_out, 'write_bulk'):
+                        it_out.write_bulk(batch)
+                    else:
+                        for item in batch:
+                            it_out.write(item)
+            finally:
+                it_in.close()
+        finally:
+            it_out.close()
 
 
     def convert_old(self, fromfile, tofile, options=None):
@@ -637,10 +659,10 @@ class Converter:
                    else get_file_type(fromfile))
         totype = (options['format_out'] if options['format_out'] is not None
                  else get_file_type(tofile))
-        key = '%s2%s' % (fromtype, totype)
+        key = f'{fromtype}2{totype}'
         func = CONVERT_FUNC_MAP.get(key, None)
         if func is None:
-            logging.error('Conversion between %s and %s not supported' % (fromtype, totype))
+            logging.error(f'Conversion between {fromtype} and {totype} not supported')
         else:
-            logging.info('Convert %s from %s to %s' % (key, fromfile, tofile))
+            logging.info(f'Convert {key} from {fromfile} to {tofile}')
             func(fromfile, tofile, options)

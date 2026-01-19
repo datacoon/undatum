@@ -1,18 +1,24 @@
-# -*- coding: utf-8 -*-
-"""Iterable data handling module."""
-from ..constants import BINARY_FILE_TYPES
-from ..utils import get_file_type, get_option, detect_encoding, detect_delimiter
+"""Iterable data handling module.
+
+.. deprecated:: 1.0.19
+    This module contains deprecated classes `IterableData` and `DataWriter`.
+    Use `open_iterable()` from `iterable.helpers.detect` instead.
+"""
 import csv
-import jsonlines
-import bson
-import logging
 import io
+import logging
+
+import bson
+import jsonlines
+
+from ..constants import BINARY_FILE_TYPES
+from ..utils import detect_delimiter, detect_encoding, get_file_type, get_option
 
 SUPPORTED_COMPRESSION = {'gz': True, 'zip': True, 'xz': False, '7z': False,  'lz4': False, 'bz2' : True}
 import gzip
-from zipfile import ZipFile
-from lzma import LZMAFile
 from bz2 import BZ2File
+from lzma import LZMAFile
+from zipfile import ZipFile
 
 try:
     import lz4
@@ -34,10 +40,43 @@ DEFAULT_ENCODING = 'utf8'
 DEFAULT_DELIMITER = ','
 
 class IterableData:
-    """Iterable data reader (CSV/JSON lines, BSON"""
-    def __init__(self, filename, options={}, autodetect=True, autodetect_limit=100000):
+    """Iterable data reader (CSV/JSON lines, BSON).
+
+    .. deprecated:: 1.0.19
+        This class is deprecated and will be removed in a future version.
+        Use `open_iterable()` from `iterable.helpers.detect` instead.
+        Example migration:
+
+        Old::
+            from undatum.common.iterable import IterableData
+            idata = IterableData(filename, options={'format_in': 'jsonl'})
+            for item in idata.iter():
+                process(item)
+            idata.close()
+
+        New::
+            from iterable.helpers.detect import open_iterable
+            iterable = open_iterable(filename, mode='r', iterableargs={'format_in': 'jsonl'})
+            try:
+                for item in iterable:
+                    process(item)
+            finally:
+                iterable.close()
+    """
+    def __init__(self, filename, options=None, autodetect=True, autodetect_limit=100000):
         """Creates iterable object from CSV, JSON lines and other iterable files.
+
+        .. deprecated:: 1.0.19
+            Use `open_iterable()` from `iterable.helpers.detect` instead.
         """
+        import warnings
+        if options is None:
+            options = {}
+        warnings.warn(
+            "IterableData is deprecated. Use open_iterable() from iterable.helpers.detect instead.",
+            DeprecationWarning,
+            stacklevel=2
+        )
         self.autodetect = autodetect
         self.autodetect_limit = autodetect_limit
         self.options = options
@@ -89,9 +128,9 @@ class IterableData:
                         if f_type == 'csv':
                             delimiter = DEFAULT_DELIMITER
                             self.delimiter = delimiter
-                    logging.debug('Detected encoding %s' % (detected_enc['encoding']))
+                    logging.debug('Detected encoding {}'.format(detected_enc['encoding']))
                 self.encoding = encoding
-                self.fileobj = open(filename, 'r', encoding=encoding)
+                self.fileobj = open(filename, encoding=encoding)
 
     def init_orig(self, filename, options):
         f_type = get_file_type(filename) if options['format_in'] is None else options['format_in']
@@ -122,9 +161,9 @@ class IterableData:
                         encoding = DEFAULT_ENCODING
                         if f_type == 'csv':
                             delimiter = DEFAULT_DELIMITER
-                    logging.debug('Detected encoding %s' % (detected_enc['encoding']))
+                    logging.debug('Detected encoding {}'.format(detected_enc['encoding']))
                 self.encoding = encoding
-                self.fileobj = open(filename, 'r', encoding=encoding)
+                self.fileobj = open(filename, encoding=encoding)
 
     def iter(self):
         if self.filetype == 'csv':
@@ -159,10 +198,40 @@ class BSONWriter:
 
 
 class DataWriter:
-    """Data writer (CSV/JSON lines, BSON"""
+    """Data writer (CSV/JSON lines, BSON).
+
+    .. deprecated:: 1.0.19
+        This class is deprecated and will be removed in a future version.
+        Use `open_iterable()` with `mode='w'` from `iterable.helpers.detect` instead.
+        Example migration:
+
+        Old::
+            from undatum.common.iterable import DataWriter
+            writer = DataWriter(fileobj, filetype='jsonl', fieldnames=['a', 'b'])
+            writer.write_items([{'a': 1, 'b': 2}])
+
+        New::
+            from iterable.helpers.detect import open_iterable
+            iterable = open_iterable(filename, mode='w', iterableargs={'keys': ['a', 'b']})
+            try:
+                iterable.write({'a': 1, 'b': 2})
+                # or for batches:
+                iterable.write_bulk([{'a': 1, 'b': 2}, {'a': 3, 'b': 4}])
+            finally:
+                iterable.close()
+    """
     def __init__(self, fileobj, filetype, output_type:str='iterable', delimiter:str=',', fieldnames:list=None):
         """Creates iterable object from CSV, JSON lines or BSON file.
+
+        .. deprecated:: 1.0.19
+            Use `open_iterable()` with `mode='w'` from `iterable.helpers.detect` instead.
         """
+        import warnings
+        warnings.warn(
+            "DataWriter is deprecated. Use open_iterable() with mode='w' from iterable.helpers.detect instead.",
+            DeprecationWarning,
+            stacklevel=2
+        )
         self.output_type = output_type
         self.filetype = filetype
         self.fieldnames = fieldnames

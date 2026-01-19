@@ -1,6 +1,8 @@
-# -*- coding: utf8 -*-
 """Common utilities and helper functions for data processing.
 
 This module provides shared functionality used across the undatum package,
-including iterable data handling, schema management, and common functions.
+including schema management and common functions.
+
+Note: Iterable data handling is now provided by the external `iterabledata` library.
+The local `IterableData` and `DataWriter` classes are deprecated.
 """

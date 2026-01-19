@@ -1,8 +1,9 @@
 """Configuration management for AI services."""
 import os
-import yaml
 from pathlib import Path
-from typing import Optional, Dict, Any
+from typing import Any, Optional
+
+import yaml
 
 
 def find_config_file() -> Optional[Path]:
@@ -28,7 +29,7 @@ def find_config_file() -> Optional[Path]:
     return None
 
 
-def load_config_file() -> Dict[str, Any]:
+def load_config_file() -> dict[str, Any]:
     """Load configuration from YAML file.
 
     Returns:
@@ -39,14 +40,14 @@ def load_config_file() -> Dict[str, Any]:
         return {}
 
     try:
-        with open(config_file, 'r', encoding='utf-8') as f:
+        with open(config_file, encoding='utf-8') as f:
             config = yaml.safe_load(f) or {}
             return config.get('ai', {})
-    except (yaml.YAMLError, IOError, KeyError):
+    except (yaml.YAMLError, OSError, KeyError):
         return {}
 
 
-def get_env_config() -> Dict[str, Any]:
+def get_env_config() -> dict[str, Any]:
     """Load configuration from environment variables.
 
     Environment variables:
@@ -96,9 +97,9 @@ def get_env_config() -> Dict[str, Any]:
     return config
 
 
-def merge_config(cli_config: Optional[Dict[str, Any]] = None,
-                 file_config: Optional[Dict[str, Any]] = None,
-                 env_config: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+def merge_config(cli_config: Optional[dict[str, Any]] = None,
+                 file_config: Optional[dict[str, Any]] = None,
+                 env_config: Optional[dict[str, Any]] = None) -> dict[str, Any]:
     """Merge configurations with precedence: CLI > File > Environment.
 
     Args:
@@ -128,7 +129,7 @@ def merge_config(cli_config: Optional[Dict[str, Any]] = None,
     return merged
 
 
-def get_ai_config(cli_config: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+def get_ai_config(cli_config: Optional[dict[str, Any]] = None) -> dict[str, Any]:
     """Get AI configuration with proper precedence.
 
     Args:
@@ -140,7 +141,7 @@ def get_ai_config(cli_config: Optional[Dict[str, Any]] = None) -> Dict[str, Any]
     return merge_config(cli_config=cli_config)
 
 
-def get_provider_config(config: Dict[str, Any], provider: str) -> Dict[str, Any]:
+def get_provider_config(config: dict[str, Any], provider: str) -> dict[str, Any]:
     """Extract provider-specific configuration.
 
     Args:

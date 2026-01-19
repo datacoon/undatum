@@ -1,7 +1,6 @@
 avro>=1.10.2
 chardet>=5.2.0
 click>=8.0.3
-dictquery>=0.5.0
 duckdb
 elasticsearch
 iterabledata

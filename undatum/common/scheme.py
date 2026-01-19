@@ -1,15 +1,16 @@
-# -*- coding: utf8 -*-
 """Schema definition and type mapping module."""
-import datetime
-import bson
-import orjson
 import csv
+import datetime
 import logging
 from copy import copy
-from .functions import  get_dict_value_deep
 
-OTYPES_MAP = [[type(""), 'string'],
-              [type(u""), 'string'],
+import bson
+import orjson
+
+from .functions import get_dict_value_deep
+
+OTYPES_MAP = [[str, 'string'],
+              [str, 'string'],
               [datetime.datetime, 'datetime'],
               [int, 'integer'],
               [bool, 'boolean'],
@@ -68,7 +69,7 @@ def get_schema(obj, novalue=True):
         tt = type(obj[k])
         if obj[k] is None:
             result[k] = {'type': 'string', 'value' : 1}
-        elif tt == type("") or tt == type(u"") or isinstance(obj[k], str):
+        elif tt == str or tt == str or isinstance(obj[k], str):
             result[k] = {'type': 'string', 'value' : 1}
         elif isinstance(obj[k], str):
             result[k] = {'type': 'string', 'value': 1}
@@ -101,9 +102,9 @@ def get_schema(obj, novalue=True):
                         result[k]['subtype'] = 'dict'
                         result[k]['schema'] =  merge_schemes(get_schemes(obj[k]))
                     else:
-                        logging.info("Unknown object %s type %s" % (k, str(type(obj[k][0]))))
+                        logging.info(f"Unknown object {k} type {str(type(obj[k][0]))}")
         else:
-            logging.info("Unknown object %s type %s" % (k, str(type(obj[k]))))
+            logging.info(f"Unknown object {k} type {str(type(obj[k]))}")
             result[k] = {'type': 'string', 'value' : 1}
         if novalue:
             del result[k]['value']
@@ -116,21 +117,21 @@ def extract_keys(obj, parent=None, text=None, level=1):
         text = "'schema': {\n"
     for k in obj.keys():
         if isinstance(obj[k], dict):
-            text += "\t" * level + "'%s' : {'type' : 'dict', 'schema' : {\n" % (k)
+            text += "\t" * level + f"'{k}' : {{'type' : 'dict', 'schema' : {{\n"
             text += extract_keys(obj[k], k, text, level+1)
             text += "\t" * level + "}},\n"
         elif isinstance(obj[k], list):
-            text += "\t" * level + "'%s' : {'type' : 'list', 'schema' : { 'type' : 'dict', 'schema' : {\n" % (k)
+            text += "\t" * level + f"'{k}' : {{'type' : 'list', 'schema' : {{ 'type' : 'dict', 'schema' : {{\n"
             if len(obj[k]) > 0:
                 item = obj[k][0]
                 if isinstance(item, dict):
                     text += extract_keys(item, k, text, level+1)
                 else:
-                    text += "\t" * level + "'%s' : {'type' : 'string'},\n" % (k)
+                    text += "\t" * level + f"'{k}' : {{'type' : 'string'}},\n"
             text += "\t" * level + "}}},\n"
         else:
             logging.info(str(type(obj[k])))
-            text += "\t" * level + "'%s' : {'type' : 'string'},\n" % (k)
+            text += "\t" * level + f"'{k}' : {{'type' : 'string'}},\n"
     if not parent:
         text += "}"
     return text
@@ -162,7 +163,7 @@ def generate_scheme_from_file(filename=None, fileobj=None, filetype='bson', alim
             source.close()
     elif filetype == 'jsonl':
         if filename:
-            source = open(filename, 'r', encoding=encoding)
+            source = open(filename, encoding=encoding)
         else:
             source = fileobj
         n = 0
@@ -175,7 +176,7 @@ def generate_scheme_from_file(filename=None, fileobj=None, filetype='bson', alim
             source.close()
     elif filetype == 'csv':
         if filename:
-            source = open(filename, 'r', encoding=encoding)
+            source = open(filename, encoding=encoding)
         else:
             source = fileobj
         n = 0
@@ -213,7 +214,7 @@ def schema2fieldslist(schema, prefix=None, predefined=None, sample=None):
             if schema[k]['type'] != 'array':
                 field = {'name' : name, 'type': schema[k]['type'], 'description' : '', 'sample' : sampledata, 'class' : ""}
             else:
-                field = {'name': name, 'type': 'list of [%s]' % schema[k]['type'], 'description' : '', 'sample' : sampledata, 'class' : ""}
+                field = {'name': name, 'type': 'list of [{}]'.format(schema[k]['type']), 'description' : '', 'sample' : sampledata, 'class' : ""}
             if predefined:
                 if name in predefined.keys():
                     field['description'] = predefined[name]['text']
@@ -246,7 +247,7 @@ def schema2fieldslist(schema, prefix=None, predefined=None, sample=None):
                 fieldslist.append(field)
                 fieldslist.extend(schema2fieldslist(schema[k]['schema'], prefix=subprefix, predefined=predefined, sample=sample))
             elif schema[k]['type'] == 'array':
-                field = {'name': name, 'type': 'list of [%s]' % schema[k]['type'], 'description' : '', 'sample' : '', 'class' : ''}
+                field = {'name': name, 'type': 'list of [{}]'.format(schema[k]['type']), 'description' : '', 'sample' : '', 'class' : ''}
                 if predefined:
                     if name in predefined.keys():
                         field['description'] = predefined[name]['text']

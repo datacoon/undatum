@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Russian tax and registration code validation constants and functions."""
 KPP_CODE = {
     '01': ('Постановка на учет в налоговом органе российской организации '

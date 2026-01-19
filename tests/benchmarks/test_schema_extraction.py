@@ -21,7 +21,8 @@ def test_get_dict_keys_performance(benchmark):
                 'list_field': [{'item': f'item{i}'}]
             }
 
-    result = benchmark(get_dict_keys, generate_data(), limit=1000)
+    data = list(generate_data())
+    result = benchmark(get_dict_keys, data, limit=1000)
     assert len(result) > 0
 
 

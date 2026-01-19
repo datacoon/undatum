@@ -1,0 +1,670 @@
+{
+  "metadata": {
+    "filename": "data.jsonl",
+    "file_size": 19622512,
+    "file_size_human": "18.71 MB",
+    "file_type": "jsonl",
+    "compression": "raw",
+    "encoding": "utf-8",
+    "title": "Данные о лекарственных средствах",
+    "keywords": [
+      "лекарственные средства",
+      "фармацевтика",
+      "медицинские препараты",
+      "здоровье"
+    ],
+    "geographic_coverage": {
+      "countries": [],
+      "regions": [],
+      "coordinates_present": false
+    },
+    "temporal_coverage": {
+      "start": "2021-09-16T18:58:09.699165",
+      "end": "2024-12-09T10:50:28.789158",
+      "granularity": "день"
+    },
+    "languages": [
+      {
+        "code": "ru",
+        "confidence": 1.0
+      }
+    ],
+    "data_theme": {
+      "label": "HEAL",
+      "uri": "http://publications.europa.eu/resource/authority/data-theme/HEAL"
+    },
+    "metadata_confidence": {
+      "title": 1.0,
+      "keywords": 1.0,
+      "geographic_coverage": 0.5,
+      "temporal_coverage": 1.0,
+      "languages": 1.0,
+      "data_theme": 1.0
+    },
+    "metadata_evidence": {
+      "title": "Данные о лекарственных средствах",
+      "keywords": "Содержит термины, связанные с лекарственными средствами и фармацевтикой.",
+      "geographic_coverage": "Нет конкретных стран или регионов.",
+      "temporal_coverage": "Даты создания и изменения данных указаны.",
+      "languages": "Основной язык - русский.",
+      "data_theme": "Тематика данных соответствует здравоохранению."
+    }
+  },
+  "summary": {
+    "total_tables": 1,
+    "total_records": 14550
+  },
+  "schema": {
+    "tables": [
+      {
+        "id": "data.jsonl",
+        "num_records": 14550,
+        "num_cols": 29,
+        "is_flat": false,
+        "description": "Данный набор данных содержит информацию о медицинских препаратах, включая уникальные идентификаторы, названия, формы выпуска, дозировки, упаковку, а также дополнительные характеристики, такие как показания и противопоказания. Данные представлены в формате CSV и могут включать информацию о сроках годности и производителях. Набор данных предназначен для использования в медицинских и фармацевтических исследованиях.",
+        "fields": [
+          {
+            "name": "smnn_gid",
+            "type": "UUID",
+            "is_array": false,
+            "description": "Уникальный идентификатор для специфического наименования лекарственного средства.",
+            "semantic_types": [],
+            "pii": null
+          },
+          {
+            "name": "std_mnn_gid",
+            "type": "UUID",
+            "is_array": false,
+            "description": "Идентификатор стандартного международного непатентованного наименования (МНН).",
+            "semantic_types": [],
+            "pii": null
+          },
+          {
+            "name": "std_mnn_name",
+            "type": "VARCHAR",
+            "is_array": false,
+            "description": "Название стандартного международного непатентованного наименования (МНН).",
+            "semantic_types": [],
+            "pii": null
+          },
+          {
+            "name": "norm_mnn",
+            "type": "VARCHAR",
+            "is_array": true,
+            "description": "Нормативное значение для международного непатентованного наименования.",
+            "semantic_types": [],
+            "pii": null
+          },
+          {
+            "name": "std_lf_gid",
+            "type": "UUID",
+            "is_array": false,
+            "description": "Идентификатор стандартной лекарственной формы.",
+            "semantic_types": [],
+            "pii": null
+          },
+          {
+            "name": "std_lf_name",
+            "type": "VARCHAR",
+            "is_array": false,
+            "description": "Название стандартной лекарственной формы.",
+            "semantic_types": [],
+            "pii": null
+          },
+          {
+            "name": "norm_lf",
+            "type": "VARCHAR",
+            "is_array": true,
+            "description": "Нормативное значение для лекарственной формы.",
+            "semantic_types": [],
+            "pii": null
+          },
+          {
+            "name": "std_dosage",
+            "type": "VARCHAR",
+            "is_array": false,
+            "description": "Стандартная дозировка лекарственного средства.",
+            "semantic_types": [],
+            "pii": null
+          },
+          {
+            "name": "norm_dosage",
+            "type": "VARCHAR",
+            "is_array": true,
+            "description": "Нормативное значение для дозировки.",
+            "semantic_types": [],
+            "pii": null
+          },
+          {
+            "name": "smnn_pe_gid",
+            "type": "UUID",
+            "is_array": false,
+            "description": "Идентификатор специфического наименования лекарственного средства в определенной форме.",
+            "semantic_types": [],
+            "pii": null
+          },
+          {
+            "name": "smnn_pe",
+            "type": "VARCHAR",
+            "is_array": false,
+            "description": "Специфическое наименование лекарственного средства.",
+            "semantic_types": [],
+            "pii": null
+          },
+          {
+            "name": "smnn_code",
+            "type": "VARCHAR",
+            "is_array": false,
+            "description": "Код специфического наименования лекарственного средства.",
+            "semantic_types": [],
+            "pii": null
+          },
+          {
+            "name": "klp_all_list",
+            "type": "VARCHAR",
+            "is_array": false,
+            "description": "Список всех кодов лекарственных препаратов (КЛП), связанных со специфическим наименованием.",
+            "semantic_types": [],
+            "pii": null
+          },
+          {
+            "name": "klp_active_list",
+            "type": "VARCHAR",
+            "is_array": false,
+            "description": "Список активных кодов лекарственных препаратов (КЛП), связанных со специфическим наименованием.",
+            "semantic_types": [],
+            "pii": null
+          },
+          {
+            "name": "smnn_active_klp_count",
+            "type": "BIGINT",
+            "is_array": false,
+            "description": "Количество активных кодов лекарственных препаратов (КЛП) для данного специфического наименования.",
+            "semantic_types": [],
+            "pii": null
+          },
+          {
+            "name": "smnn_all_klp_count",
+            "type": "BIGINT",
+            "is_array": false,
+            "description": "Общее количество кодов лекарственных препаратов (КЛП) для данного специфического наименования.",
+            "semantic_types": [],
+            "pii": null
+          },
+          {
+            "name": "smnn_ref_price_list",
+            "type": "VARCHAR",
+            "is_array": true,
+            "description": "Список справочных цен для специфического наименования лекарственного средства.",
+            "semantic_types": [],
+            "pii": null
+          },
+          {
+            "name": "is_znvlp",
+            "type": "BOOLEAN",
+            "is_array": false,
+            "description": "Флаг, указывающий, является ли лекарственное средство жизненно важным.",
+            "semantic_types": [],
+            "pii": null
+          },
+          {
+            "name": "is_narcotic",
+            "type": "BOOLEAN",
+            "is_array": false,
+            "description": "Флаг, указывающий, является ли лекарственное средство наркотическим.",
+            "semantic_types": [],
+            "pii": null
+          },
+          {
+            "name": "smnn_is_active",
+            "type": "BOOLEAN",
+            "is_array": false,
+            "description": "Флаг, указывающий, активно ли специфическое наименование лекарственного средства.",
+            "semantic_types": [],
+            "pii": null
+          },
+          {
+            "name": "smnn_is_invalid",
+            "type": "BOOLEAN",
+            "is_array": false,
+            "description": "Флаг, указывающий, является ли специфическое наименование лекарственного средства недействительным.",
+            "semantic_types": [],
+            "pii": null
+          },
+          {
+            "name": "smnn_date_invalid",
+            "type": "DATE",
+            "is_array": false,
+            "description": "Дата, когда специфическое наименование лекарственного средства стало недействительным.",
+            "semantic_types": [],
+            "pii": null
+          },
+          {
+            "name": "okpd2",
+            "type": "VARCHAR",
+            "is_array": false,
+            "description": "Код по Общероссийскому классификатору продукции по видам экономической деятельности (ОКПД2).",
+            "semantic_types": [],
+            "pii": null
+          },
+          {
+            "name": "ath",
+            "type": "VARCHAR",
+            "is_array": true,
+            "description": "Анатомо-терапевтическо-химическая классификация (АТХ) для лекарственного средства.",
+            "semantic_types": [],
+            "pii": null
+          },
+          {
+            "name": "ftg",
+            "type": "VARCHAR",
+            "is_array": true,
+            "description": "Фармакотерапевтическая группа для лекарственного средства.",
+            "semantic_types": [],
+            "pii": null
+          },
+          {
+            "name": "interchangeability_groups",
+            "type": "BIGINT",
+            "is_array": true,
+            "description": "Группы взаимозаменяемости для специфического наименования лекарственного средства.",
+            "semantic_types": [],
+            "pii": null
+          },
+          {
+            "name": "smnn_pe_note",
+            "type": "VARCHAR",
+            "is_array": false,
+            "description": "Примечание к специфическому наименованию лекарственного средства.",
+            "semantic_types": [],
+            "pii": null
+          },
+          {
+            "name": "smnn_date_create",
+            "type": "VARCHAR",
+            "is_array": false,
+            "description": "Дата создания записи о специфическом наименовании лекарственного средства.",
+            "semantic_types": [],
+            "pii": null
+          },
+          {
+            "name": "smnn_date_change",
+            "type": "VARCHAR",
+            "is_array": false,
+            "description": "Дата последнего изменения записи о специфическом наименовании лекарственного средства.",
+            "semantic_types": [],
+            "pii": null
+          }
+        ]
+      }
+    ]
+  },
+  "statistics": {
+    "engine": "duckdb",
+    "fields": [
+      {
+        "name": "smnn_gid",
+        "type": "UUID",
+        "is_array": false,
+        "unique_count": 9728,
+        "total_count": 10000,
+        "uniqueness_percent": 97.28
+      },
+      {
+        "name": "std_mnn_gid",
+        "type": "UUID",
+        "is_array": false,
+        "unique_count": 4887,
+        "total_count": 10000,
+        "uniqueness_percent": 48.87
+      },
+      {
+        "name": "std_mnn_name",
+        "type": "VARCHAR",
+        "is_array": false,
+        "unique_count": 3075,
+        "total_count": 10000,
+        "uniqueness_percent": 30.75
+      },
+      {
+        "name": "norm_mnn",
+        "type": "VARCHAR",
+        "is_array": true,
+        "unique_count": 466,
+        "total_count": 10000,
+        "uniqueness_percent": 4.66
+      },
+      {
+        "name": "std_lf_gid",
+        "type": "UUID",
+        "is_array": false,
+        "unique_count": 561,
+        "total_count": 10000,
+        "uniqueness_percent": 5.61
+      },
+      {
+        "name": "std_lf_name",
+        "type": "VARCHAR",
+        "is_array": false,
+        "unique_count": 438,
+        "total_count": 10000,
+        "uniqueness_percent": 4.38
+      },
+      {
+        "name": "norm_lf",
+        "type": "VARCHAR",
+        "is_array": true,
+        "unique_count": 530,
+        "total_count": 10000,
+        "uniqueness_percent": 5.3
+      },
+      {
+        "name": "std_dosage",
+        "type": "VARCHAR",
+        "is_array": false,
+        "unique_count": 2781,
+        "total_count": 10000,
+        "uniqueness_percent": 27.81
+      },
+      {
+        "name": "norm_dosage",
+        "type": "VARCHAR",
+        "is_array": true,
+        "unique_count": 1487,
+        "total_count": 10000,
+        "uniqueness_percent": 14.87
+      },
+      {
+        "name": "smnn_pe_gid",
+        "type": "UUID",
+        "is_array": false,
+        "unique_count": 13,
+        "total_count": 10000,
+        "uniqueness_percent": 0.13
+      },
+      {
+        "name": "smnn_pe",
+        "type": "VARCHAR",
+        "is_array": false,
+        "unique_count": 16,
+        "total_count": 10000,
+        "uniqueness_percent": 0.16
+      },
+      {
+        "name": "smnn_code",
+        "type": "VARCHAR",
+        "is_array": false,
+        "unique_count": 9511,
+        "total_count": 10000,
+        "uniqueness_percent": 95.11
+      },
+      {
+        "name": "klp_all_list",
+        "type": "VARCHAR",
+        "is_array": false,
+        "unique_count": 5785,
+        "total_count": 10000,
+        "uniqueness_percent": 57.85
+      },
+      {
+        "name": "klp_active_list",
+        "type": "VARCHAR",
+        "is_array": false,
+        "unique_count": 4166,
+        "total_count": 10000,
+        "uniqueness_percent": 41.66
+      },
+      {
+        "name": "smnn_active_klp_count",
+        "type": "BIGINT",
+        "is_array": false,
+        "unique_count": 488,
+        "total_count": 10000,
+        "uniqueness_percent": 4.88
+      },
+      {
+        "name": "smnn_all_klp_count",
+        "type": "BIGINT",
+        "is_array": false,
+        "unique_count": 742,
+        "total_count": 10000,
+        "uniqueness_percent": 7.42
+      },
+      {
+        "name": "smnn_ref_price_list",
+        "type": "VARCHAR",
+        "is_array": true,
+        "unique_count": 1,
+        "total_count": 10000,
+        "uniqueness_percent": 0.01
+      },
+      {
+        "name": "is_znvlp",
+        "type": "BOOLEAN",
+        "is_array": false,
+        "unique_count": 2,
+        "total_count": 10000,
+        "uniqueness_percent": 0.02
+      },
+      {
+        "name": "is_narcotic",
+        "type": "BOOLEAN",
+        "is_array": false,
+        "unique_count": 2,
+        "total_count": 10000,
+        "uniqueness_percent": 0.02
+      },
+      {
+        "name": "smnn_is_active",
+        "type": "BOOLEAN",
+        "is_array": false,
+        "unique_count": 2,
+        "total_count": 10000,
+        "uniqueness_percent": 0.02
+      },
+      {
+        "name": "smnn_is_invalid",
+        "type": "BOOLEAN",
+        "is_array": false,
+        "unique_count": 2,
+        "total_count": 10000,
+        "uniqueness_percent": 0.02
+      },
+      {
+        "name": "smnn_date_invalid",
+        "type": "DATE",
+        "is_array": false,
+        "unique_count": 6,
+        "total_count": 10000,
+        "uniqueness_percent": 0.06
+      },
+      {
+        "name": "okpd2",
+        "type": "VARCHAR",
+        "is_array": false,
+        "unique_count": 112,
+        "total_count": 10000,
+        "uniqueness_percent": 1.12
+      },
+      {
+        "name": "ath",
+        "type": "VARCHAR",
+        "is_array": true,
+        "unique_count": 2994,
+        "total_count": 10000,
+        "uniqueness_percent": 29.94
+      },
+      {
+        "name": "ftg",
+        "type": "VARCHAR",
+        "is_array": true,
+        "unique_count": 1700,
+        "total_count": 10000,
+        "uniqueness_percent": 17.0
+      },
+      {
+        "name": "interchangeability_groups",
+        "type": "BIGINT",
+        "is_array": true,
+        "unique_count": 1059,
+        "total_count": 10000,
+        "uniqueness_percent": 10.59
+      },
+      {
+        "name": "smnn_pe_note",
+        "type": "VARCHAR",
+        "is_array": false,
+        "unique_count": 140,
+        "total_count": 10000,
+        "uniqueness_percent": 1.4
+      },
+      {
+        "name": "smnn_date_create",
+        "type": "VARCHAR",
+        "is_array": false,
+        "unique_count": 148,
+        "total_count": 10000,
+        "uniqueness_percent": 1.48
+      },
+      {
+        "name": "smnn_date_change",
+        "type": "VARCHAR",
+        "is_array": false,
+        "unique_count": 817,
+        "total_count": 10000,
+        "uniqueness_percent": 8.17
+      }
+    ]
+  },
+  "samples": [
+    {
+      "smnn_gid": "00591e7c-1707-11ec-b64c-b3eabe615e17",
+      "std_mnn_gid": "f51864d0-6638-4c60-b445-965ee316fae5",
+      "std_mnn_name": "ФЕБУКСОСТАТ",
+      "norm_mnn": null,
+      "std_lf_gid": "25779a9a-0ac2-4f59-9557-2965c8e715de",
+      "std_lf_name": "Капсулы",
+      "norm_lf": null,
+      "std_dosage": "80 мг",
+      "norm_dosage": null,
+      "smnn_pe_gid": "76b8a1df-ff1c-4363-a83c-bbebc0b04167",
+      "smnn_pe": "шт.",
+      "smnn_code": "21.20.10.226-000001-1-00008-0000000000000",
+      "klp_all_list": "Подагрель",
+      "klp_active_list": "Подагрель",
+      "smnn_active_klp_count": 4,
+      "smnn_all_klp_count": 4,
+      "smnn_ref_price_list": [
+        null,
+        null,
+        null
+      ],
+      "is_znvlp": false,
+      "is_narcotic": false,
+      "smnn_is_active": true,
+      "smnn_is_invalid": false,
+      "smnn_date_invalid": null,
+      "okpd2": "21.20.10.226",
+      "ath": [
+        "M04AA03 - Фебуксостат"
+      ],
+      "ftg": [
+        "противоподагрическое средство - ксантиноксидазы ингибитор"
+      ],
+      "interchangeability_groups": null,
+      "smnn_pe_note": "капсула",
+      "smnn_date_create": "2021-09-16T18:58:09.699165",
+      "smnn_date_change": "2021-09-16T19:08:42.981362"
+    },
+    {
+      "smnn_gid": "00592282-1707-11ec-b64c-67a91b8a3b59",
+      "std_mnn_gid": "bdf5198c-1706-11ec-badd-9f34b38d96fc",
+      "std_mnn_name": "ДОЛУТЕГРАВИР+РИЛПИВИРИН",
+      "norm_mnn": null,
+      "std_lf_gid": "12f50236-bf5b-11e9-a17d-17d28df99c7e",
+      "std_lf_name": "Таблетки, покрытые оболочкой",
+      "norm_lf": [
+        "Таблетки покрытые пленочной оболочкой"
+      ],
+      "std_dosage": "50 мг+25 мг",
+      "norm_dosage": [
+        "50 мг + 25 мг"
+      ],
+      "smnn_pe_gid": "76b8a1df-ff1c-4363-a83c-bbebc0b04167",
+      "smnn_pe": "шт.",
+      "smnn_code": "21.20.10.194-000111-1-00001-0000000000000",
+      "klp_all_list": "Джулука",
+      "klp_active_list": "Джулука",
+      "smnn_active_klp_count": 1,
+      "smnn_all_klp_count": 2,
+      "smnn_ref_price_list": [
+        null,
+        null,
+        null
+      ],
+      "is_znvlp": false,
+      "is_narcotic": false,
+      "smnn_is_active": true,
+      "smnn_is_invalid": false,
+      "smnn_date_invalid": null,
+      "okpd2": "21.20.10.194",
+      "ath": [
+        "J05AR21 - Долутегравир+Рилпивирин"
+      ],
+      "ftg": [
+        "противовирусное [ВИЧ] средство",
+        "противовирусные средства системного действия; противовирусные средства прямого действия; комбинации противовирусных средств для лечения ВИЧ-инфекций"
+      ],
+      "interchangeability_groups": null,
+      "smnn_pe_note": "таблетка",
+      "smnn_date_create": "2021-09-16T18:58:09.699165",
+      "smnn_date_change": "2022-07-14T13:07:24.883854"
+    },
+    {
+      "smnn_gid": "005923fe-1707-11ec-b64c-e7b754d2657a",
+      "std_mnn_gid": "0a2b8f6c-bf5b-11e9-a145-a36e91109ae4",
+      "std_mnn_name": "ВАКЦИНА ДЛЯ ПРОФИЛАКТИКИ РОТАВИРУСНОЙ ИНФЕКЦИИ, ПЕНТАВАЛЕНТНАЯ, ЖИВАЯ",
+      "norm_mnn": [
+        "ВАКЦИНА ДЛЯ ПРОФИЛАКТИКИ РОТАВИРУСНОЙ ИНФЕКЦИИ,ПЕНТАВАЛЕНТНАЯ,ЖИВАЯ"
+      ],
+      "std_lf_gid": "f8adcfca-c01b-4485-9353-3a9134461ed8",
+      "std_lf_name": "Лиофилизат для приготовления раствора для приема внутрь",
+      "norm_lf": null,
+      "std_dosage": "2.5 мл/доза",
+      "norm_dosage": [
+        "2,5 мл/доза"
+      ],
+      "smnn_pe_gid": "0c26abe4-bf5b-11e9-b5ac-db2c1527b843",
+      "smnn_pe": "доз(а)",
+      "smnn_code": "21.20.21.120-000097-1-00072-0000000000000",
+      "klp_all_list": "Рота-V-Эйд",
+      "klp_active_list": "Рота-V-Эйд",
+      "smnn_active_klp_count": 3,
+      "smnn_all_klp_count": 10,
+      "smnn_ref_price_list": [
+        null,
+        null,
+        null
+      ],
+      "is_znvlp": true,
+      "is_narcotic": false,
+      "smnn_is_active": true,
+      "smnn_is_invalid": false,
+      "smnn_date_invalid": null,
+      "okpd2": "21.20.21.120",
+      "ath": [
+        "J07BH02 - Ротавирус пятивалентный живой"
+      ],
+      "ftg": [
+        "МИБП - вакцина"
+      ],
+      "interchangeability_groups": [
+        4776
+      ],
+      "smnn_pe_note": null,
+      "smnn_date_create": "2021-09-16T18:58:09.699165",
+      "smnn_date_change": "2024-12-09T10:50:28.789158"
+    }
+  ],
+  "pii_fields": []
+}

@@ -1,6 +1,6 @@
 """Base AI service interface for dataset documentation."""
 from abc import ABC, abstractmethod
-from typing import Dict, Optional
+from typing import Optional
 
 
 class AIServiceError(Exception):
@@ -40,7 +40,7 @@ class AIService(ABC):
         self.timeout = timeout
 
     @abstractmethod
-    def get_fields_info(self, fields: list[str], language: str = 'English') -> Dict[str, str]:
+    def get_fields_info(self, fields: list[str], language: str = 'English') -> dict[str, str]:
         """Get descriptions for a list of field names.
 
         Args:
@@ -66,6 +66,25 @@ class AIService(ABC):
 
         Returns:
             String description of the dataset
+
+        Raises:
+            AIConfigurationError: If service is not properly configured
+            AIAPIError: If API call fails
+        """
+        pass
+
+    @abstractmethod
+    def get_structured_metadata(self, data: str, fields: list[str],
+                                language: str = 'English') -> dict:
+        """Get structured dataset metadata from sample data.
+
+        Args:
+            data: Sample data as CSV string
+            fields: List of field names
+            language: Language for descriptions (default: 'English')
+
+        Returns:
+            Dictionary with structured metadata fields
 
         Raises:
             AIConfigurationError: If service is not properly configured

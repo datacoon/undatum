@@ -1,14 +1,21 @@
-# -*- coding: utf8 -*-
 """DOCX file format handling and table extraction."""
 import csv
 import datetime
 import json
 
 import openpyxl
-import xlwt
-from docx import Document
-from docx.oxml.simpletypes import ST_Merge
-from docx.table import _Cell
+try:
+    import xlwt
+except ImportError:  # pragma: no cover - optional dependency
+    xlwt = None
+try:
+    from docx import Document
+    from docx.oxml.simpletypes import ST_Merge
+    from docx.table import _Cell
+except ImportError:  # pragma: no cover - optional dependency
+    Document = None
+    ST_Merge = None
+    _Cell = None
 
 
 def __extract_table(table, strip_space=False):
@@ -48,6 +55,8 @@ def __store_table(tabdata, filename, output_format="csv"):
             for row in tabdata:
                 w.writerow(row)
     elif output_format == 'xls':
+        if xlwt is None:
+            raise RuntimeError("xlwt is required for XLS output")
         workbook = xlwt.Workbook()
         __xls_table_to_sheet(tabdata, workbook.add_sheet("0"))
         workbook.save(filename)
@@ -77,6 +86,8 @@ def __xlsx_table_to_sheet(table, ws):
 
 def extract_docx_tables(filename, strip_space=True):
     """Extracts table from .DOCX files"""
+    if Document is None:
+        raise RuntimeError("python-docx is required for DOCX processing")
     tables = []
     document = Document(filename)
     n = 0
@@ -106,6 +117,8 @@ def extract(filename, output_format="csv", sizefilter=0, singlefile=False,
     lfilter = int(sizefilter)
     if singlefile:
         if output_format == "xls":
+            if xlwt is None:
+                raise RuntimeError("xlwt is required for XLS output")
             workbook = xlwt.Workbook()
             for t in tables:
                 if lfilter >= len(t):
@@ -144,6 +157,8 @@ def extract(filename, output_format="csv", sizefilter=0, singlefile=False,
 def analyze_docx(filename, extract_data=None, strip_space=True):
     """Analyzes docx file and extracts data if requested."""
     # extract_data parameter kept for API compatibility but not used
+    if Document is None:
+        raise RuntimeError("python-docx is required for DOCX processing")
     tableinfo = []
     document = Document(filename)
     n = 0

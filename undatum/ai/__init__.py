@@ -1,14 +1,14 @@
 """AI service module for dataset documentation."""
-from typing import Optional, Dict, Any
+from typing import Any, Optional
 
-from .base import AIService, AIServiceError, AIConfigurationError, AIAPIError
+from .base import AIAPIError, AIConfigurationError, AIService, AIServiceError
 from .config import get_ai_config, get_provider_config
 from .providers import (
+    LMStudioProvider,
+    OllamaProvider,
     OpenAIProvider,
     OpenRouterProvider,
-    OllamaProvider,
-    LMStudioProvider,
-    PerplexityProvider
+    PerplexityProvider,
 )
 
 # Provider registry
@@ -22,7 +22,7 @@ PROVIDERS = {
 
 
 def get_ai_service(provider: Optional[str] = None,
-                   config: Optional[Dict[str, Any]] = None) -> AIService:
+                   config: Optional[dict[str, Any]] = None) -> AIService:
     """Get AI service instance based on configuration.
 
     Args:
@@ -87,7 +87,7 @@ def get_ai_service(provider: Optional[str] = None,
     except AIConfigurationError as e:
         raise AIConfigurationError(
             f"Failed to configure {provider_name} provider: {str(e)}"
-        )
+        ) from e
 
 
 # Backward compatibility: export old function signatures
@@ -129,6 +129,27 @@ def get_description(data, language='English', ai_service: Optional[AIService] = 
     return ai_service.get_description(data, language)
 
 
+def get_structured_metadata(data, fields, language='English', ai_service: Optional[AIService] = None):
+    """Get structured metadata (backward compatibility wrapper).
+
+    Args:
+        data: Sample data as CSV string
+        fields: List of field names
+        language: Language for descriptions
+        ai_service: Optional AI service instance. If None, will auto-detect.
+
+    Returns:
+        Dictionary with structured metadata fields
+    """
+    if ai_service is None:
+        ai_service = get_ai_service()
+
+    if isinstance(fields, str):
+        fields = [f.strip() for f in fields.split(',')]
+
+    return ai_service.get_structured_metadata(data, fields, language)
+
+
 __all__ = [
     'AIService',
     'AIServiceError',
@@ -137,6 +158,7 @@ __all__ = [
     'get_ai_service',
     'get_fields_info',
     'get_description',
+    'get_structured_metadata',
     'OpenAIProvider',
     'OpenRouterProvider',
     'OllamaProvider',

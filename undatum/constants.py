@@ -1,4 +1,3 @@
-# -*- coding: utf8 -*-
 """Constants and configuration values for the undatum package."""
 DATE_PATTERNS = ["%d.%m.%Y", "%Y-%m-%d", "%y-%m-%d", "%Y-%m-%dT%H:%M:%S",
                  "%Y-%m-%d %H:%M:%S",
@@ -19,3 +18,19 @@ DEFAULT_OPTIONS = {'encoding': 'utf8',
 
 DUCKABLE_FILE_TYPES = ['csv', 'jsonl', 'json', 'parquet']
 DUCKABLE_CODECS = ['zst', 'gzip', 'raw']
+
+EU_DATA_THEMES = [
+    {"label": "AGRI", "uri": "http://publications.europa.eu/resource/authority/data-theme/AGRI"},
+    {"label": "ECON", "uri": "http://publications.europa.eu/resource/authority/data-theme/ECON"},
+    {"label": "EDUC", "uri": "http://publications.europa.eu/resource/authority/data-theme/EDUC"},
+    {"label": "ENVI", "uri": "http://publications.europa.eu/resource/authority/data-theme/ENVI"},
+    {"label": "ENER", "uri": "http://publications.europa.eu/resource/authority/data-theme/ENER"},
+    {"label": "GOVE", "uri": "http://publications.europa.eu/resource/authority/data-theme/GOVE"},
+    {"label": "HEAL", "uri": "http://publications.europa.eu/resource/authority/data-theme/HEAL"},
+    {"label": "INTR", "uri": "http://publications.europa.eu/resource/authority/data-theme/INTR"},
+    {"label": "JUST", "uri": "http://publications.europa.eu/resource/authority/data-theme/JUST"},
+    {"label": "REGI", "uri": "http://publications.europa.eu/resource/authority/data-theme/REGI"},
+    {"label": "SOCI", "uri": "http://publications.europa.eu/resource/authority/data-theme/SOCI"},
+    {"label": "TECH", "uri": "http://publications.europa.eu/resource/authority/data-theme/TECH"},
+    {"label": "TRAN", "uri": "http://publications.europa.eu/resource/authority/data-theme/TRAN"},
+]

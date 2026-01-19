@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf8 -*-
 """The main entry point. Invoke as `undatum' or `python -m undatum`.
 
 This module provides the CLI entry point for the undatum package.

@@ -7,6 +7,15 @@ def pytest_configure(config):
     config.addinivalue_line("markers", "benchmark: marks tests as benchmarks")
 
 
+try:
+    import pytest_benchmark  # noqa: F401
+except ImportError:
+    @pytest.fixture
+    def benchmark():
+        """Skip benchmarks when pytest-benchmark is unavailable."""
+        pytest.skip("pytest-benchmark is not installed")
+
+
 @pytest.fixture
 def sample_csv_file(tmp_path):
     """Create a sample CSV file for testing."""

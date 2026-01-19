@@ -1,11 +1,12 @@
 """AI-powered data analysis using Perplexity API."""
-import requests
 import csv
-import sys
 import os
+import sys
 from io import StringIO
 
-PERPLEXITY_API_KEY = os.getenv('PERPLEXITY_API_KEY', )
+import requests
+
+PERPLEXITY_API_KEY = os.getenv('PERPLEXITY_API_KEY')
 
 
 def find_between( s, first, last ):
@@ -46,7 +47,8 @@ def get_fields_info(fields, language='English'):
     n = 0
     for r in dr:
         n += 1
-        if n == 1: continue
+        if n == 1:
+            continue
         table[r[0]] = r[1]
     return table
 
