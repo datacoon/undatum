@@ -17,6 +17,12 @@
 - **Database ingestion**: Ingest data to MongoDB, PostgreSQL, DuckDB, MySQL, SQLite, and Elasticsearch with retry logic and error handling
 - **AI-powered documentation**: Automatic field and dataset descriptions using multiple LLM providers (OpenAI, OpenRouter, Ollama, LM Studio, Perplexity) with structured JSON output
 
+## Documentation
+
+- `WORKFLOW_GUIDE.md` for contributor workflow and OpenSpec usage
+- `openspec/` for change proposals, specs, and implementation summaries
+- `examples/doc/` for dataset documentation output samples
+
 ## Installation
 
 ### Using pip (Recommended)

@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-01-19
+
+### Added
+- Added workflow and OpenSpec documentation for change proposals and agent workflows
+- Added dataset documentation examples under `examples/doc/`
+
+### Changed
+- Expanded README with documentation pointers and dataset doc references
+
 ## [1.1.0] - 2026-01-18
 
 ### Added
@@ -205,7 +214,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - First public release on PyPI and updated github code
 
-[Unreleased]: https://github.com/datacoon/undatum/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/datacoon/undatum/compare/v1.1.1...HEAD
+[1.1.1]: https://github.com/datacoon/undatum/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/datacoon/undatum/compare/v1.0.18...v1.1.0
 [1.0.18]: https://github.com/datacoon/undatum/compare/v1.0.17...v1.0.18
 [1.0.17]: https://github.com/datacoon/undatum/compare/v1.0.16...v1.0.17
