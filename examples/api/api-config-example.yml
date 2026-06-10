@@ -1,0 +1,41 @@
+# Example API configuration file
+# This file demonstrates the structure of an API config for undatum api serve
+#
+# Generate a config automatically:
+#   undatum api discover data.jsonl --output api-config.yml
+#
+# Or create manually using this format:
+
+resources:
+  - name: data_20130920t1245
+    path: data-20130920T1245.jsonl
+    format: jsonl
+    read_only: true
+    fields:
+      - name: title
+        type: varchar
+      - name: link
+        type: varchar
+      - name: pubDate
+        type: varchar
+      - name: guid
+        type: varchar
+      - name: description
+        type: varchar
+    pagination:
+      default_limit: 50
+      max_limit: 1000
+    query:
+      allowed_ops:
+        - eq
+        - ne
+        - lt
+        - gt
+        - le
+        - ge
+        - like
+      allowed_order_by:
+        - title
+        - pubDate
+        - link
+    primary_key: guid

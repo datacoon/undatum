@@ -1,0 +1,46 @@
+# Example: Data Analysis Pipeline
+# This pipeline demonstrates data exploration and analysis:
+# 1. Sample large dataset
+# 2. Compute statistics
+# 3. Analyze frequency distributions
+# 4. Generate documentation
+
+variables:
+  input_file: data/large_dataset.csv
+  sample_size: 10000
+  output_dir: analysis
+
+steps:
+  - name: sample_data
+    command: sample
+    args:
+      input: ${input_file}
+      output: ${output_dir}/sample.csv
+      n: ${sample_size}
+
+  - name: compute_statistics
+    command: stats
+    args:
+      input: ${output_dir}/sample.csv
+      checkdates: true
+      engine: duckdb
+
+  - name: frequency_analysis
+    command: frequency
+    args:
+      input: ${output_dir}/sample.csv
+      fields: category,status,region
+
+  - name: unique_values
+    command: uniq
+    args:
+      input: ${output_dir}/sample.csv
+      fields: category
+
+  - name: generate_documentation
+    command: doc
+    args:
+      input: ${output_dir}/sample.csv
+      output: ${output_dir}/dataset_docs.md
+      format: markdown
+      sample_size: 10

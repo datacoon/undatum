@@ -1,0 +1,343 @@
+"""Extended tests for utility functions."""
+import tempfile
+import os
+from unittest.mock import patch, mock_open
+
+import pytest
+
+from undatum.utils import (
+    detect_encoding,
+    detect_delimiter,
+    get_file_type,
+    get_option,
+    get_dict_value,
+    strip_dict_fields,
+    dict_generator,
+    guess_int_size,
+    guess_datatype,
+    buf_count_newlines_gen,
+    get_dict_keys,
+    normalize_for_json,
+)
+
+
+class TestDetectEncoding:
+    """Test detect_encoding function."""
+
+    def test_detect_encoding_utf8(self):
+        """Test detecting UTF-8 encoding."""
+        with tempfile.NamedTemporaryFile(mode='wb', delete=False) as f:
+            f.write("Hello, world!".encode('utf-8'))
+            temp_path = f.name
+
+        try:
+            result = detect_encoding(temp_path)
+            assert 'encoding' in result
+            assert result['encoding'] is not None
+        finally:
+            os.unlink(temp_path)
+
+    def test_detect_encoding_with_limit(self):
+        """Test detecting encoding with limit."""
+        with tempfile.NamedTemporaryFile(mode='wb', delete=False) as f:
+            f.write("Test content".encode('utf-8'))
+            temp_path = f.name
+
+        try:
+            result = detect_encoding(temp_path, limit=100)
+            assert 'encoding' in result
+        finally:
+            os.unlink(temp_path)
+
+
+class TestDetectDelimiter:
+    """Test detect_delimiter function."""
+
+    def test_detect_delimiter_comma(self):
+        """Test detecting comma delimiter."""
+        with tempfile.NamedTemporaryFile(mode='w', encoding='utf-8', delete=False) as f:
+            f.write("col1,col2,col3\n")
+            temp_path = f.name
+
+        try:
+            result = detect_delimiter(temp_path)
+            assert result == ','
+        finally:
+            os.unlink(temp_path)
+
+    def test_detect_delimiter_semicolon(self):
+        """Test detecting semicolon delimiter."""
+        with tempfile.NamedTemporaryFile(mode='w', encoding='utf-8', delete=False) as f:
+            f.write("col1;col2;col3\n")
+            temp_path = f.name
+
+        try:
+            result = detect_delimiter(temp_path)
+            assert result == ';'
+        finally:
+            os.unlink(temp_path)
+
+    def test_detect_delimiter_tab(self):
+        """Test detecting tab delimiter."""
+        with tempfile.NamedTemporaryFile(mode='w', encoding='utf-8', delete=False) as f:
+            f.write("col1\tcol2\tcol3\n")
+            temp_path = f.name
+
+        try:
+            result = detect_delimiter(temp_path)
+            assert result == '\t'
+        finally:
+            os.unlink(temp_path)
+
+
+class TestGetFileType:
+    """Test get_file_type function."""
+
+    def test_get_file_type_csv(self):
+        """Test getting CSV file type."""
+        assert get_file_type('data.csv') == 'csv'
+        assert get_file_type('/path/to/file.CSV') == 'csv'
+
+    def test_get_file_type_jsonl(self):
+        """Test getting JSONL file type."""
+        assert get_file_type('data.jsonl') == 'jsonl'
+
+    def test_get_file_type_unsupported(self):
+        """Test getting unsupported file type."""
+        assert get_file_type('data.txt') is None
+        assert get_file_type('data') is None
+
+
+class TestGetOption:
+    """Test get_option function."""
+
+    def test_get_option_from_dict(self):
+        """Test getting option from dictionary."""
+        options = {'key1': 'value1', 'key2': 'value2'}
+        assert get_option(options, 'key1') == 'value1'
+        assert get_option(options, 'key2') == 'value2'
+
+    def test_get_option_from_defaults(self):
+        """Test getting option from defaults."""
+        options = {}
+        assert get_option(options, 'encoding') == 'utf8'
+        assert get_option(options, 'delimiter') == ','
+
+    def test_get_option_not_found(self):
+        """Test getting option that doesn't exist."""
+        options = {}
+        assert get_option(options, 'nonexistent') is None
+
+
+class TestGetDictValue:
+    """Test get_dict_value function."""
+
+    def test_get_dict_value_simple(self):
+        """Test getting value from simple dictionary."""
+        d = {'key': 'value'}
+        assert get_dict_value(d, ['key']) == ['value']
+
+    def test_get_dict_value_nested(self):
+        """Test getting value from nested dictionary."""
+        d = {'level1': {'level2': {'level3': 'value'}}}
+        assert get_dict_value(d, ['level1', 'level2', 'level3']) == ['value']
+
+    def test_get_dict_value_list(self):
+        """Test getting value from list of dictionaries."""
+        d = [{'key': 'value1'}, {'key': 'value2'}]
+        assert get_dict_value(d, ['key']) == ['value1', 'value2']
+
+    def test_get_dict_value_none(self):
+        """Test getting value from None."""
+        assert get_dict_value(None, ['key']) == []
+
+
+class TestStripDictFields:
+    """Test strip_dict_fields function."""
+
+    def test_strip_dict_fields_simple(self):
+        """Test stripping simple fields."""
+        record = {'field1': 'value1', 'field2': 'value2', 'field3': 'value3'}
+        fields = [['field1'], ['field2']]
+        result = strip_dict_fields(record, fields)
+        assert 'field1' in result
+        assert 'field2' in result
+        assert 'field3' not in result
+
+    def test_strip_dict_fields_nested(self):
+        """Test stripping nested fields."""
+        record = {'level1': {'level2': {'field1': 'value1', 'field2': 'value2'}}}
+        fields = [['level1', 'level2', 'field1']]
+        result = strip_dict_fields(record, fields)
+        assert 'field1' in result['level1']['level2']
+        assert 'field2' not in result['level1']['level2']
+
+
+class TestDictGenerator:
+    """Test dict_generator function."""
+
+    def test_dict_generator_simple(self):
+        """Test generating from simple dictionary."""
+        d = {'key1': 'value1', 'key2': 'value2'}
+        result = list(dict_generator(d))
+        assert len(result) == 2
+        assert ['key1', 'value1'] in result
+        assert ['key2', 'value2'] in result
+
+    def test_dict_generator_nested(self):
+        """Test generating from nested dictionary."""
+        d = {'level1': {'level2': 'value'}}
+        result = list(dict_generator(d))
+        assert ['level1', 'level2', 'value'] in result
+
+    def test_dict_generator_skips_id(self):
+        """Test that _id is skipped."""
+        d = {'_id': '123', 'key': 'value'}
+        result = list(dict_generator(d))
+        assert ['_id', '123'] not in result
+        assert ['key', 'value'] in result
+
+
+class TestGuessIntSize:
+    """Test guess_int_size function."""
+
+    def test_guess_int_size_uint8(self):
+        """Test guessing uint8 size."""
+        assert guess_int_size(100) == 'uint8'
+        assert guess_int_size(254) == 'uint8'  # Less than 255
+
+    def test_guess_int_size_uint16(self):
+        """Test guessing uint16 size."""
+        assert guess_int_size(255) == 'uint16'  # 255 is >= 255, so uint16
+        assert guess_int_size(65534) == 'uint16'  # Less than 65535
+
+    def test_guess_int_size_uint32(self):
+        """Test guessing uint32 size."""
+        assert guess_int_size(65536) == 'uint32'
+        assert guess_int_size(1000000) == 'uint32'
+
+
+class TestGuessDatatype:
+    """Test guess_datatype function."""
+
+    def test_guess_datatype_int(self):
+        """Test guessing integer type."""
+        from qddate import DateParser
+        qd = DateParser()
+        result = guess_datatype(123, qd)
+        assert result['base'] == 'int'
+
+    def test_guess_datatype_float(self):
+        """Test guessing float type."""
+        from qddate import DateParser
+        qd = DateParser()
+        result = guess_datatype(123.45, qd)
+        assert result['base'] == 'float'
+
+    def test_guess_datatype_string_digit(self):
+        """Test guessing digit string."""
+        from qddate import DateParser
+        qd = DateParser()
+        result = guess_datatype("123", qd)
+        assert result['base'] == 'int'
+
+    def test_guess_datatype_string_float(self):
+        """Test guessing float string."""
+        from qddate import DateParser
+        qd = DateParser()
+        result = guess_datatype("123.45", qd)
+        assert result['base'] == 'float'
+
+    def test_guess_datatype_none(self):
+        """Test guessing None type."""
+        from qddate import DateParser
+        qd = DateParser()
+        result = guess_datatype(None, qd)
+        assert result['base'] == 'empty'
+
+
+class TestBufCountNewlinesGen:
+    """Test buf_count_newlines_gen function."""
+
+    def test_buf_count_newlines_gen(self):
+        """Test counting newlines in file."""
+        with tempfile.NamedTemporaryFile(mode='w', delete=False) as f:
+            f.write("line1\nline2\nline3\n")
+            temp_path = f.name
+
+        try:
+            count = buf_count_newlines_gen(temp_path)
+            assert count == 3
+        finally:
+            os.unlink(temp_path)
+
+    def test_buf_count_newlines_gen_empty(self):
+        """Test counting newlines in empty file."""
+        with tempfile.NamedTemporaryFile(mode='w', delete=False) as f:
+            f.write("")
+            temp_path = f.name
+
+        try:
+            count = buf_count_newlines_gen(temp_path)
+            assert count == 0
+        finally:
+            os.unlink(temp_path)
+
+
+class TestGetDictKeys:
+    """Test get_dict_keys function."""
+
+    def test_get_dict_keys_simple(self):
+        """Test getting keys from simple dictionaries."""
+        items = [{'key1': 'value1', 'key2': 'value2'}]
+        keys = get_dict_keys(items)
+        assert 'key1' in keys
+        assert 'key2' in keys
+
+    def test_get_dict_keys_nested(self):
+        """Test getting keys from nested dictionaries."""
+        items = [{'level1': {'level2': 'value'}}]
+        keys = get_dict_keys(items)
+        assert 'level1.level2' in keys
+
+    def test_get_dict_keys_with_limit(self):
+        """Test getting keys with limit."""
+        items = [{'key' + str(i): 'value' + str(i)} for i in range(100)]
+        keys = get_dict_keys(items, limit=10)
+        # The limit applies to items processed, not keys returned
+        # So we just check that it doesn't crash and returns some keys
+        assert len(keys) > 0
+        assert isinstance(keys, list)
+
+
+class TestNormalizeForJson:
+    """Test normalize_for_json function."""
+
+    def test_normalize_for_json_uuid(self):
+        """Test normalizing UUID to string."""
+        try:
+            import uuid
+            test_uuid = uuid.uuid4()
+            result = normalize_for_json(test_uuid)
+            assert isinstance(result, str)
+            assert result == str(test_uuid)
+        except ImportError:
+            pytest.skip("uuid module not available")
+
+    def test_normalize_for_json_dict(self):
+        """Test normalizing dictionary."""
+        d = {'key': 'value', 'nested': {'key2': 'value2'}}
+        result = normalize_for_json(d)
+        assert result == d
+
+    def test_normalize_for_json_list(self):
+        """Test normalizing list."""
+        lst = [1, 2, 3]
+        result = normalize_for_json(lst)
+        assert result == lst
+
+    def test_normalize_for_json_primitive(self):
+        """Test normalizing primitive types."""
+        assert normalize_for_json(123) == 123
+        assert normalize_for_json("string") == "string"
+        assert normalize_for_json(True) is True

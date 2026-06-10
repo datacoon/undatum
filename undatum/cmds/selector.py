@@ -10,9 +10,12 @@ import duckdb
 import orjson
 from iterable.helpers.detect import detect_file_type, open_iterable
 
+from ..common.duckdb_config import create_duckdb_connection, get_duckdb_config_from_options
+from ..common.engine_selector import detect_engine
 from ..common.filter import match_filter, translate_filter_to_sql
 from ..common.iterable import DataWriter
-from ..constants import DUCKABLE_CODECS, DUCKABLE_FILE_TYPES
+from ..common.errors import FileNotFoundError, PermissionError, ValidationError, find_similar_files, find_similar_field_names
+from ..common.path_utils import validate_file_path
 from ..utils import (
     detect_encoding,
     dict_generator,
@@ -39,23 +42,6 @@ def get_iterable_options(options):
     return out
 
 
-def _detect_engine(fromfile, engine, filetype):
-    """Detect the appropriate engine for processing."""
-    compression = 'raw'
-    if engine is None:
-        engine = 'auto'
-    if filetype is None:
-        ftype = detect_file_type(fromfile)
-        if ftype['success']:
-            filetype = ftype['datatype'].id()
-            if ftype['codec'] is not None:
-                compression = ftype['codec'].id()
-    logging.info(f'File filetype {filetype} and compression {compression}')
-    if engine == 'auto':
-        if filetype in DUCKABLE_FILE_TYPES and compression in DUCKABLE_CODECS:
-            return 'duckdb'
-        return 'iterable'
-    return engine
 
 
 def get_iterable_fields_uniq(iterable, fields, dolog=False, dq_instance=None):  # pylint: disable=unused-argument
@@ -83,16 +69,39 @@ def get_iterable_fields_uniq(iterable, fields, dolog=False, dq_instance=None):  
     return uniqval
 
 
-def get_duckdb_fields_uniq(filename, fields, dolog=False, dq_instance=None):  # pylint: disable=unused-argument
-    """Returns all uniq values of the fields of the filename using DuckdDB."""
+def get_duckdb_fields_uniq(filename, fields, filetype=None, duckdb_config=None, dolog=False, dq_instance=None):  # pylint: disable=unused-argument
+    """Returns all uniq values of the fields of the filename using DuckDB."""
     # dq_instance parameter kept for backward compatibility (no longer used)
-    uniqval = []
+    if duckdb_config is None:
+        duckdb_config = {}
+    
+    conn = create_duckdb_connection(**duckdb_config)
+    
+    # Determine input format and build appropriate read expression
+    source_type = filetype or get_file_type(filename) or 'csv'
+    if source_type == 'csv':
+        read_expr = f"read_csv_auto('{filename}', all_varchar=true)"
+    elif source_type in ('json', 'jsonl'):
+        read_expr = f"read_json_auto('{filename}')"
+    elif source_type == 'parquet':
+        read_expr = f"read_parquet('{filename}')"
+    else:
+        conn.close()
+        raise ValueError(f"Unsupported file type for DuckDB: {source_type}")
+    
     fieldstext = ','.join(fields)
-    query = f"SELECT DISTINCT {fieldstext} FROM '{filename}'"
+    query = f"SELECT DISTINCT {fieldstext} FROM {read_expr}"
     if dolog:
         logging.info(query)
-    uniqval = duckdb.sql(query).fetchall()
-    return uniqval
+    
+    try:
+        relation = conn.execute(query)
+        uniqval = relation.fetchall()
+        conn.close()
+        return uniqval
+    except Exception as e:
+        conn.close()
+        raise
 
 
 
@@ -130,17 +139,39 @@ def get_iterable_fields_freq(iterable, fields, dolog=False, filter_expr=None, dq
     items.sort(key=lambda x: x[-1], reverse=True)
     return items
 
-def get_duckdb_fields_freq(filename, fields, dolog=False, dq_instance=None):  # pylint: disable=unused-argument
-    """Returns frequencies for the fields of the filename using DuckdDB."""
+def get_duckdb_fields_freq(filename, fields, filetype=None, duckdb_config=None, dolog=False, dq_instance=None):  # pylint: disable=unused-argument
+    """Returns frequencies for the fields of the filename using DuckDB."""
     # dq_instance parameter kept for backward compatibility (no longer used)
-    uniqval = []
+    if duckdb_config is None:
+        duckdb_config = {}
+    
+    conn = create_duckdb_connection(**duckdb_config)
+    
+    # Determine input format and build appropriate read expression
+    source_type = filetype or get_file_type(filename) or 'csv'
+    if source_type == 'csv':
+        read_expr = f"read_csv_auto('{filename}', all_varchar=true)"
+    elif source_type in ('json', 'jsonl'):
+        read_expr = f"read_json_auto('{filename}')"
+    elif source_type == 'parquet':
+        read_expr = f"read_parquet('{filename}')"
+    else:
+        conn.close()
+        raise ValueError(f"Unsupported file type for DuckDB: {source_type}")
+    
     fieldstext = ','.join(fields)
-    query = (f"select {fieldstext}, count(*) as c from '{filename}' "
-             f"group by {fieldstext} order by c desc")
+    query = f"SELECT {fieldstext}, count(*) as c FROM {read_expr} GROUP BY {fieldstext} ORDER BY c DESC"
     if dolog:
         logging.info(query)
-    uniqval = duckdb.sql(query).fetchall()
-    return uniqval
+    
+    try:
+        relation = conn.execute(query)
+        uniqval = relation.fetchall()
+        conn.close()
+        return uniqval
+    except Exception as e:
+        conn.close()
+        raise
 
 
 class Selector:
@@ -167,11 +198,20 @@ class Selector:
             to_type = 'csv'
             out = sys.stdout
         fields = options['fields'].split(',')
-        detected_engine = _detect_engine(fromfile, engine, filetype)
+        detected_engine = detect_engine(fromfile, engine, filetype, operation='uniq')
         if detected_engine == 'duckdb':
-            output_type = 'duckdb'
-            uniqval = get_duckdb_fields_uniq(fromfile, fields, dolog=True)
-        elif detected_engine == 'iterable':
+            try:
+                duckdb_config = get_duckdb_config_from_options(options)
+                output_type = 'duckdb'
+                uniqval = get_duckdb_fields_uniq(
+                    fromfile, fields, filetype=filetype,
+                    duckdb_config=duckdb_config, dolog=True
+                )
+            except Exception as e:
+                logging.warning(f'DuckDB uniq failed, falling back to iterable: {e}')
+                detected_engine = 'iterable'
+        
+        if detected_engine == 'iterable':
             output_type = 'iterable'
             iterable = open_iterable(fromfile, mode='r', iterableargs=iterableargs)
             try:
@@ -237,12 +277,20 @@ class Selector:
             to_type = 'csv'
             out = sys.stdout
         fields = options['fields'].split(',')
-        detected_engine = _detect_engine(fromfile, engine, filetype)
+        detected_engine = detect_engine(fromfile, engine, filetype, operation='frequency')
         items = []
         output_type = 'iterable'
         if detected_engine == 'duckdb':
-            items = get_duckdb_fields_freq(fromfile, fields=fields, dolog=True)
-            output_type = 'duckdb'
+            try:
+                duckdb_config = get_duckdb_config_from_options(options)
+                items = get_duckdb_fields_freq(
+                    fromfile, fields=fields, filetype=filetype,
+                    duckdb_config=duckdb_config, dolog=True
+                )
+                output_type = 'duckdb'
+            except Exception as e:
+                logging.warning(f'DuckDB frequency failed, falling back to iterable: {e}')
+                detected_engine = 'iterable'
         elif detected_engine == 'iterable':
             output_type = 'iterable'
             iterable = open_iterable(fromfile, mode='r', iterableargs=iterableargs)
@@ -267,6 +315,16 @@ class Selector:
         """Select or re-order columns from file."""
         if options is None:
             options = {}
+        
+        # Validate input file exists and is readable
+        try:
+            validate_file_path(fromfile, check_read=True)
+        except FileNotFoundError as e:
+            suggestions = find_similar_files(fromfile)
+            raise FileNotFoundError(fromfile, suggestions) from e
+        except PermissionError as e:
+            raise PermissionError(fromfile, operation="read") from e
+        
         iterableargs = get_iterable_options(options)
         to_file = get_option(options, 'output')
         format_out = get_option(options, 'format_out')
@@ -274,10 +332,10 @@ class Selector:
         engine = get_option(options, 'engine')
         fields_value = get_option(options, 'fields')
         if not fields_value:
-            raise ValueError("select requires 'fields' option (comma-separated list of fields)")
+            raise ValidationError("select requires 'fields' option (comma-separated list of fields)", field='fields')
         fields = [field.strip() for field in fields_value.split(',') if field.strip()]
         if not fields:
-            raise ValueError("select requires at least one field name in 'fields'")
+            raise ValidationError("select requires at least one field name in 'fields'", field='fields')
 
         if to_file:
             to_type = format_out or get_file_type(to_file)
@@ -322,7 +380,7 @@ class Selector:
                     stdout_writer.write_items(normalized_items)
 
         filter_expr = get_option(options, 'filter')
-        detected_engine = _detect_engine(fromfile, engine, filetype)
+        detected_engine = detect_engine(fromfile, engine, filetype, operation='select')
         filter_sql = None
         if detected_engine == 'duckdb' and filter_expr:
             filter_sql = translate_filter_to_sql(filter_expr)
@@ -333,23 +391,34 @@ class Selector:
         n = 0
         batch = []
         if detected_engine == 'duckdb':
-            fieldstext = ','.join(fields)
-            source = f"'{fromfile}'"
-            source_type = filetype or get_file_type(fromfile)
-            if source_type == 'csv':
-                source = f"read_csv_auto('{fromfile}', all_varchar=true)"
-            query = f"SELECT {fieldstext} FROM {source}"
-            if filter_sql:
-                query = f'{query} WHERE {filter_sql}'
             try:
-                cursor = duckdb.connect().execute(query)
+                duckdb_config = get_duckdb_config_from_options(options)
+                conn = create_duckdb_connection(**duckdb_config)
+                
+                fieldstext = ','.join(fields)
+                source_type = filetype or get_file_type(fromfile) or 'csv'
+                if source_type == 'csv':
+                    source = f"read_csv_auto('{fromfile}', all_varchar=true)"
+                elif source_type in ('json', 'jsonl'):
+                    source = f"read_json_auto('{fromfile}')"
+                elif source_type == 'parquet':
+                    source = f"read_parquet('{fromfile}')"
+                else:
+                    raise ValueError(f"Unsupported file type for DuckDB: {source_type}")
+                
+                query = f"SELECT {fieldstext} FROM {source}"
+                if filter_sql:
+                    query = f'{query} WHERE {filter_sql}'
+                
+                relation = conn.execute(query)
                 while True:
-                    rows = cursor.fetchmany(SELECT_BATCH_SIZE)
+                    rows = relation.fetchmany(SELECT_BATCH_SIZE)
                     if not rows:
                         break
                     batch = [dict(zip(fields, row)) for row in rows]
                     n += len(batch)
                     write_batch(batch)
+                conn.close()
             except Exception as exc:
                 if n > 0:
                     logging.error('select: DuckDB failed after output (%s)', exc)

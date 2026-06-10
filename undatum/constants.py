@@ -10,6 +10,7 @@ SUPPORTED_FILE_TYPES = ['xls', 'xlsx', 'csv', 'xml', 'json', 'jsonl', 'yaml',
 COMPRESSED_FILE_TYPES = ['gz', 'xz', 'zip', 'lz4', '7z', 'bz2']
 BINARY_FILE_TYPES = ['xls', 'xlsx', 'bson', 'parquet', 'irc'] + \
     COMPRESSED_FILE_TYPES
+TEXT_DATA_TYPES = ['csv', 'json', 'jsonl', 'xml', 'yaml', 'tsv', 'sql']
 
 DEFAULT_OPTIONS = {'encoding': 'utf8',
                    'delimiter': ',',

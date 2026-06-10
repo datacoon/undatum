@@ -8,7 +8,7 @@ import os
 import sys
 import tempfile
 import zipfile
-from typing import Optional
+from typing import Optional, Union
 
 import duckdb
 import orjson
@@ -26,10 +26,12 @@ from ..common.scheme import generate_scheme_from_file
 from ..utils import get_file_type, get_option
 
 try:
-    from iterable.helpers.detect import TEXT_DATA_TYPES, detect_file_type
+    from iterable.helpers.detect import detect_file_type
     HAS_ITERABLE_DETECT = True
 except ImportError:
     HAS_ITERABLE_DETECT = False
+
+from ..constants import TEXT_DATA_TYPES
 
 
 def get_schema_key(fields):
@@ -123,14 +125,16 @@ def build_schema(filename:str, objects_limit:int=100000, engine:str='auto', file
     table = TableSchema(id=os.path.basename(filename))
 
     # Validate file exists and is readable
-    if not os.path.exists(filename):
-        table.success = False
-        table.error = f"File not found: {filename}"
-        return table
-    if not os.access(filename, os.R_OK):
-        table.success = False
-        table.error = f"Cannot read file: {filename}"
-        return table
+    from ..common.errors import FileNotFoundError, PermissionError, find_similar_files
+    from ..common.path_utils import validate_file_path
+    
+    try:
+        validate_file_path(filename, check_read=True)
+    except FileNotFoundError as e:
+        suggestions = find_similar_files(filename)
+        raise FileNotFoundError(filename, suggestions) from e
+    except PermissionError as e:
+        raise PermissionError(filename, operation="read") from e
 
     try:
         # Detect file type and compression
@@ -289,7 +293,7 @@ def _duckdb_to_json_schema_type(duckdb_type: str, is_array: bool) -> dict:
         return json_type
 
 
-def _duckdb_to_avro_type(duckdb_type: str, is_array: bool) -> str | list:
+def _duckdb_to_avro_type(duckdb_type: str, is_array: bool) -> Union[str, list]:
     """Convert DuckDB type to Avro type.
 
     Args:

@@ -11,6 +11,9 @@ from iterable.helpers.detect import open_iterable
 from pymongo import MongoClient
 from tqdm import tqdm
 
+from ..common.path_utils import is_s3_uri
+from ..common.s3_iterable import open_iterable_with_s3
+
 # Optional PostgreSQL support
 try:
     import psycopg2
@@ -525,8 +528,9 @@ class PostgresIngester(BasicIngester):
 
         # Use COPY FROM for maximum performance
         with conn.cursor() as cur:
+            quoted_columns = ', '.join([f'"{col}"' for col in columns])
             cur.copy_expert(
-                f"COPY {self.table} ({', '.join([f'"{col}"' for col in columns])}) FROM STDIN WITH (FORMAT CSV)",
+                f"COPY {self.table} ({quoted_columns}) FROM STDIN WITH (FORMAT CSV)",
                 output,
             )
             conn.commit()
@@ -1641,6 +1645,18 @@ class Ingester:
         else:
             timeout_seconds = None
 
+        from ..common.errors import FileNotFoundError, PermissionError, DatabaseError, find_similar_files
+        from ..common.path_utils import validate_file_path
+        
+        # Validate input file exists and is readable
+        try:
+            validate_file_path(fromfile, check_read=True)
+        except FileNotFoundError as e:
+            suggestions = find_similar_files(fromfile)
+            raise FileNotFoundError(fromfile, suggestions) from e
+        except PermissionError as e:
+            raise PermissionError(fromfile, operation="read") from e
+        
         logging.info(f"Ingesting {fromfile} to {uri} with db {db} table {table}")
 
         # Calculate total records for progress bar
@@ -1729,7 +1745,13 @@ class Ingester:
                 uri=uri, table=table, mode=mode, create_table=create_table, upsert_key=upsert_key
             )
         else:
-            raise ValueError(f"Unsupported database type: {dbtype}")
+            from ..common.errors import ValidationError
+            supported_types = ['mongodb', 'elasticsearch', 'elastic', 'postgresql', 'postgres', 'duckdb', 'mysql', 'sqlite']
+            raise ValidationError(
+                f"Unsupported database type: '{dbtype}'",
+                field='dbtype',
+                suggestions=supported_types
+            )
 
         if hasattr(processor, "_replace_per_call"):
             processor._replace_per_call = False
@@ -1768,11 +1790,16 @@ class Ingester:
                 # Test SQLite connection (simple query)
                 processor.conn.execute("SELECT 1").fetchone()
         except Exception as e:
-            logging.error(f"Failed to connect to database: {e}")
-            raise
+            from ..common.errors import DatabaseError
+            raise DatabaseError(
+                f"Failed to connect to database: {e}",
+                db_type=dbtype,
+                connection_uri=uri
+            ) from e
 
         iterableargs = get_iterable_options(options)
-        it_in = open_iterable(fromfile, mode="r", iterableargs=iterableargs)
+        iterable_context = open_iterable_with_s3(fromfile, mode="r", iterableargs=iterableargs)
+        it_in = iterable_context.__enter__()
 
         # Statistics tracking
         start_time = time.time()
@@ -1830,6 +1857,7 @@ class Ingester:
 
         finally:
             it_in.close()
+            iterable_context.__exit__(None, None, None)
 
             # Close database connections if needed
             if dbtype in ("postgresql", "postgres", "duckdb", "mysql", "sqlite") and hasattr(

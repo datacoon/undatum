@@ -7,6 +7,8 @@ import orjson
 from iterable.helpers.detect import open_iterable
 
 #from xmlr import xmliter
+from ..common.errors import FileNotFoundError, PermissionError, ValidationError, find_similar_files
+from ..common.path_utils import validate_file_path
 from ..utils import dict_generator, get_option
 
 ITERABLE_OPTIONS_KEYS = ['tagname', 'delimiter', 'encoding', 'start_line', 'page']
@@ -35,7 +37,37 @@ class Transformer:
 
         if options is None:
             options = {}
-        script = run_path(options['script'])
+        
+        # Validate input file exists and is readable
+        try:
+            validate_file_path(fromfile, check_read=True)
+        except FileNotFoundError as e:
+            suggestions = find_similar_files(fromfile)
+            raise FileNotFoundError(fromfile, suggestions) from e
+        except PermissionError as e:
+            raise PermissionError(fromfile, operation="read") from e
+        
+        # Validate script file exists
+        script_path = options.get('script')
+        if not script_path:
+            raise ValidationError("Script file path is required", field='script')
+        
+        try:
+            validate_file_path(script_path, check_read=True)
+        except FileNotFoundError as e:
+            suggestions = find_similar_files(script_path)
+            raise FileNotFoundError(script_path, suggestions) from e
+        except PermissionError as e:
+            raise PermissionError(script_path, operation="read") from e
+        
+        try:
+            script = run_path(script_path)
+        except Exception as e:
+            raise ValidationError(f"Failed to load script: {e}", field='script') from e
+        
+        if 'process' not in script:
+            raise ValidationError("Script must define a 'process' function", field='script')
+        
         __process_func = script['process']
 
         iterableargs = get_iterable_options(options)

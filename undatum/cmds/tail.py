@@ -6,6 +6,8 @@ from collections import deque
 from iterable.helpers.detect import open_iterable
 
 from ..common.iterable import DataWriter
+from ..common.errors import FileNotFoundError, PermissionError, find_similar_files
+from ..common.path_utils import validate_file_path
 from ..utils import get_file_type, get_option, normalize_for_json
 
 ITERABLE_OPTIONS_KEYS = ['tagname', 'delimiter', 'encoding', 'start_line', 'page']
@@ -29,6 +31,16 @@ class Tail:
         """Extract last N rows from a data file."""
         if options is None:
             options = {}
+        
+        # Validate input file exists and is readable
+        try:
+            validate_file_path(fromfile, check_read=True)
+        except FileNotFoundError as e:
+            suggestions = find_similar_files(fromfile)
+            raise FileNotFoundError(fromfile, suggestions) from e
+        except PermissionError as e:
+            raise PermissionError(fromfile, operation="read") from e
+        
         logging.debug('Processing %s', fromfile)
         iterableargs = get_iterable_options(options)
         n = get_option(options, 'n') or 10

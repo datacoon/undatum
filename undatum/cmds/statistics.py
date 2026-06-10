@@ -7,6 +7,8 @@ from iterable.helpers.detect import detect_file_type, open_iterable
 from qddate import DateParser
 from tqdm import tqdm
 
+from ..common.path_utils import is_s3_uri
+from ..common.s3_iterable import open_iterable_with_s3
 from ..common.schema_utils import duckdb_decompose
 from ..constants import DEFAULT_DICT_SHARE, DUCKABLE_CODECS, DUCKABLE_FILE_TYPES
 from ..utils import dict_generator, get_option, guess_datatype
@@ -83,6 +85,18 @@ class StatProcessor:
         
         logging.info(f'Using {detected_engine} engine for statistics computation')
         
+        # Validate input file before processing
+        from ..common.errors import FileNotFoundError, PermissionError, find_similar_files
+        from ..common.path_utils import validate_file_path
+        
+        try:
+            validate_file_path(fromfile, check_read=True)
+        except FileNotFoundError as e:
+            suggestions = find_similar_files(fromfile)
+            raise FileNotFoundError(fromfile, suggestions) from e
+        except PermissionError as e:
+            raise PermissionError(fromfile, operation="read") from e
+        
         # Use DuckDB engine if selected
         if detected_engine == 'duckdb':
             try:
@@ -113,8 +127,13 @@ class StatProcessor:
         if detected_engine == 'iterable':
             self._stats_iterable(fromfile, options)
         else:
+            from ..common.errors import ValidationError
             logging.error(f'Unsupported engine: {detected_engine}')
-            raise ValueError(f'Engine {detected_engine} not supported')
+            raise ValidationError(
+                f"Unsupported engine: '{detected_engine}'",
+                field='engine',
+                suggestions=['auto', 'duckdb', 'iterable']
+            )
 
     def _compute_duckdb_basic_stats(self, fromfile, filetype):
         """Compute basic statistics using DuckDB's duckdb_decompose with summarize.
@@ -339,7 +358,8 @@ class StatProcessor:
         # This is fast for small samples (10000 records) and maintains accuracy
         sample_limit = 10000
         iterableargs = {}
-        iterable = open_iterable(fromfile, mode='r', iterableargs=iterableargs)
+        iterable_context = open_iterable_with_s3(fromfile, mode='r', iterableargs=iterableargs)
+        iterable = iterable_context.__enter__()
         
         try:
             count = 0
@@ -392,6 +412,7 @@ class StatProcessor:
             logging.warning(f'Failed to sample records for type detection: {e}')
         finally:
             iterable.close()
+            iterable_context.__exit__(None, None, None)
         
         return type_distributions
 
@@ -577,9 +598,20 @@ class StatProcessor:
             logging.warning('DuckDB stats returned no fields from duckdb_decompose, falling back to iterable engine')
             raise ValueError('No fields extracted - DuckDB returned empty result')
         
-        # Phase 2: Compute length statistics (minlen, maxlen, avglen)
-        # Filter out None, empty, or invalid field paths before processing
+        # Phase 2: Filter out None, empty, or invalid field paths before processing
         field_paths = [fp for fp in fielddata.keys() if fp and isinstance(fp, str) and fp != "None" and not fp.startswith('.') and not fp[0].isdigit()]
+        
+        # Phase 3: Compute missing values and cardinality
+        missing_stats = self._compute_duckdb_missing_values(fromfile, filetype, field_paths, total_count)
+        
+        # Merge missing value statistics into fielddata
+        for field_path, stats in missing_stats.items():
+            if field_path in fielddata:
+                fielddata[field_path]['missing_count'] = stats['missing_count']
+                fielddata[field_path]['missing_rate'] = stats['missing_rate']
+                fielddata[field_path]['cardinality_pct'] = stats['cardinality_pct']
+        
+        # Phase 4: Compute length statistics (minlen, maxlen, avglen)
         length_stats = self._compute_duckdb_length_stats(fromfile, filetype, field_paths)
         
         # Merge length statistics into fielddata
@@ -592,7 +624,7 @@ class StatProcessor:
                 if stats['avglen'] and stats['total_count']:
                     fielddata[field_path]['totallen'] = int(stats['avglen'] * stats['total_count'])
         
-        # Phase 3: Type detection from samples (hybrid approach)
+        # Phase 5: Type detection from samples (hybrid approach)
         type_distributions = self._detect_types_from_sample(fromfile, filetype, field_paths, show_progress)
         
         # Merge type distributions into fieldtypes
@@ -627,7 +659,25 @@ class StatProcessor:
         
         profile['fieldtypes'] = finfields
         
-        # Phase 4: Dictionary construction for low-cardinality fields
+        # Phase 6: Compute distribution statistics for numerical fields
+        distribution_stats = self._compute_duckdb_distributions(fromfile, filetype, field_paths, finfields)
+        
+        # Merge distribution statistics into fielddata
+        for field_path, stats in distribution_stats.items():
+            if field_path in fielddata:
+                fielddata[field_path].update(stats)
+        
+        # Phase 7: Type inference (categorical vs numerical)
+        type_inference = self._infer_field_types(fielddata, finfields)
+        
+        # Merge type inference into fielddata
+        for field_path, inference in type_inference.items():
+            if field_path in fielddata:
+                fielddata[field_path]['type_category'] = inference['category']
+                fielddata[field_path]['is_categorical'] = inference['is_categorical']
+                fielddata[field_path]['is_numerical'] = inference['is_numerical']
+        
+        # Phase 8: Dictionary construction for low-cardinality fields
         dictionaries = self._compute_duckdb_dictionaries(fromfile, filetype, fielddata, finfields, dictshare)
         
         # Build dictkeys list and populate dicts
@@ -660,8 +710,8 @@ class StatProcessor:
         
         profile['debug'] = {'fieldtypes': fieldtypes.copy(), 'fielddata': fielddata, 'dicts': dicts}
         
-        # Display statistics table
-        self._display_statistics_table(fielddata, finfields, dictkeys)
+        # Display enhanced statistics table with profiling metrics
+        self._display_enhanced_statistics_table(fielddata, finfields, dictkeys)
 
     def _stats_iterable(self, fromfile, options):
         """Compute statistics using iterable engine (row-by-row processing).
@@ -672,7 +722,8 @@ class StatProcessor:
         from rich.table import Table
 
         iterableargs = get_iterable_options(options)
-        iterable = open_iterable(fromfile, mode='r', iterableargs=iterableargs)
+        iterable_context = open_iterable_with_s3(fromfile, mode='r', iterableargs=iterableargs)
+        iterable = iterable_context.__enter__()
         dictshare = get_option(options, 'dictshare')
 
         if dictshare and dictshare.isdigit():
@@ -788,6 +839,7 @@ class StatProcessor:
                         fieldtypes[k] = fd
         finally:
             iterable.close()
+            iterable_context.__exit__(None, None, None)
         #        print count
         for k, v in fielddata.items():  # Use dict.items() directly, no list() conversion
             fielddata[k]['share_uniq'] = (v['n_uniq'] * 100.0) / v['total']
@@ -833,8 +885,8 @@ class StatProcessor:
             fielddata[k] = v
         profile['debug'] = {'fieldtypes': fieldtypes.copy(), 'fielddata': fielddata}
         
-        # Display statistics table
-        self._display_statistics_table(fielddata, finfields, dictkeys)
+        # Display enhanced statistics table with profiling metrics
+        self._display_enhanced_statistics_table(fielddata, finfields, dictkeys)
     
     def _display_statistics_table(self, fielddata, finfields, dictkeys):
         """Display statistics table using Rich library.
@@ -847,20 +899,58 @@ class StatProcessor:
         from rich import print
         from rich.table import Table
         
+        # Display enhanced statistics table with profiling metrics
+        self._display_enhanced_statistics_table(fielddata, finfields, dictkeys)
+
+    def _display_enhanced_statistics_table(self, fielddata, finfields, dictkeys):
+        """Display enhanced statistics table with profiling metrics.
+        
+        Args:
+            fielddata: Dictionary of field statistics
+            finfields: Dictionary mapping field paths to final types
+            dictkeys: List of field paths that are dictionary keys
+        """
+        from rich import print
+        from rich.table import Table
+        
         table = []
-        for fd in fielddata.values():  # Use dict.values() directly, no list() conversion
+        for fd in fielddata.values():
             field = [fd['key'], ]
             field.append(finfields.get(fd['key'], 'str'))
-            field.append(True if fd['key'] in dictkeys else False)
-            field.append(False if fd['share_uniq'] < 100 else True)
-            field.append(fd['n_uniq'])
-            field.append(fd['share_uniq'])
-            field.append(fd['minlen'])
-            field.append(fd['maxlen'])
-            field.append(fd['avglen'])
+            
+            # Type category (categorical/numerical)
+            type_category = fd.get('type_category', 'mixed')
+            field.append(type_category)
+            
+            # Missing values
+            missing_rate = fd.get('missing_rate', 0.0)
+            missing_count = fd.get('missing_count', 0)
+            field.append(f"{missing_count} ({missing_rate}%)")
+            
+            # Cardinality
+            cardinality_pct = fd.get('cardinality_pct', fd.get('share_uniq', 0.0))
+            field.append(f"{fd.get('n_uniq', 0)} ({cardinality_pct}%)")
+            
+            # Distribution stats (for numerical fields)
+            if fd.get('is_numerical'):
+                mean = fd.get('mean')
+                median = fd.get('median')
+                if mean is not None and median is not None:
+                    field.append(f"μ={mean:.2f}, m={median:.2f}")
+                else:
+                    field.append("-")
+            else:
+                field.append("-")
+            
+            # Length stats
+            field.append(fd.get('minlen', '-'))
+            field.append(fd.get('maxlen', '-'))
+            field.append(f"{fd.get('avglen', 0.0):.1f}")
+            
             table.append(field)
-        headers = ('key', 'ftype', 'is_dictkey', 'is_uniq', 'n_uniq', 'share_uniq', 'minlen', 'maxlen', 'avglen')
-        reptable = Table(title="Statistics")
+        
+        headers = ('Field', 'Type', 'Category', 'Missing', 'Cardinality', 'Distribution', 'MinLen', 'MaxLen', 'AvgLen')
+        reptable = Table(title="Dataset Profile")
         reptable.add_column(headers[0], justify="left", style="magenta")
         for key in headers[1:-1]:
             reptable.add_column(key, justify="left", style="cyan", no_wrap=True)

@@ -95,7 +95,7 @@ class TestDiffer:
         differ.diff(sample_csv_file, sample_csv_file2, {
             'output': str(output_file),
             'key': 'id',
-            'format': 'json'
+            'output_format': 'json'
         })
         
         assert output_file.exists()
@@ -108,7 +108,7 @@ class TestDiffer:
         # Capture stdout would require mocking, but we can test it doesn't crash
         differ.diff(sample_csv_file, sample_csv_file2, {
             'key': 'id',
-            'format': 'unified'
+            'output_format': 'unified'
         })
 
 

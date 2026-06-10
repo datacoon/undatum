@@ -5,6 +5,8 @@ import sys
 from iterable.helpers.detect import open_iterable
 
 from ..common.iterable import DataWriter
+from ..common.errors import FileNotFoundError, PermissionError, find_similar_files
+from ..common.path_utils import validate_file_path
 from ..utils import get_file_type, get_option, normalize_for_json
 
 ITERABLE_OPTIONS_KEYS = ['tagname', 'delimiter', 'encoding', 'start_line', 'page']
@@ -26,11 +28,22 @@ class Cat:
 
     def cat(self, fromfiles, options=None):
         """Concatenate files by rows or columns."""
+        from ..common.errors import ValidationError
+        
         if options is None:
             options = {}
         if not fromfiles:
-            logging.error('At least one input file is required')
-            return
+            raise ValidationError("At least one input file is required", field='fromfiles')
+
+        # Validate all input files exist and are readable
+        for fromfile in fromfiles:
+            try:
+                validate_file_path(fromfile, check_read=True)
+            except FileNotFoundError as e:
+                suggestions = find_similar_files(fromfile)
+                raise FileNotFoundError(fromfile, suggestions) from e
+            except PermissionError as e:
+                raise PermissionError(fromfile, operation="read") from e
 
         logging.debug('Processing %s files', len(fromfiles))
         mode = get_option(options, 'mode') or 'rows'

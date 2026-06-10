@@ -1,0 +1,60 @@
+# Example: Basic Field Validation Rules
+# This rule file demonstrates common field-level validation rules
+
+rules:
+  # Required field validation
+  - field: email
+    name: Email Required
+    description: Email field must be present
+    required: true
+    severity: error
+
+  # Type and format validation
+  - field: email
+    name: Email Format
+    description: Email must be in valid format
+    type: string
+    format: email
+    severity: error
+
+  # Numeric range validation
+  - field: age
+    name: Age Range
+    description: Age must be between 0 and 120
+    type: number
+    min: 0
+    max: 120
+    severity: warning
+
+  # String length validation
+  - field: name
+    name: Name Length
+    description: Name must be between 1 and 100 characters
+    type: string
+    min_length: 1
+    max_length: 100
+    severity: error
+
+  # Enum/whitelist validation
+  - field: status
+    name: Status Values
+    description: Status must be one of the allowed values
+    type: string
+    enum: [active, inactive, pending]
+    severity: error
+
+  # URL format validation
+  - field: website
+    name: Website URL
+    description: Website must be a valid URL
+    type: string
+    format: url
+    severity: warning
+
+  # Pattern/regex validation
+  - field: phone
+    name: Phone Format
+    description: Phone must match pattern
+    type: string
+    pattern: '^\+?[1-9]\d{1,14}$'
+    severity: warning

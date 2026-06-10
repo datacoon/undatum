@@ -1,0 +1,40 @@
+# Template: Data Quality Checks
+# Description: Validate data quality with schema checks, validation rules, and quality reporting
+# Variables:
+#   input_file: Path to input file (required)
+#   schema_file: Path to schema file for validation (optional)
+#   output_dir: Directory for quality reports - default: ./quality
+#   rules_file: Path to validation rules file (optional)
+
+variables:
+  input_file: ${input_file}
+  schema_file: ${schema_file:-}
+  output_dir: ${output_dir:-./quality}
+  rules_file: ${rules_file:-}
+
+steps:
+  - name: validate_schema
+    command: validate
+    args:
+      input: ${input_file}
+      schema: ${schema_file}
+
+  - name: compute_statistics
+    command: stats
+    args:
+      input: ${input_file}
+      checkdates: true
+
+  - name: check_duplicates
+    command: dedup
+    args:
+      input: ${input_file}
+      output: ${output_dir}/duplicates_report.jsonl
+      keys: user_id
+
+  - name: generate_quality_report
+    command: doc
+    args:
+      input: ${input_file}
+      output: ${output_dir}/quality_report.md
+      format: markdown

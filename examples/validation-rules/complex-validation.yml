@@ -1,0 +1,96 @@
+# Example: Complex Validation Rules
+# This rule file demonstrates a comprehensive validation scenario
+
+rules:
+  # User information validation
+  - field: user_id
+    name: User ID Required
+    required: true
+    type: string
+    min_length: 1
+    severity: error
+
+  - field: email
+    name: Email Validation
+    required: true
+    type: string
+    format: email
+    severity: error
+
+  - field: username
+    name: Username Format
+    required: true
+    type: string
+    min_length: 3
+    max_length: 20
+    pattern: '^[a-zA-Z0-9_]+$'
+    severity: error
+
+  # Profile validation
+  - field: age
+    name: Age Range
+    type: number
+    min: 13
+    max: 120
+    severity: warning
+
+  - field: country
+    name: Country Code
+    type: string
+    enum: [US, CA, UK, DE, FR, IT, ES, AU, JP, CN]
+    severity: warning
+
+  # Contact validation
+  - field: phone
+    name: Phone Format
+    type: string
+    pattern: '^\+?[1-9]\d{1,14}$'
+    severity: warning
+
+  - field: website
+    name: Website URL
+    type: string
+    format: url
+    severity: info
+
+  # Financial validation
+  - field: balance
+    name: Balance Range
+    type: number
+    min: 0
+    severity: error
+
+  - field: credit_limit
+    name: Credit Limit
+    type: number
+    min: 0
+    max: 1000000
+    severity: warning
+
+  # Cross-field: credit limit vs balance
+  - type: cross-field
+    name: Credit Limit Check
+    description: Balance should not exceed credit limit
+    condition: "balance <= credit_limit"
+    fields: [balance, credit_limit]
+    severity: error
+
+  # Dates validation
+  - field: created_at
+    name: Created Date
+    required: true
+    type: string
+    severity: error
+
+  - field: updated_at
+    name: Updated Date
+    type: string
+    severity: warning
+
+  # Cross-field: update date after creation
+  - type: cross-field
+    name: Date Consistency
+    description: Updated date should be after creation date
+    condition: "(updated_at is None) or (updated_at >= created_at)"
+    fields: [updated_at, created_at]
+    severity: warning

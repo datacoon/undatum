@@ -1,0 +1,45 @@
+# Example: S3 Data Processing Pipeline
+# This pipeline demonstrates cloud data processing:
+# 1. Download from S3 and convert format
+# 2. Process data locally
+# 3. Upload results back to S3
+#
+# Requires AWS credentials configured via environment variables:
+#   export AWS_ACCESS_KEY_ID=your-key
+#   export AWS_SECRET_ACCESS_KEY=your-secret
+#   export AWS_S3_BUCKET=my-bucket
+
+variables:
+  bucket: ${AWS_S3_BUCKET}
+  region: ${AWS_REGION:-us-east-1}
+
+steps:
+  - name: download_and_convert
+    command: convert
+    args:
+      input: s3://${bucket}/raw/data.jsonl
+      output: /tmp/data.parquet
+      format_out: parquet
+
+  - name: clean_data
+    command: fill
+    args:
+      input: /tmp/data.parquet
+      output: /tmp/data_cleaned.parquet
+      fields: age
+      value: 0
+
+  - name: sort_data
+    command: sort
+    args:
+      input: /tmp/data_cleaned.parquet
+      output: /tmp/data_sorted.parquet
+      by: date
+      desc: true
+
+  - name: upload_results
+    command: convert
+    args:
+      input: /tmp/data_sorted.parquet
+      output: s3://${bucket}/processed/data.parquet
+      format_out: parquet

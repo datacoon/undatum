@@ -6,6 +6,8 @@ import sys
 from iterable.helpers.detect import open_iterable
 
 from ..common.iterable import DataWriter
+from ..common.errors import FileNotFoundError, PermissionError, ValidationError, find_similar_files, find_similar_field_names
+from ..common.path_utils import validate_file_path
 from ..utils import get_file_type, get_option, normalize_for_json
 
 ITERABLE_OPTIONS_KEYS = ['tagname', 'delimiter', 'encoding', 'start_line', 'page']
@@ -29,6 +31,16 @@ class Replacer:
         """Perform string replacement in specified fields."""
         if options is None:
             options = {}
+        
+        # Validate input file exists and is readable
+        try:
+            validate_file_path(fromfile, check_read=True)
+        except FileNotFoundError as e:
+            suggestions = find_similar_files(fromfile)
+            raise FileNotFoundError(fromfile, suggestions) from e
+        except PermissionError as e:
+            raise PermissionError(fromfile, operation="read") from e
+        
         logging.debug('Processing %s', fromfile)
         iterableargs = get_iterable_options(options)
         field_name = get_option(options, 'field')
@@ -39,8 +51,7 @@ class Replacer:
         to_file = get_option(options, 'output')
 
         if not field_name or not pattern:
-            logging.error('Field and pattern are required')
-            return
+            raise ValidationError("Field and pattern are required", field='field')
 
         # Prepare replacement function
         if use_regex:
@@ -53,8 +64,7 @@ class Replacer:
                     def replace_func(text):
                         return regex.sub(replacement, str(text), count=1)
             except re.error as e:
-                logging.error(f'Invalid regex pattern: {e}')
-                return
+                raise ValidationError(f"Invalid regex pattern: {e}", field='pattern') from e
         else:
             if global_replace:
                 def replace_func(text):

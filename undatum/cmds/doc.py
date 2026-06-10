@@ -24,6 +24,8 @@ from ..utils import get_option, normalize_for_json
 
 ITERABLE_OPTIONS_KEYS = ['tagname', 'delimiter', 'encoding', 'start_line', 'start_page']
 
+logger = logging.getLogger(__name__)
+
 GEO_FIELD_HINTS = {
     'country': {'country', 'country_code', 'countrycode', 'nation'},
     'region': {'region', 'state', 'province', 'county', 'district', 'city', 'municipality'},
@@ -814,24 +816,34 @@ class Documenter:
         """Generate dataset documentation in multiple formats."""
         if options is None:
             options = {}
-        logging.debug('Processing %s', fromfile)
+        logger.debug('doc: start processing %s', fromfile)
 
         outtype = _normalize_outtype(get_option(options, 'format') or 'markdown')
         output_file = get_option(options, 'output')
+        logger.debug('doc: output format=%s output_file=%s', outtype, output_file or 'stdout')
 
         format_in = get_option(options, 'format_in')
         filetype = format_in
         compression = 'raw'
         if filetype is None:
+            logger.debug('doc: detecting input file type')
             ftype = detect_file_type(fromfile)
             if ftype['success']:
                 filetype = ftype['datatype'].id()
                 if ftype['codec'] is not None:
                     compression = ftype['codec'].id()
+        logger.debug('doc: input type=%s compression=%s', filetype, compression)
 
         encoding = get_option(options, 'encoding')
         objects_limit = get_option(options, 'objects_limit') or OBJECTS_ANALYZE_LIMIT
+        logger.debug(
+            'doc: analyze options encoding=%s objects_limit=%s autodoc=%s',
+            encoding,
+            objects_limit,
+            options.get('autodoc', False)
+        )
 
+        logger.debug('doc: running analyzer')
         report = analyze(
             fromfile,
             filetype=filetype,
@@ -843,9 +855,23 @@ class Documenter:
             ai_provider=options.get('ai_provider'),
             ai_config=options.get('ai_config')
         )
+        logger.debug(
+            'doc: analysis complete tables=%s records=%s',
+            report.total_tables,
+            report.total_records
+        )
 
+        logger.debug('doc: building statistics')
         stats = _build_stats(fromfile, report.file_type, report.compression, options)
+        if stats:
+            logger.debug('doc: statistics engine=%s fields=%s',
+                         stats.get('engine'), len(stats.get('fields', [])))
+        else:
+            logger.debug('doc: statistics skipped (not available)')
+
+        logger.debug('doc: collecting samples')
         samples = _build_samples(fromfile, options)
+        logger.debug('doc: samples collected=%s', len(samples))
         field_names = _get_primary_fields(report)
         metadata = report.metadata or {}
         metadata.setdefault('title', _build_title(report.filename))
@@ -856,9 +882,11 @@ class Documenter:
         metadata.setdefault('languages', _detect_languages(samples, field_names))
         metadata.setdefault('data_theme', _guess_data_theme(field_names, keywords))
         report.metadata = metadata
+        logger.debug('doc: metadata assembled fields=%s keywords=%s', len(field_names), len(keywords))
 
         if options.get('autodoc'):
             try:
+                logger.debug('doc: generating AI metadata')
                 ai_config = options.get('ai_config') or {}
                 ai_service = get_ai_service(provider=options.get('ai_provider'), config=ai_config)
                 sample_csv = _build_sample_csv(samples, field_names)
@@ -876,26 +904,36 @@ class Documenter:
                         if label not in DATA_THEME_URI_BY_LABEL:
                             ai_metadata["data_theme"] = None
                     _merge_ai_metadata(metadata, ai_metadata)
+                else:
+                    logger.debug('doc: AI metadata skipped (no sample CSV)')
             except Exception as exc:
                 logging.warning('doc: failed to generate AI metadata: %s', exc)
 
         pii_fields = []
         if options.get('semantic_types') or options.get('pii_detect'):
+            logger.debug('doc: running metacrafter scan')
             entries = _run_metacrafter_scan(fromfile)
             if entries:
                 pii_fields = _apply_semantic_types(report, entries).get("pii_fields", [])
+                logger.debug('doc: metacrafter entries=%s pii_fields=%s',
+                             len(entries), len(pii_fields))
             else:
                 logging.warning('doc: metacrafter not available or returned no results')
                 for table in report.tables or []:
                     for field in table.fields or []:
                         field.semantic_types = []
         if options.get('pii_mask_samples') and pii_fields:
+            logger.debug('doc: masking samples for PII fields')
             samples = _mask_samples(samples, field_names, pii_fields)
 
+        logger.debug('doc: assembling report')
         doc_report = _build_doc_report(report, stats, samples, pii_fields)
 
         if output_file:
+            logger.debug('doc: writing output to file')
             with open(output_file, 'w', encoding='utf8') as output_stream:
                 _write_doc_output(doc_report, outtype, output_stream)
         else:
+            logger.debug('doc: writing output to stdout')
             _write_doc_output(doc_report, outtype, sys.stdout)
+        logger.debug('doc: finished')

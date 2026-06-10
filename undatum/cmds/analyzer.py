@@ -20,7 +20,10 @@ import pandas as pd
 import xlrd
 import xmltodict
 import yaml
-from iterable.helpers.detect import TEXT_DATA_TYPES, detect_encoding_any, detect_file_type
+from iterable.helpers.detect import detect_file_type
+
+from ..constants import TEXT_DATA_TYPES
+from ..utils import detect_encoding
 from openpyxl import load_workbook
 from pydantic import BaseModel
 from pyzstd import ZstdFile
@@ -251,9 +254,8 @@ def analyze(filename: str, filetype: str = None, compression: str = 'raw',
 
     if filetype in TEXT_DATA_TYPES:
         if encoding is None:
-            encoding = detect_encoding_any(filename)
-            enc_key = 'encoding' if 'encoding' in encoding else None
-            report.metadata['encoding'] = encoding.get(enc_key) if enc_key else None
+            encoding_result = detect_encoding(filename)
+            report.metadata['encoding'] = encoding_result.get('encoding') if encoding_result else None
         else:
             report.metadata['encoding'] = encoding
     if scan:

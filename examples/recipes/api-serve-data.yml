@@ -1,0 +1,46 @@
+name: api-serve-data
+description: Expose data files as a read-only HTTP API
+category: api
+tags:
+  - api
+  - http
+  - rest
+  - data-access
+  - fastapi
+
+variables:
+  input:
+    description: Input data file(s) to expose via API (CSV, JSONL, or Parquet)
+    required: true
+  config:
+    description: Output path for API config file (optional, for discover command)
+    default: ""
+  host:
+    description: Host to bind the API server (default: 127.0.0.1)
+    default: "127.0.0.1"
+  port:
+    description: Port to bind the API server (default: 8000)
+    default: "8000"
+
+commands:
+  - description: Discover and generate API config from data files
+    command: undatum api discover ${input} ${config:+--output ${config}}
+  - description: Serve data as HTTP API (from config file)
+    command: undatum api serve --config ${config} --host ${host} --port ${port}
+  - description: Discover and serve in one command (alternative)
+    command: undatum api run ${input} --host ${host} --port ${port}
+
+example: |
+  # Option 1: Discover config first, then serve
+  undatum api discover data-20130920T1245.jsonl --output api-config.yml
+  undatum api serve --config api-config.yml --host 127.0.0.1 --port 8000
+  
+  # Option 2: Discover and serve in one command
+  undatum api run data-20130920T1245.jsonl --host 127.0.0.1 --port 8000
+  
+  # Then access the API:
+  # - List endpoint: http://127.0.0.1:8000/data_20130920t1245
+  # - Filter: http://127.0.0.1:8000/data_20130920t1245?field__eq=value
+  # - Pagination: http://127.0.0.1:8000/data_20130920t1245?limit=10&offset=0
+  # - Sorting: http://127.0.0.1:8000/data_20130920t1245?order_by=field&order_dir=asc
+  # - OpenAPI docs: http://127.0.0.1:8000/docs

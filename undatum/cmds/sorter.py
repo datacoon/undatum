@@ -6,8 +6,11 @@ import uuid
 import duckdb
 from iterable.helpers.detect import detect_file_type, open_iterable
 
+from ..common.duckdb_config import create_duckdb_connection, get_duckdb_config_from_options
+from ..common.engine_selector import detect_engine
 from ..common.iterable import DataWriter
-from ..constants import DUCKABLE_CODECS, DUCKABLE_FILE_TYPES
+from ..common.errors import FileNotFoundError, PermissionError, ValidationError, find_similar_files
+from ..common.path_utils import validate_file_path
 from ..utils import get_file_type, get_option
 
 ITERABLE_OPTIONS_KEYS = ['tagname', 'delimiter', 'encoding', 'start_line', 'page']
@@ -25,21 +28,6 @@ def get_iterable_options(options):
     return out
 
 
-def _detect_engine(fromfile, engine, filetype):
-    """Detect the appropriate engine for processing."""
-    compression = 'raw'
-    if filetype is None:
-        ftype = detect_file_type(fromfile)
-        if ftype['success']:
-            filetype = ftype['datatype'].id()
-            if ftype['codec'] is not None:
-                compression = ftype['codec'].id()
-    logging.info(f'File filetype {filetype} and compression {compression}')
-    if engine == 'auto':
-        if filetype in DUCKABLE_FILE_TYPES and compression in DUCKABLE_CODECS:
-            return 'duckdb'
-        return 'iterable'
-    return engine
 
 
 def _normalize_for_json(obj):
@@ -92,6 +80,16 @@ class Sorter:
         """Sort rows by one or more columns."""
         if options is None:
             options = {}
+        
+        # Validate input file exists and is readable
+        try:
+            validate_file_path(fromfile, check_read=True)
+        except FileNotFoundError as e:
+            suggestions = find_similar_files(fromfile)
+            raise FileNotFoundError(fromfile, suggestions) from e
+        except PermissionError as e:
+            raise PermissionError(fromfile, operation="read") from e
+        
         logging.debug('Processing %s', fromfile)
         iterableargs = get_iterable_options(options)
         filetype = get_option(options, 'filetype')
@@ -102,42 +100,79 @@ class Sorter:
         to_file = get_option(options, 'output')
 
         if not by_fields:
-            logging.error('Sort fields (--by) are required')
-            return
+            raise ValidationError("Sort fields (--by) are required", field='by')
 
         # Parse sort fields
         sort_fields = [f.strip() for f in by_fields.split(',')]
         numeric_set = {f.strip() for f in numeric_fields.split(',')} if numeric_fields else set()
 
-        detected_engine = _detect_engine(fromfile, engine, filetype)
+        detected_engine = detect_engine(fromfile, engine, filetype, operation='sort')
 
         # Initialize items for output handling
         items = []
 
         if detected_engine == 'duckdb':
-            # Use DuckDB for efficient sorting
-            # Note: DuckDB is only used when writing to a file
-            # For stdout output, we use iterable engine
-            if to_file:
-                try:
-                    to_type = get_file_type(to_file)
-                    if not to_type:
-                        logging.error('Output file type not supported')
+            try:
+                # Get DuckDB configuration from options
+                duckdb_config = get_duckdb_config_from_options(options)
+                conn = create_duckdb_connection(**duckdb_config)
+
+                # Determine input format and build appropriate read expression
+                source_type = filetype or get_file_type(fromfile) or 'csv'
+                if source_type == 'csv':
+                    read_expr = f"read_csv_auto('{fromfile}', all_varchar=true)"
+                elif source_type in ('json', 'jsonl'):
+                    read_expr = f"read_json_auto('{fromfile}')"
+                elif source_type == 'parquet':
+                    read_expr = f"read_parquet('{fromfile}')"
+                else:
+                    raise ValueError(f"Unsupported file type for DuckDB: {source_type}")
+
+                # Build ORDER BY clause
+                order_by_parts = []
+                for field in sort_fields:
+                    # Handle numeric fields if specified
+                    if field in numeric_set:
+                        # Cast to numeric for proper sorting
+                        order_by_parts.append(f"CAST({field} AS DOUBLE) {'DESC' if descending else 'ASC'}")
+                    else:
+                        order_by_parts.append(f"{field} {'DESC' if descending else 'ASC'}")
+
+                order_by = ', '.join(order_by_parts)
+                query = f"SELECT * FROM {read_expr} ORDER BY {order_by}"
+
+                # Determine output format
+                if to_file:
+                    to_type = get_file_type(to_file) or 'csv'
+                    # Use COPY for file output
+                    if to_type == 'csv':
+                        copy_query = f"COPY ({query}) TO '{to_file}' (FORMAT CSV, HEADER)"
+                        conn.execute(copy_query)
+                        logging.info('sort: completed using DuckDB')
+                        conn.close()
                         return
-                    # Build SQL for sorting
-                    order_by = ','.join([
-                        f"{field} {'DESC' if descending else 'ASC'}"
-                        for field in sort_fields
-                    ])
-                    query = f"COPY (SELECT * FROM '{fromfile}' ORDER BY {order_by}) TO '{to_file}' (FORMAT CSV, HEADER)"
-                    duckdb.sql(query)
-                    logging.info('sort: completed using DuckDB')
-                    return
-                except Exception as e:
-                    logging.warning(f'DuckDB sort failed, falling back to iterable: {e}')
-                    detected_engine = 'iterable'
-            else:
-                # DuckDB doesn't support stdout, fall back to iterable
+                    elif to_type in ('json', 'jsonl'):
+                        copy_query = f"COPY ({query}) TO '{to_file}' (FORMAT JSON)"
+                        conn.execute(copy_query)
+                        logging.info('sort: completed using DuckDB')
+                        conn.close()
+                        return
+                    elif to_type == 'parquet':
+                        copy_query = f"COPY ({query}) TO '{to_file}' (FORMAT PARQUET)"
+                        conn.execute(copy_query)
+                        logging.info('sort: completed using DuckDB')
+                        conn.close()
+                        return
+
+                # For stdout or unsupported output format, read into memory
+                relation = conn.execute(query)
+                column_names = relation.columns
+                rows = relation.fetchall()
+                items = [dict(zip(column_names, row)) for row in rows]
+                conn.close()
+                logging.info(f'sort: completed using DuckDB, {len(items)} records')
+            except Exception as e:
+                logging.warning(f'DuckDB sort failed, falling back to iterable: {e}')
                 detected_engine = 'iterable'
 
         if detected_engine == 'iterable':

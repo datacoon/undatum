@@ -4,6 +4,9 @@ import logging
 import duckdb
 from iterable.helpers.detect import detect_file_type, open_iterable
 
+from ..common.path_utils import is_s3_uri, validate_file_path
+from ..common.s3_iterable import open_iterable_with_s3
+from ..common.errors import FileNotFoundError, PermissionError, find_similar_files
 from ..constants import DUCKABLE_CODECS, DUCKABLE_FILE_TYPES
 from ..utils import get_option
 
@@ -45,6 +48,16 @@ class Counter:
         """Count the number of rows in a data file."""
         if options is None:
             options = {}
+        
+        # Validate input file exists and is readable
+        try:
+            validate_file_path(fromfile, check_read=True)
+        except FileNotFoundError as e:
+            suggestions = find_similar_files(fromfile)
+            raise FileNotFoundError(fromfile, suggestions) from e
+        except PermissionError as e:
+            raise PermissionError(fromfile, operation="read") from e
+        
         logging.debug('Processing %s', fromfile)
         iterableargs = get_iterable_options(options)
         filetype = get_option(options, 'filetype')
@@ -64,7 +77,8 @@ class Counter:
 
         if detected_engine == 'iterable':
             # Stream through file and count
-            iterable = open_iterable(fromfile, mode='r', iterableargs=iterableargs)
+            iterable_context = open_iterable_with_s3(fromfile, mode='r', iterableargs=iterableargs)
+            iterable = iterable_context.__enter__()
             count = 0
             try:
                 for _ in iterable:
@@ -73,6 +87,7 @@ class Counter:
                         logging.debug('count: processed %d records', count)
             finally:
                 iterable.close()
+                iterable_context.__exit__(None, None, None)
             print(count)
         else:
             logging.error('Engine not supported. Please choose duckdb or iterable')

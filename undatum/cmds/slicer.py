@@ -5,8 +5,9 @@ import sys
 import duckdb
 from iterable.helpers.detect import detect_file_type, open_iterable
 
+from ..common.duckdb_config import create_duckdb_connection, get_duckdb_config_from_options
+from ..common.engine_selector import detect_engine
 from ..common.iterable import DataWriter
-from ..constants import DUCKABLE_CODECS, DUCKABLE_FILE_TYPES
 from ..utils import get_file_type, get_option, normalize_for_json
 
 ITERABLE_OPTIONS_KEYS = ['tagname', 'delimiter', 'encoding', 'start_line', 'page']
@@ -21,21 +22,6 @@ def get_iterable_options(options):
     return out
 
 
-def _detect_engine(fromfile, engine, filetype):
-    """Detect the appropriate engine for processing."""
-    compression = 'raw'
-    if filetype is None:
-        ftype = detect_file_type(fromfile)
-        if ftype['success']:
-            filetype = ftype['datatype'].id()
-            if ftype['codec'] is not None:
-                compression = ftype['codec'].id()
-    logging.info(f'File filetype {filetype} and compression {compression}')
-    if engine == 'auto':
-        if filetype in DUCKABLE_FILE_TYPES and compression in DUCKABLE_CODECS:
-            return 'duckdb'
-        return 'iterable'
-    return engine
 
 
 class Slicer:
@@ -70,33 +56,96 @@ class Slicer:
             logging.error('Either --start/--end or --indices must be specified')
             return
 
-        detected_engine = _detect_engine(fromfile, engine, filetype)
+        detected_engine = detect_engine(fromfile, engine, filetype, operation='slice')
 
         if detected_engine == 'duckdb' and mode == 'range':
             # Use DuckDB for efficient range slicing
             try:
+                duckdb_config = get_duckdb_config_from_options(options)
+                conn = create_duckdb_connection(**duckdb_config)
+
+                # Determine input format and build appropriate read expression
+                source_type = filetype or get_file_type(fromfile) or 'csv'
+                if source_type == 'csv':
+                    read_expr = f"read_csv_auto('{fromfile}', all_varchar=true)"
+                elif source_type in ('json', 'jsonl'):
+                    read_expr = f"read_json_auto('{fromfile}')"
+                elif source_type == 'parquet':
+                    read_expr = f"read_parquet('{fromfile}')"
+                else:
+                    conn.close()
+                    raise ValueError(f"Unsupported file type for DuckDB: {source_type}")
+
+                # Build LIMIT/OFFSET clause
+                limit_value = end_idx - start_idx if end_idx else None
+                limit_clause = f"LIMIT {limit_value}" if limit_value else ""
+                offset_clause = f"OFFSET {start_idx}" if start_idx > 0 else ""
+                query = f"SELECT * FROM {read_expr} {offset_clause} {limit_clause}".strip()
+
                 to_file = get_option(options, 'output')
                 if to_file:
-                    to_type = get_file_type(to_file)
-                    if not to_type:
-                        logging.error('Output file type not supported')
-                        return
+                    to_type = get_file_type(to_file) or 'csv'
+                    # Use COPY for file output
+                    if to_type == 'csv':
+                        copy_query = f"COPY ({query}) TO '{to_file}' (FORMAT CSV, HEADER)"
+                    elif to_type in ('json', 'jsonl'):
+                        copy_query = f"COPY ({query}) TO '{to_file}' (FORMAT JSON)"
+                    elif to_type == 'parquet':
+                        copy_query = f"COPY ({query}) TO '{to_file}' (FORMAT PARQUET)"
+                    else:
+                        # Fallback: read into memory
+                        to_type = 'jsonl'
+                        copy_query = None
+                else:
+                    # For stdout, read into memory
+                    to_type = 'jsonl'
+                    copy_query = None
 
-                    # Build SQL for slicing
-                    limit_clause = f"LIMIT {end_idx - start_idx}" if end_idx else ""
-                    offset_clause = f"OFFSET {start_idx}" if start_idx else ""
-                    query = f"COPY (SELECT * FROM '{fromfile}' {offset_clause} {limit_clause}) TO '{to_file}' (FORMAT CSV, HEADER)"
-                    duckdb.sql(query)
+                if copy_query:
+                    conn.execute(copy_query)
                     logging.info('slice: completed using DuckDB')
+                    conn.close()
+                    return
+                else:
+                    # Read results into memory for stdout or unsupported output format
+                    relation = conn.execute(query)
+                    column_names = relation.columns
+                    rows = relation.fetchall()
+                    items = [dict(zip(column_names, row)) for row in rows]
+                    conn.close()
+                    logging.info(f'slice: completed using DuckDB, {len(items)} records')
+                    # Write items and return
+                    to_file = get_option(options, 'output')
+                    if to_file:
+                        to_type = get_file_type(to_file) or 'jsonl'
+                        out = open(to_file, 'w', encoding='utf8')
+                    else:
+                        to_type = 'jsonl'
+                        out = sys.stdout
+
+                    normalized_items = [normalize_for_json(item) for item in items]
+                    fieldnames = None
+                    if to_type == 'csv' and normalized_items:
+                        if isinstance(normalized_items[0], dict):
+                            fieldnames = list(normalized_items[0].keys())
+
+                    writer = DataWriter(out, filetype=to_type, fieldnames=fieldnames)
+                    writer.write_items(normalized_items)
+
+                    if to_file:
+                        out.close()
                     return
             except Exception as e:
                 logging.warning(f'DuckDB slice failed, falling back to iterable: {e}')
                 detected_engine = 'iterable'
 
-        # Iterable-based slicing
-        iterableargs = get_iterable_options(options)
-        iterable = open_iterable(fromfile, mode='r', iterableargs=iterableargs)
-        items = []
+        # Iterable-based slicing (fallback or for index-based slicing)
+        if detected_engine == 'iterable' or mode == 'indices':
+            items = []
+            iterableargs = get_iterable_options(options)
+            iterable = open_iterable(fromfile, mode='r', iterableargs=iterableargs)
+            if 'items' not in locals():
+                items = []
 
         try:
             count = 0

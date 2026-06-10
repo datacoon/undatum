@@ -1,0 +1,48 @@
+# Example: Data Cleaning Pipeline
+# This pipeline demonstrates a typical data cleaning workflow:
+# 1. Convert XML to JSONL
+# 2. Fill missing values
+# 3. Remove duplicates
+# 4. Mask sensitive data
+
+variables:
+  input_file: data/raw_data.xml
+  output_dir: data/processed
+
+steps:
+  - name: convert_xml
+    command: convert
+    args:
+      input: ${input_file}
+      output: ${output_dir}/data.jsonl
+      tagname: item
+      format_out: jsonl
+
+  - name: fill_missing_values
+    command: fill
+    args:
+      input: ${output_dir}/data.jsonl
+      output: ${output_dir}/data_filled.jsonl
+      fields: age,status
+      value: "N/A"
+
+  - name: remove_duplicates
+    command: dedup
+    args:
+      input: ${output_dir}/data_filled.jsonl
+      output: ${output_dir}/data_deduped.jsonl
+      keys: user_id
+      keep: first
+
+  - name: mask_sensitive_fields
+    command: mask
+    args:
+      input: ${output_dir}/data_deduped.jsonl
+      output: ${output_dir}/data_clean.jsonl
+      fields: email,phone,ssn
+      method: hash
+
+  - name: generate_statistics
+    command: stats
+    args:
+      input: ${output_dir}/data_clean.jsonl

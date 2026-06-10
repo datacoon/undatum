@@ -16,12 +16,15 @@
 - **Schema generation**: Automatic schema detection and generation
 - **Database ingestion**: Ingest data to MongoDB, PostgreSQL, DuckDB, MySQL, SQLite, and Elasticsearch with retry logic and error handling
 - **AI-powered documentation**: Automatic field and dataset descriptions using multiple LLM providers (OpenAI, OpenRouter, Ollama, LM Studio, Perplexity) with structured JSON output
+- **Optional Data API**: Serve file-backed datasets over HTTP with FastAPI + DuckDB
 
 ## Documentation
 
 - `WORKFLOW_GUIDE.md` for contributor workflow and OpenSpec usage
 - `openspec/` for change proposals, specs, and implementation summaries
 - `examples/doc/` for dataset documentation output samples
+- `docs/ERROR_HANDLING.md` for troubleshooting common errors
+- `docs/ERROR_HANDLING_PATTERNS.md` for error handling patterns (developers)
 
 ## Installation
 
@@ -33,6 +36,13 @@ pip install undatum
 ```
 
 Dependencies are declared in `pyproject.toml` and will be installed automatically by modern versions of `pip` (23+). If you see missing-module errors after installation, upgrade `pip` and retry.
+
+Optional extras:
+
+```bash
+# Data API (FastAPI + uvicorn)
+pip install "undatum[api]"
+```
 
 ### Requirements
 
@@ -58,6 +68,21 @@ undatum analyze data.jsonl
 
 # Generate dataset documentation
 undatum doc data.jsonl --format markdown --output docs/dataset.md
+
+# Create a Frictionless Data Package
+undatum package create data.csv --output datapackage.json
+
+# Extract tables from a PDF
+undatum extract report.pdf --output-format csv --output report.csv
+
+# Serve a CSV as a read-only API
+undatum api run data.csv
+
+# Generate API config (YAML) for multiple files
+undatum api discover data.csv other.parquet --output api.yml
+
+# Serve from config
+undatum api serve --config api.yml
 
 # Get statistics
 undatum stats data.csv
@@ -213,9 +238,68 @@ undatum doc data.csv --pii-detect --pii-mask-samples --format json
 - `metacrafter` (for semantic types and PII detection)
 - `langdetect` (for language detection in metadata)
 
+### `package`
+
+Generates a Frictionless Data Package descriptor (`datapackage.json`) from one or more data files. Supports optional package metadata, schema inference, and AI-powered metadata generation with `--autodoc`.
+
+```bash
+# Create datapackage.json for a single file
+undatum package create data.csv --output datapackage.json
+
+# Create a package directory with data file copies
+undatum package create data.csv --package-dir out/package
+
+# Provide metadata and enable AI metadata generation
+undatum package create data.csv --title "Sales data" --keywords sales,finance \
+  --autodoc --ai-provider openai --ai-model gpt-4o-mini
+```
+
+**Metadata options:**
+- `--name`, `--title`, `--description`, `--keywords`
+- `--licenses` (semicolon-separated entries, e.g. `name=MIT;name=ODC-PDDL-1.0`)
+- `--sources` (semicolon-separated entries, e.g. `title=World Bank,path=https://...`)
+- `--contributors` (semicolon-separated entries, e.g. `title=Jane Doe,email=jane@example.com`)
+- `--version` - Package version string
+
+**Features:**
+- **Schema inference**: Automatically infers field types and generates Frictionless schema
+- **Multiple resources**: Package multiple files as separate resources
+- **Remote URIs**: Support for HTTP/HTTPS URLs as resource paths
+- **Package directory**: Bundle `datapackage.json` with data file copies
+- **AI metadata**: Use `--autodoc` to generate metadata with AI assistance
+- **Streaming-safe**: Processes large datasets without loading everything into memory
+
+**Additional options:**
+- `--package-dir`: Create a package directory with data file copies
+- `--autodoc`: Enable AI-powered metadata generation (reuses `doc` command logic)
+- `--engine`: Processing engine (`auto` or `duckdb`)
+- `--objects-limit`: Maximum objects to analyze for schema inference (default: 10000)
+- `--sample-size`: Number of sample records for metadata inference (default: 10)
+
+### `extract`
+
+Extracts tables or text from PDF/DOC/DOCX/XLS/XLSX files and outputs CSV, JSON, NDJSON, Parquet,
+or a Frictionless Data Package. PDF extraction supports table, text, or OCR modes.
+
+```bash
+# PDF tables to CSV
+undatum extract report.pdf --output-format csv --output report.csv
+
+# Extract tables from multiple files
+undatum extract data/*.pdf --output-format parquet --output-dir out/
+
+# PDF text extraction for specific pages
+undatum extract report.pdf --method text --pages 1-3 --output-format ndjson --output report.ndjson
+```
+
+**Optional dependencies:**
+- `pdfplumber` (PDF tables/text)
+- `pdf2image` + `pytesseract` (OCR)
+- `textract` (legacy .doc)
+
 ### `convert`
 
-Converts data between different formats. Supports CSV, JSON Lines, BSON, XML, XLS, XLSX, Parquet, AVRO, and ORC.
+Converts data between different formats. Supports CSV, JSON Lines, BSON, XML, XLS, XLSX, Parquet, AVRO, and ORC. Supports S3 URIs for cloud storage integration.
 
 ```bash
 # XML to JSON Lines
@@ -226,7 +310,21 @@ undatum convert data.csv data.parquet
 
 # JSON Lines to CSV
 undatum convert data.jsonl data.csv
+
+# Convert from S3 to local
+undatum convert s3://my-bucket/data.csv output.jsonl
+
+# Convert local to S3
+undatum convert input.csv s3://my-bucket/output.parquet
+
+# Convert S3 to S3
+undatum convert s3://bucket/input.jsonl s3://bucket/output.parquet
 ```
+
+**S3 Support:**
+- Input and output paths support S3 URIs (`s3://bucket/path`)
+- AWS credentials via environment variables (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_PROFILE`, `AWS_REGION`)
+- Automatic temporary file handling for S3 operations
 
 **Supported conversions:**
 
@@ -354,23 +452,102 @@ undatum headers data.jsonl
 undatum headers data.csv --limit 50000
 ```
 
-### `stats`
+### `stats` / `profile`
 
-Generates detailed statistics about your dataset including field types, uniqueness, lengths, and more. With DuckDB engine, statistics generation is 10-100x faster for supported formats (CSV, JSONL, JSON, Parquet).
+Generates comprehensive statistics and profiling metrics about your dataset. With DuckDB engine, statistics generation is 10-100x faster for supported formats (CSV, JSONL, JSON, Parquet).
 
 ```bash
+# Basic statistics
 undatum stats data.jsonl
+
+# Enhanced profiling (alias)
+undatum profile data.csv
+
+# With date detection
 undatum stats data.csv --checkdates
+
+# Using DuckDB engine
 undatum stats data.parquet --engine duckdb
 ```
 
 **Statistics include:**
 - Field types and array flags
+- **Missing value rates** (count and percentage)
+- **Cardinality analysis** (distinct counts and percentages)
+- **Type inference** (categorical vs numerical classification)
+- **Distribution statistics** for numerical fields (mean, median, percentiles, min/max, stddev)
 - Unique value counts and percentages
 - Min/max/average lengths
 - Date field detection
 
 **Performance:** DuckDB engine automatically selected for supported formats, providing columnar processing and SQL-based aggregations for faster statistics.
+
+**Profile Command:** The `profile` command is an alias for `stats` with a focus on data profiling and quality metrics.
+
+#### Profiling Metrics Explained
+
+The enhanced statistics output provides comprehensive data profiling:
+
+**Missing Value Analysis:**
+- Shows count and percentage of missing/null values per field
+- Helps identify data quality issues and incomplete records
+- Example: `5 (2.5%)` means 5 missing values out of 200 records (2.5%)
+
+**Cardinality Analysis:**
+- **Distinct count**: Number of unique values in a field
+- **Cardinality percentage**: Percentage of distinct values (distinct/total)
+- **High cardinality**: Fields with many unique values (e.g., IDs, timestamps)
+- **Low cardinality**: Fields with few unique values (e.g., status codes, categories)
+- Example: `150 (75%)` means 150 distinct values out of 200 records
+
+**Type Inference:**
+- **Categorical**: Fields with low cardinality, typically string-like values (e.g., status, category, country)
+- **Numerical**: Fields with numeric types and high cardinality (e.g., age, price, score)
+- **Mixed**: Fields that don't clearly fit categorical or numerical patterns
+- Helps understand data structure and choose appropriate analysis methods
+
+**Distribution Statistics (Numerical Fields):**
+- **Mean (μ)**: Average value
+- **Median (m)**: Middle value (50th percentile)
+- **Percentiles**: 25th, 75th, 90th, 95th, 99th percentiles for outlier detection
+- **Min/Max**: Range of values
+- **Standard deviation**: Measure of data spread
+- Example output: `μ=42.5, m=40.0` shows mean of 42.5 and median of 40.0
+
+#### Use Cases
+
+**Data Quality Assessment:**
+```bash
+# Profile dataset to identify quality issues
+undatum profile customer_data.csv
+
+# Look for:
+# - High missing value rates (>10% may indicate data collection issues)
+# - Unexpected cardinality (e.g., status field with 1000+ unique values)
+# - Outliers in numerical fields (check min/max vs percentiles)
+```
+
+**Schema Discovery:**
+```bash
+# Understand dataset structure before processing
+undatum profile new_dataset.jsonl
+
+# Use type inference to:
+# - Identify categorical fields for grouping/aggregation
+# - Identify numerical fields for statistical analysis
+# - Plan appropriate data transformations
+```
+
+**Data Exploration Workflows:**
+```bash
+# Quick profiling as part of ETL pipeline
+undatum profile raw_data.csv > profile_report.txt
+
+# Use profiling metrics to:
+# - Decide on data cleaning strategies (fill missing values, handle outliers)
+# - Choose appropriate aggregation methods
+# - Validate data after transformations
+```
 
 ### `frequency`
 
@@ -545,11 +722,22 @@ Compares two files and shows differences (added, removed, and changed rows).
 # Compare files by key
 undatum diff file1.csv file2.csv --key id
 
-# Output differences to file
-undatum diff file1.jsonl file2.jsonl --key email --output changes.jsonl
+# Ignore order and show summary only (good for CI)
+undatum diff file1.parquet file2.parquet --ignore-order --summary-only
 
-# Show unified diff format
-undatum diff file1.csv file2.csv --key id --format unified
+# Output detailed diff to Markdown with numeric tolerance
+undatum diff file1.csv file2.csv \
+  --key user_id \
+  --numeric-tolerance 0.001 \
+  --output-format markdown \
+  --output diff.md
+
+# Fail CI when change thresholds are exceeded
+undatum diff file1.csv file2.csv \
+  --key id \
+  --max-added-rows 10 \
+  --max-removed-rows 5 \
+  --max-changed-rows 0
 ```
 
 ### `exclude`
@@ -645,7 +833,103 @@ undatum split --fields category data.jsonl
 
 ### `validate`
 
-Validates data against built-in or custom validation rules.
+Validates data against validation rules. Supports two modes: **rich validation with rule files** (recommended) and **legacy single-rule mode** (backward compatible).
+
+#### Rich Validation with Rule Files
+
+Use YAML/JSON rule files for comprehensive, reusable validation:
+
+```bash
+# Validate with rule file
+undatum validate data.csv --rules validation-rules.yml
+
+# Filter by severity
+undatum validate data.jsonl --rules rules.yml --severity error
+
+# JSON output for CI/CD integration
+undatum validate data.csv --rules rules.yml --output-format json
+
+# Generate detailed violation report
+undatum validate data.jsonl --rules rules.yml --violation-report violations.json
+
+# Treat warnings as errors
+undatum validate data.csv --rules rules.yml --fail-on-warnings
+```
+
+**Rule File Format:**
+
+Rule files support field-level and cross-field validation with severity levels:
+
+```yaml
+rules:
+  # Field-level rules
+  - field: email
+    name: Email Required
+    description: Email field must be present
+    required: true
+    type: string
+    format: email
+    severity: error
+
+  - field: age
+    name: Age Range
+    description: Age must be between 0 and 120
+    type: number
+    min: 0
+    max: 120
+    severity: warning
+
+  - field: status
+    name: Status Values
+    type: string
+    enum: [active, inactive, pending]
+    severity: error
+
+  # Cross-field validation
+  - type: cross-field
+    name: Date Range Validation
+    description: End date must be after start date
+    condition: "end_date >= start_date"
+    fields: [start_date, end_date]
+    severity: error
+```
+
+**Rule Types:**
+
+- **Required**: `required: true` - Field must be present and non-empty
+- **Type**: `type: string|number|integer|float|boolean` - Value type validation
+- **Format**: `format: email|url|uuid` - Format validation
+- **Range**: `min`, `max` for numbers; `min_length`, `max_length` for strings
+- **Enum**: `enum: [value1, value2, ...]` - Whitelist validation
+- **Pattern**: `pattern: 'regex'` - Regular expression validation
+- **Custom**: `custom: 'rule_name'` - Use custom validation function from VALIDATION_RULEMAP
+- **Cross-field**: `type: cross-field` with `condition` expression
+
+**Severity Levels:**
+
+- `error`: Hard errors that should block processing
+- `warning`: Soft warnings that don't block processing
+- `info`: Informational violations
+
+**Violation Reporting:**
+
+The validation command provides comprehensive reporting:
+
+- **Summary statistics**: Total violations by severity, by field, by rule
+- **Detailed violations**: Record-level violation details with context
+- **JSON output**: Machine-readable format for CI/CD integration
+- **Violation report file**: Detailed JSON report with all violations
+
+**Example Rule Files:**
+
+Example rule files are available in `examples/validation-rules/`:
+- `basic-validation.yml` - Common field-level validation rules
+- `cross-field-validation.yml` - Cross-field validation examples
+- `complex-validation.yml` - Comprehensive validation scenario
+
+#### Legacy Mode (Backward Compatible)
+
+Simple single-rule validation for quick checks:
 
 ```bash
 # Validate email addresses
@@ -658,11 +942,21 @@ undatum validate --rule ru.org.inn --fields VendorINN data.jsonl --mode stats
 undatum validate --rule ru.org.inn --fields VendorINN data.jsonl --mode invalid
 ```
 
-**Available validation rules:**
+**Available built-in validation rules:**
 - `common.email` - Email address validation
 - `common.url` - URL validation
 - `ru.org.inn` - Russian organization INN identifier
 - `ru.org.ogrn` - Russian organization OGRN identifier
+- `integer` - Integer validation
+
+#### Validation Best Practices
+
+1. **Use errors for critical issues**: Fields that must be correct for data processing
+2. **Use warnings for data quality**: Issues that should be reviewed but don't block processing
+3. **Organize rules by domain**: Group related rules in separate files (e.g., `user-validation.yml`, `order-validation.yml`)
+4. **Version control rule files**: Track rule changes and share across teams
+5. **Use cross-field rules sparingly**: They're more complex and slower to evaluate
+6. **Test rules incrementally**: Start with basic rules, add complexity as needed
 
 ### `schema`
 
@@ -925,6 +1219,692 @@ Ingestion Summary:
   Average throughput: 2000 rows/second
 ```
 
+### `db query` / `db load`
+
+Database query and load commands for working with databases as first-class data sources and sinks.
+
+#### `db query`
+
+Execute SQL queries against databases and output results in multiple formats.
+
+```bash
+# Query PostgreSQL and output JSONL
+undatum db query "SELECT * FROM users LIMIT 100" --db postgresql://user:pass@host/db
+
+# Query MySQL and save to file
+undatum db query "SELECT name, email FROM customers WHERE status='active'" \
+  --db mysql://user:pass@host:3306/mydb \
+  --output results.jsonl
+
+# Query SQLite and output CSV
+undatum db query "SELECT * FROM data" --db sqlite:///path/to/db.db --output-format csv
+
+# Query from SQL file
+undatum db query --query-file query.sql --db postgresql://user:pass@host/db --output results.jsonl
+
+# Output Parquet format
+undatum db query "SELECT * FROM large_table" --db postgresql://... --output-format parquet --output data.parquet
+```
+
+**Supported Databases:**
+- PostgreSQL (`postgresql://user:pass@host:port/db`)
+- MySQL/MariaDB (`mysql://user:pass@host:port/db`)
+- SQLite (`sqlite:///path/to/db.db` or `sqlite:///:memory:`)
+
+**Output Formats:**
+- `jsonl` (default) - JSON Lines format, one record per line
+- `csv` - Comma-separated values format
+- `parquet` - Parquet format (requires pandas and pyarrow)
+
+**Features:**
+- **Streaming support**: Results are streamed in batches for efficient memory usage
+- **Large result sets**: Handles queries returning millions of rows
+- **Server-side cursors**: Uses PostgreSQL named cursors for optimal performance
+- **Column inference**: Automatically detects column names from query results
+
+#### `db load`
+
+Simplified interface for loading data files into databases. A convenience wrapper around the `ingest` command with cleaner syntax.
+
+```bash
+# Load data to PostgreSQL (append mode)
+undatum db load data.parquet --db postgresql://user:pass@host/db --table users
+
+# Load with replace mode
+undatum db load data.csv --db mysql://user:pass@host:3306/mydb --table customers --mode replace
+
+# Load with upsert
+undatum db load data.jsonl --db postgresql://user:pass@host/db --table orders --mode upsert --upsert-key id
+
+# Auto-create table from schema
+undatum db load data.parquet --db sqlite:///db.db --table new_table --create-table
+```
+
+**Supported Databases:**
+- PostgreSQL
+- MySQL/MariaDB
+- SQLite
+- (Also supports DuckDB, MongoDB, Elasticsearch via underlying ingest command)
+
+**Load Modes:**
+- `append` (default) - Add records to existing table
+- `replace` - Replace all data in table
+- `upsert` - Update existing records or insert new ones (requires `--upsert-key`)
+
+**Comparison with `ingest`:**
+
+The `db load` command provides a simplified interface compared to `ingest`:
+- Cleaner syntax: `db load file --db uri --table name` vs `ingest file uri db table --dbtype ...`
+- Automatic database type detection from URI
+- Focused on common use cases (append, replace, upsert)
+
+Use `ingest` for:
+- Advanced options (batch size, timeout, connection pooling)
+- MongoDB and Elasticsearch (not yet supported by `db load`)
+- Multiple file patterns
+- Fine-grained control over ingestion process
+
+**Database URI Formats:**
+
+- **PostgreSQL**: `postgresql://user:password@host:port/database`
+- **MySQL**: `mysql://user:password@host:port/database`
+- **SQLite**: `sqlite:///path/to/db.db` or `sqlite:///:memory:`
+
+### `plot`
+
+Generate data visualizations from data files. Supports histograms, bar charts, scatter plots, and line plots for quick data exploration.
+
+```bash
+# Generate histogram for numerical field
+undatum plot data.csv --field age --type histogram --output age_dist.png
+
+# Generate bar chart for categorical field
+undatum plot data.csv --field status --type bar
+
+# Generate scatter plot for two fields
+undatum plot data.csv --field x,y --type scatter --output scatter.png
+
+# Generate line plot
+undatum plot data.csv --field value --type line --output trend.png
+
+# Auto-detect plot type based on field type
+undatum plot data.csv --field age --output age_plot.png
+
+# Multiple fields in subplots
+undatum plot data.csv --field age,income,score --type histogram --output distributions.png
+
+# Customize plot appearance
+undatum plot data.csv --field age --title "Age Distribution" \
+  --xlabel "Age (years)" --ylabel "Frequency" \
+  --width 12 --height 8 --dpi 150 --output age_plot.png
+```
+
+**Plot Types:**
+- `histogram` - Distribution of numerical values (default for numerical fields)
+- `bar` - Frequency of categorical values (default for categorical fields)
+- `scatter` - Relationship between two numerical fields
+- `line` - Time series or sequential data
+- `auto` - Auto-detect based on field type (default)
+
+**Output Formats:**
+- PNG (default) - Raster image format
+- SVG - Vector image format
+- PDF - Print-ready document format
+
+**Features:**
+- **Auto-detection**: Automatically suggests appropriate plot type based on field data type
+- **Multiple fields**: Generate multiple subplots for multiple fields
+- **Customizable**: Control titles, labels, colors, size, and resolution
+- **Multiple formats**: Save as PNG, SVG, or PDF
+- **Display mode**: Show plot interactively if no output file specified
+
+**Options:**
+- `--field`: Field name(s) to plot (comma-separated for multiple)
+- `--type`: Plot type (`histogram`, `bar`, `scatter`, `line`, or `auto`)
+- `--output`: Output file path (if not specified, displays plot)
+- `--format`: Output format (`png`, `svg`, or `pdf`)
+- `--title`: Plot title
+- `--xlabel`: X-axis label
+- `--ylabel`: Y-axis label
+- `--width`: Figure width in inches (default: 10)
+- `--height`: Figure height in inches (default: 6)
+- `--dpi`: Resolution for raster formats (default: 100)
+- `--color`: Color scheme name (matplotlib colormap)
+
+**Requirements:**
+- `matplotlib` is required for plotting. Install with: `pip install matplotlib`
+
+### `examples`
+
+Manage and execute example recipes for common data processing tasks. Provides a library of copy-paste ready recipes that demonstrate best practices.
+
+```bash
+# List all available recipes
+undatum examples list
+
+# List recipes by category
+undatum examples list --category conversion
+
+# Show recipe details
+undatum examples show csv-to-jsonl
+
+# Run a recipe with variables
+undatum examples run csv-to-jsonl --var input=data.csv --var output=data.jsonl
+
+# Preview commands without executing
+undatum examples run data-validation --var input=data.jsonl --var rules=rules.yml --dry-run
+
+# Interactive mode (prompt for variables)
+undatum examples run database-query-export --interactive
+```
+
+**Recipe Categories:**
+- **conversion** - Data format conversion recipes
+- **validation** - Data validation and quality checks
+- **database** - Database query and load operations
+- **analysis** - Data profiling and analysis
+- **transformation** - Data cleaning and transformation
+
+**Available Recipes:**
+- `csv-to-jsonl` - Convert CSV to JSONL format
+- `data-validation` - Validate data using validation rules
+- `database-query-export` - Query database and export results
+- `data-profiling` - Profile dataset with statistics and documentation
+- `data-cleaning` - Clean data by removing duplicates and filling missing values
+
+**Recipe Format:**
+
+Recipes are defined in YAML files in `examples/recipes/` directory:
+
+```yaml
+name: recipe-name
+description: Recipe description
+category: category-name
+tags:
+  - tag1
+  - tag2
+
+variables:
+  input:
+    description: Input file path
+    required: true
+  output:
+    description: Output file path
+    default: "output.jsonl"
+
+commands:
+  - description: Command description
+    command: undatum convert ${input} ${output}
+
+example: |
+  undatum examples run recipe-name --var input=data.csv
+```
+
+**Features:**
+- **Variable substitution**: Use `${variable}` or `$variable` in commands
+- **Dry-run mode**: Preview commands before execution
+- **Interactive mode**: Prompt for variable values
+- **Category filtering**: Filter recipes by category or tag
+- **Copy-paste ready**: Recipes are executable commands
+
+### `plugins`
+
+Manage and discover plugins that extend undatum functionality. Plugins can add custom commands, IO connectors, and transforms.
+
+```bash
+# List all installed plugins
+undatum plugins list
+
+# Show plugin information
+undatum plugins info my-plugin
+```
+
+**Plugin Types:**
+- **Command plugins**: Add custom CLI commands
+- **Connector plugins**: Add support for custom URI schemes and data sources
+- **Transform plugins**: Add custom data transformation functions
+
+**Creating Plugins:**
+
+Plugins are Python packages that register with undatum via entry points. Example plugin:
+
+```python
+# setup.py or pyproject.toml
+[project.entry-points."undatum.plugins"]
+my-plugin = "mypackage.plugin:register"
+
+# plugin.py
+from undatum.plugins.base import CommandPlugin, Plugin
+import typer
+
+def register(undatum_app):
+    return MyPlugin(undatum_app)
+
+class MyPlugin(CommandPlugin):
+    def __init__(self, app):
+        super().__init__("my-plugin", "1.0.0", "My custom plugin")
+        self.app = app
+    
+    def register_commands(self, app):
+        @app.command()
+        def my_command(input_file: str):
+            """My custom command."""
+            # Command implementation
+            pass
+```
+
+**Plugin Discovery:**
+
+Plugins are automatically discovered from installed packages via the `undatum.plugins` entry point group. No configuration needed - just install the plugin package and undatum will find it.
+
+## Cloud Storage Support
+
+### AWS S3 Integration
+
+Undatum supports direct read/write operations with AWS S3 using S3 URIs (`s3://bucket/path`). This enables seamless integration with cloud data workflows without manual download/upload steps.
+
+**Setup:**
+```bash
+# Option 1: Environment variables
+export AWS_ACCESS_KEY_ID=your-access-key
+export AWS_SECRET_ACCESS_KEY=your-secret-key
+export AWS_REGION=us-east-1
+
+# Option 2: AWS Profile
+export AWS_PROFILE=my-profile
+
+# Option 3: Default AWS credentials (~/.aws/credentials)
+# No configuration needed if using default profile
+```
+
+**Usage Examples:**
+```bash
+# Read from S3
+undatum stats s3://my-bucket/data.csv
+undatum count s3://my-bucket/data.jsonl
+
+# Write to S3
+undatum convert local.csv s3://my-bucket/output.parquet
+
+# S3 to S3 operations
+undatum convert s3://bucket/input.jsonl s3://bucket/output.parquet
+undatum mask s3://bucket/data.csv --fields email --method hash s3://bucket/masked.csv
+```
+
+**Supported Commands:**
+- `convert` - S3 input and output
+- `stats` - S3 input
+- `count` - S3 input
+- `ingest` - S3 input
+- `mask` - S3 input and output
+- All commands that accept file paths (with S3 URI support)
+
+**Dependencies:**
+- `boto3` (optional, install with `pip install boto3`)
+
+## Python SDK
+
+Undatum provides a Python SDK for programmatic data processing with a fluent API that mirrors CLI commands.
+
+### Quick Start
+
+```python
+from undatum import Dataset
+
+# Read data
+ds = Dataset.read("data.jsonl")
+
+# Chain transformations
+ds = ds.fill("age", value=0).dedup(keys=["user_id"]).sort("name")
+
+# Compute statistics
+stats = ds.stats()
+
+# Write output
+ds.write("output.parquet")
+```
+
+### Transform Methods
+
+```python
+# Fill missing values
+ds = ds.fill("age", value=0)
+ds = ds.fill(["name", "email"], value="N/A")
+ds = ds.fill("status", strategy="forward")
+
+# Remove duplicates
+ds = ds.dedup()  # By all fields
+ds = ds.dedup(keys=["user_id", "email"])
+ds = ds.dedup(keys=["id"], keep="last")
+
+# Sort data
+ds = ds.sort("name")
+ds = ds.sort(["date", "price"], desc=True)
+ds = ds.sort("age", numeric=True)
+
+# Filter rows
+ds = ds.filter(pattern="error|warning")
+ds = ds.filter(pattern="active", fields=["status"])
+ds = ds.filter(query="`price` > 100")
+
+# Select fields
+ds = ds.select(["name", "email"])
+ds = ds.select("user_id", filter_expr="`status` == 'active'")
+
+# Join datasets
+ds1 = Dataset.read("users.jsonl")
+ds2 = Dataset.read("orders.jsonl")
+ds = ds1.join(ds2, keys=["user_id"], join_type="left")
+
+# Sample data
+ds = ds.sample(n=1000)
+ds = ds.sample(percent=10.0)
+
+# Mask sensitive fields
+ds = ds.mask(["email", "phone"], method="redact")
+ds = ds.mask("user_id", method="hash", salt="my-salt")
+```
+
+### Analysis Methods
+
+```python
+# Compute statistics
+stats = ds.stats(checkdates=True, engine="duckdb")
+
+# Count rows
+n = ds.count()
+
+# Get first/last rows
+rows = ds.head(20)
+rows = ds.tail(20)
+```
+
+### S3 Support
+
+```python
+# Read from S3
+ds = Dataset.read("s3://bucket/data.jsonl")
+
+# Write to S3
+ds.write("s3://bucket/output.parquet")
+
+# Chain with S3
+ds = Dataset.read("s3://bucket/input.csv")
+ds = ds.fill("age", value=0).dedup(keys=["id"])
+ds.write("s3://bucket/output.jsonl")
+```
+
+### Method Chaining
+
+All transform methods return new Dataset instances, enabling fluent pipelines:
+
+```python
+ds = (Dataset.read("data.jsonl")
+      .fill("age", value=0)
+      .dedup(keys=["user_id"])
+      .sort("date", desc=True)
+      .filter(query="`status` == 'active'")
+      .select(["name", "email", "age"])
+      .sample(n=1000))
+ds.write("output.parquet")
+```
+
+## Pipeline Workflows
+
+Undatum supports declarative pipeline workflows defined in YAML or JSON files. This enables version-controlled, repeatable data processing workflows.
+
+### Quick Start
+
+```bash
+# Validate pipeline before running
+undatum pipeline validate pipeline.yml
+
+# Run pipeline
+undatum pipeline run pipeline.yml
+
+# Run with variable overrides
+undatum pipeline run pipeline.yml --var input_bucket=my-bucket --var output_dir=/tmp
+```
+
+### Pipeline Specification Format
+
+Pipeline files define a series of steps, each executing an undatum command:
+
+```yaml
+variables:
+  input_bucket: ${AWS_S3_BUCKET}
+  output_dir: /tmp/output
+
+steps:
+  - name: load_data
+    command: convert
+    args:
+      input: s3://${input_bucket}/raw.ndjson
+      output: ${output_dir}/data.parquet
+      format_out: parquet
+  
+  - name: clean_data
+    command: fill
+    args:
+      input: ${output_dir}/data.parquet
+      output: ${output_dir}/data_cleaned.parquet
+      fields: age
+      value: 0
+  
+  - name: remove_duplicates
+    command: dedup
+    args:
+      input: ${output_dir}/data_cleaned.parquet
+      output: ${output_dir}/data_final.parquet
+      keys: user_id
+  
+  - name: generate_stats
+    command: stats
+    args:
+      input: ${output_dir}/data_final.parquet
+```
+
+### Variable Substitution
+
+Pipelines support variable substitution using `${VAR}` syntax:
+
+- **Environment variables**: Automatically available (e.g., `${HOME}`, `${AWS_S3_BUCKET}`)
+- **Pipeline variables**: Defined in `variables` section
+- **CLI overrides**: Passed via `--var key=value` (highest precedence)
+
+```bash
+# Use environment variable
+export AWS_S3_BUCKET=my-bucket
+undatum pipeline run pipeline.yml
+
+# Override via CLI
+undatum pipeline run pipeline.yml --var output_dir=/custom/path
+```
+
+### Step Dependencies
+
+Steps automatically use outputs from previous steps as inputs. If a step doesn't specify an output, a temporary file is created and passed to the next step.
+
+```yaml
+steps:
+  - name: step1
+    command: convert
+    args:
+      input: input.csv
+      output: /tmp/step1.jsonl  # Explicit output
+  
+  - name: step2
+    command: sort
+    args:
+      input: /tmp/step1.jsonl  # Uses step1 output
+      output: /tmp/step2.jsonl
+  
+  - name: step3
+    command: dedup
+    args:
+      input: /tmp/step2.jsonl  # Uses step2 output
+      # No output specified - creates temp file
+```
+
+### Common Pipeline Patterns
+
+**Data Cleaning Pipeline:**
+```yaml
+steps:
+  - name: convert
+    command: convert
+    args:
+      input: raw_data.xml
+      output: /tmp/data.jsonl
+      tagname: item
+  
+  - name: fill_missing
+    command: fill
+    args:
+      input: /tmp/data.jsonl
+      output: /tmp/data_filled.jsonl
+      fields: age,status
+      value: "N/A"
+  
+  - name: deduplicate
+    command: dedup
+    args:
+      input: /tmp/data_filled.jsonl
+      output: /tmp/data_clean.jsonl
+      keys: user_id
+  
+  - name: mask_pii
+    command: mask
+    args:
+      input: /tmp/data_clean.jsonl
+      output: /tmp/data_anonymized.jsonl
+      fields: email,phone
+      method: hash
+```
+
+**Data Analysis Pipeline:**
+```yaml
+steps:
+  - name: sample
+    command: sample
+    args:
+      input: large_dataset.csv
+      output: /tmp/sample.csv
+      n: 10000
+  
+  - name: compute_stats
+    command: stats
+    args:
+      input: /tmp/sample.csv
+  
+  - name: frequency_analysis
+    command: frequency
+    args:
+      input: /tmp/sample.csv
+      fields: category,status
+```
+
+**S3 Data Pipeline:**
+```yaml
+variables:
+  bucket: ${AWS_S3_BUCKET}
+  region: us-east-1
+
+steps:
+  - name: download_and_convert
+    command: convert
+    args:
+      input: s3://${bucket}/raw/data.jsonl
+      output: s3://${bucket}/processed/data.parquet
+      format_out: parquet
+  
+  - name: mask_sensitive
+    command: mask
+    args:
+      input: s3://${bucket}/processed/data.parquet
+      output: s3://${bucket}/anonymized/data.parquet
+      fields: email,ssn
+      method: hash
+```
+
+### Pipeline Validation
+
+Always validate pipelines before running:
+
+```bash
+# Validate syntax and commands
+undatum pipeline validate pipeline.yml
+
+# Dry run (validate without executing)
+undatum pipeline run pipeline.yml --dry-run
+```
+
+Validation checks:
+- Valid YAML/JSON syntax
+- All steps have required fields (name, command, args)
+- All commands are valid undatum commands
+- Variable references are properly formatted
+
+### Pipeline Best Practices
+
+1. **Use variables for flexibility**: Define paths and configuration in the `variables` section
+2. **Name steps descriptively**: Use clear, action-oriented names (e.g., `clean_data`, `mask_pii`)
+3. **Validate before running**: Always run `pipeline validate` before execution
+4. **Version control pipelines**: Store pipeline files in version control for reproducibility
+5. **Use explicit outputs**: Specify output paths for important intermediate results
+6. **Handle errors**: Pipelines stop on first error; design steps to fail fast
+
+### Pipeline Templates
+
+Undatum provides reusable pipeline templates for common workflows. Use templates to quickly bootstrap pipelines:
+
+```bash
+# List available templates
+undatum pipeline templates list
+
+# Initialize a template interactively
+undatum pipeline templates init basic-cleaning
+
+# Initialize with variables (non-interactive)
+undatum pipeline templates init profile-dataset \
+  --var input_file=data.csv \
+  --var output_dir=./analysis \
+  --non-interactive
+```
+
+**Available Templates:**
+- `basic-cleaning` - Clean CSV/JSONL data (fill missing values, remove duplicates)
+- `profile-dataset` - Profile dataset with sampling, statistics, and documentation
+- `s3-etl` - S3-based ETL workflow (download, process, upload)
+- `data-quality` - Data quality checks and validation
+
+**Template Features:**
+- Interactive variable prompts
+- Variable defaults and validation
+- Customizable workflows
+- Best practices built-in
+
+### Example Pipeline Files
+
+Example pipelines are available in `examples/pipelines/`:
+- `data-cleaning.yml` - Basic data cleaning workflow
+- `s3-processing.yml` - Cloud data processing with S3
+- `data-analysis.yml` - Data exploration and analysis
+- `etl-pipeline.yml` - Complete ETL workflow
+
+Run examples:
+```bash
+# Copy and customize an example
+cp examples/pipelines/data-cleaning.yml my-pipeline.yml
+
+# Or use a template
+undatum pipeline templates init basic-cleaning --var input_file=data.csv
+
+# Validate and run
+undatum pipeline validate my-pipeline.yml
+undatum pipeline run my-pipeline.yml
+```
+
 ## Advanced Usage
 
 ### Working with Compressed Files
@@ -1172,7 +2152,10 @@ undatum convert data.jsonl data.parquet
 # Check for duplicate emails
 undatum frequency --fields email data.jsonl | grep -v "1$"
 
-# Validate all required fields
+# Rich validation with rule file
+undatum validate data.jsonl --rules examples/validation-rules/basic-validation.yml
+
+# Legacy mode: Validate individual fields
 undatum validate --rule common.email --fields email data.jsonl
 undatum validate --rule common.url --fields website data.jsonl
 
@@ -1196,9 +2179,45 @@ undatum schema sales_data.csv --autodoc --output documented_schema.yaml
 undatum schema_bulk ./data_dir --autodoc --output ./schemas --mode distinct
 ```
 
+## Troubleshooting
+
+undatum provides user-friendly error messages to help you resolve issues quickly. Common errors include:
+
+### File Not Found
+If you see a "File not found" error, undatum will suggest similar filenames if it detects a typo:
+```bash
+undatum convert data.cvs output.jsonl
+# Error: File not found: 'data.cvs'
+# Did you mean: 'data.csv'?
+```
+
+### Permission Denied
+For permission errors, undatum provides specific guidance:
+```bash
+# Error: Permission denied: Cannot read '/path/to/data.csv'
+# Fix: chmod +r /path/to/data.csv
+```
+
+### Missing Dependencies
+For optional features, install the required dependencies:
+```bash
+# Error: Missing dependency: 'pyyaml'
+# Install it with: pip install pyyaml
+```
+
+### Verbose Mode
+For detailed error information including full tracebacks, use the `--verbose` flag:
+```bash
+undatum convert data.csv output.jsonl --verbose
+```
+
+For more information, see the [Error Handling Guide](docs/ERROR_HANDLING.md).
+
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
+
+For error handling patterns and best practices, see [Error Handling Patterns](docs/ERROR_HANDLING_PATTERNS.md).
 
 ## License
 

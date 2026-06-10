@@ -5,8 +5,11 @@ import sys
 import duckdb
 from iterable.helpers.detect import detect_file_type, open_iterable
 
+from ..common.duckdb_config import create_duckdb_connection, get_duckdb_config_from_options
+from ..common.engine_selector import detect_engine
 from ..common.iterable import DataWriter
-from ..constants import DUCKABLE_CODECS, DUCKABLE_FILE_TYPES
+from ..common.errors import FileNotFoundError, PermissionError, ValidationError, find_similar_files
+from ..common.path_utils import validate_file_path
 from ..utils import get_file_type, get_option, normalize_for_json
 
 ITERABLE_OPTIONS_KEYS = ['tagname', 'delimiter', 'encoding', 'start_line', 'page']
@@ -21,21 +24,6 @@ def get_iterable_options(options):
     return out
 
 
-def _detect_engine(fromfile, engine, filetype):
-    """Detect the appropriate engine for processing."""
-    compression = 'raw'
-    if filetype is None:
-        ftype = detect_file_type(fromfile)
-        if ftype['success']:
-            filetype = ftype['datatype'].id()
-            if ftype['codec'] is not None:
-                compression = ftype['codec'].id()
-    logging.info(f'File filetype {filetype} and compression {compression}')
-    if engine == 'auto':
-        if filetype in DUCKABLE_FILE_TYPES and compression in DUCKABLE_CODECS:
-            return 'duckdb'
-        return 'iterable'
-    return engine
 
 
 def _get_key_value(item, key_fields):
@@ -64,6 +52,24 @@ class Joiner:
         """Perform relational join between two files."""
         if options is None:
             options = {}
+        
+        # Validate both input files exist and are readable
+        try:
+            validate_file_path(file1, check_read=True)
+        except FileNotFoundError as e:
+            suggestions = find_similar_files(file1)
+            raise FileNotFoundError(file1, suggestions) from e
+        except PermissionError as e:
+            raise PermissionError(file1, operation="read") from e
+        
+        try:
+            validate_file_path(file2, check_read=True)
+        except FileNotFoundError as e:
+            suggestions = find_similar_files(file2)
+            raise FileNotFoundError(file2, suggestions) from e
+        except PermissionError as e:
+            raise PermissionError(file2, operation="read") from e
+        
         logging.debug('Joining %s and %s', file1, file2)
 
         on_fields = get_option(options, 'on')
@@ -73,43 +79,109 @@ class Joiner:
         engine = get_option(options, 'engine') or 'auto'
 
         if not on_fields:
-            logging.error('Join key fields (--on) are required')
-            return
+            raise ValidationError("Join key fields (--on) are required", field='on')
 
         key_field_list = [f.strip() for f in on_fields.split(',')]
+        filetype2 = get_option(options, 'filetype2')
 
-        detected_engine = _detect_engine(file1, engine, filetype1)
+        # Check if both files support DuckDB
+        detected_engine1 = detect_engine(file1, engine, filetype1, operation='join')
+        detected_engine2 = detect_engine(file2, engine, filetype2, operation='join')
+        detected_engine = 'duckdb' if (detected_engine1 == 'duckdb' and detected_engine2 == 'duckdb') else 'iterable'
 
         if detected_engine == 'duckdb':
-            # Try DuckDB SQL join for supported formats
             try:
+                duckdb_config = get_duckdb_config_from_options(options)
+                conn = create_duckdb_connection(**duckdb_config)
+
+                # Determine input formats and build appropriate read expressions
+                source_type1 = filetype1 or get_file_type(file1) or 'csv'
+                source_type2 = filetype2 or get_file_type(file2) or 'csv'
+
+                def build_read_expr(filename, filetype):
+                    if filetype == 'csv':
+                        return f"read_csv_auto('{filename}', all_varchar=true)"
+                    elif filetype in ('json', 'jsonl'):
+                        return f"read_json_auto('{filename}')"
+                    elif filetype == 'parquet':
+                        return f"read_parquet('{filename}')"
+                    else:
+                        raise ValueError(f"Unsupported file type for DuckDB: {filetype}")
+
+                read_expr1 = build_read_expr(file1, source_type1)
+                read_expr2 = build_read_expr(file2, source_type2)
+
+                # Build ON clause for multiple keys
+                on_conditions = []
+                for key_field in key_field_list:
+                    on_conditions.append(f"t1.{key_field} = t2.{key_field}")
+                on_clause = " AND ".join(on_conditions)
+
+                # Map join type
+                join_type_sql = {
+                    'inner': 'INNER',
+                    'left': 'LEFT',
+                    'right': 'RIGHT',
+                    'full': 'FULL OUTER',
+                    'outer': 'FULL OUTER'
+                }.get(join_type.lower(), 'INNER')
+
+                query = f"""
+                    SELECT *
+                    FROM ({read_expr1}) t1
+                    {join_type_sql} JOIN ({read_expr2}) t2
+                    ON {on_clause}
+                """
+
                 to_file = get_option(options, 'output')
                 if to_file:
-                    to_type = get_file_type(to_file)
-                    if not to_type:
-                        logging.error('Output file type not supported')
-                        return
+                    to_type = get_file_type(to_file) or 'csv'
+                    # Use COPY for file output
+                    if to_type == 'csv':
+                        copy_query = f"COPY ({query}) TO '{to_file}' (FORMAT CSV, HEADER)"
+                    elif to_type in ('json', 'jsonl'):
+                        copy_query = f"COPY ({query}) TO '{to_file}' (FORMAT JSON)"
+                    elif to_type == 'parquet':
+                        copy_query = f"COPY ({query}) TO '{to_file}' (FORMAT PARQUET)"
+                    else:
+                        # Fallback: read into memory
+                        to_type = 'jsonl'
+                        copy_query = None
+                else:
+                    # For stdout, read into memory
+                    to_type = 'jsonl'
+                    copy_query = None
 
-                    # Build SQL for join
-                    ','.join(key_field_list)
-                    join_type_sql = {
-                        'inner': 'INNER',
-                        'left': 'LEFT',
-                        'right': 'RIGHT',
-                        'full': 'FULL OUTER',
-                        'outer': 'FULL OUTER'
-                    }.get(join_type.lower(), 'INNER')
-
-                    query = f"""
-                    COPY (
-                        SELECT *
-                        FROM '{file1}' t1
-                        {join_type_sql} JOIN '{file2}' t2
-                        ON t1.{key_field_list[0]} = t2.{key_field_list[0]}
-                    ) TO '{to_file}' (FORMAT CSV, HEADER)
-                    """
-                    duckdb.sql(query)
+                if copy_query:
+                    conn.execute(copy_query)
                     logging.info('join: completed using DuckDB')
+                    conn.close()
+                    return
+                else:
+                    # Read results into memory for stdout or unsupported output format
+                    relation = conn.execute(query)
+                    column_names = relation.columns
+                    rows = relation.fetchall()
+                    items = [dict(zip(column_names, row)) for row in rows]
+                    conn.close()
+                    logging.info(f'join: completed using DuckDB, {len(items)} joined rows')
+                    # Write items and return
+                    if to_file:
+                        out = open(to_file, 'w', encoding='utf8')
+                    else:
+                        out = sys.stdout
+
+                    normalized_items = [normalize_for_json(item) for item in items]
+                    fieldnames = None
+                    if to_type == 'csv' and normalized_items:
+                        if isinstance(normalized_items[0], dict):
+                            fieldnames = list(normalized_items[0].keys())
+
+                    writer = DataWriter(out, filetype=to_type, fieldnames=fieldnames)
+                    writer.write_items(normalized_items)
+
+                    if to_file:
+                        out.close()
                     return
             except Exception as e:
                 logging.warning(f'DuckDB join failed, falling back to iterable: {e}')

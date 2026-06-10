@@ -1,0 +1,33 @@
+name: data-cleaning
+description: Clean data by removing duplicates and filling missing values
+category: transformation
+tags:
+  - cleaning
+  - transformation
+  - deduplication
+  - missing-values
+
+variables:
+  input:
+    description: Input data file path
+    required: true
+  output:
+    description: Output cleaned data file path
+    required: true
+  key_fields:
+    description: Comma-separated fields to use for deduplication
+    default: "id"
+
+commands:
+  - description: Remove duplicates
+    command: undatum uniq ${input} temp_dedup.jsonl --fields ${key_fields}
+  - description: Fill missing values
+    command: undatum fill temp_dedup.jsonl ${output} --method zero
+  - description: Clean up temporary file
+    command: rm temp_dedup.jsonl
+
+example: |
+  undatum examples run data-cleaning \
+    --var input=data.jsonl \
+    --var output=cleaned.jsonl \
+    --var key_fields=id,email

@@ -1,0 +1,59 @@
+# Example: ETL Pipeline
+# This pipeline demonstrates a complete ETL workflow:
+# 1. Extract: Convert and validate input
+# 2. Transform: Clean, deduplicate, mask
+# 3. Load: Ingest into database
+
+variables:
+  input_file: data/raw_data.jsonl
+  output_dir: data/processed
+  db_uri: postgresql://user:pass@localhost:5432/mydb
+  db_name: mydb
+  table_name: processed_data
+
+steps:
+  - name: validate_input
+    command: validate
+    args:
+      input: ${input_file}
+
+  - name: convert_format
+    command: convert
+    args:
+      input: ${input_file}
+      output: ${output_dir}/data.parquet
+      format_out: parquet
+
+  - name: clean_data
+    command: fill
+    args:
+      input: ${output_dir}/data.parquet
+      output: ${output_dir}/data_cleaned.parquet
+      fields: age,status
+      value: 0
+      strategy: forward
+
+  - name: remove_duplicates
+    command: dedup
+    args:
+      input: ${output_dir}/data_cleaned.parquet
+      output: ${output_dir}/data_deduped.parquet
+      keys: user_id,email
+      keep: last
+
+  - name: mask_pii
+    command: mask
+    args:
+      input: ${output_dir}/data_deduped.parquet
+      output: ${output_dir}/data_anonymized.parquet
+      fields: email,phone
+      method: hash
+
+  - name: load_to_database
+    command: ingest
+    args:
+      input: ${output_dir}/data_anonymized.parquet
+      uri: ${db_uri}
+      db: ${db_name}
+      table: ${table_name}
+      dbtype: postgresql

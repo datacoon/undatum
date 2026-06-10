@@ -3,8 +3,11 @@ import logging
 import re
 import sys
 
-from iterable.helpers.detect import open_iterable
+import duckdb
+from iterable.helpers.detect import detect_file_type, open_iterable
 
+from ..common.duckdb_config import create_duckdb_connection, get_duckdb_config_from_options
+from ..common.engine_selector import detect_engine
 from ..common.iterable import DataWriter
 from ..utils import get_file_type, get_option, normalize_for_json
 
@@ -31,6 +34,8 @@ class Searcher:
             options = {}
         logging.debug('Processing %s', fromfile)
         iterableargs = get_iterable_options(options)
+        filetype = get_option(options, 'filetype') or get_option(options, 'format_in')
+        engine = get_option(options, 'engine') or 'auto'
         pattern = get_option(options, 'pattern')
         fields = get_option(options, 'fields')
         ignore_case = get_option(options, 'ignore_case') or False
@@ -40,7 +45,7 @@ class Searcher:
             logging.error('Pattern is required')
             return
 
-        # Prepare regex pattern
+        # Prepare regex pattern for Python fallback
         flags = re.IGNORECASE if ignore_case else 0
         try:
             regex = re.compile(pattern, flags)
@@ -53,34 +58,94 @@ class Searcher:
         if fields:
             field_list = [f.strip() for f in fields.split(',')]
 
-        iterable = open_iterable(fromfile, mode='r', iterableargs=iterableargs)
+        detected_engine = detect_engine(fromfile, engine, filetype, operation='search')
         items = []
-        try:
-            count = 0
-            matched = 0
-            for item in iterable:
-                count += 1
-                if isinstance(item, dict):
-                    # Search in specified fields or all fields
-                    search_fields = field_list if field_list else list(item.keys())
 
-                    # Check if pattern matches in any of the search fields
-                    matches = False
-                    for field in search_fields:
-                        if field in item and item[field] is not None:
-                            value_str = str(item[field])
-                            if regex.search(value_str):
-                                matches = True
-                                break
+        if detected_engine == 'duckdb':
+            try:
+                duckdb_config = get_duckdb_config_from_options(options)
+                conn = create_duckdb_connection(**duckdb_config)
 
-                    if matches:
-                        items.append(item)
-                        matched += 1
+                # Determine input format and build appropriate read expression
+                source_type = filetype or get_file_type(fromfile) or 'csv'
+                if source_type == 'csv':
+                    read_expr = f"read_csv_auto('{fromfile}', all_varchar=true)"
+                elif source_type in ('json', 'jsonl'):
+                    read_expr = f"read_json_auto('{fromfile}')"
+                elif source_type == 'parquet':
+                    read_expr = f"read_parquet('{fromfile}')"
+                else:
+                    conn.close()
+                    raise ValueError(f"Unsupported file type for DuckDB: {source_type}")
 
-                if count % 10000 == 0:
-                    logging.debug('search: processed %d records, matched %d', count, matched)
-        finally:
-            iterable.close()
+                # Build WHERE clause for regex matching
+                # DuckDB uses REGEXP_MATCHES function for regex
+                # Escape single quotes in pattern for SQL
+                escaped_pattern = pattern.replace("'", "''")
+                
+                if not field_list:
+                    # For search across all fields, we need to check each column
+                    # This requires knowing the schema first, so fall back to iterable
+                    conn.close()
+                    detected_engine = 'iterable'
+                    logging.info('search: DuckDB requires --fields option for all-fields search, falling back to iterable')
+                
+                if detected_engine == 'duckdb':
+                    # Search in specific fields
+                    conditions = []
+                    for field in field_list:
+                        # Use REGEXP_MATCHES with case-insensitive flag if needed
+                        if ignore_case:
+                            conditions.append(
+                                f"REGEXP_MATCHES(CAST({field} AS VARCHAR), '(?i){escaped_pattern}')"
+                            )
+                        else:
+                            conditions.append(
+                                f"REGEXP_MATCHES(CAST({field} AS VARCHAR), '{escaped_pattern}')"
+                            )
+                    where_clause = " OR ".join(conditions)
+                    query = f"SELECT * FROM {read_expr} WHERE {where_clause}"
+
+                    # Execute query and get results
+                    relation = conn.execute(query)
+                    column_names = relation.columns
+                    rows = relation.fetchall()
+                    items = [dict(zip(column_names, row)) for row in rows]
+                    conn.close()
+                    logging.info(f'search: completed using DuckDB, matched {len(items)} records')
+            except Exception as e:
+                logging.warning(f'DuckDB search failed, falling back to iterable: {e}')
+                detected_engine = 'iterable'
+
+        if detected_engine == 'iterable':
+            iterable = open_iterable(fromfile, mode='r', iterableargs=iterableargs)
+            try:
+                count = 0
+                matched = 0
+                for item in iterable:
+                    count += 1
+                    if isinstance(item, dict):
+                        # Search in specified fields or all fields
+                        search_fields = field_list if field_list else list(item.keys())
+
+                        # Check if pattern matches in any of the search fields
+                        matches = False
+                        for field in search_fields:
+                            if field in item and item[field] is not None:
+                                value_str = str(item[field])
+                                if regex.search(value_str):
+                                    matches = True
+                                    break
+
+                        if matches:
+                            items.append(item)
+                            matched += 1
+
+                    if count % 10000 == 0:
+                        logging.debug('search: processed %d records, matched %d', count, matched)
+            finally:
+                iterable.close()
+            logging.debug('search: processed %d records, matched %d', count, matched)
 
         if to_file:
             to_type = get_file_type(to_file)

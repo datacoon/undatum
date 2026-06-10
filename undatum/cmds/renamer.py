@@ -6,6 +6,8 @@ import sys
 from iterable.helpers.detect import open_iterable
 
 from ..common.iterable import DataWriter
+from ..common.errors import FileNotFoundError, PermissionError, ValidationError, find_similar_files
+from ..common.path_utils import validate_file_path
 from ..utils import get_file_type, get_option, normalize_for_json
 
 ITERABLE_OPTIONS_KEYS = ['tagname', 'delimiter', 'encoding', 'start_line', 'page']
@@ -29,12 +31,25 @@ class Renamer:
         """Rename fields by exact mapping or regex patterns."""
         if options is None:
             options = {}
+        
+        # Validate input file exists and is readable
+        try:
+            validate_file_path(fromfile, check_read=True)
+        except FileNotFoundError as e:
+            suggestions = find_similar_files(fromfile)
+            raise FileNotFoundError(fromfile, suggestions) from e
+        except PermissionError as e:
+            raise PermissionError(fromfile, operation="read") from e
+        
         logging.debug('Processing %s', fromfile)
         iterableargs = get_iterable_options(options)
         mapping = get_option(options, 'map')
         pattern = get_option(options, 'pattern')
         replacement = get_option(options, 'replacement') or ''
         to_file = get_option(options, 'output')
+
+        if not mapping and not pattern:
+            raise ValidationError("Either --map or --pattern option is required", field='map')
 
         # Build rename mapping
         rename_map = {}
@@ -49,8 +64,7 @@ class Renamer:
             try:
                 regex = re.compile(pattern)
             except re.error as e:
-                logging.error(f'Invalid regex pattern: {e}')
-                return
+                raise ValidationError(f"Invalid regex pattern: {e}", field='pattern') from e
 
         iterable = open_iterable(fromfile, mode='r', iterableargs=iterableargs)
         items = []

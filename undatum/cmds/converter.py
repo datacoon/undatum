@@ -2,6 +2,7 @@
 import csv
 import json
 import logging
+import os
 import xml.etree.ElementTree as etree
 from collections import defaultdict
 
@@ -13,6 +14,10 @@ from iterable.helpers.detect import open_iterable
 from tqdm import tqdm
 from xlrd import open_workbook as load_xls
 
+from ..common.path_utils import is_s3_uri, validate_file_path
+from ..common.s3_iterable import open_iterable_with_s3
+from ..common.errors import FileNotFoundError, PermissionError, FormatError, find_similar_files
+from ..formats.s3 import S3Writer, get_s3_client, parse_s3_uri
 from ..utils import dict_generator, get_file_type, get_option
 
 ITERABLE_OPTIONS_KEYS = ['tagname', 'delimiter', 'encoding', 'start_line', 'page']
@@ -579,76 +584,116 @@ class Converter:
             limit: Maximum records to sample for schema detection.
 
         Raises:
-            ValueError: If file format is not supported.
-            IOError: If file cannot be read or written.
+            FileNotFoundError: If input file does not exist.
+            PermissionError: If file cannot be read or written.
+            FormatError: If file format is not supported.
         """
         if options is None:
             options = {}
+        
+        # Validate input file exists and is readable
+        try:
+            validate_file_path(fromfile, check_read=True)
+        except FileNotFoundError as e:
+            # Re-raise with suggestions
+            suggestions = find_similar_files(fromfile)
+            raise FileNotFoundError(fromfile, suggestions) from e
+        except PermissionError as e:
+            raise PermissionError(fromfile, operation="read") from e
+        
         iterableargs = get_iterable_options(options)
         is_flatten = get_option(options, 'flatten')
         keys_set = set()  # Use set for O(1) lookup instead of O(n) list operations
 
-        # First pass: extract schema
-        it_in = open_iterable(fromfile, mode='r', iterableargs=iterableargs)
-        try:
-            n = 0
-            logging.info('Extracting schema')
-            for item in tqdm(it_in, total=limit):
-                if limit is not None and n > limit:
-                    break
-                n += 1
-                if not is_flatten:
-                    dk = dict_generator(item)
-                    for i in dk:
-                        k = ".".join(i[:-1])
-                        keys_set.add(k)
-                else:
-                    item = make_flat(item)
-                    for k in item.keys():
-                        keys_set.add(k)
-        finally:
-            it_in.close()
+        # Handle S3 output: write to temp file first, then upload
+        output_is_s3 = is_s3_uri(tofile)
+        actual_output = tofile
+        s3_writer = None
+        if output_is_s3:
+            import tempfile
+            suffix = os.path.splitext(parse_s3_uri(tofile)[1])[1] or '.tmp'
+            temp_fd, actual_output = tempfile.mkstemp(suffix=suffix)
+            os.close(temp_fd)
+            s3_writer = S3Writer(tofile)
+            s3_writer.__enter__()
 
-        keys = list(keys_set)  # Convert to list for backward compatibility
-
-        # Second pass: convert data
-        it_out = open_iterable(tofile, mode='w', iterableargs={'keys': keys})
         try:
-            it_in = open_iterable(fromfile, mode='r', iterableargs=iterableargs)
+            # First pass: extract schema
             try:
-                # Try to use reset() if available
-                if hasattr(it_in, 'reset'):
-                    it_in.reset()
+                with open_iterable_with_s3(fromfile, mode='r', iterableargs=iterableargs) as it_in:
+                    n = 0
+                    logging.info('Extracting schema')
+                    for item in tqdm(it_in, total=limit):
+                        if limit is not None and n > limit:
+                            break
+                        n += 1
+                        if not is_flatten:
+                            dk = dict_generator(item)
+                            for i in dk:
+                                k = ".".join(i[:-1])
+                                keys_set.add(k)
+                        else:
+                            item = make_flat(item)
+                            for k in item.keys():
+                                keys_set.add(k)
+            except Exception as e:
+                # Check if it's a file format issue
+                file_type = get_file_type(fromfile)
+                supported_formats = ['csv', 'jsonl', 'json', 'xml', 'xls', 'xlsx', 'parquet', 'avro', 'orc', 'bson']
+                if file_type not in supported_formats:
+                    raise FormatError(fromfile, file_type, supported_formats) from e
+                # Re-raise with better context
+                raise
 
-                logging.info('Converting data')
-                n = 0
-                batch = []
-                for row in tqdm(it_in):
-                    n += 1
-                    if is_flatten:
-                        for k in keys:
-                            if k not in row.keys():
-                                row[k] = None
-                        batch.append(make_flat(row))
-                    else:
-                        batch.append(row)
-                    if n % self.batch_size == 0:
+            keys = list(keys_set)  # Convert to list for backward compatibility
+
+            # Second pass: convert data
+            with open_iterable(actual_output, mode='w', iterableargs={'keys': keys}) as it_out:
+                with open_iterable_with_s3(fromfile, mode='r', iterableargs=iterableargs) as it_in:
+                    # Try to use reset() if available
+                    if hasattr(it_in, 'reset'):
+                        it_in.reset()
+
+                    logging.info('Converting data')
+                    n = 0
+                    batch = []
+                    for row in tqdm(it_in):
+                        n += 1
+                        if is_flatten:
+                            for k in keys:
+                                if k not in row.keys():
+                                    row[k] = None
+                            batch.append(make_flat(row))
+                        else:
+                            batch.append(row)
+                        if n % self.batch_size == 0:
+                            if hasattr(it_out, 'write_bulk'):
+                                it_out.write_bulk(batch)
+                            else:
+                                for item in batch:
+                                    it_out.write(item)
+                            batch = []
+                    if len(batch) > 0:
                         if hasattr(it_out, 'write_bulk'):
                             it_out.write_bulk(batch)
                         else:
                             for item in batch:
                                 it_out.write(item)
-                        batch = []
-                if len(batch) > 0:
-                    if hasattr(it_out, 'write_bulk'):
-                        it_out.write_bulk(batch)
-                    else:
-                        for item in batch:
-                            it_out.write(item)
-            finally:
-                it_in.close()
+
+            # Upload to S3 if needed
+            if output_is_s3 and s3_writer:
+                import shutil
+                with open(actual_output, 'rb') as f:
+                    s3_writer.client.upload_fileobj(f, s3_writer.bucket, s3_writer.key)
         finally:
-            it_out.close()
+            # Clean up temp file and S3 writer
+            if output_is_s3 and actual_output != tofile:
+                try:
+                    os.remove(actual_output)
+                except OSError:
+                    pass
+            if s3_writer:
+                s3_writer.__exit__(None, None, None)
 
 
     def convert_old(self, fromfile, tofile, options=None):

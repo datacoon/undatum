@@ -1,0 +1,44 @@
+# Template: Dataset Profiling
+# Description: Profile a dataset by sampling, computing statistics, and generating documentation
+# Variables:
+#   input_file: Path to input file (required)
+#   sample_size: Number of rows to sample - default: 10000
+#   output_dir: Directory for output files - default: ./analysis
+#   stats_output: Path for statistics output (optional)
+#   docs_output: Path for documentation output (optional)
+
+variables:
+  input_file: ${input_file}
+  sample_size: ${sample_size:-10000}
+  output_dir: ${output_dir:-./analysis}
+  stats_output: ${stats_output:-${output_dir}/stats.json}
+  docs_output: ${docs_output:-${output_dir}/docs.md}
+
+steps:
+  - name: sample_data
+    command: sample
+    args:
+      input: ${input_file}
+      output: ${output_dir}/sample.jsonl
+      n: ${sample_size}
+
+  - name: compute_statistics
+    command: stats
+    args:
+      input: ${output_dir}/sample.jsonl
+      checkdates: true
+      engine: duckdb
+
+  - name: frequency_analysis
+    command: frequency
+    args:
+      input: ${output_dir}/sample.jsonl
+      fields: category,status
+
+  - name: generate_documentation
+    command: doc
+    args:
+      input: ${output_dir}/sample.jsonl
+      output: ${docs_output}
+      format: markdown
+      sample_size: 10

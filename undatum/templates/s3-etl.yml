@@ -1,0 +1,41 @@
+# Template: S3 ETL Pipeline
+# Description: Download from S3, process data, and upload results back to S3
+# Variables:
+#   s3_bucket: S3 bucket name (required)
+#   input_key: S3 key for input file (required)
+#   output_key: S3 key for output file (required)
+#   input_format: Input format - default: jsonl
+#   output_format: Output format - default: parquet
+#   processing_steps: Additional processing (fill, dedup, mask) - default: all
+
+variables:
+  s3_bucket: ${s3_bucket}
+  input_key: ${input_key}
+  output_key: ${output_key}
+  input_format: ${input_format:-jsonl}
+  output_format: ${output_format:-parquet}
+  processing_steps: ${processing_steps:-all}
+
+steps:
+  - name: download_and_convert
+    command: convert
+    args:
+      input: s3://${s3_bucket}/${input_key}
+      output: /tmp/data.${output_format}
+      format_in: ${input_format}
+      format_out: ${output_format}
+
+  - name: process_data
+    command: fill
+    args:
+      input: /tmp/data.${output_format}
+      output: /tmp/data_processed.${output_format}
+      fields: age
+      value: 0
+
+  - name: upload_results
+    command: convert
+    args:
+      input: /tmp/data_processed.${output_format}
+      output: s3://${s3_bucket}/${output_key}
+      format_out: ${output_format}

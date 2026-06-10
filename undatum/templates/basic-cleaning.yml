@@ -1,0 +1,53 @@
+# Template: Basic Data Cleaning
+# Description: Clean CSV or JSONL data by filling missing values, removing duplicates, and basic validation
+# Variables:
+#   input_file: Path to input file (required)
+#   output_file: Path to output file (required)
+#   input_format: Input format (csv, jsonl) - default: auto-detect
+#   output_format: Output format (csv, jsonl, parquet) - default: jsonl
+#   fields_to_fill: Comma-separated list of fields to fill - default: age,status
+#   fill_value: Value to use for filling - default: "N/A"
+#   dedup_keys: Comma-separated list of keys for deduplication - default: user_id
+#   mask_fields: Comma-separated list of fields to mask (optional)
+
+variables:
+  input_file: ${input_file}
+  output_file: ${output_file}
+  input_format: ${input_format:-}
+  output_format: ${output_format:-jsonl}
+  fields_to_fill: ${fields_to_fill:-age,status}
+  fill_value: ${fill_value:-N/A}
+  dedup_keys: ${dedup_keys:-user_id}
+  mask_fields: ${mask_fields:-}
+
+steps:
+  - name: convert_format
+    command: convert
+    args:
+      input: ${input_file}
+      output: /tmp/data_converted.${output_format}
+      format_in: ${input_format}
+      format_out: ${output_format}
+
+  - name: fill_missing_values
+    command: fill
+    args:
+      input: /tmp/data_converted.${output_format}
+      output: /tmp/data_filled.${output_format}
+      fields: ${fields_to_fill}
+      value: ${fill_value}
+
+  - name: remove_duplicates
+    command: dedup
+    args:
+      input: /tmp/data_filled.${output_format}
+      output: /tmp/data_deduped.${output_format}
+      keys: ${dedup_keys}
+      keep: first
+
+  - name: finalize_output
+    command: convert
+    args:
+      input: /tmp/data_deduped.${output_format}
+      output: ${output_file}
+      format_out: ${output_format}

@@ -1,0 +1,57 @@
+# Example: Cross-Field Validation Rules
+# This rule file demonstrates cross-field validation scenarios
+
+rules:
+  # Basic field validations
+  - field: start_date
+    name: Start Date Required
+    required: true
+    type: string
+    severity: error
+
+  - field: end_date
+    name: End Date Required
+    required: true
+    type: string
+    severity: error
+
+  # Cross-field validation: date range consistency
+  - type: cross-field
+    name: Date Range Validation
+    description: End date must be after start date
+    condition: "end_date >= start_date"
+    fields: [start_date, end_date]
+    severity: error
+
+  # Cross-field validation: numeric consistency
+  - field: min_value
+    name: Min Value
+    type: number
+    severity: error
+
+  - field: max_value
+    name: Max Value
+    type: number
+    severity: error
+
+  - type: cross-field
+    name: Value Range Consistency
+    description: Max value must be greater than min value
+    condition: "max_value > min_value"
+    fields: [min_value, max_value]
+    severity: error
+
+  # Cross-field validation: conditional requirements
+  - field: discount_percent
+    name: Discount Percent
+    type: number
+    min: 0
+    max: 100
+    severity: warning
+
+  - type: cross-field
+    name: Discount with Price
+    description: If discount is provided, price must also be present
+    condition: "(discount_percent is None) or (price is not None)"
+    fields: [discount_percent, price]
+    severity: warning

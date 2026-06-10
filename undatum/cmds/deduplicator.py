@@ -2,10 +2,14 @@
 import logging
 import sys
 
+import duckdb
 from iterable.helpers.detect import detect_file_type, open_iterable
 
+from ..common.duckdb_config import create_duckdb_connection, get_duckdb_config_from_options
+from ..common.engine_selector import detect_engine
 from ..common.iterable import DataWriter
-from ..constants import DUCKABLE_CODECS, DUCKABLE_FILE_TYPES
+from ..common.errors import FileNotFoundError, PermissionError, find_similar_files
+from ..common.path_utils import validate_file_path
 from ..utils import get_file_type, get_option, normalize_for_json
 
 ITERABLE_OPTIONS_KEYS = ['tagname', 'delimiter', 'encoding', 'start_line', 'page']
@@ -20,21 +24,6 @@ def get_iterable_options(options):
     return out
 
 
-def _detect_engine(fromfile, engine, filetype):
-    """Detect the appropriate engine for processing."""
-    compression = 'raw'
-    if filetype is None:
-        ftype = detect_file_type(fromfile)
-        if ftype['success']:
-            filetype = ftype['datatype'].id()
-            if ftype['codec'] is not None:
-                compression = ftype['codec'].id()
-    logging.info(f'File filetype {filetype} and compression {compression}')
-    if engine == 'auto':
-        if filetype in DUCKABLE_FILE_TYPES and compression in DUCKABLE_CODECS:
-            return 'duckdb'
-        return 'iterable'
-    return engine
 
 
 def _get_key_value(item, key_fields):
@@ -56,6 +45,16 @@ class Deduplicator:
         """Remove duplicate rows."""
         if options is None:
             options = {}
+        
+        # Validate input file exists and is readable
+        try:
+            validate_file_path(fromfile, check_read=True)
+        except FileNotFoundError as e:
+            suggestions = find_similar_files(fromfile)
+            raise FileNotFoundError(fromfile, suggestions) from e
+        except PermissionError as e:
+            raise PermissionError(fromfile, operation="read") from e
+        
         logging.debug('Processing %s', fromfile)
         iterableargs = get_iterable_options(options)
         filetype = get_option(options, 'filetype')
@@ -69,21 +68,60 @@ class Deduplicator:
         if key_fields:
             key_field_list = [f.strip() for f in key_fields.split(',')]
 
-        detected_engine = _detect_engine(fromfile, engine, filetype)
+        detected_engine = detect_engine(fromfile, engine, filetype, operation='dedup')
         items = []  # Initialize items list
         count = 0  # Initialize count
 
-        if detected_engine == 'duckdb' and key_field_list:
-            # Use DuckDB for efficient deduplication on supported formats
+        if detected_engine == 'duckdb':
             try:
-                if to_file:
-                    to_type = get_file_type(to_file)
-                    if not to_type:
-                        logging.error('Output file type not supported')
-                        return
-                    # DuckDB doesn't support DISTINCT ON easily, use subquery approach
-                    # For now, use iterable approach for all cases
-                    detected_engine = 'iterable'
+                duckdb_config = get_duckdb_config_from_options(options)
+                conn = create_duckdb_connection(**duckdb_config)
+
+                # Determine input format and build appropriate read expression
+                source_type = filetype or get_file_type(fromfile) or 'csv'
+                if source_type == 'csv':
+                    read_expr = f"read_csv_auto('{fromfile}', all_varchar=true)"
+                elif source_type in ('json', 'jsonl'):
+                    read_expr = f"read_json_auto('{fromfile}')"
+                elif source_type == 'parquet':
+                    read_expr = f"read_parquet('{fromfile}')"
+                else:
+                    conn.close()
+                    raise ValueError(f"Unsupported file type for DuckDB: {source_type}")
+
+                # Build deduplication query
+                if key_field_list:
+                    # Deduplicate by specific key fields using window function
+                    # Use ROW_NUMBER() to keep first or last occurrence
+                    partition_by = ', '.join(key_field_list)
+                    if keep == 'last':
+                        # Keep last: order descending, take row_number = 1
+                        order_clause = ', '.join([f"{field} DESC" for field in key_field_list])
+                    else:
+                        # Keep first: order ascending, take row_number = 1
+                        order_clause = ', '.join([f"{field} ASC" for field in key_field_list])
+                    
+                    query = f"""
+                        SELECT * FROM (
+                            SELECT *, ROW_NUMBER() OVER (PARTITION BY {partition_by} ORDER BY {order_clause}) as rn
+                            FROM {read_expr}
+                        ) WHERE rn = 1
+                    """
+                else:
+                    # Deduplicate by all fields using DISTINCT
+                    query = f"SELECT DISTINCT * FROM {read_expr}"
+
+                # Execute query and get results
+                relation = conn.execute(query)
+                column_names = relation.columns
+                rows = relation.fetchall()
+                items = [dict(zip(column_names, row)) for row in rows]
+                # Remove the rn column if it exists (from window function)
+                if key_field_list:
+                    items = [{k: v for k, v in item.items() if k != 'rn'} for item in items]
+                conn.close()
+                count = len(items)  # Approximate count
+                logging.info(f'dedup: completed using DuckDB, {len(items)} unique records')
             except Exception as e:
                 logging.warning(f'DuckDB dedup failed, falling back to iterable: {e}')
                 detected_engine = 'iterable'
