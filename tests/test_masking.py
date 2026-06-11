@@ -1,11 +1,12 @@
 """Tests for data masking utilities."""
+
 import pytest
 
 from undatum.common.masking import (
-    redact,
     hash_value,
-    randomize_string,
     mask_value,
+    randomize_string,
+    redact,
 )
 
 

@@ -4,6 +4,7 @@ This module provides filtering capabilities using mistql for evaluating
 boolean filter expressions on dictionary records. It replaces dictquery
 functionality with a mistql-based implementation.
 """
+
 import logging
 import re
 from typing import Any, Optional
@@ -34,7 +35,7 @@ def match_filter(record: dict[str, Any], filter_expr: Optional[str]) -> bool:
         return True
 
     if not isinstance(record, dict):
-        logger.warning('match_filter: record is not a dict, returning False')
+        logger.warning("match_filter: record is not a dict, returning False")
         return False
 
     try:
@@ -77,13 +78,15 @@ def match_filter(record: dict[str, Any], filter_expr: Optional[str]) -> bool:
             return bool(result)
 
     except ImportError as e:
-        logger.error('mistql is not available: %s', e)
-        raise RuntimeError('mistql library is required for filtering') from e
+        logger.error("mistql is not available: %s", e)
+        raise RuntimeError("mistql library is required for filtering") from e
     except MistQLReferenceError:
         # Missing fields should be treated as non-matches, not errors.
         return False
     except Exception as e:
-        logger.debug('Filter evaluation error: %s, expression: %s, record: %s', e, filter_expr, record)
+        logger.debug(
+            "Filter evaluation error: %s, expression: %s, record: %s", e, filter_expr, record
+        )
         # Re-raise with more context
         raise ValueError(f'Invalid filter expression "{filter_expr}": {e}') from e
 

@@ -1,5 +1,5 @@
-# -*- coding: utf8 -*-
 """Tests for diff command behavior."""
+
 import pytest
 
 from undatum.cmds.differ import Differ
@@ -20,12 +20,16 @@ def test_diff_numeric_tolerance(tmp_path, capsys):
 
     output_file = tmp_path / "diff.json"
     differ = Differ()
-    differ.diff(str(file1), str(file2), {
-        "key": "id",
-        "numeric_tolerance": 0.1,
-        "output_format": "json",
-        "output": str(output_file),
-    })
+    differ.diff(
+        str(file1),
+        str(file2),
+        {
+            "key": "id",
+            "numeric_tolerance": 0.1,
+            "output_format": "json",
+            "output": str(output_file),
+        },
+    )
 
     assert output_file.exists()
     assert _summary_changed_count(capsys) == 0
@@ -39,12 +43,16 @@ def test_diff_ignore_case(tmp_path, capsys):
 
     output_file = tmp_path / "diff.json"
     differ = Differ()
-    differ.diff(str(file1), str(file2), {
-        "key": "id",
-        "ignore_case": True,
-        "output_format": "json",
-        "output": str(output_file),
-    })
+    differ.diff(
+        str(file1),
+        str(file2),
+        {
+            "key": "id",
+            "ignore_case": True,
+            "output_format": "json",
+            "output": str(output_file),
+        },
+    )
 
     assert output_file.exists()
     assert _summary_changed_count(capsys) == 0
@@ -58,10 +66,14 @@ def test_diff_threshold_exceeded(tmp_path):
 
     differ = Differ()
     with pytest.raises(SystemExit):
-        differ.diff(str(file1), str(file2), {
-            "key": "id",
-            "max_changed_rows": 0,
-        })
+        differ.diff(
+            str(file1),
+            str(file2),
+            {
+                "key": "id",
+                "max_changed_rows": 0,
+            },
+        )
 
 
 def test_diff_markdown_output(tmp_path):
@@ -72,11 +84,15 @@ def test_diff_markdown_output(tmp_path):
 
     output_file = tmp_path / "diff.md"
     differ = Differ()
-    differ.diff(str(file1), str(file2), {
-        "key": "id",
-        "output_format": "markdown",
-        "output": str(output_file),
-    })
+    differ.diff(
+        str(file1),
+        str(file2),
+        {
+            "key": "id",
+            "output_format": "markdown",
+            "output": str(output_file),
+        },
+    )
 
     content = output_file.read_text()
     assert "Diff Report" in content

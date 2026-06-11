@@ -3,6 +3,7 @@
 This module provides helper functions for encoding detection, delimiter detection,
 file type identification, dictionary manipulation, and data type guessing.
 """
+
 from collections import OrderedDict
 from typing import Any, Optional, Union
 
@@ -21,13 +22,13 @@ def detect_encoding(filename: str, limit: int = 1000000) -> dict[str, Any]:
     Returns:
         Dictionary with encoding detection results from chardet.
     """
-    with open(filename, 'rb') as f:
+    with open(filename, "rb") as f:
         chunk = f.read(limit)
     detected = chardet.detect(chunk)
     return detected
 
 
-def detect_delimiter(filename: str, encoding: str = 'utf8') -> str:
+def detect_delimiter(filename: str, encoding: str = "utf8") -> str:
     """Detect delimiter used in a CSV-like file.
 
     Args:
@@ -39,8 +40,12 @@ def detect_delimiter(filename: str, encoding: str = 'utf8') -> str:
     """
     with open(filename, encoding=encoding) as f:
         line = f.readline()
-    dict1 = {',': line.count(','), ';': line.count(';'),
-             '\t': line.count('\t'), '|': line.count('|')}
+    dict1 = {
+        ",": line.count(","),
+        ";": line.count(";"),
+        "\t": line.count("\t"),
+        "|": line.count("|"),
+    }
     delimiter = max(dict1, key=dict1.get)
     return delimiter
 
@@ -54,7 +59,7 @@ def get_file_type(filename: str) -> Optional[str]:
     Returns:
         File extension if supported, None otherwise.
     """
-    ext = filename.rsplit('.', 1)[-1].lower()
+    ext = filename.rsplit(".", 1)[-1].lower()
     if ext in SUPPORTED_FILE_TYPES:
         return ext
     return None
@@ -76,7 +81,10 @@ def get_option(options: dict[str, Any], name: str) -> Any:
         return DEFAULT_OPTIONS[name]
     return None
 
-def get_dict_value(d: Union[dict[str, Any], list[dict[str, Any]], None], keys: list[str]) -> list[Any]:
+
+def get_dict_value(
+    d: Union[dict[str, Any], list[dict[str, Any]], None], keys: list[str]
+) -> list[Any]:
     """Get dictionary value by nested keys.
 
     Args:
@@ -108,7 +116,9 @@ def get_dict_value(d: Union[dict[str, Any], list[dict[str, Any]], None], keys: l
     return out
 
 
-def strip_dict_fields(record: dict[str, Any], fields: list[list[str]], startkey: int = 0) -> dict[str, Any]:
+def strip_dict_fields(
+    record: dict[str, Any], fields: list[list[str]], startkey: int = 0
+) -> dict[str, Any]:
     """Strip dictionary fields based on field list.
 
     Args:
@@ -176,10 +186,10 @@ def guess_int_size(i: int) -> str:
         String indicating size type: 'uint8', 'uint16', or 'uint32'.
     """
     if i < 255:
-        return 'uint8'
+        return "uint8"
     if i < 65535:
-        return 'uint16'
-    return 'uint32'
+        return "uint16"
+    return "uint32"
 
 
 def guess_datatype(s: Union[str, int, float, None], qd: Any) -> dict[str, Any]:
@@ -196,24 +206,24 @@ def guess_datatype(s: Union[str, int, float, None], qd: Any) -> dict[str, Any]:
         Dictionary with 'base' key indicating detected type and optional
         'subtype' or 'pat' keys for additional information.
     """
-    attrs = {'base': 'str'}
+    attrs = {"base": "str"}
     if s is None:
-        return {'base': 'empty'}
+        return {"base": "empty"}
     if isinstance(s, int):
-        return {'base': 'int'}
+        return {"base": "int"}
     if isinstance(s, float):
-        return {'base': 'float'}
+        return {"base": "float"}
     if not isinstance(s, str):
-        return {'base': 'typed'}
+        return {"base": "typed"}
     if s.isdigit():
-        if s[0] == '0':
-            attrs = {'base': 'numstr'}
+        if s[0] == "0":
+            attrs = {"base": "numstr"}
         else:
-            attrs = {'base': 'int', 'subtype': guess_int_size(int(s))}
+            attrs = {"base": "int", "subtype": guess_int_size(int(s))}
     else:
         try:
             float(s)
-            attrs = {'base': 'float'}
+            attrs = {"base": "float"}
             return attrs
         except ValueError:
             pass
@@ -221,11 +231,11 @@ def guess_datatype(s: Union[str, int, float, None], qd: Any) -> dict[str, Any]:
             is_date = False
             res = qd.match(s)
             if res:
-                attrs = {'base': 'date', 'pat': res['pattern']}
+                attrs = {"base": "date", "pat": res["pattern"]}
                 is_date = True
             if not is_date:
                 if len(s.strip()) == 0:
-                    attrs = {'base': 'empty'}
+                    attrs = {"base": "empty"}
     return attrs
 
 
@@ -241,9 +251,10 @@ def buf_count_newlines_gen(fname: str) -> int:
     Returns:
         Integer count of newline characters in the file.
     """
+
     def _make_gen(reader):
         while True:
-            b = reader(2 ** 16)
+            b = reader(2**16)
             if not b:
                 break
             yield b
@@ -299,24 +310,25 @@ def _is_flat(item: dict[str, Any]) -> bool:
 
 def normalize_for_json(obj: Any) -> Any:
     """Convert non-JSON-serializable types to JSON-serializable ones.
-    
+
     Recursively converts UUID objects and other non-serializable types to strings.
     This is needed when writing data from formats like Parquet (which preserve
     UUIDs as UUID objects) to JSON formats like JSONL.
-    
+
     Args:
         obj: Object to normalize (can be dict, list, tuple, or primitive type)
-        
+
     Returns:
         Normalized object with non-serializable types converted to strings
     """
     try:
         import uuid
+
         if isinstance(obj, uuid.UUID):
             return str(obj)
     except ImportError:
         pass  # uuid module not available
-    
+
     if isinstance(obj, dict):
         return {key: normalize_for_json(value) for key, value in obj.items()}
     elif isinstance(obj, (list, tuple)):

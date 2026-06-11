@@ -1,12 +1,14 @@
 """Tests for DuckDB configuration utilities."""
-import tempfile
+
 import os
+import tempfile
+
 import pytest
 
 from undatum.common.duckdb_config import (
-    parse_memory_size,
     create_duckdb_connection,
     get_duckdb_config_from_options,
+    parse_memory_size,
 )
 
 
@@ -15,13 +17,13 @@ class TestParseMemorySize:
 
     def test_parse_memory_size_gb(self):
         """Test parsing GB memory size."""
-        assert parse_memory_size("4GB") == 4 * 1024 ** 3
-        assert parse_memory_size("1GB") == 1024 ** 3
+        assert parse_memory_size("4GB") == 4 * 1024**3
+        assert parse_memory_size("1GB") == 1024**3
 
     def test_parse_memory_size_mb(self):
         """Test parsing MB memory size."""
-        assert parse_memory_size("512MB") == 512 * 1024 ** 2
-        assert parse_memory_size("1024MB") == 1024 * 1024 ** 2
+        assert parse_memory_size("512MB") == 512 * 1024**2
+        assert parse_memory_size("1024MB") == 1024 * 1024**2
 
     def test_parse_memory_size_kb(self):
         """Test parsing KB memory size."""
@@ -40,7 +42,7 @@ class TestParseMemorySize:
 
     def test_parse_memory_size_whitespace(self):
         """Test parsing with whitespace."""
-        assert parse_memory_size(" 4GB ") == 4 * 1024 ** 3
+        assert parse_memory_size(" 4GB ") == 4 * 1024**3
         # Space in middle is not supported
         with pytest.raises(ValueError, match="Invalid memory size format"):
             parse_memory_size("512 MB")
@@ -82,7 +84,7 @@ class TestCreateDuckdbConnection:
         conn = create_duckdb_connection()
         assert conn is not None
         conn.close()
-        
+
         # Test that invalid memory format doesn't crash
         conn = create_duckdb_connection(memory="invalid")
         assert conn is not None
@@ -134,25 +136,25 @@ class TestGetDuckdbConfigFromOptions:
     def test_get_duckdb_config_from_options_all(self):
         """Test extracting all DuckDB options."""
         options = {
-            'duckdb_threads': 4,
-            'duckdb_memory': '2GB',
-            'duckdb_temp_dir': '/tmp/duckdb',
+            "duckdb_threads": 4,
+            "duckdb_memory": "2GB",
+            "duckdb_temp_dir": "/tmp/duckdb",
         }
         config = get_duckdb_config_from_options(options)
         assert config == {
-            'threads': 4,
-            'memory': '2GB',
-            'temp_dir': '/tmp/duckdb',
+            "threads": 4,
+            "memory": "2GB",
+            "temp_dir": "/tmp/duckdb",
         }
 
     def test_get_duckdb_config_from_options_partial(self):
         """Test extracting partial DuckDB options."""
         options = {
-            'duckdb_threads': 2,
-            'other_option': 'value',
+            "duckdb_threads": 2,
+            "other_option": "value",
         }
         config = get_duckdb_config_from_options(options)
-        assert config == {'threads': 2}
+        assert config == {"threads": 2}
 
     def test_get_duckdb_config_from_options_empty(self):
         """Test extracting from empty options."""
@@ -162,6 +164,21 @@ class TestGetDuckdbConfigFromOptions:
 
     def test_get_duckdb_config_from_options_none(self):
         """Test extracting from None options."""
-        options = {'other_option': 'value'}
+        options = {"other_option": "value"}
         config = get_duckdb_config_from_options(options)
+        assert config == {}
+
+    def test_generic_threads_fallback(self):
+        """--threads should be used when duckdb_threads is not set."""
+        config = get_duckdb_config_from_options({"threads": 8})
+        assert config == {"threads": 8}
+
+    def test_duckdb_threads_takes_precedence(self):
+        """duckdb_threads should win over the generic threads option."""
+        config = get_duckdb_config_from_options({"threads": 8, "duckdb_threads": 2})
+        assert config == {"threads": 2}
+
+    def test_none_threads_ignored(self):
+        """None values for thread options should not produce config entries."""
+        config = get_duckdb_config_from_options({"threads": None, "duckdb_threads": None})
         assert config == {}

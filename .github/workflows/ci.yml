@@ -7,23 +7,59 @@ on:
     branches: [ main ]
 
 jobs:
-  build:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.11"
+    - name: Install linters
+      run: |
+        python -m pip install --upgrade pip
+        pip install ruff black
+    - name: Ruff
+      run: ruff check undatum/ tests/
+    - name: Black
+      run: black --check undatum/ tests/
+
+  type-check:
+    runs-on: ubuntu-latest
+    # Advisory until the mypy error backlog is paid down (tracked in
+    # dev/docs/IMPROVEMENT_PLAN_2026-06.md, workstream B1)
+    continue-on-error: true
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.11"
+    - name: Install package and mypy
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e .
+        pip install mypy
+    - name: Mypy
+      run: mypy undatum/
+
+  test:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.9", "3.10", "3.11"]
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         pip install -e .
-        pip install pytest pytest-benchmark
-    - name: Run tests
+        pip install pytest pytest-benchmark pytest-cov
+    - name: Run tests with coverage
       run: |
-        pytest
+        pytest --cov=undatum --cov-report=term --cov-fail-under=50

@@ -1,4 +1,5 @@
 """Frictionless Data Package generation command module."""
+
 import json
 import logging
 import os
@@ -9,6 +10,9 @@ import urllib.parse
 import urllib.request
 from typing import Any, Optional
 
+from ..ai import get_ai_service, get_structured_metadata
+from ..constants import EU_DATA_THEMES
+from ..utils import get_option
 from .analyzer import OBJECTS_ANALYZE_LIMIT, analyze
 from .doc import (
     _build_sample_csv,
@@ -22,9 +26,6 @@ from .doc import (
     _guess_data_theme,
     _merge_ai_metadata,
 )
-from ..ai import get_ai_service, get_structured_metadata
-from ..constants import EU_DATA_THEMES
-from ..utils import get_option
 
 logger = logging.getLogger(__name__)
 
@@ -149,7 +150,9 @@ def _build_package_metadata(report, samples: list[Any], options: dict[str, Any])
                 )
                 if ai_metadata and isinstance(ai_metadata.get("data_theme"), dict):
                     label = ai_metadata["data_theme"].get("label")
-                    if label in DATA_THEME_URI_BY_LABEL and not ai_metadata["data_theme"].get("uri"):
+                    if label in DATA_THEME_URI_BY_LABEL and not ai_metadata["data_theme"].get(
+                        "uri"
+                    ):
                         ai_metadata["data_theme"]["uri"] = DATA_THEME_URI_BY_LABEL.get(label)
                     if label not in DATA_THEME_URI_BY_LABEL:
                         ai_metadata["data_theme"] = None
@@ -216,7 +219,9 @@ class Packager:
                     primary_report = report
                     primary_input = input_path
 
-                resource_name = os.path.splitext(os.path.basename(input_path))[0] or f"resource_{idx + 1}"
+                resource_name = (
+                    os.path.splitext(os.path.basename(input_path))[0] or f"resource_{idx + 1}"
+                )
                 resource_path = input_path
                 if package_dir and os.path.exists(input_path) and not _is_url(input_path):
                     dest_path = os.path.join(package_dir, os.path.basename(input_path))
@@ -245,7 +250,9 @@ class Packager:
         samples = _build_samples(primary_report.filename, options)
         metadata = _build_package_metadata(primary_report, samples, options)
 
-        name = get_option(options, "name") or _slugify(metadata.get("title") or primary_report.filename)
+        name = get_option(options, "name") or _slugify(
+            metadata.get("title") or primary_report.filename
+        )
         title = get_option(options, "title") or metadata.get("title")
         description = get_option(options, "description") or metadata.get("description")
         keywords = _normalize_keywords(get_option(options, "keywords")) or metadata.get("keywords")

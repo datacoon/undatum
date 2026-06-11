@@ -1,4 +1,5 @@
 """Tests for select command behavior."""
+
 import json
 from pathlib import Path
 
@@ -46,7 +47,9 @@ def test_select_duckdb_matches_iterable(sample_csv_file, tmp_path):
 
 
 def test_select_requires_fields(sample_csv_file):
-    with pytest.raises(ValueError, match="fields"):
+    from undatum.common.errors import ValidationError
+
+    with pytest.raises(ValidationError, match="fields"):
         Selector().select(sample_csv_file, {"output": None})
 
 

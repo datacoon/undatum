@@ -1,5 +1,4 @@
 """Tests for chunked I/O utilities."""
-import pytest
 
 from undatum.common.chunked_io import (
     chunked_reader,
@@ -95,6 +94,7 @@ class TestProcessChunked:
 
     def test_process_chunked_basic(self):
         """Test basic chunked processing."""
+
         def reader():
             yield [1, 2]
             yield [3, 4]
@@ -114,6 +114,7 @@ class TestProcessChunked:
 
     def test_process_chunked_empty(self):
         """Test chunked processing with empty reader."""
+
         def reader():
             return
             yield  # Make it a generator
@@ -132,6 +133,7 @@ class TestProcessChunked:
 
     def test_process_chunked_identity(self):
         """Test chunked processing with identity processor."""
+
         def reader():
             yield [1, 2, 3]
             yield [4, 5]

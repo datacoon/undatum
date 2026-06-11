@@ -1,0 +1,33 @@
+name: database-query-export
+description: Query database and export results to file
+category: database
+tags:
+  - database
+  - query
+  - export
+  - postgresql
+  - mysql
+
+variables:
+  query:
+    description: SQL query to execute
+    required: true
+  db:
+    description: Database connection URI
+    required: true
+  output:
+    description: Output file path
+    required: true
+  format:
+    description: Output format (jsonl, csv, parquet)
+    default: jsonl
+
+commands:
+  - description: Query database and export results
+    command: undatum db query "${query}" --db ${db} --output ${output} --output-format ${format}
+
+example: |
+  undatum examples run database-query-export \
+    --var query="SELECT * FROM users LIMIT 100" \
+    --var db=postgresql://user:pass@host/db \
+    --var output=users.jsonl

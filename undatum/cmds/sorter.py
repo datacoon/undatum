@@ -1,43 +1,36 @@
 """Sort command module - sort rows by columns."""
+
 import logging
 import sys
 import uuid
 
-import duckdb
-from iterable.helpers.detect import detect_file_type, open_iterable
-
+from ..common.command_utils import ITERABLE_OPTIONS_KEYS, get_iterable_options  # noqa: F401
 from ..common.duckdb_config import create_duckdb_connection, get_duckdb_config_from_options
 from ..common.engine_selector import detect_engine
+from ..common.errors import (
+    FileNotFoundError,
+    FormatError,
+    PermissionError,
+    ValidationError,
+    find_similar_files,
+)
 from ..common.iterable import DataWriter
-from ..common.errors import FileNotFoundError, PermissionError, ValidationError, find_similar_files
 from ..common.path_utils import validate_file_path
+from ..common.s3_iterable import open_path as open_iterable
 from ..utils import get_file_type, get_option
-
-ITERABLE_OPTIONS_KEYS = ['tagname', 'delimiter', 'encoding', 'start_line', 'page']
 
 # Threshold for using external sort (in-memory vs external merge)
 EXTERNAL_SORT_THRESHOLD = 100000  # items
 
 
-def get_iterable_options(options):
-    """Extract iterable-specific options from options dictionary."""
-    out = {}
-    for k in ITERABLE_OPTIONS_KEYS:
-        if k in options.keys():
-            out[k] = options[k]
-    return out
-
-
-
-
 def _normalize_for_json(obj):
     """Convert non-JSON-serializable types to JSON-serializable ones.
-    
+
     Recursively converts UUID objects and other non-serializable types to strings.
-    
+
     Args:
         obj: Object to normalize (can be dict, list, or primitive type)
-        
+
     Returns:
         Normalized object with non-serializable types converted to strings
     """
@@ -63,7 +56,7 @@ def _get_sort_key(item, sort_fields, numeric_fields=None):
         if field in numeric_set:
             # Try to convert to number for numeric sort
             try:
-                keys.append(float(value) if value is not None else float('-inf'))
+                keys.append(float(value) if value is not None else float("-inf"))
             except (ValueError, TypeError):
                 keys.append(value)
         else:
@@ -73,6 +66,7 @@ def _get_sort_key(item, sort_fields, numeric_fields=None):
 
 class Sorter:
     """Sorter command handler - sort rows."""
+
     def __init__(self):
         pass
 
@@ -80,7 +74,7 @@ class Sorter:
         """Sort rows by one or more columns."""
         if options is None:
             options = {}
-        
+
         # Validate input file exists and is readable
         try:
             validate_file_path(fromfile, check_read=True)
@@ -89,41 +83,41 @@ class Sorter:
             raise FileNotFoundError(fromfile, suggestions) from e
         except PermissionError as e:
             raise PermissionError(fromfile, operation="read") from e
-        
-        logging.debug('Processing %s', fromfile)
+
+        logging.debug("Processing %s", fromfile)
         iterableargs = get_iterable_options(options)
-        filetype = get_option(options, 'filetype')
-        engine = get_option(options, 'engine') or 'auto'
-        by_fields = get_option(options, 'by')
-        descending = get_option(options, 'desc') or False
-        numeric_fields = get_option(options, 'numeric')
-        to_file = get_option(options, 'output')
+        filetype = get_option(options, "filetype")
+        engine = get_option(options, "engine") or "auto"
+        by_fields = get_option(options, "by")
+        descending = get_option(options, "desc") or False
+        numeric_fields = get_option(options, "numeric")
+        to_file = get_option(options, "output")
 
         if not by_fields:
-            raise ValidationError("Sort fields (--by) are required", field='by')
+            raise ValidationError("Sort fields (--by) are required", field="by")
 
         # Parse sort fields
-        sort_fields = [f.strip() for f in by_fields.split(',')]
-        numeric_set = {f.strip() for f in numeric_fields.split(',')} if numeric_fields else set()
+        sort_fields = [f.strip() for f in by_fields.split(",")]
+        numeric_set = {f.strip() for f in numeric_fields.split(",")} if numeric_fields else set()
 
-        detected_engine = detect_engine(fromfile, engine, filetype, operation='sort')
+        detected_engine = detect_engine(fromfile, engine, filetype, operation="sort")
 
         # Initialize items for output handling
         items = []
 
-        if detected_engine == 'duckdb':
+        if detected_engine == "duckdb":
             try:
                 # Get DuckDB configuration from options
                 duckdb_config = get_duckdb_config_from_options(options)
                 conn = create_duckdb_connection(**duckdb_config)
 
                 # Determine input format and build appropriate read expression
-                source_type = filetype or get_file_type(fromfile) or 'csv'
-                if source_type == 'csv':
+                source_type = filetype or get_file_type(fromfile) or "csv"
+                if source_type == "csv":
                     read_expr = f"read_csv_auto('{fromfile}', all_varchar=true)"
-                elif source_type in ('json', 'jsonl'):
+                elif source_type in ("json", "jsonl"):
                     read_expr = f"read_json_auto('{fromfile}')"
-                elif source_type == 'parquet':
+                elif source_type == "parquet":
                     read_expr = f"read_parquet('{fromfile}')"
                 else:
                     raise ValueError(f"Unsupported file type for DuckDB: {source_type}")
@@ -134,33 +128,35 @@ class Sorter:
                     # Handle numeric fields if specified
                     if field in numeric_set:
                         # Cast to numeric for proper sorting
-                        order_by_parts.append(f"CAST({field} AS DOUBLE) {'DESC' if descending else 'ASC'}")
+                        order_by_parts.append(
+                            f"CAST({field} AS DOUBLE) {'DESC' if descending else 'ASC'}"
+                        )
                     else:
                         order_by_parts.append(f"{field} {'DESC' if descending else 'ASC'}")
 
-                order_by = ', '.join(order_by_parts)
+                order_by = ", ".join(order_by_parts)
                 query = f"SELECT * FROM {read_expr} ORDER BY {order_by}"
 
                 # Determine output format
                 if to_file:
-                    to_type = get_file_type(to_file) or 'csv'
+                    to_type = get_file_type(to_file) or "csv"
                     # Use COPY for file output
-                    if to_type == 'csv':
+                    if to_type == "csv":
                         copy_query = f"COPY ({query}) TO '{to_file}' (FORMAT CSV, HEADER)"
                         conn.execute(copy_query)
-                        logging.info('sort: completed using DuckDB')
+                        logging.info("sort: completed using DuckDB")
                         conn.close()
                         return
-                    elif to_type in ('json', 'jsonl'):
+                    elif to_type in ("json", "jsonl"):
                         copy_query = f"COPY ({query}) TO '{to_file}' (FORMAT JSON)"
                         conn.execute(copy_query)
-                        logging.info('sort: completed using DuckDB')
+                        logging.info("sort: completed using DuckDB")
                         conn.close()
                         return
-                    elif to_type == 'parquet':
+                    elif to_type == "parquet":
                         copy_query = f"COPY ({query}) TO '{to_file}' (FORMAT PARQUET)"
                         conn.execute(copy_query)
-                        logging.info('sort: completed using DuckDB')
+                        logging.info("sort: completed using DuckDB")
                         conn.close()
                         return
 
@@ -170,14 +166,14 @@ class Sorter:
                 rows = relation.fetchall()
                 items = [dict(zip(column_names, row)) for row in rows]
                 conn.close()
-                logging.info(f'sort: completed using DuckDB, {len(items)} records')
+                logging.info(f"sort: completed using DuckDB, {len(items)} records")
             except Exception as e:
-                logging.warning(f'DuckDB sort failed, falling back to iterable: {e}')
-                detected_engine = 'iterable'
+                logging.warning(f"DuckDB sort failed, falling back to iterable: {e}")
+                detected_engine = "iterable"
 
-        if detected_engine == 'iterable':
+        if detected_engine == "iterable":
             # Collect items and sort
-            iterable = open_iterable(fromfile, mode='r', iterableargs=iterableargs)
+            iterable = open_iterable(fromfile, mode="r", iterableargs=iterableargs)
             items = []
 
             try:
@@ -186,23 +182,22 @@ class Sorter:
                     items.append(item)
                     count += 1
                     if count % 100000 == 0:
-                        logging.debug('sort: buffered %d records', count)
+                        logging.debug("sort: buffered %d records", count)
             finally:
                 iterable.close()
 
             # Sort items
             reverse = descending
             items.sort(key=lambda x: _get_sort_key(x, sort_fields, numeric_set), reverse=reverse)
-            logging.debug('sort: sorted %d records', len(items))
+            logging.debug("sort: sorted %d records", len(items))
 
         if to_file:
             to_type = get_file_type(to_file)
             if not to_type:
-                logging.error('Output file type not supported')
-                return
-            out = open(to_file, 'w', encoding='utf8')
+                raise FormatError(to_file, to_file.rsplit(".", 1)[-1])
+            out = open(to_file, "w", encoding="utf8")
         else:
-            to_type = 'jsonl'
+            to_type = "jsonl"
             out = sys.stdout
 
         # Normalize items to convert non-JSON-serializable types (e.g., UUID) to strings
@@ -210,7 +205,7 @@ class Sorter:
 
         # Extract fieldnames from items for CSV output
         fieldnames = None
-        if to_type == 'csv' and normalized_items:
+        if to_type == "csv" and normalized_items:
             if isinstance(normalized_items[0], dict):
                 fieldnames = list(normalized_items[0].keys())
 

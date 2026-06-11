@@ -1,28 +1,19 @@
 """Head command module - extract first N rows."""
+
 import logging
 import sys
 
-from iterable.helpers.detect import open_iterable
-
+from ..common.command_utils import ITERABLE_OPTIONS_KEYS, get_iterable_options  # noqa: F401
+from ..common.errors import FileNotFoundError, FormatError, PermissionError, find_similar_files
 from ..common.iterable import DataWriter
-from ..common.errors import FileNotFoundError, PermissionError, find_similar_files
 from ..common.path_utils import validate_file_path
+from ..common.s3_iterable import open_path as open_iterable
 from ..utils import get_file_type, get_option, normalize_for_json
-
-ITERABLE_OPTIONS_KEYS = ['tagname', 'delimiter', 'encoding', 'start_line', 'page']
-
-
-def get_iterable_options(options):
-    """Extract iterable-specific options from options dictionary."""
-    out = {}
-    for k in ITERABLE_OPTIONS_KEYS:
-        if k in options.keys():
-            out[k] = options[k]
-    return out
 
 
 class Head:
     """Head command handler - extract first N rows."""
+
     def __init__(self):
         pass
 
@@ -30,7 +21,7 @@ class Head:
         """Extract first N rows from a data file."""
         if options is None:
             options = {}
-        
+
         # Validate input file exists and is readable
         try:
             validate_file_path(fromfile, check_read=True)
@@ -39,13 +30,13 @@ class Head:
             raise FileNotFoundError(fromfile, suggestions) from e
         except PermissionError as e:
             raise PermissionError(fromfile, operation="read") from e
-        
-        logging.debug('Processing %s', fromfile)
-        iterableargs = get_iterable_options(options)
-        n = get_option(options, 'n') or 10
-        to_file = get_option(options, 'output')
 
-        iterable = open_iterable(fromfile, mode='r', iterableargs=iterableargs)
+        logging.debug("Processing %s", fromfile)
+        iterableargs = get_iterable_options(options)
+        n = get_option(options, "n") or 10
+        to_file = get_option(options, "output")
+
+        iterable = open_iterable(fromfile, mode="r", iterableargs=iterableargs)
         try:
             count = 0
             items = []
@@ -60,11 +51,10 @@ class Head:
         if to_file:
             to_type = get_file_type(to_file)
             if not to_type:
-                logging.error('Output file type not supported')
-                return
-            out = open(to_file, 'w', encoding='utf8')
+                raise FormatError(to_file, to_file.rsplit(".", 1)[-1])
+            out = open(to_file, "w", encoding="utf8")
         else:
-            to_type = 'jsonl'
+            to_type = "jsonl"
             out = sys.stdout
 
         # Normalize items to convert non-JSON-serializable types (e.g., UUID) to strings
@@ -72,7 +62,7 @@ class Head:
 
         # Extract fieldnames from items for CSV output
         fieldnames = None
-        if to_type == 'csv' and normalized_items:
+        if to_type == "csv" and normalized_items:
             if isinstance(normalized_items[0], dict):
                 fieldnames = list(normalized_items[0].keys())
 
@@ -82,4 +72,4 @@ class Head:
         if to_file:
             out.close()
 
-        logging.debug('head: extracted %d rows', count)
+        logging.debug("head: extracted %d rows", count)

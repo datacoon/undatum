@@ -1,5 +1,5 @@
-# -*- coding: utf8 -*-
 """Data API command module."""
+
 from __future__ import annotations
 
 import json
@@ -7,14 +7,14 @@ import logging
 import os
 import re
 import sys
-from typing import Any, Optional
+from typing import Any
 
 import yaml
 from iterable.helpers.detect import detect_file_type
 
-from ..common.schema_utils import duckdb_decompose
 from ..common.errors import FileNotFoundError, PermissionError, find_similar_files
 from ..common.path_utils import validate_file_path
+from ..common.schema_utils import duckdb_decompose
 from ..constants import DUCKABLE_FILE_TYPES
 from ..utils import get_option
 
@@ -42,7 +42,7 @@ def _normalize_resource_name(path: str, idx: int) -> str:
     return name
 
 
-def _detect_format(path: str, override: Optional[str]) -> Optional[str]:
+def _detect_format(path: str, override: str | None) -> str | None:
     if override:
         return override.lower()
     detected = detect_file_type(path)
@@ -69,11 +69,7 @@ def _infer_primary_key_candidates(path: str, filetype: str) -> list[str]:
     if filetype not in DUCKABLE_FILE_TYPES:
         return []
     rows = duckdb_decompose(
-        filename=path,
-        filetype=filetype,
-        path="*",
-        limit=10000,
-        use_summarize=True
+        filename=path, filetype=filetype, path="*", limit=10000, use_summarize=True
     )
     candidates: list[str] = []
     for row in rows:
@@ -89,7 +85,7 @@ def _infer_primary_key_candidates(path: str, filetype: str) -> list[str]:
     return candidates
 
 
-def _split_csv(value: Optional[str]) -> list[str]:
+def _split_csv(value: str | None) -> list[str]:
     if not value:
         return []
     return [part.strip() for part in value.split(",") if part.strip()]
@@ -97,15 +93,16 @@ def _split_csv(value: Optional[str]) -> list[str]:
 
 def load_api_config(path: str) -> dict[str, Any]:
     """Load API config from YAML or JSON."""
-    with open(path, "r", encoding="utf8") as handle:
+    with open(path, encoding="utf8") as handle:
         raw = handle.read()
     if path.lower().endswith(".json"):
         return json.loads(raw)
     return yaml.safe_load(raw)
 
 
-def dump_api_config(config: dict[str, Any], output: Optional[str] = None,
-                    config_format: Optional[str] = None) -> str:
+def dump_api_config(
+    config: dict[str, Any], output: str | None = None, config_format: str | None = None
+) -> str:
     """Serialize API config to YAML or JSON."""
     if config_format:
         config_format = config_format.lower()
@@ -121,7 +118,7 @@ def _build_api_app(config: dict[str, Any]):
         from fastapi import FastAPI, HTTPException, Request
     except Exception as exc:
         raise ImportError(
-            "Data API requires fastapi. Install with `pip install \"undatum[api]\"`."
+            'Data API requires fastapi. Install with `pip install "undatum[api]"`.'
         ) from exc
     import duckdb
 
@@ -163,7 +160,9 @@ def _build_api_app(config: dict[str, Any]):
             "primary_key": primary_key,
         }
 
-    def _parse_query(resource_meta: dict[str, Any], params: dict[str, str]) -> tuple[str, list[Any]]:
+    def _parse_query(
+        resource_meta: dict[str, Any], params: dict[str, str]
+    ) -> tuple[str, list[Any]]:
         clauses: list[str] = []
         values: list[Any] = []
         for key, value in params.items():
@@ -181,8 +180,9 @@ def _build_api_app(config: dict[str, Any]):
             values.append(value)
         return " AND ".join(clauses), values
 
-    def _apply_order(sql: str, order_by: Optional[str], order_dir: str,
-                     resource_meta: dict[str, Any]) -> str:
+    def _apply_order(
+        sql: str, order_by: str | None, order_dir: str, resource_meta: dict[str, Any]
+    ) -> str:
         if not order_by:
             return sql
         fields = [part.strip() for part in order_by.split(",") if part.strip()]
@@ -217,7 +217,9 @@ def _build_api_app(config: dict[str, Any]):
         where_clause, values = _parse_query(resource_meta, params)
         if where_clause:
             sql = f"{sql} WHERE {where_clause}"
-        sql = _apply_order(sql, params.get("order_by"), params.get("order_dir", "asc"), resource_meta)
+        sql = _apply_order(
+            sql, params.get("order_by"), params.get("order_dir", "asc"), resource_meta
+        )
         sql = f"{sql} LIMIT ? OFFSET ?"
         values.extend([limit, offset])
 
@@ -266,7 +268,9 @@ def _build_api_app(config: dict[str, Any]):
 class DataApi:
     """Data API command handler."""
 
-    def discover(self, input_files: list[str], options: Optional[dict[str, Any]] = None) -> dict[str, Any]:
+    def discover(
+        self, input_files: list[str], options: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
         if options is None:
             options = {}
         if not input_files:
@@ -292,12 +296,13 @@ class DataApi:
                 raise FileNotFoundError(path, suggestions) from e
             except PermissionError as e:
                 raise PermissionError(path, operation="read") from e
-            
+
             filetype = _detect_format(path, format_in)
             if not filetype:
                 from ..common.errors import FormatError
-                supported = ['csv', 'json', 'jsonl', 'parquet']
-                raise FormatError(path, 'unknown', supported)
+
+                supported = ["csv", "json", "jsonl", "parquet"]
+                raise FormatError(path, "unknown", supported)
             fields = _infer_fields(path, filetype)
             primary_candidates = _infer_primary_key_candidates(path, filetype)
             resource = {
@@ -330,15 +335,19 @@ class DataApi:
             sys.stdout.write("\n")
         return config
 
-    def serve(self, config_path: Optional[str], options: Optional[dict[str, Any]] = None,
-              config: Optional[dict[str, Any]] = None) -> None:
+    def serve(
+        self,
+        config_path: str | None,
+        options: dict[str, Any] | None = None,
+        config: dict[str, Any] | None = None,
+    ) -> None:
         if options is None:
             options = {}
         try:
             import uvicorn  # type: ignore
         except Exception as exc:
             raise ImportError(
-                "Data API requires uvicorn. Install with `pip install \"undatum[api]\"`."
+                'Data API requires uvicorn. Install with `pip install "undatum[api]"`.'
             ) from exc
 
         if config is None:
@@ -352,7 +361,7 @@ class DataApi:
         app = _build_api_app(config)
         uvicorn.run(app, host=host, port=port)
 
-    def run(self, input_files: list[str], options: Optional[dict[str, Any]] = None) -> None:
+    def run(self, input_files: list[str], options: dict[str, Any] | None = None) -> None:
         if options is None:
             options = {}
         options = dict(options)

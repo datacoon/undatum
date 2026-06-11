@@ -1,5 +1,5 @@
-# -*- coding: utf8 -*-
 """Engine selection utilities for choosing between DuckDB and Python engines."""
+
 import logging
 from typing import Optional
 
@@ -26,34 +26,34 @@ def detect_engine(
         Selected engine: 'duckdb' or 'iterable' (Python engine)
     """
     if engine is None:
-        engine = 'auto'
+        engine = "auto"
 
-    compression = 'raw'
+    compression = "raw"
     if filetype is None:
         ftype = detect_file_type(fromfile)
-        if ftype['success']:
-            filetype = ftype['datatype'].id()
-            if ftype['codec'] is not None:
-                compression = ftype['codec'].id()
+        if ftype["success"]:
+            filetype = ftype["datatype"].id()
+            if ftype["codec"] is not None:
+                compression = ftype["codec"].id()
 
-    logging.info(f'File filetype {filetype} and compression {compression}')
+    logging.info(f"File filetype {filetype} and compression {compression}")
 
-    if engine == 'auto':
+    if engine == "auto":
         if filetype in DUCKABLE_FILE_TYPES and compression in DUCKABLE_CODECS:
             # Check if operation is SQL-expressible (for future use)
             if operation and not _is_sql_expressible(operation):
-                logging.debug(f'Operation {operation} not SQL-expressible, using iterable engine')
-                return 'iterable'
-            return 'duckdb'
-        return 'iterable'
+                logging.debug(f"Operation {operation} not SQL-expressible, using iterable engine")
+                return "iterable"
+            return "duckdb"
+        return "iterable"
 
-    if engine == 'duckdb':
-        return 'duckdb'
-    if engine == 'python':
-        return 'iterable'
+    if engine == "duckdb":
+        return "duckdb"
+    if engine == "python":
+        return "iterable"
 
     # Default fallback
-    return 'iterable'
+    return "iterable"
 
 
 def _is_sql_expressible(operation: str) -> bool:
@@ -66,13 +66,25 @@ def _is_sql_expressible(operation: str) -> bool:
         True if operation can be expressed in SQL, False otherwise
     """
     sql_expressible_operations = {
-        'sort', 'frequency', 'uniq', 'sample', 'search', 'dedup', 'slice', 'join',
-        'select', 'filter', 'count', 'stats'
+        "sort",
+        "frequency",
+        "uniq",
+        "sample",
+        "search",
+        "dedup",
+        "slice",
+        "join",
+        "select",
+        "filter",
+        "count",
+        "stats",
     }
     return operation.lower() in sql_expressible_operations
 
 
-def is_format_supported_by_duckdb(filetype: Optional[str], compression: Optional[str] = None) -> bool:
+def is_format_supported_by_duckdb(
+    filetype: Optional[str], compression: Optional[str] = None
+) -> bool:
     """Check if a file format is supported by DuckDB.
 
     Args:
@@ -85,5 +97,5 @@ def is_format_supported_by_duckdb(filetype: Optional[str], compression: Optional
     if filetype not in DUCKABLE_FILE_TYPES:
         return False
     if compression is None:
-        compression = 'raw'
+        compression = "raw"
     return compression in DUCKABLE_CODECS

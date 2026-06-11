@@ -1,4 +1,5 @@
 """Benchmark tests for schema extraction performance."""
+
 import pytest
 
 
@@ -11,14 +12,12 @@ def test_get_dict_keys_performance(benchmark):
     def generate_data():
         for i in range(1000):
             yield {
-                'field1': f'value{i}',
-                'nested': {
-                    'subfield1': f'subvalue{i}',
-                    'subfield2': {
-                        'deepfield': f'deepvalue{i}'
-                    }
+                "field1": f"value{i}",
+                "nested": {
+                    "subfield1": f"subvalue{i}",
+                    "subfield2": {"deepfield": f"deepvalue{i}"},
                 },
-                'list_field': [{'item': f'item{i}'}]
+                "list_field": [{"item": f"item{i}"}],
             }
 
     data = list(generate_data())
@@ -32,14 +31,9 @@ def test_dict_generator_performance(benchmark):
     from undatum.utils import dict_generator
 
     sample_dict = {
-        'field1': 'value1',
-        'nested': {
-            'subfield1': 'subvalue1',
-            'subfield2': {
-                'deepfield': 'deepvalue1'
-            }
-        },
-        'list_field': [{'item': 'item1'}, {'item': 'item2'}]
+        "field1": "value1",
+        "nested": {"subfield1": "subvalue1", "subfield2": {"deepfield": "deepvalue1"}},
+        "list_field": [{"item": "item1"}, {"item": "item2"}],
     }
 
     def run_generator():

@@ -1,7 +1,8 @@
-# -*- coding: utf8 -*-
 """Chunked streaming I/O utilities for constant memory usage."""
+
 import logging
-from typing import Iterator, Optional, Any, Callable
+from collections.abc import Iterator
+from typing import Any, Callable
 
 
 def chunked_reader(iterable: Iterator[Any], chunk_size: int = 1000) -> Iterator[list[Any]]:
@@ -25,9 +26,7 @@ def chunked_reader(iterable: Iterator[Any], chunk_size: int = 1000) -> Iterator[
 
 
 def chunked_writer(
-    items: list[Any],
-    writer_func: Callable[[list[Any]], None],
-    chunk_size: int = 1000
+    items: list[Any], writer_func: Callable[[list[Any]], None], chunk_size: int = 1000
 ) -> None:
     """Write items in chunks using provided writer function.
 
@@ -37,7 +36,7 @@ def chunked_writer(
         chunk_size: Number of items per chunk
     """
     for i in range(0, len(items), chunk_size):
-        chunk = items[i:i + chunk_size]
+        chunk = items[i : i + chunk_size]
         writer_func(chunk)
 
 
@@ -45,7 +44,7 @@ def process_chunked(
     reader: Iterator[list[Any]],
     processor: Callable[[list[Any]], list[Any]],
     writer: Callable[[list[Any]], None],
-    chunk_size: int = 1000
+    chunk_size: int = 1000,
 ) -> int:
     """Process data in chunks: read, process, write.
 
@@ -64,5 +63,5 @@ def process_chunked(
         writer(processed_chunk)
         total_processed += len(chunk)
         if total_processed % (chunk_size * 10) == 0:
-            logging.debug(f'Processed {total_processed} items')
+            logging.debug(f"Processed {total_processed} items")
     return total_processed

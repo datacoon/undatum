@@ -1,0 +1,28 @@
+name: data-profiling
+description: Profile dataset with statistics and generate documentation
+category: analysis
+tags:
+  - profiling
+  - statistics
+  - analysis
+  - documentation
+
+variables:
+  input:
+    description: Input data file path
+    required: true
+  output_stats:
+    description: Output file for statistics (optional)
+    default: ""
+  output_doc:
+    description: Output file for documentation (optional)
+    default: ""
+
+commands:
+  - description: Generate statistics
+    command: undatum stats ${input} ${output_stats:+--output ${output_stats}}
+  - description: Generate documentation
+    command: undatum doc ${input} ${output_doc:+--output ${output_doc}}
+
+example: |
+  undatum examples run data-profiling --var input=data.jsonl

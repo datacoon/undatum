@@ -1,10 +1,11 @@
 """Integration tests for filter functionality in validator and selector commands."""
+
 import os
-import tempfile
+
 import pytest
 
-from undatum.cmds.validator import Validator
 from undatum.cmds.selector import Selector
+from undatum.cmds.validator import Validator
 
 
 @pytest.fixture
@@ -44,13 +45,13 @@ class TestValidatorFilter:
         output_file = str(tmp_path / "output.csv")
 
         options = {
-            'format_in': 'csv',
-            'fields': 'age',
-            'rule': 'integer',
-            'filter': 'age >= 30',  # Filter for age >= 30
-            'output': output_file,
-            'mode': 'all',
-            'zipfile': False,
+            "format_in": "csv",
+            "fields": "age",
+            "rule": "integer",
+            "filter": "age >= 30",  # Filter for age >= 30
+            "output": output_file,
+            "mode": "all",
+            "zipfile": False,
         }
 
         # Should not raise exception
@@ -65,13 +66,13 @@ class TestValidatorFilter:
         output_file = str(tmp_path / "output.csv")
 
         options = {
-            'format_in': 'jsonl',
-            'fields': 'age',
-            'rule': 'integer',
-            'filter': 'age >= 30',  # Filter for age >= 30
-            'output': output_file,
-            'mode': 'all',
-            'zipfile': False,
+            "format_in": "jsonl",
+            "fields": "age",
+            "rule": "integer",
+            "filter": "age >= 30",  # Filter for age >= 30
+            "output": output_file,
+            "mode": "all",
+            "zipfile": False,
         }
 
         # Should not raise exception
@@ -86,13 +87,13 @@ class TestValidatorFilter:
         output_file = str(tmp_path / "output.csv")
 
         options = {
-            'format_in': 'csv',
-            'fields': 'age',
-            'rule': 'integer',
-            'filter': None,  # No filter
-            'output': output_file,
-            'mode': 'all',
-            'zipfile': False,
+            "format_in": "csv",
+            "fields": "age",
+            "rule": "integer",
+            "filter": None,  # No filter
+            "output": output_file,
+            "mode": "all",
+            "zipfile": False,
         }
 
         # Should not raise exception
@@ -111,10 +112,10 @@ class TestSelectorFilter:
         output_file = str(tmp_path / "output.jsonl")
 
         options = {
-            'format_in': 'jsonl',
-            'fields': 'name,age',
-            'filter': 'age >= 30',  # Filter for age >= 30
-            'output': output_file,
+            "format_in": "jsonl",
+            "fields": "name,age",
+            "filter": "age >= 30",  # Filter for age >= 30
+            "output": output_file,
         }
 
         # Should not raise exception
@@ -130,11 +131,11 @@ class TestSelectorFilter:
         output_file = str(tmp_path / "output.csv")
 
         options = {
-            'format_in': 'jsonl',
-            'fields': 'city',
-            'filter': 'age >= 30',  # Filter for age >= 30
-            'output': output_file,
-            'engine': 'iterable',
+            "format_in": "jsonl",
+            "fields": "city",
+            "filter": "age >= 30",  # Filter for age >= 30
+            "output": output_file,
+            "engine": "iterable",
         }
 
         # Should not raise exception
@@ -148,13 +149,13 @@ class TestSelectorFilter:
         selector = Selector()
 
         options = {
-            'format_in': 'csv',
-            'fields': None,
-            'chunksize': 2,
-            'filter': 'age >= 30',  # Filter for age >= 30
-            'zipfile': False,
-            'gzipfile': False,
-            'dirname': str(tmp_path),
+            "format_in": "csv",
+            "fields": None,
+            "chunksize": 2,
+            "filter": "age >= 30",  # Filter for age >= 30
+            "zipfile": False,
+            "gzipfile": False,
+            "dirname": str(tmp_path),
         }
 
         # Should not raise exception
@@ -166,13 +167,13 @@ class TestSelectorFilter:
         selector = Selector()
 
         options = {
-            'format_in': 'jsonl',
-            'fields': None,
-            'chunksize': 2,
-            'filter': 'age >= 30',  # Filter for age >= 30
-            'zipfile': False,
-            'gzipfile': False,
-            'dirname': str(tmp_path),
+            "format_in": "jsonl",
+            "fields": None,
+            "chunksize": 2,
+            "filter": "age >= 30",  # Filter for age >= 30
+            "zipfile": False,
+            "gzipfile": False,
+            "dirname": str(tmp_path),
         }
 
         # Should not raise exception
@@ -184,10 +185,10 @@ class TestSelectorFilter:
         output_file = str(tmp_path / "output.jsonl")
 
         options = {
-            'format_in': 'jsonl',
-            'fields': 'name,age',
-            'filter': None,  # No filter
-            'output': output_file,
+            "format_in": "jsonl",
+            "fields": "name,age",
+            "filter": None,  # No filter
+            "output": output_file,
         }
 
         # Should not raise exception

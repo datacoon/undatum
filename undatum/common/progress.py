@@ -1,12 +1,14 @@
-# -*- coding: utf8 -*-
 """Progress indication utilities using tqdm."""
+
 import logging
 import sys
-from typing import Optional, Iterator, Any
+from collections.abc import Iterator
 from contextlib import contextmanager
+from typing import Any, Optional
 
 try:
     from tqdm import tqdm
+
     TQDM_AVAILABLE = True
 except ImportError:
     TQDM_AVAILABLE = False
@@ -19,7 +21,7 @@ def is_tty() -> bool:
     Returns:
         True if stdout is a TTY, False otherwise
     """
-    return hasattr(sys.stdout, 'isatty') and sys.stdout.isatty()
+    return hasattr(sys.stdout, "isatty") and sys.stdout.isatty()
 
 
 @contextmanager
@@ -28,7 +30,7 @@ def progress_bar(
     desc: Optional[str] = None,
     unit: str = "items",
     disable: bool = False,
-    show_progress: bool = True
+    show_progress: bool = True,
 ):
     """Create a progress bar context manager.
 
@@ -60,7 +62,7 @@ def wrap_iterable(
     desc: Optional[str] = None,
     unit: str = "items",
     disable: bool = False,
-    show_progress: bool = True
+    show_progress: bool = True,
 ) -> Iterator[Any]:
     """Wrap an iterable with progress indication.
 
@@ -85,7 +87,7 @@ def wrap_iterable(
                 yield item
                 pbar.update(1)
     except Exception as e:
-        logging.warning(f'Progress bar error: {e}')
+        logging.warning(f"Progress bar error: {e}")
         yield from iterable
 
 

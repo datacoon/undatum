@@ -2,6 +2,8 @@
 
 > A powerful command-line tool for data processing and analysis
 
+**Version:** 1.3.0
+
 **undatum** (pronounced *un-da-tum*) is a modern CLI tool designed to make working with large datasets as simple and efficient as possible. It provides a unified interface for converting, analyzing, validating, and transforming data across multiple formats.
 
 ## Features
@@ -15,6 +17,7 @@
 - **Flexible filtering**: Query and filter data using expressions
 - **Schema generation**: Automatic schema detection and generation
 - **Database ingestion**: Ingest data to MongoDB, PostgreSQL, DuckDB, MySQL, SQLite, and Elasticsearch with retry logic and error handling
+- **Ad-hoc SQL on files**: Run DuckDB SQL over CSV, JSONL, Parquet, and other formats (`undatum sql`)
 - **AI-powered documentation**: Automatic field and dataset descriptions using multiple LLM providers (OpenAI, OpenRouter, Ollama, LM Studio, Perplexity) with structured JSON output
 - **Optional Data API**: Serve file-backed datasets over HTTP with FastAPI + DuckDB
 
@@ -42,6 +45,48 @@ Optional extras:
 ```bash
 # Data API (FastAPI + uvicorn)
 pip install "undatum[api]"
+
+# Document extraction (PDF/DOC/DOCX tables and text)
+pip install "undatum[extract]"
+
+# Plotting (matplotlib)
+pip install "undatum[plot]"
+
+# S3 cloud storage support (boto3)
+pip install "undatum[s3]"
+
+# PostgreSQL / MySQL database connectors
+pip install "undatum[postgres]"
+pip install "undatum[mysql]"
+```
+
+After installation both `undatum` and the shorter `data` command are available:
+
+```bash
+undatum --version
+undatum headers data.csv
+data headers data.csv   # same thing
+```
+
+### Shell completion
+
+Typer provides built-in shell completion. Install it for your shell:
+
+```bash
+# Bash
+undatum --install-completion bash
+
+# Zsh
+undatum --install-completion zsh
+
+# Fish
+undatum --install-completion fish
+```
+
+To preview completion scripts without installing:
+
+```bash
+undatum --show-completion bash
 ```
 
 ### Requirements
@@ -54,12 +99,15 @@ pip install "undatum[api]"
 python -m pip install --upgrade pip setuptools wheel
 python -m pip install .
 # or build distributables
-python setup.py sdist bdist_wheel
+python -m pip install build && python -m build
 ```
 
 ## Quick Start
 
 ```bash
+# Print version
+undatum --version
+
 # Get file headers
 undatum headers data.jsonl
 
@@ -86,6 +134,9 @@ undatum api serve --config api.yml
 
 # Get statistics
 undatum stats data.csv
+
+# Run ad-hoc SQL over a file
+undatum sql "SELECT city, COUNT(*) AS n FROM data GROUP BY city" cities.csv
 
 # Convert XML to JSON Lines
 undatum convert --tagname item data.xml data.jsonl
@@ -202,7 +253,7 @@ AI provider can be configured via:
 
 ### `doc`
 
-Generates dataset documentation with schema, statistics, and samples in Markdown (default), JSON, YAML, or text. Supports AI-powered descriptions with `--autodoc`.
+Generates dataset documentation with schema, statistics, and samples in Markdown (default), JSON, YAML, or text. Supports AI-powered descriptions with `--autodoc`. Also available as the `document` alias.
 
 ```bash
 # Markdown documentation (default)
@@ -275,6 +326,55 @@ undatum package create data.csv --title "Sales data" --keywords sales,finance \
 - `--engine`: Processing engine (`auto` or `duckdb`)
 - `--objects-limit`: Maximum objects to analyze for schema inference (default: 10000)
 - `--sample-size`: Number of sample records for metadata inference (default: 10)
+
+### `api`
+
+Serves files as a read-only HTTP API (FastAPI + DuckDB). Supports CSV, JSON/JSONL, and Parquet files. Requires the `api` extra: `pip install "undatum[api]"`.
+
+```bash
+# Discover resources and serve in one step
+undatum api run data.csv
+
+# Generate an API config (YAML) for multiple files
+undatum api discover data.csv other.parquet --output api.yml
+
+# Serve from a config file
+undatum api serve --config api.yml --host 127.0.0.1 --port 8000
+```
+
+**Endpoints:**
+- `GET /{resource}` - list records with filtering, sorting, and pagination
+- `GET /{resource}/{pk}` - fetch a single record (when a single-column primary key is inferred)
+- `GET /docs` - interactive OpenAPI documentation (provided by FastAPI)
+
+**Query parameters:**
+- Filters: `field__op=value` where `op` is one of `eq`, `ne`, `lt`, `gt`, `le`, `ge`, `like`
+- Sorting: `sort=field` or `sort=-field` (descending)
+- Pagination: `limit` (default 50, max 1000) and `offset`
+
+**Security notes:**
+- The API is read-only; no mutations are possible
+- Binds to `127.0.0.1` by default; there is no built-in authentication, so put it behind a reverse proxy with auth before exposing it publicly
+
+### `mask`
+
+Masks sensitive fields for anonymization. Supports redaction, deterministic hashing (preserves joins), and type-compatible randomization.
+
+```bash
+# Redact email and phone fields
+undatum mask data.csv --fields email,phone --method redact --output masked.csv
+
+# Hash user IDs (deterministic, preserves joins)
+undatum mask data.jsonl --fields user_id --method hash --salt my-salt --output masked.jsonl
+
+# Randomize age and email fields
+undatum mask data.csv --fields age,email --method randomize --output masked.csv
+```
+
+**Masking methods:**
+- `redact` (default) - replace values with a fixed token (`***`)
+- `hash` - deterministic one-way hash; the same input always produces the same output, so joins across files are preserved. Use `--salt` for additional security
+- `randomize` - replace values with random but type-compatible values
 
 ### `extract`
 
@@ -1017,9 +1117,41 @@ undatum schema data.jsonl --format cerberus --output validation_schema.json
 
 **Note:** The `scheme` command is deprecated. Use `undatum schema --format cerberus` instead. The `scheme` command will show a deprecation warning but continues to work for backward compatibility.
 
+### `schema_bulk`
+
+Extracts schemas from multiple files at once using a glob pattern or directory path. Either extracts distinct unique schemas (`--mode distinct`, default) or one schema per file (`--mode perfile`).
+
+```bash
+# Distinct schemas across all CSV files in a directory
+undatum schema_bulk "data/*.csv" --output schemas/
+
+# One schema per file, JSON Schema format
+undatum schema_bulk data/ --mode perfile --format jsonschema --output schemas/
+
+# With AI-powered field documentation
+undatum schema_bulk "data/*.jsonl" --autodoc --output schemas/
+```
+
+### `sql`
+
+Run ad-hoc DuckDB SQL queries over data files (CSV, JSONL, Parquet, and other DuckDB-readable formats). A single input file can be referenced as the view `data`; every file is also registered as a view named after its file stem.
+
+```bash
+# Aggregate a CSV
+undatum sql "SELECT city, COUNT(*) AS n FROM data GROUP BY city" cities.csv
+
+# Join two files (views named after file stems: orders, users)
+undatum sql "SELECT * FROM orders JOIN users USING (user_id)" orders.csv users.parquet
+
+# Save the result as Parquet
+undatum sql "SELECT * FROM data WHERE amount > 100" sales.jsonl --output big.parquet --format parquet
+```
+
+Output formats: `jsonl` (default), `csv`, `parquet` (requires `--output`). DuckDB resources can be tuned with `--duckdb-threads` and `--duckdb-memory`.
+
 ### `query`
 
-Query data using MistQL query language (experimental).
+Query data using MistQL query language (experimental). For SQL-based querying prefer the `sql` command.
 
 ```bash
 undatum query data.jsonl "SELECT * WHERE status = 'active'"

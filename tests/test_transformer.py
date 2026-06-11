@@ -1,9 +1,4 @@
 """Tests for transformer command."""
-import tempfile
-import os
-from unittest.mock import patch, MagicMock
-
-import pytest
 
 from undatum.cmds.transformer import Transformer, get_iterable_options
 
@@ -14,20 +9,20 @@ class TestGetIterableOptions:
     def test_get_iterable_options_all(self):
         """Test extracting all iterable options."""
         options = {
-            'tagname': 'item',
-            'delimiter': ',',
-            'encoding': 'utf-8',
-            'start_line': 1,
-            'page': 1,
-            'other': 'value'
+            "tagname": "item",
+            "delimiter": ",",
+            "encoding": "utf-8",
+            "start_line": 1,
+            "page": 1,
+            "other": "value",
         }
         result = get_iterable_options(options)
         assert result == {
-            'tagname': 'item',
-            'delimiter': ',',
-            'encoding': 'utf-8',
-            'start_line': 1,
-            'page': 1
+            "tagname": "item",
+            "delimiter": ",",
+            "encoding": "utf-8",
+            "start_line": 1,
+            "page": 1,
         }
 
     def test_get_iterable_options_empty(self):

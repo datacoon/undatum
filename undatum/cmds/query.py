@@ -1,26 +1,18 @@
 """Data query module using mistql."""
+
 import logging
 
-from iterable.helpers.detect import open_iterable
-
+from ..common.command_utils import ITERABLE_OPTIONS_KEYS, get_iterable_options  # noqa: F401
+from ..common.errors import FormatError
+from ..common.s3_iterable import open_path as open_iterable
 from ..utils import get_file_type, get_option, strip_dict_fields
 
-LINEEND = b'\n'
-
-ITERABLE_OPTIONS_KEYS = ['tagname', 'delimiter', 'encoding', 'start_line', 'page']
-
-
-def get_iterable_options(options):
-    """Extract iterable-specific options from options dictionary."""
-    out = {}
-    for k in ITERABLE_OPTIONS_KEYS:
-        if k in options.keys():
-            out[k] = options[k]
-    return out
+LINEEND = b"\n"
 
 
 class DataQuery:
     """Data query handler using mistql."""
+
     def __init__(self):
         pass
 
@@ -29,23 +21,22 @@ class DataQuery:
         if options is None:
             options = {}
         from mistql import query
+
         iterableargs = get_iterable_options(options)
-        to_file = get_option(options, 'output')
+        to_file = get_option(options, "output")
 
         if to_file:
-            get_file_type(to_file)
-            if not to_file:
-                logging.error('Output file type not supported')
-                return
-            out_iterable = open_iterable(to_file, mode='w', iterableargs={})
+            if not get_file_type(to_file):
+                raise FormatError(to_file, to_file.rsplit(".", 1)[-1])
+            out_iterable = open_iterable(to_file, mode="w", iterableargs={})
         else:
             out_iterable = None
 
-        fields_value = get_option(options, 'fields')
-        fields = fields_value.split(',') if fields_value else None
-        fields_list = [field.split('.') for field in fields] if fields else None
+        fields_value = get_option(options, "fields")
+        fields = fields_value.split(",") if fields_value else None
+        fields_list = [field.split(".") for field in fields] if fields else None
 
-        iterable = open_iterable(fromfile, mode='r', iterableargs=iterableargs)
+        iterable = open_iterable(fromfile, mode="r", iterableargs=iterableargs)
         try:
             n = 0
             for r in iterable:
@@ -54,8 +45,8 @@ class DataQuery:
                     r_selected = strip_dict_fields(r, fields_list, 0)
                 else:
                     r_selected = r
-                if options.get('query') is not None:
-                    res = query(options['query'], r_selected)
+                if options.get("query") is not None:
+                    res = query(options["query"], r_selected)
                     if not res:
                         continue
                 else:
@@ -68,6 +59,6 @@ class DataQuery:
         finally:
             iterable.close()
 
-        logging.debug('query: %d records processed', n)
+        logging.debug("query: %d records processed", n)
         if out_iterable:
             out_iterable.close()

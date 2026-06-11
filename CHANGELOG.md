@@ -7,6 +7,55 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-06-11
+
+### Added
+- **`mask` command** - Anonymize sensitive fields with redact, deterministic hash, and randomize methods
+- **`pipeline` commands** - Run and validate multi-step YAML/JSON workflows (`pipeline run`, `pipeline validate`)
+- **`pipeline templates` commands** - List built-in pipeline templates and initialize pipelines from them (`pipeline templates list`, `pipeline templates init`)
+- **`examples` commands** - Browse and run a built-in recipe library (`examples list`, `examples show`, `examples run`); recipes now ship inside the package
+- **`plot` command** - Generate histogram, bar, scatter, and line charts with matplotlib
+- **`db query` / `db load` commands** - Execute SQL against PostgreSQL/MySQL/SQLite and load files into database tables
+- **Data API** - Serve files as a read-only HTTP API (`api discover`, `api serve`, `api run`) via the `api` extra
+- **`package create` command** - Generate Frictionless Data Package descriptors
+- **`extract` command** - Extract tables/text from PDF/DOC/DOCX/XLS/XLSX via the `extract` extra
+- **`profile` command** - Alias for `stats`
+- **Python SDK** - `Dataset` fluent API (`from undatum import Dataset`) with read/write, transforms, and analysis methods returning real values (`stats()`, `count()`, `head()`, `tail()`)
+- **Plugin system** - Entry-point based plugins (`undatum.plugins` group) with `plugins list` / `plugins info` commands
+- **Rich validation rules** - YAML/JSON rule files with severity levels for `validate`
+- **Error handling framework** - `UndatumError` hierarchy with actionable messages, typo suggestions, and consistent exit codes
+- **S3 support** - Read/write `s3://` URIs in major commands via the `s3` extra
+- **Parallel processing infrastructure** - Chunked I/O, threading helpers, and progress bars
+- New optional extras: `plot` (matplotlib), `s3` (boto3), `postgres` (psycopg2-binary), `mysql` (pymysql)
+- **CI quality gates** - ruff, black, and coverage thresholds enforced in GitHub Actions; advisory mypy job; Python 3.12/3.13 added to the test matrix; `.pre-commit-config.yaml` added
+- **`sql` command** - Ad-hoc DuckDB SQL queries over data files with jsonl/csv/parquet output (`undatum sql "SELECT ..." file.csv`)
+- **`--version` flag** - Print the undatum version
+
+### Changed
+- `stats` (DuckDB and iterable engines) now returns a structured profile dictionary in addition to printing the profile table
+- Recipes used by the `examples` command moved into the package (`undatum/recipes/`) so they work in PyPI installs
+- Packaging is now fully `pyproject.toml`-based; legacy `setup.py` removed and templates/recipes declared as package data
+- Removed unused direct dependency on `click`
+- `core.py` split into per-domain CLI modules under `undatum/cli/` (data, pipeline, db, api, package, examples, plugins); `undatum.core` is now a thin assembly module
+- Shared command scaffolding: `get_iterable_options` / `ITERABLE_OPTIONS_KEYS` centralized in `undatum/common/command_utils.py` (was duplicated in 31 modules) along with a `run_with_duckdb_fallback` helper
+- Commands that previously logged an error and exited with code 0 on invalid parameters or unsupported output formats now raise `ValidationError` / `FormatError` (non-zero exit codes)
+- Removed deprecated `IterableData` reader class; reading goes through `iterabledata`'s `open_iterable`. `DataWriter` is retained as the supported writer for open file objects (e.g. stdout)
+- Logging configuration moved from import time (`undatum.core`) to the CLI entry point
+- `ingester.py` (1,900 lines) decomposed into a package with one module per database backend (`undatum/cmds/ingester/`)
+- `statistics.py` (1,200 lines) decomposed into a package with engine detection, DuckDB engine, and iterable engine modules (`undatum/cmds/statistics/`)
+- S3 (`s3://`) input paths now work across all file-reading commands via a shared S3-aware opener
+- `--progress` flag wired into `convert`, `validate`, and `join`
+- `--threads` now configures the DuckDB engine across DuckDB-backed commands (stats, sort, dedup, search, join, select, slice, sample, sql)
+- Connector plugins are now consulted in the shared I/O path: custom URI schemes (e.g. `myproto://...`) handled by an installed `ConnectorPlugin` work in all file-reading commands
+- `plugins info` now lists the command names registered by command plugins
+
+### Fixed
+- DuckDB stats engine: implemented missing value, distribution, and type-category computations (previously the DuckDB path always fell back to the iterable engine)
+- `Dataset` SDK methods `count()`, `head()`, `tail()` returned placeholder values; they now return actual results
+- `Dataset.read()` options (encoding, delimiter, etc.) are now applied when iterating
+- Unsupported database URI schemes (e.g. `http://`) now raise a clear error instead of being treated as SQLite paths
+- Fixed YAML syntax error in the `api-serve-data` recipe
+
 ## [1.1.1] - 2026-01-19
 
 ### Added

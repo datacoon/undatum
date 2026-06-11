@@ -1,0 +1,25 @@
+name: data-validation
+description: Validate data using validation rules file
+category: validation
+tags:
+  - validation
+  - quality
+  - rules
+
+variables:
+  input:
+    description: Input data file path
+    required: true
+  rules:
+    description: Validation rules file path (YAML or JSON)
+    required: true
+  output:
+    description: Output validation report file (optional)
+    default: ""
+
+commands:
+  - description: Validate data with rules
+    command: undatum validate ${input} --rules ${rules} --output-format json ${output:+--violation-report ${output}}
+
+example: |
+  undatum examples run data-validation --var input=data.jsonl --var rules=validation-rules.yml

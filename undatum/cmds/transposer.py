@@ -1,26 +1,18 @@
 """Transpose command module - swap rows and columns."""
+
 import logging
 import sys
 
-from iterable.helpers.detect import open_iterable
-
+from ..common.command_utils import ITERABLE_OPTIONS_KEYS, get_iterable_options  # noqa: F401
+from ..common.errors import FormatError
 from ..common.iterable import DataWriter
+from ..common.s3_iterable import open_path as open_iterable
 from ..utils import get_file_type, get_option, normalize_for_json
-
-ITERABLE_OPTIONS_KEYS = ['tagname', 'delimiter', 'encoding', 'start_line', 'page']
-
-
-def get_iterable_options(options):
-    """Extract iterable-specific options from options dictionary."""
-    out = {}
-    for k in ITERABLE_OPTIONS_KEYS:
-        if k in options.keys():
-            out[k] = options[k]
-    return out
 
 
 class Transposer:
     """Transposer command handler - transpose rows and columns."""
+
     def __init__(self):
         pass
 
@@ -28,11 +20,11 @@ class Transposer:
         """Swap rows and columns."""
         if options is None:
             options = {}
-        logging.debug('Transposing %s', fromfile)
+        logging.debug("Transposing %s", fromfile)
         iterableargs = get_iterable_options(options)
 
         # Read all items into memory (required for transpose)
-        iterable = open_iterable(fromfile, mode='r', iterableargs=iterableargs)
+        iterable = open_iterable(fromfile, mode="r", iterableargs=iterableargs)
         items = []
 
         try:
@@ -42,12 +34,12 @@ class Transposer:
                     items.append(item)
                     count += 1
                     if count % 10000 == 0:
-                        logging.debug('transpose: loaded %d records', count)
+                        logging.debug("transpose: loaded %d records", count)
         finally:
             iterable.close()
 
         if not items:
-            logging.warning('transpose: no data to transpose')
+            logging.warning("transpose: no data to transpose")
             return
 
         # Collect all field names (columns)
@@ -64,10 +56,10 @@ class Transposer:
         if all_fields:
             first_row = {}
             # Use a special field name for the first column (row index/field name)
-            row_index_field = 'field_name'
-            first_row[row_index_field] = 'row_index'
+            row_index_field = "field_name"
+            first_row[row_index_field] = "row_index"
             for i in range(len(items)):
-                first_row[f'row_{i}'] = all_fields[i] if i < len(all_fields) else None
+                first_row[f"row_{i}"] = all_fields[i] if i < len(all_fields) else None
             transposed_items.append(first_row)
 
         # Subsequent rows: one per original field (column)
@@ -75,18 +67,17 @@ class Transposer:
             new_row = {}
             new_row[row_index_field] = field_name
             for item_idx, item in enumerate(items):
-                new_row[f'row_{item_idx}'] = item.get(field_name)
+                new_row[f"row_{item_idx}"] = item.get(field_name)
             transposed_items.append(new_row)
 
-        to_file = get_option(options, 'output')
+        to_file = get_option(options, "output")
         if to_file:
             to_type = get_file_type(to_file)
             if not to_type:
-                logging.error('Output file type not supported')
-                return
-            out = open(to_file, 'w', encoding='utf8')
+                raise FormatError(to_file, to_file.rsplit(".", 1)[-1])
+            out = open(to_file, "w", encoding="utf8")
         else:
-            to_type = 'jsonl'
+            to_type = "jsonl"
             out = sys.stdout
 
         # Normalize items to convert non-JSON-serializable types (e.g., UUID) to strings
@@ -94,7 +85,7 @@ class Transposer:
 
         # Extract fieldnames from items for CSV output
         fieldnames = None
-        if to_type == 'csv' and normalized_items:
+        if to_type == "csv" and normalized_items:
             if isinstance(normalized_items[0], dict):
                 fieldnames = list(normalized_items[0].keys())
 
@@ -104,5 +95,10 @@ class Transposer:
         if to_file:
             out.close()
 
-        logging.debug('transpose: transposed %d rows x %d columns to %d rows x %d columns',
-                     len(items), len(all_fields), len(transposed_items), len(all_fields) + 1)
+        logging.debug(
+            "transpose: transposed %d rows x %d columns to %d rows x %d columns",
+            len(items),
+            len(all_fields),
+            len(transposed_items),
+            len(all_fields) + 1,
+        )

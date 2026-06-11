@@ -1,14 +1,14 @@
-# -*- coding: utf8 -*-
 """S3 connector for reading and writing files from/to AWS S3."""
+
 import logging
 import os
 import tempfile
-from typing import Optional, BinaryIO, Iterator
-from urllib.parse import urlparse
+from typing import BinaryIO, Optional
 
 try:
     import boto3
     from botocore.exceptions import ClientError, NoCredentialsError
+
     BOTO3_AVAILABLE = True
 except ImportError:
     BOTO3_AVAILABLE = False
@@ -34,25 +34,23 @@ def get_s3_client(region: Optional[str] = None, profile: Optional[str] = None):
         NoCredentialsError: If AWS credentials are not found
     """
     if not BOTO3_AVAILABLE:
-        raise ImportError(
-            "boto3 is required for S3 support. Install with: pip install boto3"
-        )
+        raise ImportError("boto3 is required for S3 support. Install with: pip install boto3")
 
     session_kwargs = {}
     if profile:
-        session_kwargs['profile_name'] = profile
-    elif os.getenv('AWS_PROFILE'):
-        session_kwargs['profile_name'] = os.getenv('AWS_PROFILE')
+        session_kwargs["profile_name"] = profile
+    elif os.getenv("AWS_PROFILE"):
+        session_kwargs["profile_name"] = os.getenv("AWS_PROFILE")
 
     session = boto3.Session(**session_kwargs)
 
     client_kwargs = {}
     if region:
-        client_kwargs['region_name'] = region
-    elif os.getenv('AWS_REGION'):
-        client_kwargs['region_name'] = os.getenv('AWS_REGION')
+        client_kwargs["region_name"] = region
+    elif os.getenv("AWS_REGION"):
+        client_kwargs["region_name"] = os.getenv("AWS_REGION")
 
-    return session.client('s3', **client_kwargs)
+    return session.client("s3", **client_kwargs)
 
 
 class S3Reader:
@@ -83,7 +81,7 @@ class S3Reader:
         """Context manager exit."""
         self.close()
 
-    def open(self, mode: str = 'rb') -> BinaryIO:
+    def open(self, mode: str = "rb") -> BinaryIO:
         """Open S3 object as file-like object.
 
         For reading, downloads to temporary file and returns file handle.
@@ -99,7 +97,7 @@ class S3Reader:
             ValueError: If mode is not 'rb'
             ClientError: If S3 operation fails
         """
-        if mode != 'rb':
+        if mode != "rb":
             raise ValueError(f"S3Reader only supports 'rb' mode, got '{mode}'")
 
         if self._file_handle:
@@ -108,17 +106,13 @@ class S3Reader:
         # Download to temporary file
         try:
             # Create temporary file
-            suffix = os.path.splitext(self.key)[1] or '.tmp'
+            suffix = os.path.splitext(self.key)[1] or ".tmp"
             temp_fd, temp_path = tempfile.mkstemp(suffix=suffix)
             os.close(temp_fd)
 
             # Download from S3
-            logging.info(f'Downloading s3://{self.bucket}/{self.key} to temporary file')
-            self.client.download_fileobj(
-                self.bucket,
-                self.key,
-                open(temp_path, 'wb')
-            )
+            logging.info(f"Downloading s3://{self.bucket}/{self.key} to temporary file")
+            self.client.download_fileobj(self.bucket, self.key, open(temp_path, "wb"))
 
             self._temp_file = temp_path
             self._file_handle = open(temp_path, mode)
@@ -170,7 +164,7 @@ class S3Writer:
         """Context manager exit."""
         self.close()
 
-    def open(self, mode: str = 'wb') -> BinaryIO:
+    def open(self, mode: str = "wb") -> BinaryIO:
         """Open S3 object as file-like object for writing.
 
         For writing, creates temporary file and uploads on close.
@@ -185,14 +179,14 @@ class S3Writer:
         Raises:
             ValueError: If mode is not 'wb'
         """
-        if mode != 'wb':
+        if mode != "wb":
             raise ValueError(f"S3Writer only supports 'wb' mode, got '{mode}'")
 
         if self._file_handle:
             return self._file_handle
 
         # Create temporary file for writing
-        suffix = os.path.splitext(self.key)[1] or '.tmp'
+        suffix = os.path.splitext(self.key)[1] or ".tmp"
         temp_fd, temp_path = tempfile.mkstemp(suffix=suffix)
         os.close(temp_fd)
 
@@ -209,12 +203,8 @@ class S3Writer:
         # Upload to S3 if file was written
         if self._temp_file and os.path.exists(self._temp_file):
             try:
-                logging.info(f'Uploading to s3://{self.bucket}/{self.key}')
-                self.client.upload_file(
-                    self._temp_file,
-                    self.bucket,
-                    self.key
-                )
+                logging.info(f"Uploading to s3://{self.bucket}/{self.key}")
+                self.client.upload_file(self._temp_file, self.bucket, self.key)
             except ClientError as e:
                 raise ValueError(f"Failed to upload to S3: {e}") from e
             finally:
@@ -225,7 +215,9 @@ class S3Writer:
                 self._temp_file = None
 
 
-def open_s3(s3_uri: str, mode: str = 'rb', region: Optional[str] = None, profile: Optional[str] = None) -> BinaryIO:
+def open_s3(
+    s3_uri: str, mode: str = "rb", region: Optional[str] = None, profile: Optional[str] = None
+) -> BinaryIO:
     """Open S3 URI as file-like object.
 
     Args:
@@ -241,11 +233,11 @@ def open_s3(s3_uri: str, mode: str = 'rb', region: Optional[str] = None, profile
         ImportError: If boto3 is not installed
         ValueError: If mode is not supported or URI is invalid
     """
-    if mode == 'rb':
+    if mode == "rb":
         reader = S3Reader(s3_uri, region=region, profile=profile)
         reader.__enter__()
         return reader.open(mode)
-    elif mode == 'wb':
+    elif mode == "wb":
         writer = S3Writer(s3_uri, region=region, profile=profile)
         writer.__enter__()
         return writer.open(mode)

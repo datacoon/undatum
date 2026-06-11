@@ -1,9 +1,11 @@
 """DOCX file format handling and table extraction."""
+
 import csv
 import datetime
 import json
 
 import openpyxl
+
 try:
     import xlwt
 except ImportError:  # pragma: no cover - optional dependency
@@ -37,7 +39,7 @@ def __extract_table(table, strip_space=False):
                     value = value.strip()
                 r.append(value)
         results.append(r)
-#        print(r)
+        #        print(r)
         n += 1
     return results
 
@@ -45,16 +47,16 @@ def __extract_table(table, strip_space=False):
 def __store_table(tabdata, filename, output_format="csv"):
     """Saves table data as csv file."""
     if output_format == "csv":
-        with open(filename, "w", encoding='utf8') as f:
+        with open(filename, "w", encoding="utf8") as f:
             w = csv.writer(f, delimiter=",")
             for row in tabdata:
                 w.writerow(row)
-    elif output_format == 'tsv':
-        with open(filename, 'w', encoding='utf8') as f:
-            w = csv.writer(f, delimiter='\t')
+    elif output_format == "tsv":
+        with open(filename, "w", encoding="utf8") as f:
+            w = csv.writer(f, delimiter="\t")
             for row in tabdata:
                 w.writerow(row)
-    elif output_format == 'xls':
+    elif output_format == "xls":
         if xlwt is None:
             raise RuntimeError("xlwt is required for XLS output")
         workbook = xlwt.Workbook()
@@ -64,6 +66,7 @@ def __store_table(tabdata, filename, output_format="csv"):
         workbook = openpyxl.Workbook()
         __xlsx_table_to_sheet(tabdata, workbook.create_sheet("0"))
         workbook.save(filename)
+
 
 def __xls_table_to_sheet(table, ws):
     rn = 0
@@ -94,21 +97,19 @@ def extract_docx_tables(filename, strip_space=True):
     for table in document.tables:
         n += 1
         info = {}
-        info['id'] = n
-        info['num_cols'] = len(table.columns)
-        info['num_rows'] = len(table.rows)
-        info['style'] = table.style.name
+        info["id"] = n
+        info["num_cols"] = len(table.columns)
+        info["num_rows"] = len(table.rows)
+        info["style"] = table.style.name
         tdata = __extract_table(table, strip_space=strip_space)
-        info['data'] = tdata
+        info["data"] = tdata
         tables.append(info)
     return tables
 
 
-
-
-
-def extract(filename, output_format="csv", sizefilter=0, singlefile=False,
-           output=None, strip_space=True):
+def extract(
+    filename, output_format="csv", sizefilter=0, singlefile=False, output=None, strip_space=True
+):
     """Extracts tables from csv files and saves them as csv, xls or xlsx files."""
     tables = extract_docx_tables(filename, strip_space=strip_space)
     name = filename.rsplit(".", 1)[0]
@@ -124,7 +125,7 @@ def extract(filename, output_format="csv", sizefilter=0, singlefile=False,
                 if lfilter >= len(t):
                     continue
                 n += 1
-                __xls_table_to_sheet(t['data'], workbook.add_sheet(str(n)))
+                __xls_table_to_sheet(t["data"], workbook.add_sheet(str(n)))
             destname = output if output else f"{name}.{output_format}"
             workbook.save(destname)
         elif output_format == "xlsx":
@@ -133,16 +134,18 @@ def extract(filename, output_format="csv", sizefilter=0, singlefile=False,
                 if lfilter >= len(t):
                     continue
                 n += 1
-                __xlsx_table_to_sheet(t['data'], workbook.create_sheet(str(n)))
+                __xlsx_table_to_sheet(t["data"], workbook.create_sheet(str(n)))
             destname = output if output else f"{name}.{output_format}"
             workbook.save(destname)
         elif output_format == "json":
-            report = {'filename': filename,
-                      'timestamp': datetime.datetime.now().isoformat(),
-                      'num_tables': len(tables),
-                      'tables': tables}
+            report = {
+                "filename": filename,
+                "timestamp": datetime.datetime.now().isoformat(),
+                "num_tables": len(tables),
+                "tables": tables,
+            }
             destname = output if output else f"{name}.{output_format}"
-            with open(destname, 'w', encoding='utf8') as f:
+            with open(destname, "w", encoding="utf8") as f:
                 json.dump(report, f, ensure_ascii=False, indent=4)
 
     else:
@@ -151,7 +154,7 @@ def extract(filename, output_format="csv", sizefilter=0, singlefile=False,
                 continue
             n += 1
             destname = output if output else f"{name}_{n}.{output_format}"
-            __store_table(t['data'], destname, output_format)
+            __store_table(t["data"], destname, output_format)
 
 
 def analyze_docx(filename, extract_data=None, strip_space=True):
@@ -165,11 +168,11 @@ def analyze_docx(filename, extract_data=None, strip_space=True):
     for table in document.tables:
         n += 1
         info = {}
-        info['id'] = n
-        info['num_cols'] = len(table.columns)
-        info['num_rows'] = len(table.rows)
-        info['style'] = table.style.name
+        info["id"] = n
+        info["num_cols"] = len(table.columns)
+        info["num_rows"] = len(table.rows)
+        info["style"] = table.style.name
         tdata = __extract_table(table, strip_space=strip_space)
-        info['data'] = tdata
+        info["data"] = tdata
         tableinfo.append(info)
     return tableinfo

@@ -1,13 +1,15 @@
 """Tests for path and URI utilities."""
+
 import os
+
 import pytest
 
 from undatum.common.path_utils import (
-    is_uri,
-    is_s3_uri,
     is_http_uri,
-    parse_s3_uri,
+    is_s3_uri,
+    is_uri,
     normalize_path,
+    parse_s3_uri,
     resolve_path,
 )
 

@@ -1,15 +1,14 @@
 """Tests for progress indication utilities."""
-import sys
-from unittest.mock import Mock, patch, MagicMock
 
-import pytest
+import sys
+from unittest.mock import MagicMock, patch
 
 from undatum.common.progress import (
     is_tty,
     progress_bar,
-    update_progress,
     set_progress_description,
     set_progress_postfix,
+    update_progress,
     wrap_iterable,
 )
 
@@ -23,7 +22,7 @@ class TestIsTty:
         result = is_tty()
         assert isinstance(result, bool)
 
-    @patch('sys.stdout')
+    @patch("sys.stdout")
     def test_is_tty_with_mock_stdout(self, mock_stdout):
         """Test is_tty with mocked stdout."""
         mock_stdout.isatty.return_value = True
@@ -32,7 +31,7 @@ class TestIsTty:
         mock_stdout.isatty.return_value = False
         assert is_tty() is False
 
-    @patch('sys.stdout')
+    @patch("sys.stdout")
     def test_is_tty_no_isatty_method(self, mock_stdout):
         """Test is_tty when stdout doesn't have isatty method."""
         del mock_stdout.isatty
@@ -42,9 +41,9 @@ class TestIsTty:
 class TestProgressBar:
     """Test progress_bar context manager."""
 
-    @patch('undatum.common.progress.TQDM_AVAILABLE', True)
-    @patch('undatum.common.progress.is_tty', return_value=True)
-    @patch('undatum.common.progress.tqdm')
+    @patch("undatum.common.progress.TQDM_AVAILABLE", True)
+    @patch("undatum.common.progress.is_tty", return_value=True)
+    @patch("undatum.common.progress.tqdm")
     def test_progress_bar_enabled(self, mock_tqdm, mock_is_tty):
         """Test progress bar when enabled."""
         mock_pbar = MagicMock()
@@ -53,33 +52,31 @@ class TestProgressBar:
         with progress_bar(total=100, desc="Test", unit="items") as pbar:
             assert pbar == mock_pbar
 
-        mock_tqdm.assert_called_once_with(
-            total=100, desc="Test", unit="items", file=sys.stdout
-        )
+        mock_tqdm.assert_called_once_with(total=100, desc="Test", unit="items", file=sys.stdout)
         mock_pbar.close.assert_called_once()
 
-    @patch('undatum.common.progress.TQDM_AVAILABLE', False)
+    @patch("undatum.common.progress.TQDM_AVAILABLE", False)
     def test_progress_bar_tqdm_unavailable(self):
         """Test progress bar when tqdm is unavailable."""
         with progress_bar(total=100, desc="Test") as pbar:
             assert pbar is None
 
-    @patch('undatum.common.progress.TQDM_AVAILABLE', True)
-    @patch('undatum.common.progress.is_tty', return_value=False)
+    @patch("undatum.common.progress.TQDM_AVAILABLE", True)
+    @patch("undatum.common.progress.is_tty", return_value=False)
     def test_progress_bar_not_tty(self, mock_is_tty):
         """Test progress bar when not a TTY."""
         with progress_bar(total=100, desc="Test") as pbar:
             assert pbar is None
 
-    @patch('undatum.common.progress.TQDM_AVAILABLE', True)
-    @patch('undatum.common.progress.is_tty', return_value=True)
+    @patch("undatum.common.progress.TQDM_AVAILABLE", True)
+    @patch("undatum.common.progress.is_tty", return_value=True)
     def test_progress_bar_disabled(self, mock_is_tty):
         """Test progress bar when disabled."""
         with progress_bar(total=100, desc="Test", disable=True) as pbar:
             assert pbar is None
 
-    @patch('undatum.common.progress.TQDM_AVAILABLE', True)
-    @patch('undatum.common.progress.is_tty', return_value=True)
+    @patch("undatum.common.progress.TQDM_AVAILABLE", True)
+    @patch("undatum.common.progress.is_tty", return_value=True)
     def test_progress_bar_show_progress_false(self, mock_is_tty):
         """Test progress bar when show_progress is False."""
         with progress_bar(total=100, desc="Test", show_progress=False) as pbar:
@@ -150,9 +147,9 @@ class TestSetProgressPostfix:
 class TestWrapIterable:
     """Test wrap_iterable function."""
 
-    @patch('undatum.common.progress.TQDM_AVAILABLE', True)
-    @patch('undatum.common.progress.is_tty', return_value=True)
-    @patch('undatum.common.progress.tqdm')
+    @patch("undatum.common.progress.TQDM_AVAILABLE", True)
+    @patch("undatum.common.progress.is_tty", return_value=True)
+    @patch("undatum.common.progress.tqdm")
     def test_wrap_iterable_enabled(self, mock_tqdm, mock_is_tty):
         """Test wrap_iterable when progress is enabled."""
         mock_pbar = MagicMock()
@@ -164,24 +161,24 @@ class TestWrapIterable:
         assert result == [1, 2, 3]
         assert mock_pbar.update.call_count == 3
 
-    @patch('undatum.common.progress.TQDM_AVAILABLE', False)
+    @patch("undatum.common.progress.TQDM_AVAILABLE", False)
     def test_wrap_iterable_tqdm_unavailable(self):
         """Test wrap_iterable when tqdm is unavailable."""
         items = [1, 2, 3]
         result = list(wrap_iterable(iter(items), total=3, desc="Test"))
         assert result == [1, 2, 3]
 
-    @patch('undatum.common.progress.TQDM_AVAILABLE', True)
-    @patch('undatum.common.progress.is_tty', return_value=False)
+    @patch("undatum.common.progress.TQDM_AVAILABLE", True)
+    @patch("undatum.common.progress.is_tty", return_value=False)
     def test_wrap_iterable_not_tty(self, mock_is_tty):
         """Test wrap_iterable when not a TTY."""
         items = [1, 2, 3]
         result = list(wrap_iterable(iter(items), total=3, desc="Test"))
         assert result == [1, 2, 3]
 
-    @patch('undatum.common.progress.TQDM_AVAILABLE', True)
-    @patch('undatum.common.progress.is_tty', return_value=True)
-    @patch('undatum.common.progress.tqdm')
+    @patch("undatum.common.progress.TQDM_AVAILABLE", True)
+    @patch("undatum.common.progress.is_tty", return_value=True)
+    @patch("undatum.common.progress.tqdm")
     def test_wrap_iterable_with_exception(self, mock_tqdm, mock_is_tty):
         """Test wrap_iterable when progress bar raises exception."""
         mock_pbar = MagicMock()

@@ -1,8 +1,9 @@
-# -*- coding: utf8 -*-
 """Tests for extract command."""
+
 from pathlib import Path
 
 import pandas as pd
+import pytest
 
 from undatum.cmds.extractor import Extractor
 
@@ -14,6 +15,7 @@ def _find_output_file(output_dir: Path, suffix: str) -> Path:
 
 
 def test_extract_docx_tables_to_csv(tmp_path):
+    pytest.importorskip("docx", reason="python-docx not installed")
     from docx import Document  # type: ignore
 
     doc = Document()

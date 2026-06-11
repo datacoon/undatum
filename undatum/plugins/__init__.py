@@ -1,14 +1,14 @@
-# -*- coding: utf8 -*-
 """Plugin system for extending undatum functionality."""
+
+from .base import CommandPlugin, ConnectorPlugin, Plugin, TransformPlugin
 from .manager import PluginManager
 from .registry import PluginRegistry
-from .base import Plugin, CommandPlugin, ConnectorPlugin, TransformPlugin
 
 __all__ = [
-    'PluginManager',
-    'PluginRegistry',
-    'Plugin',
-    'CommandPlugin',
-    'ConnectorPlugin',
-    'TransformPlugin',
+    "PluginManager",
+    "PluginRegistry",
+    "Plugin",
+    "CommandPlugin",
+    "ConnectorPlugin",
+    "TransformPlugin",
 ]

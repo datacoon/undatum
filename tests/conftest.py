@@ -1,4 +1,5 @@
 """Pytest configuration and fixtures."""
+
 import pytest
 
 
@@ -10,6 +11,7 @@ def pytest_configure(config):
 try:
     import pytest_benchmark  # noqa: F401
 except ImportError:
+
     @pytest.fixture
     def benchmark():
         """Skip benchmarks when pytest-benchmark is unavailable."""

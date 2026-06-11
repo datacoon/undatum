@@ -1,4 +1,5 @@
 """Configuration management for AI services."""
+
 import os
 from pathlib import Path
 from typing import Any, Optional
@@ -17,12 +18,12 @@ def find_config_file() -> Optional[Path]:
         Path to config file if found, None otherwise
     """
     # Check current directory
-    current_dir_config = Path.cwd() / 'undatum.yaml'
+    current_dir_config = Path.cwd() / "undatum.yaml"
     if current_dir_config.exists():
         return current_dir_config
 
     # Check home directory
-    home_config = Path.home() / '.undatum' / 'config.yaml'
+    home_config = Path.home() / ".undatum" / "config.yaml"
     if home_config.exists():
         return home_config
 
@@ -40,9 +41,9 @@ def load_config_file() -> dict[str, Any]:
         return {}
 
     try:
-        with open(config_file, encoding='utf-8') as f:
+        with open(config_file, encoding="utf-8") as f:
             config = yaml.safe_load(f) or {}
-            return config.get('ai', {})
+            return config.get("ai", {})
     except (yaml.YAMLError, OSError, KeyError):
         return {}
 
@@ -61,45 +62,47 @@ def get_env_config() -> dict[str, Any]:
     """
     config = {}
 
-    provider = os.getenv('UNDATUM_AI_PROVIDER')
+    provider = os.getenv("UNDATUM_AI_PROVIDER")
     if provider:
-        config['provider'] = provider
+        config["provider"] = provider
 
     # Check for provider-specific API keys
     api_keys = {
-        'openai': os.getenv('OPENAI_API_KEY'),
-        'openrouter': os.getenv('OPENROUTER_API_KEY'),
-        'perplexity': os.getenv('PERPLEXITY_API_KEY'),
+        "openai": os.getenv("OPENAI_API_KEY"),
+        "openrouter": os.getenv("OPENROUTER_API_KEY"),
+        "perplexity": os.getenv("PERPLEXITY_API_KEY"),
     }
 
     # Use the first available API key if provider not specified
     if not provider:
         for prov, key in api_keys.items():
             if key:
-                config['provider'] = prov
-                config['api_key'] = key
+                config["provider"] = prov
+                config["api_key"] = key
                 break
     else:
         # Use provider-specific key
         key = api_keys.get(provider.lower())
         if key:
-            config['api_key'] = key
+            config["api_key"] = key
 
     # Provider-specific base URLs
-    ollama_url = os.getenv('OLLAMA_BASE_URL')
+    ollama_url = os.getenv("OLLAMA_BASE_URL")
     if ollama_url:
-        config['ollama_base_url'] = ollama_url
+        config["ollama_base_url"] = ollama_url
 
-    lmstudio_url = os.getenv('LMSTUDIO_BASE_URL')
+    lmstudio_url = os.getenv("LMSTUDIO_BASE_URL")
     if lmstudio_url:
-        config['lmstudio_base_url'] = lmstudio_url
+        config["lmstudio_base_url"] = lmstudio_url
 
     return config
 
 
-def merge_config(cli_config: Optional[dict[str, Any]] = None,
-                 file_config: Optional[dict[str, Any]] = None,
-                 env_config: Optional[dict[str, Any]] = None) -> dict[str, Any]:
+def merge_config(
+    cli_config: Optional[dict[str, Any]] = None,
+    file_config: Optional[dict[str, Any]] = None,
+    env_config: Optional[dict[str, Any]] = None,
+) -> dict[str, Any]:
     """Merge configurations with precedence: CLI > File > Environment.
 
     Args:
@@ -153,9 +156,9 @@ def get_provider_config(config: dict[str, Any], provider: str) -> dict[str, Any]
     """
     # Map providers to their environment variable API keys
     provider_api_keys = {
-        'openai': os.getenv('OPENAI_API_KEY'),
-        'openrouter': os.getenv('OPENROUTER_API_KEY'),
-        'perplexity': os.getenv('PERPLEXITY_API_KEY'),
+        "openai": os.getenv("OPENAI_API_KEY"),
+        "openrouter": os.getenv("OPENROUTER_API_KEY"),
+        "perplexity": os.getenv("PERPLEXITY_API_KEY"),
     }
 
     # Determine API key: use provider-specific env var if available, otherwise use config
@@ -166,20 +169,20 @@ def get_provider_config(config: dict[str, Any], provider: str) -> dict[str, Any]
 
     # Fall back to config api_key if provider-specific env var not set
     if not api_key:
-        api_key = config.get('api_key')
+        api_key = config.get("api_key")
 
     provider_config = {
-        'api_key': api_key,
-        'model': config.get('model'),
-        'timeout': config.get('timeout', 30),
+        "api_key": api_key,
+        "model": config.get("model"),
+        "timeout": config.get("timeout", 30),
     }
 
     # Provider-specific base URLs
-    if provider == 'ollama':
-        provider_config['base_url'] = config.get('ollama_base_url') or config.get('base_url')
-    elif provider == 'lmstudio':
-        provider_config['base_url'] = config.get('lmstudio_base_url') or config.get('base_url')
+    if provider == "ollama":
+        provider_config["base_url"] = config.get("ollama_base_url") or config.get("base_url")
+    elif provider == "lmstudio":
+        provider_config["base_url"] = config.get("lmstudio_base_url") or config.get("base_url")
     else:
-        provider_config['base_url'] = config.get('base_url')
+        provider_config["base_url"] = config.get("base_url")
 
     return provider_config

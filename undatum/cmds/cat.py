@@ -1,39 +1,30 @@
 """Cat command module - concatenate files."""
+
 import logging
 import sys
 
-from iterable.helpers.detect import open_iterable
-
+from ..common.command_utils import ITERABLE_OPTIONS_KEYS, get_iterable_options  # noqa: F401
+from ..common.errors import FileNotFoundError, FormatError, PermissionError, find_similar_files
 from ..common.iterable import DataWriter
-from ..common.errors import FileNotFoundError, PermissionError, find_similar_files
 from ..common.path_utils import validate_file_path
+from ..common.s3_iterable import open_path as open_iterable
 from ..utils import get_file_type, get_option, normalize_for_json
-
-ITERABLE_OPTIONS_KEYS = ['tagname', 'delimiter', 'encoding', 'start_line', 'page']
-
-
-def get_iterable_options(options):
-    """Extract iterable-specific options from options dictionary."""
-    out = {}
-    for k in ITERABLE_OPTIONS_KEYS:
-        if k in options.keys():
-            out[k] = options[k]
-    return out
 
 
 class Cat:
     """Cat command handler - concatenate files."""
+
     def __init__(self):
         pass
 
     def cat(self, fromfiles, options=None):
         """Concatenate files by rows or columns."""
         from ..common.errors import ValidationError
-        
+
         if options is None:
             options = {}
         if not fromfiles:
-            raise ValidationError("At least one input file is required", field='fromfiles')
+            raise ValidationError("At least one input file is required", field="fromfiles")
 
         # Validate all input files exist and are readable
         for fromfile in fromfiles:
@@ -45,18 +36,18 @@ class Cat:
             except PermissionError as e:
                 raise PermissionError(fromfile, operation="read") from e
 
-        logging.debug('Processing %s files', len(fromfiles))
-        mode = get_option(options, 'mode') or 'rows'
-        to_file = get_option(options, 'output')
+        logging.debug("Processing %s files", len(fromfiles))
+        mode = get_option(options, "mode") or "rows"
+        to_file = get_option(options, "output")
 
-        if mode == 'rows':
+        if mode == "rows":
             # Row concatenation: append files vertically
             iterableargs = get_iterable_options(options)
             all_items = []
             all_headers = set()
 
             for fromfile in fromfiles:
-                iterable = open_iterable(fromfile, mode='r', iterableargs=iterableargs)
+                iterable = open_iterable(fromfile, mode="r", iterableargs=iterableargs)
                 try:
                     first = True
                     for item in iterable:
@@ -70,7 +61,7 @@ class Cat:
 
             items = all_items
 
-        elif mode == 'columns':
+        elif mode == "columns":
             # Column concatenation: combine files side-by-side
             iterableargs = get_iterable_options(options)
             all_file_items = []
@@ -78,7 +69,7 @@ class Cat:
             # Read all files
             for fromfile in fromfiles:
                 file_items = []
-                iterable = open_iterable(fromfile, mode='r', iterableargs=iterableargs)
+                iterable = open_iterable(fromfile, mode="r", iterableargs=iterableargs)
                 try:
                     for item in iterable:
                         if isinstance(item, dict):
@@ -103,11 +94,10 @@ class Cat:
         if to_file:
             to_type = get_file_type(to_file)
             if not to_type:
-                logging.error('Output file type not supported')
-                return
-            out = open(to_file, 'w', encoding='utf8')
+                raise FormatError(to_file, to_file.rsplit(".", 1)[-1])
+            out = open(to_file, "w", encoding="utf8")
         else:
-            to_type = 'jsonl'
+            to_type = "jsonl"
             out = sys.stdout
 
         # Normalize items to convert non-JSON-serializable types (e.g., UUID) to strings
@@ -115,7 +105,7 @@ class Cat:
 
         # Extract fieldnames from items for CSV output
         fieldnames = None
-        if to_type == 'csv' and normalized_items:
+        if to_type == "csv" and normalized_items:
             if isinstance(normalized_items[0], dict):
                 fieldnames = list(normalized_items[0].keys())
 
@@ -125,4 +115,4 @@ class Cat:
         if to_file:
             out.close()
 
-        logging.debug('cat: concatenated %d files, %d total rows', len(fromfiles), len(items))
+        logging.debug("cat: concatenated %d files, %d total rows", len(fromfiles), len(items))

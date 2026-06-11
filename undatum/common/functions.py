@@ -20,13 +20,13 @@ def get_dict_value(adict, key, prefix=None):
         KeyError: If any key in the path doesn't exist.
     """
     if prefix is None:
-        prefix = key.split('.')
+        prefix = key.split(".")
     if len(prefix) == 1:
         return adict[prefix[0]]
     return get_dict_value(adict[prefix[0]], key, prefix=prefix[1:])
 
 
-def get_dict_value_deep(adict, key, prefix=None, as_array=False, splitter='.'):
+def get_dict_value_deep(adict, key, prefix=None, as_array=False, splitter="."):
     """Get value from hierarchical dictionaries with deep traversal.
 
     Supports nested dictionaries and lists, with optional array collection
@@ -64,17 +64,14 @@ def get_dict_value_deep(adict, key, prefix=None, as_array=False, splitter='.'):
         return None
     if isinstance(adict, dict):
         if prefix[0] in adict:
-            return get_dict_value_deep(adict[prefix[0]], key, prefix=prefix[1:],
-                                       as_array=as_array)
+            return get_dict_value_deep(adict[prefix[0]], key, prefix=prefix[1:], as_array=as_array)
     elif isinstance(adict, list):
         if as_array:
             result = []
             for v in adict:
-                res = get_dict_value_deep(v[prefix[0]], key, prefix=prefix[1:],
-                                          as_array=as_array)
+                res = get_dict_value_deep(v[prefix[0]], key, prefix=prefix[1:], as_array=as_array)
                 if res:
                     result.extend(res)
             return result
-        return get_dict_value_deep(adict[0][prefix[0]], key, prefix=prefix[1:],
-                                    as_array=as_array)
+        return get_dict_value_deep(adict[0][prefix[0]], key, prefix=prefix[1:], as_array=as_array)
     return None

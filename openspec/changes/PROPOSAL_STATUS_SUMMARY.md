@@ -1,118 +1,64 @@
-# OpenSpec Proposal Status Summary
+# Proposal Status Summary
 
-Generated: 2025-01-27
+**Last updated:** 2026-06-11
 
-## Overview
+> This file is a point-in-time snapshot. For live status, run `openspec list`.
 
-This document provides a comprehensive status of all OpenSpec proposals in the `changes/` directory.
+## Archived (complete, moved to `archive/`)
 
-## Proposal Status
+| Change | Archived |
+|--------|----------|
+| add-data-api | 2026-06-11 |
+| add-dataset-doc-command | 2026-06-11 |
+| add-diff-command | 2026-06-11 |
+| add-extract-command | 2026-06-11 |
+| add-schema-format-exports | 2026-06-11 |
+| consolidate-schema-commands | 2026-06-11 |
+| improve-command-error-handling | 2026-06-11 |
+| improve-select-command | 2026-06-11 |
 
-### ✅ Mostly Complete (Implementation Done, Some Testing/Docs Remaining)
+## Active — implemented, remaining tasks are mostly tests/docs
 
-#### 1. **add-phase1-data-commands** (51/52 tasks - 98%)
-- **Status**: ✅ Implementation complete, validation passed
-- **Remaining**: Optional performance tests
-- **Validation**: ✅ Passes `openspec validate --strict`
-- **Notes**: All core commands implemented (count, table, reverse, enum, head, tail, fixlengths)
+These changes have working code in the repository; open checkboxes are primarily
+integration tests, benchmarks, and documentation polish.
 
-#### 2. **add-phase2-data-commands** (78/79 tasks - 99%)
-- **Status**: ✅ Implementation complete, validation passed
-- **Remaining**: Optional performance tests
-- **Validation**: ✅ Passes `openspec validate --strict`
-- **Notes**: All commands implemented (sort, sample, search, dedup, fill, rename, explode, replace, cat)
+- add-phase1-data-commands (51/52)
+- add-phase2-data-commands (78/79)
+- add-phase3-data-commands (71/72)
+- migrate-to-iterabledata (29/31) — deprecated `IterableData`/`DataWriter` removal deferred
+- add-frictionless-package-command (7/8)
+- add-examples-command (21/25)
+- add-plot-command (18/23)
+- add-db-query-load (17/20)
+- add-rich-validation-rules (16/19)
+- add-pipeline-templates (14/18)
+- add-pipeline-command (11/14)
+- add-python-sdk (10/15)
+- enhance-stats-profiling (12/16)
+- improve-schema-command (10/14)
+- add-mask-command (6/12)
+- improve-duckdb-operations (13/22)
+- remove-dictquery-dependency (50/64)
+- optimize-stats-command-duckdb (50/98)
+- add-duckdb-ingestion (35/62)
+- add-mysql-sqlite-ingestion (60/89)
+- add-postgresql-ingestion (43/65)
+- improve-database-ingestion-phase1 (27/39)
+- improve-stats-command (8/18)
+- add-plugin-system (16/24) — connector/transform integration pending
 
-#### 3. **add-phase3-data-commands** (71/72 tasks - 99%)
-- **Status**: ✅ Implementation complete, validation passed
-- **Remaining**: Optional performance tests
-- **Validation**: ✅ Passes `openspec validate --strict`
-- **Notes**: All commands implemented (join, diff, exclude, transpose, sniff, slice, fmt)
+## Active — partially implemented (integration incomplete)
 
-#### 4. **migrate-to-iterabledata** (29/31 tasks - 94%)
-- **Status**: ✅ Core implementation complete
-- **Remaining**: Optional DuckDB engine integration
-- **Validation**: ✅ Passes `openspec validate --strict`
-- **Notes**: Migration to external iterabledata library complete, see IMPLEMENTATION_SUMMARY.md
+- add-s3-connector (7/16) — core connector done; rollout to all commands pending
+- add-parallel-processing (3/16) — infrastructure modules exist; command integration pending
 
-#### 5. **consolidate-schema-commands** (4/7 tasks - 57%)
-- **Status**: ✅ Implementation complete, documentation updated
-- **Remaining**: Testing tasks (integration tests)
-- **Validation**: ✅ Passes `openspec validate --strict`
-- **Notes**: Format conversion implemented, scheme command deprecated, README updated
+## Active — not started
 
-#### 6. **remove-dictquery-dependency** (50/64 tasks - 78%)
-- **Status**: ✅ Core implementation complete
-- **Remaining**: Testing with mistql, documentation updates
-- **Validation**: ✅ Passes `openspec validate --strict`
-- **Notes**: dictquery removed, filter.py created, see IMPLEMENTATION_SUMMARY.md
+- add-doc-metadata-fields (0/10)
+- improve-doc-markdown-metadata (0/3)
 
-#### 7. **improve-schema-command** (9/14 tasks - 64%)
-- **Status**: ✅ Core implementation complete
-- **Remaining**: Testing tasks, type hints
-- **Validation**: ✅ Passes `openspec validate --strict`
-- **Notes**: All critical features implemented, see COMPLETION_CHECKLIST.md
+## Meta
 
-### ⚠️ Partially Complete (Core Implementation Done, Integration Tests Needed)
-
-#### 8. **add-schema-format-exports** (5/10 tasks - 50%)
-- **Status**: ✅ Implementation complete
-- **Remaining**: Testing and documentation
-- **Validation**: ✅ Passes `openspec validate --strict`
-- **Notes**: JSON Schema, Avro, and Parquet converters implemented and integrated
-
-#### 9. **add-postgresql-ingestion** (43/65 tasks - 66%)
-- **Status**: ✅ Core implementation complete
-- **Remaining**: Integration tests, performance tests, error handling
-- **Notes**: PostgresIngester class implemented, requires real PostgreSQL instance for integration tests
-
-#### 10. **add-mysql-sqlite-ingestion** (60/89 tasks - 67%)
-- **Status**: ✅ Core implementation complete
-- **Remaining**: Integration tests, performance tests, error handling
-- **Notes**: MySQLIngester and SQLiteIngester classes implemented, requires real database instances for integration tests
-
-#### 11. **add-duckdb-ingestion** (35/62 tasks - 56%)
-- **Status**: ✅ Core implementation complete
-- **Remaining**: Integration tests, performance tests, error handling
-- **Notes**: DuckDBIngester class implemented, requires testing with real DuckDB instances
-
-#### 12. **improve-database-ingestion-phase1** (27/39 tasks - 69%)
-- **Status**: ✅ Core implementation complete
-- **Remaining**: Integration tests, error handling improvements
-- **Notes**: Bug fixes and improvements implemented, requires real database instances for integration tests
-
-## Summary Statistics
-
-- **Total Proposals**: 12
-- **Fully Validated**: 12 (100% pass `openspec validate --strict`)
-- **Implementation Complete**: 12 (100% have core implementation done)
-- **Testing Complete**: 0 (integration tests require external dependencies)
-- **Documentation Complete**: 8 (67% have documentation updated)
-
-## Common Remaining Tasks
-
-Most proposals have similar remaining tasks:
-
-1. **Integration Tests** - Require real database instances (PostgreSQL, MySQL, SQLite, DuckDB, MongoDB, Elasticsearch)
-2. **Performance Tests** - Require large datasets and benchmarking
-3. **Error Handling Tests** - Require simulated failure scenarios
-4. **Documentation Updates** - Some proposals need README updates (mostly done)
-
-## Recommendations
-
-1. **For Production Readiness**: Complete integration tests with real database instances
-2. **For Performance Validation**: Run performance benchmarks with large datasets
-3. **For Documentation**: Most documentation is already complete
-
-## Next Steps
-
-1. Set up test infrastructure for database integration tests
-2. Create test datasets for performance testing
-3. Complete remaining documentation tasks
-4. Consider archiving completed proposals after deployment
-
-## Notes
-
-- All proposals pass OpenSpec validation
-- Core implementations are complete and functional
-- Remaining tasks are primarily testing and validation
-- No blocking issues identified
+- add-undatum-improvement-roadmap (16/28) — Phase 3 child proposals (cloud connectors,
+  streaming, synthetic data, TUI/web UI, quality monitoring, pipeline autodoc,
+  CLI ergonomics) not yet created.

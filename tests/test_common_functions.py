@@ -1,4 +1,5 @@
 """Tests for common utility functions."""
+
 import pytest
 
 from undatum.common.functions import (

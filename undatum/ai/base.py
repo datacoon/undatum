@@ -1,21 +1,27 @@
 """Base AI service interface for dataset documentation."""
+
 from abc import ABC, abstractmethod
 from typing import Optional
 
 
 class AIServiceError(Exception):
     """Base exception for AI service errors."""
+
     pass
 
 
 class AIConfigurationError(AIServiceError):
     """Raised when AI service configuration is invalid."""
+
     pass
 
 
 class AIAPIError(AIServiceError):
     """Raised when AI API call fails."""
-    def __init__(self, message: str, status_code: Optional[int] = None, response: Optional[str] = None):
+
+    def __init__(
+        self, message: str, status_code: Optional[int] = None, response: Optional[str] = None
+    ):
         super().__init__(message)
         self.status_code = status_code
         self.response = response
@@ -24,8 +30,13 @@ class AIAPIError(AIServiceError):
 class AIService(ABC):
     """Abstract base class for AI service providers."""
 
-    def __init__(self, api_key: Optional[str] = None, base_url: Optional[str] = None,
-                 model: Optional[str] = None, timeout: int = 30):
+    def __init__(
+        self,
+        api_key: Optional[str] = None,
+        base_url: Optional[str] = None,
+        model: Optional[str] = None,
+        timeout: int = 30,
+    ):
         """Initialize AI service.
 
         Args:
@@ -40,7 +51,7 @@ class AIService(ABC):
         self.timeout = timeout
 
     @abstractmethod
-    def get_fields_info(self, fields: list[str], language: str = 'English') -> dict[str, str]:
+    def get_fields_info(self, fields: list[str], language: str = "English") -> dict[str, str]:
         """Get descriptions for a list of field names.
 
         Args:
@@ -57,7 +68,7 @@ class AIService(ABC):
         pass
 
     @abstractmethod
-    def get_description(self, data: str, language: str = 'English') -> str:
+    def get_description(self, data: str, language: str = "English") -> str:
         """Get a description of the dataset.
 
         Args:
@@ -74,8 +85,9 @@ class AIService(ABC):
         pass
 
     @abstractmethod
-    def get_structured_metadata(self, data: str, fields: list[str],
-                                language: str = 'English') -> dict:
+    def get_structured_metadata(
+        self, data: str, fields: list[str], language: str = "English"
+    ) -> dict:
         """Get structured dataset metadata from sample data.
 
         Args:

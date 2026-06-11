@@ -1,6 +1,6 @@
 """Tests for stats command with DuckDB engine."""
+
 import pytest
-from pathlib import Path
 
 from undatum.cmds.statistics import StatProcessor
 
@@ -62,7 +62,7 @@ def large_jsonl_file(tmp_path):
     content_lines = []
     for i in range(100):
         content_lines.append(f'{{"id": {i}, "name": "User{i}", "value": {i * 10}}}\n')
-    jsonl_file.write_text(''.join(content_lines))
+    jsonl_file.write_text("".join(content_lines))
     return str(jsonl_file)
 
 
@@ -72,101 +72,80 @@ class TestStatsDuckDBEngine:
     def test_stats_csv_duckdb_engine(self, sample_csv_file, capsys):
         """Test stats command with CSV file using DuckDB engine."""
         processor = StatProcessor()
-        options = {
-            'format_in': 'csv',
-            'engine': 'duckdb'
-        }
-        
+        options = {"format_in": "csv", "engine": "duckdb"}
+
         # Should not raise exception
         processor.stats(sample_csv_file, options)
-        
+
         # Check that output was produced (captured by capsys)
         captured = capsys.readouterr()
-        assert 'Statistics' in captured.out or 'key' in captured.out
+        assert "Dataset Profile" in captured.out
 
     def test_stats_jsonl_duckdb_engine(self, sample_jsonl_file, capsys):
         """Test stats command with JSONL file using DuckDB engine."""
         processor = StatProcessor()
-        options = {
-            'format_in': 'jsonl',
-            'engine': 'duckdb'
-        }
-        
+        options = {"format_in": "jsonl", "engine": "duckdb"}
+
         # Should not raise exception
         processor.stats(sample_jsonl_file, options)
-        
+
         captured = capsys.readouterr()
-        assert 'Statistics' in captured.out or 'key' in captured.out
+        assert "Dataset Profile" in captured.out
 
     def test_stats_auto_engine_detection(self, sample_jsonl_file, capsys):
         """Test stats command with auto engine detection (should use DuckDB for JSONL)."""
         processor = StatProcessor()
-        options = {
-            'format_in': 'jsonl',
-            'engine': 'auto'
-        }
-        
+        options = {"format_in": "jsonl", "engine": "auto"}
+
         # Should not raise exception and should use DuckDB
         processor.stats(sample_jsonl_file, options)
-        
+
         captured = capsys.readouterr()
-        assert 'Statistics' in captured.out or 'key' in captured.out
+        assert "Dataset Profile" in captured.out
 
     def test_stats_nested_jsonl_duckdb(self, nested_jsonl_file, capsys):
         """Test stats command with nested JSON structures using DuckDB."""
         processor = StatProcessor()
-        options = {
-            'format_in': 'jsonl',
-            'engine': 'duckdb'
-        }
-        
+        options = {"format_in": "jsonl", "engine": "duckdb"}
+
         # Should not raise exception even with nested structures
         processor.stats(nested_jsonl_file, options)
-        
+
         captured = capsys.readouterr()
-        assert 'Statistics' in captured.out or 'key' in captured.out
+        assert "Dataset Profile" in captured.out
 
     def test_stats_jsonl_with_null_values(self, jsonl_with_null_values, capsys):
         """Test stats command with null values - should handle None gracefully."""
         processor = StatProcessor()
-        options = {
-            'format_in': 'jsonl',
-            'engine': 'duckdb'
-        }
-        
+        options = {"format_in": "jsonl", "engine": "duckdb"}
+
         # Should not raise "Referenced column 'None' not found" error
         processor.stats(jsonl_with_null_values, options)
-        
+
         captured = capsys.readouterr()
         # Should complete successfully
-        assert 'Statistics' in captured.out or 'key' in captured.out
+        assert "Dataset Profile" in captured.out
 
     def test_stats_large_file_duckdb(self, large_jsonl_file, capsys):
         """Test stats command with larger file using DuckDB."""
         processor = StatProcessor()
-        options = {
-            'format_in': 'jsonl',
-            'engine': 'duckdb'
-        }
-        
+        options = {"format_in": "jsonl", "engine": "duckdb"}
+
         # Should handle larger files efficiently
         processor.stats(large_jsonl_file, options)
-        
+
         captured = capsys.readouterr()
-        assert 'Statistics' in captured.out or 'key' in captured.out
+        assert "Dataset Profile" in captured.out
 
     def test_stats_duckdb_fallback_to_iterable(self, tmp_path, capsys):
         """Test that DuckDB falls back to iterable on errors."""
         # Create an invalid file that might cause DuckDB to fail
         invalid_file = tmp_path / "invalid.jsonl"
         invalid_file.write_text('{"invalid": json}\n')  # Malformed JSON
-        
+
         processor = StatProcessor()
-        options = {
-            'format_in': 'jsonl',
-            'engine': 'duckdb'
-        }
-        
+        options = {"format_in": "jsonl", "engine": "duckdb"}
+
         # Should fall back to iterable engine without crashing
         try:
             processor.stats(str(invalid_file), options)
@@ -177,58 +156,48 @@ class TestStatsDuckDBEngine:
     def test_stats_duckdb_multiple_runs(self, sample_jsonl_file, capsys):
         """Test that DuckDB engine works consistently across multiple runs."""
         processor = StatProcessor()
-        options = {
-            'format_in': 'jsonl',
-            'engine': 'duckdb'
-        }
-        
+        options = {"format_in": "jsonl", "engine": "duckdb"}
+
         # Run multiple times to check for resource leaks or state issues
         for _ in range(3):
             processor.stats(sample_jsonl_file, options)
             captured = capsys.readouterr()
-            assert 'Statistics' in captured.out or 'key' in captured.out
+            assert "Dataset Profile" in captured.out
 
     def test_stats_duckdb_with_dictshare(self, sample_jsonl_file, capsys):
         """Test stats command with custom dictshare parameter."""
         processor = StatProcessor()
         options = {
-            'format_in': 'jsonl',
-            'engine': 'duckdb',
-            'dictshare': '10'  # Pass as string to match expected format
+            "format_in": "jsonl",
+            "engine": "duckdb",
+            "dictshare": "10",  # Pass as string to match expected format
         }
-        
+
         # Should work with custom dictshare
         processor.stats(sample_jsonl_file, options)
-        
+
         captured = capsys.readouterr()
-        assert 'Statistics' in captured.out or 'key' in captured.out
+        assert "Dataset Profile" in captured.out
 
     def test_stats_duckdb_no_progress(self, sample_jsonl_file, capsys):
         """Test stats command with progress disabled."""
         processor = StatProcessor()
-        options = {
-            'format_in': 'jsonl',
-            'engine': 'duckdb',
-            'no_progress': True
-        }
-        
+        options = {"format_in": "jsonl", "engine": "duckdb", "no_progress": True}
+
         # Should work without progress bar
         processor.stats(sample_jsonl_file, options)
-        
+
         captured = capsys.readouterr()
-        assert 'Statistics' in captured.out or 'key' in captured.out
+        assert "Dataset Profile" in captured.out
 
     def test_stats_empty_file_handling(self, tmp_path, capsys):
         """Test stats command with empty file."""
         empty_file = tmp_path / "empty.jsonl"
-        empty_file.write_text('')
-        
+        empty_file.write_text("")
+
         processor = StatProcessor()
-        options = {
-            'format_in': 'jsonl',
-            'engine': 'duckdb'
-        }
-        
+        options = {"format_in": "jsonl", "engine": "duckdb"}
+
         # Should handle empty file gracefully
         try:
             processor.stats(str(empty_file), options)
@@ -243,14 +212,11 @@ class TestStatsDuckDBEdgeCases:
     def test_stats_csv_with_special_characters(self, tmp_path, capsys):
         """Test CSV with special characters in field names."""
         csv_file = tmp_path / "special.csv"
-        csv_file.write_text('field.name,field_age,field-value\nAlice,30,100\n')
-        
+        csv_file.write_text("field.name,field_age,field-value\nAlice,30,100\n")
+
         processor = StatProcessor()
-        options = {
-            'format_in': 'csv',
-            'engine': 'duckdb'
-        }
-        
+        options = {"format_in": "csv", "engine": "duckdb"}
+
         processor.stats(str(csv_file), options)
         captured = capsys.readouterr()
         # Should complete without errors
@@ -260,29 +226,23 @@ class TestStatsDuckDBEdgeCases:
         """Test stats with single record file."""
         jsonl_file = tmp_path / "single.jsonl"
         jsonl_file.write_text('{"name": "Alice", "age": 30}\n')
-        
+
         processor = StatProcessor()
-        options = {
-            'format_in': 'jsonl',
-            'engine': 'duckdb'
-        }
-        
+        options = {"format_in": "jsonl", "engine": "duckdb"}
+
         processor.stats(str(jsonl_file), options)
         captured = capsys.readouterr()
-        assert 'Statistics' in captured.out or 'key' in captured.out
+        assert "Dataset Profile" in captured.out
 
     def test_stats_jsonl_very_long_field_names(self, tmp_path, capsys):
         """Test stats with very long field names."""
         jsonl_file = tmp_path / "long_fields.jsonl"
         long_field = "a" * 100
         jsonl_file.write_text(f'{{"{long_field}": "value"}}\n')
-        
+
         processor = StatProcessor()
-        options = {
-            'format_in': 'jsonl',
-            'engine': 'duckdb'
-        }
-        
+        options = {"format_in": "jsonl", "engine": "duckdb"}
+
         processor.stats(str(jsonl_file), options)
         captured = capsys.readouterr()
-        assert 'Statistics' in captured.out or 'key' in captured.out
+        assert "Dataset Profile" in captured.out

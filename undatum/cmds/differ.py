@@ -1,25 +1,15 @@
 """Diff command module - compare two files and show differences."""
+
 import csv
 import json
 import logging
-import sys
 from io import StringIO
 
-from iterable.helpers.detect import open_iterable
-
+from ..common.command_utils import ITERABLE_OPTIONS_KEYS, get_iterable_options  # noqa: F401
+from ..common.s3_iterable import open_path as open_iterable
 from ..utils import get_option, normalize_for_json
 
-ITERABLE_OPTIONS_KEYS = ['tagname', 'delimiter', 'encoding', 'start_line', 'page']
 DETAIL_LIMIT = 100
-
-
-def get_iterable_options(options):
-    """Extract iterable-specific options from options dictionary."""
-    out = {}
-    for k in ITERABLE_OPTIONS_KEYS:
-        if k in options.keys():
-            out[k] = options[k]
-    return out
 
 
 def _normalize_key_value(value, ignore_case):
@@ -32,8 +22,11 @@ def _get_key_value(item, key_fields, ignore_case):
     """Get key value for comparison."""
     if not key_fields:
         # Use all fields as key
-        return tuple(sorted((k, _normalize_key_value(v, ignore_case))
-                           for k, v in item.items() if v is not None))
+        return tuple(
+            sorted(
+                (k, _normalize_key_value(v, ignore_case)) for k, v in item.items() if v is not None
+            )
+        )
     else:
         # Use specified key fields
         return tuple(_normalize_key_value(item.get(field), ignore_case) for field in key_fields)
@@ -72,8 +65,7 @@ def _values_equal(value1, value2, numeric_tolerance, ignore_case):
         if len(value1) != len(value2):
             return False
         return all(
-            _values_equal(v1, v2, numeric_tolerance, ignore_case)
-            for v1, v2 in zip(value1, value2)
+            _values_equal(v1, v2, numeric_tolerance, ignore_case) for v1, v2 in zip(value1, value2)
         )
 
     return value1 == value2
@@ -97,9 +89,7 @@ def _normalize_value_for_signature(value, ignore_case, numeric_tolerance):
             for k, v in value.items()
         }
     if isinstance(value, (list, tuple)):
-        return [
-            _normalize_value_for_signature(v, ignore_case, numeric_tolerance) for v in value
-        ]
+        return [_normalize_value_for_signature(v, ignore_case, numeric_tolerance) for v in value]
     if isinstance(value, str):
         if ignore_case:
             value = value.lower()
@@ -141,26 +131,32 @@ def _format_detailed_csv(added, removed, changed):
     writer.writeheader()
 
     for item in added:
-        writer.writerow({
-            "change_type": "added",
-            "key": "",
-            "old": "",
-            "new": json.dumps(normalize_for_json(item), default=str),
-        })
+        writer.writerow(
+            {
+                "change_type": "added",
+                "key": "",
+                "old": "",
+                "new": json.dumps(normalize_for_json(item), default=str),
+            }
+        )
     for item in removed:
-        writer.writerow({
-            "change_type": "removed",
-            "key": "",
-            "old": json.dumps(normalize_for_json(item), default=str),
-            "new": "",
-        })
+        writer.writerow(
+            {
+                "change_type": "removed",
+                "key": "",
+                "old": json.dumps(normalize_for_json(item), default=str),
+                "new": "",
+            }
+        )
     for change in changed:
-        writer.writerow({
-            "change_type": "changed",
-            "key": json.dumps(normalize_for_json(change["key"]), default=str),
-            "old": json.dumps(normalize_for_json(change["old"]), default=str),
-            "new": json.dumps(normalize_for_json(change["new"]), default=str),
-        })
+        writer.writerow(
+            {
+                "change_type": "changed",
+                "key": json.dumps(normalize_for_json(change["key"]), default=str),
+                "old": json.dumps(normalize_for_json(change["old"]), default=str),
+                "new": json.dumps(normalize_for_json(change["new"]), default=str),
+            }
+        )
 
     return buffer.getvalue().rstrip("\n")
 
@@ -235,6 +231,7 @@ def _format_detailed_html(result):
 
 class Differ:
     """Differ command handler - compare two files."""
+
     def __init__(self):
         pass
 
@@ -242,28 +239,28 @@ class Differ:
         """Compare two files and show differences."""
         if options is None:
             options = {}
-        logging.debug('Comparing %s and %s', file1, file2)
+        logging.debug("Comparing %s and %s", file1, file2)
 
-        key_fields = get_option(options, 'key')
-        format_type = get_option(options, 'format')
-        output_format = get_option(options, 'output_format')
-        to_file = get_option(options, 'output')
-        ignore_order = bool(get_option(options, 'ignore_order'))
-        numeric_tolerance = get_option(options, 'numeric_tolerance')
-        ignore_case = bool(get_option(options, 'ignore_case'))
-        summary_only = bool(get_option(options, 'summary_only'))
-        max_added_rows = get_option(options, 'max_added_rows')
-        max_removed_rows = get_option(options, 'max_removed_rows')
-        max_changed_rows = get_option(options, 'max_changed_rows')
+        key_fields = get_option(options, "key")
+        format_type = get_option(options, "format")
+        output_format = get_option(options, "output_format")
+        to_file = get_option(options, "output")
+        ignore_order = bool(get_option(options, "ignore_order"))
+        numeric_tolerance = get_option(options, "numeric_tolerance")
+        ignore_case = bool(get_option(options, "ignore_case"))
+        summary_only = bool(get_option(options, "summary_only"))
+        max_added_rows = get_option(options, "max_added_rows")
+        max_removed_rows = get_option(options, "max_removed_rows")
+        max_changed_rows = get_option(options, "max_changed_rows")
 
         key_field_list = None
         if key_fields:
-            key_field_list = [f.strip() for f in key_fields.split(',')]
+            key_field_list = [f.strip() for f in key_fields.split(",")]
 
         iterableargs = get_iterable_options(options)
 
         # Load file1 into dictionary by key
-        iterable1 = open_iterable(file1, mode='r', iterableargs=iterableargs)
+        iterable1 = open_iterable(file1, mode="r", iterableargs=iterableargs)
         file1_items = {}
         file1_rows = []
 
@@ -280,7 +277,7 @@ class Differ:
             iterable1.close()
 
         # Load file2 into dictionary by key
-        iterable2 = open_iterable(file2, mode='r', iterableargs=iterableargs)
+        iterable2 = open_iterable(file2, mode="r", iterableargs=iterableargs)
         file2_items = {}
         file2_rows = []
 
@@ -308,7 +305,7 @@ class Differ:
                 else:
                     item1 = file1_items[key]
                     if not _records_equal(item1, item2, numeric_tolerance, ignore_case):
-                        changed.append({'key': key, 'old': item1, 'new': item2})
+                        changed.append({"key": key, "old": item1, "new": item2})
 
             for key, item1 in file1_items.items():
                 if key not in file2_items:
@@ -343,7 +340,7 @@ class Differ:
                 item1 = file1_rows[index]
                 item2 = file2_rows[index]
                 if not _records_equal(item1, item2, numeric_tolerance, ignore_case):
-                    changed.append({'key': index, 'old': item1, 'new': item2})
+                    changed.append({"key": index, "old": item1, "new": item2})
             if len(file2_rows) > min_len:
                 added.extend(file2_rows[min_len:])
             if len(file1_rows) > min_len:
@@ -351,16 +348,16 @@ class Differ:
 
         # Format output
         result = {
-            'added': added,
-            'removed': removed,
-            'changed': changed,
-            'summary': {
-                'file1_count': count1,
-                'file2_count': count2,
-                'added_count': len(added),
-                'removed_count': len(removed),
-                'changed_count': len(changed)
-            }
+            "added": added,
+            "removed": removed,
+            "changed": changed,
+            "summary": {
+                "file1_count": count1,
+                "file2_count": count2,
+                "added_count": len(added),
+                "removed_count": len(removed),
+                "changed_count": len(changed),
+            },
         }
 
         summary_text = _format_summary(result["summary"])
@@ -372,7 +369,7 @@ class Differ:
 
         output_text = None
         if not summary_only and detailed_format:
-            if detailed_format == 'unified':
+            if detailed_format == "unified":
                 lines = []
                 lines.append(f"--- {file1}")
                 lines.append(f"+++ {file2}")
@@ -394,22 +391,22 @@ class Differ:
                         lines.append(f"~ {change['key']}")
                         lines.append(f"  Old: {change['old']}")
                         lines.append(f"  New: {change['new']}")
-                output_text = '\n'.join(lines)
-            elif detailed_format == 'json':
+                output_text = "\n".join(lines)
+            elif detailed_format == "json":
                 output_text = _format_detailed_json(result)
-            elif detailed_format == 'csv':
+            elif detailed_format == "csv":
                 output_text = _format_detailed_csv(added, removed, changed)
-            elif detailed_format == 'markdown':
+            elif detailed_format == "markdown":
                 output_text = _format_detailed_markdown(result)
-            elif detailed_format == 'html':
+            elif detailed_format == "html":
                 output_text = _format_detailed_html(result)
             else:
                 raise ValueError(f"Unsupported output format: {detailed_format}")
 
             if to_file:
-                out = open(to_file, 'w', encoding='utf8')
+                out = open(to_file, "w", encoding="utf8")
                 out.write(output_text)
-                out.write('\n')
+                out.write("\n")
                 out.close()
             else:
                 print(output_text)
@@ -424,5 +421,11 @@ class Differ:
         if threshold_exceeded:
             raise SystemExit(1)
 
-        logging.debug('diff: file1=%d rows, file2=%d rows, added=%d, removed=%d, changed=%d',
-                     count1, count2, len(added), len(removed), len(changed))
+        logging.debug(
+            "diff: file1=%d rows, file2=%d rows, added=%d, removed=%d, changed=%d",
+            count1,
+            count2,
+            len(added),
+            len(removed),
+            len(changed),
+        )

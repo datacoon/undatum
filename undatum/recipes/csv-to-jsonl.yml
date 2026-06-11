@@ -1,0 +1,23 @@
+name: csv-to-jsonl
+description: Convert CSV file to JSONL format
+category: conversion
+tags:
+  - conversion
+  - csv
+  - jsonl
+  - basic
+
+variables:
+  input:
+    description: Input CSV file path
+    required: true
+  output:
+    description: Output JSONL file path
+    required: true
+
+commands:
+  - description: Convert CSV to JSONL
+    command: undatum convert ${input} ${output}
+
+example: |
+  undatum examples run csv-to-jsonl --var input=data.csv --var output=data.jsonl

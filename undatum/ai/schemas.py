@@ -9,22 +9,19 @@ FIELD_INFO_SCHEMA = {
             "items": {
                 "type": "object",
                 "properties": {
-                    "name": {
-                        "type": "string",
-                        "description": "The name of the field"
-                    },
+                    "name": {"type": "string", "description": "The name of the field"},
                     "description": {
                         "type": "string",
-                        "description": "A clear, concise description of what this field represents"
-                    }
+                        "description": "A clear, concise description of what this field represents",
+                    },
                 },
                 "required": ["name", "description"],
-                "additionalProperties": False
-            }
+                "additionalProperties": False,
+            },
         }
     },
     "required": ["fields"],
-    "additionalProperties": False
+    "additionalProperties": False,
 }
 
 # Schema for dataset description (simple string response)
@@ -32,11 +29,8 @@ FIELD_INFO_SCHEMA = {
 DATASET_DESCRIPTION_SCHEMA = {
     "type": "object",
     "properties": {
-        "description": {
-            "type": "string",
-            "description": "A concise description of the dataset"
-        }
+        "description": {"type": "string", "description": "A concise description of the dataset"}
     },
     "required": ["description"],
-    "additionalProperties": False
+    "additionalProperties": False,
 }

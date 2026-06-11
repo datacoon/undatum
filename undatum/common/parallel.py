@@ -1,10 +1,10 @@
-# -*- coding: utf8 -*-
 """Parallel processing utilities for CPU-bound operations."""
+
 import logging
-import multiprocessing
 import os
+from collections.abc import Iterable, Iterator
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
-from typing import Callable, Iterator, Optional, Any, Iterable
+from typing import Any, Callable, Optional
 
 
 def get_cpu_count() -> int:
@@ -29,8 +29,14 @@ def is_cpu_bound_operation(operation: str) -> bool:
         True if operation is CPU-bound, False if I/O-bound
     """
     cpu_bound_operations = {
-        'convert', 'stats', 'frequency', 'dedup', 'search', 'fill',
-        'transform', 'apply'
+        "convert",
+        "stats",
+        "frequency",
+        "dedup",
+        "search",
+        "fill",
+        "transform",
+        "apply",
     }
     return operation.lower() in cpu_bound_operations
 
@@ -40,7 +46,7 @@ def parallel_map(
     items: Iterable[Any],
     num_threads: Optional[int] = None,
     use_processes: bool = False,
-    chunk_size: int = 1
+    chunk_size: int = 1,
 ) -> Iterator[Any]:
     """Apply function to items in parallel.
 
@@ -71,7 +77,7 @@ def parallel_map(
         # Submit all tasks
         futures = []
         for i in range(0, len(items_list), chunk_size):
-            chunk = items_list[i:i + chunk_size]
+            chunk = items_list[i : i + chunk_size]
             future = executor.submit(func, chunk)
             futures.append(future)
 
@@ -85,7 +91,7 @@ def parallel_map(
                 else:
                     yield result
             except Exception as e:
-                logging.error(f'Error in parallel processing: {e}')
+                logging.error(f"Error in parallel processing: {e}")
                 raise
 
 
@@ -93,7 +99,7 @@ def parallel_process_chunks(
     processor: Callable[[list[Any]], list[Any]],
     chunks: Iterator[list[Any]],
     num_threads: Optional[int] = None,
-    use_processes: bool = False
+    use_processes: bool = False,
 ) -> Iterator[list[Any]]:
     """Process chunks in parallel.
 
@@ -133,5 +139,5 @@ def parallel_process_chunks(
                 yield result
             except Exception as e:
                 chunk = future_to_chunk[future]
-                logging.error(f'Error processing chunk: {e}')
+                logging.error(f"Error processing chunk: {e}")
                 raise

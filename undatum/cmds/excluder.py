@@ -1,22 +1,13 @@
 """Exclude command module - remove rows based on keys in another file."""
+
 import logging
 import sys
 
-from iterable.helpers.detect import open_iterable
-
+from ..common.command_utils import ITERABLE_OPTIONS_KEYS, get_iterable_options  # noqa: F401
+from ..common.errors import FormatError, ValidationError
 from ..common.iterable import DataWriter
+from ..common.s3_iterable import open_path as open_iterable
 from ..utils import get_file_type, get_option, normalize_for_json
-
-ITERABLE_OPTIONS_KEYS = ['tagname', 'delimiter', 'encoding', 'start_line', 'page']
-
-
-def get_iterable_options(options):
-    """Extract iterable-specific options from options dictionary."""
-    out = {}
-    for k in ITERABLE_OPTIONS_KEYS:
-        if k in options.keys():
-            out[k] = options[k]
-    return out
 
 
 def _get_key_value(item, key_fields):
@@ -31,6 +22,7 @@ def _get_key_value(item, key_fields):
 
 class Excluder:
     """Excluder command handler - exclude rows based on keys."""
+
     def __init__(self):
         pass
 
@@ -38,18 +30,17 @@ class Excluder:
         """Remove rows from fromfile where keys match exclude_file."""
         if options is None:
             options = {}
-        logging.debug('Processing %s, excluding %s', fromfile, exclude_file)
+        logging.debug("Processing %s, excluding %s", fromfile, exclude_file)
 
-        on_fields = get_option(options, 'on')
+        on_fields = get_option(options, "on")
         if not on_fields:
-            logging.error('Key fields (--on) are required')
-            return
+            raise ValidationError("exclude requires key fields (--on)", field="on")
 
-        key_field_list = [f.strip() for f in on_fields.split(',')]
+        key_field_list = [f.strip() for f in on_fields.split(",")]
 
         # Build exclusion set from exclude_file
         iterableargs = get_iterable_options(options)
-        exclude_iterable = open_iterable(exclude_file, mode='r', iterableargs=iterableargs)
+        exclude_iterable = open_iterable(exclude_file, mode="r", iterableargs=iterableargs)
         exclude_keys = set()
 
         try:
@@ -62,10 +53,10 @@ class Excluder:
         finally:
             exclude_iterable.close()
 
-        logging.debug('exclude: loaded %d exclusion keys', len(exclude_keys))
+        logging.debug("exclude: loaded %d exclusion keys", len(exclude_keys))
 
         # Filter fromfile
-        iterable = open_iterable(fromfile, mode='r', iterableargs=iterableargs)
+        iterable = open_iterable(fromfile, mode="r", iterableargs=iterableargs)
         items = []
 
         try:
@@ -87,19 +78,18 @@ class Excluder:
                         excluded += 1
 
                 if count % 100000 == 0:
-                    logging.debug('exclude: processed %d records, excluded %d', count, excluded)
+                    logging.debug("exclude: processed %d records, excluded %d", count, excluded)
         finally:
             iterable.close()
 
-        to_file = get_option(options, 'output')
+        to_file = get_option(options, "output")
         if to_file:
             to_type = get_file_type(to_file)
             if not to_type:
-                logging.error('Output file type not supported')
-                return
-            out = open(to_file, 'w', encoding='utf8')
+                raise FormatError(to_file, to_file.rsplit(".", 1)[-1])
+            out = open(to_file, "w", encoding="utf8")
         else:
-            to_type = 'jsonl'
+            to_type = "jsonl"
             out = sys.stdout
 
         # Normalize items to convert non-JSON-serializable types (e.g., UUID) to strings
@@ -107,7 +97,7 @@ class Excluder:
 
         # Extract fieldnames from items for CSV output
         fieldnames = None
-        if to_type == 'csv' and normalized_items:
+        if to_type == "csv" and normalized_items:
             if isinstance(normalized_items[0], dict):
                 fieldnames = list(normalized_items[0].keys())
 
@@ -117,4 +107,6 @@ class Excluder:
         if to_file:
             out.close()
 
-        logging.debug('exclude: processed %d records, excluded %d, kept %d', count, excluded, len(items))
+        logging.debug(
+            "exclude: processed %d records, excluded %d, kept %d", count, excluded, len(items)
+        )

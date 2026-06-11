@@ -1,26 +1,18 @@
 """Table command module - pretty print data as formatted table."""
+
 import logging
 
-from iterable.helpers.detect import open_iterable
 from rich.console import Console
 from rich.table import Table
 
+from ..common.command_utils import ITERABLE_OPTIONS_KEYS, get_iterable_options  # noqa: F401
+from ..common.s3_iterable import open_path as open_iterable
 from ..utils import get_option
-
-ITERABLE_OPTIONS_KEYS = ['tagname', 'delimiter', 'encoding', 'start_line', 'page']
-
-
-def get_iterable_options(options):
-    """Extract iterable-specific options from options dictionary."""
-    out = {}
-    for k in ITERABLE_OPTIONS_KEYS:
-        if k in options.keys():
-            out[k] = options[k]
-    return out
 
 
 class TableFormatter:
     """Table command handler - pretty print data."""
+
     def __init__(self):
         self.console = Console()
 
@@ -28,18 +20,18 @@ class TableFormatter:
         """Display data in a formatted, aligned table."""
         if options is None:
             options = {}
-        logging.debug('Processing %s', fromfile)
+        logging.debug("Processing %s", fromfile)
         iterableargs = get_iterable_options(options)
-        limit = get_option(options, 'limit') or 20
-        fields = get_option(options, 'fields')
+        limit = get_option(options, "limit") or 20
+        fields = get_option(options, "fields")
 
         if fields:
-            field_list = [f.strip() for f in fields.split(',')]
+            field_list = [f.strip() for f in fields.split(",")]
         else:
             field_list = None
 
         # First pass: collect headers and sample data
-        iterable = open_iterable(fromfile, mode='r', iterableargs=iterableargs)
+        iterable = open_iterable(fromfile, mode="r", iterableargs=iterableargs)
         headers = set()
         items = []
         try:
@@ -81,11 +73,11 @@ class TableFormatter:
         for item in items:
             row_values = []
             for col in columns:
-                value = item.get(col, '')
+                value = item.get(col, "")
                 # Truncate long values
                 str_value = str(value)
                 if len(str_value) > 50:
-                    str_value = str_value[:47] + '...'
+                    str_value = str_value[:47] + "..."
                 row_values.append(str_value)
             table.add_row(*row_values)
 

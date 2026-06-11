@@ -3,10 +3,11 @@
 
 This module provides the CLI entry point for the undatum package.
 """
+import logging
 import sys
 
+from .common.errors import UndatumError, handle_command_error
 from .core import app
-from .common.errors import handle_command_error, UndatumError
 
 
 def main():
@@ -15,6 +16,9 @@ def main():
     Handles the CLI invocation and graceful shutdown on keyboard interrupt.
     Also handles UndatumError exceptions for user-friendly error messages.
     """
+    logging.basicConfig(
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
+    )
     try:
         app()
     except KeyboardInterrupt:
@@ -29,5 +33,5 @@ def main():
         sys.exit(exit_code)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

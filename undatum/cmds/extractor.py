@@ -1,5 +1,5 @@
-# -*- coding: utf8 -*-
 """Document extraction command module."""
+
 import glob
 import os
 import sys
@@ -97,7 +97,7 @@ def _normalize_headers(values: list[Any]) -> list[str]:
 def _table_to_dataframe(table: list[list[Any]]) -> pd.DataFrame:
     if not table:
         return pd.DataFrame()
-    header = _normalize_headers([cell for cell in table[0]])
+    header = _normalize_headers(list(table[0]))
     rows = table[1:] if len(table) > 1 else []
     if not rows:
         return pd.DataFrame(columns=header)
@@ -169,9 +169,14 @@ class Extractor:
         if not inputs:
             raise ValueError("No input files matched the provided patterns.")
 
-        from ..common.errors import FileNotFoundError, PermissionError, FormatError, find_similar_files
+        from ..common.errors import (
+            FileNotFoundError,
+            FormatError,
+            PermissionError,
+            find_similar_files,
+        )
         from ..common.path_utils import validate_file_path
-        
+
         tables: list[dict[str, Any]] = []
         for input_path in inputs:
             # Validate file exists and is readable
@@ -182,7 +187,7 @@ class Extractor:
                 raise FileNotFoundError(input_path, suggestions) from e
             except PermissionError as e:
                 raise PermissionError(input_path, operation="read") from e
-            
+
             filetype = os.path.splitext(input_path)[-1].lower().lstrip(".")
             if filetype not in SUPPORTED_INPUTS:
                 raise FormatError(input_path, filetype, list(SUPPORTED_INPUTS.keys()))
@@ -230,11 +235,13 @@ class Extractor:
                 df["source_page"] = table.get("page")
                 combined.append(df)
             merged = pd.concat(combined, ignore_index=True) if combined else pd.DataFrame()
-            return [{
-                "df": merged,
-                "source": table.get("source", input_path),
-                "name": f"{os.path.splitext(os.path.basename(input_path))[0]}_flattened",
-            }]
+            return [
+                {
+                    "df": merged,
+                    "source": table.get("source", input_path),
+                    "name": f"{os.path.splitext(os.path.basename(input_path))[0]}_flattened",
+                }
+            ]
 
         return tables
 
@@ -248,7 +255,7 @@ class Extractor:
             import pdfplumber  # type: ignore
         except Exception as exc:
             raise ImportError(
-                "PDF extraction requires pdfplumber. Install with `pip install \"undatum[extract]\"`."
+                'PDF extraction requires pdfplumber. Install with `pip install "undatum[extract]"`.'
             ) from exc
 
         if method is None:
@@ -268,22 +275,26 @@ class Extractor:
                 if method == "text":
                     text = page.extract_text() or ""
                     df = _text_to_dataframe(text.splitlines())
-                    tables.append({
-                        "df": df,
-                        "page": page_index + 1,
-                        "source": input_path,
-                        "name": f"{os.path.splitext(os.path.basename(input_path))[0]}_p{page_index + 1}_text",
-                    })
+                    tables.append(
+                        {
+                            "df": df,
+                            "page": page_index + 1,
+                            "source": input_path,
+                            "name": f"{os.path.splitext(os.path.basename(input_path))[0]}_p{page_index + 1}_text",
+                        }
+                    )
                     continue
                 extracted = page.extract_tables() or []
                 for idx, table in enumerate(extracted, start=1):
                     df = _table_to_dataframe(table)
-                    tables.append({
-                        "df": df,
-                        "page": page_index + 1,
-                        "source": input_path,
-                        "name": f"{os.path.splitext(os.path.basename(input_path))[0]}_p{page_index + 1}_t{idx}",
-                    })
+                    tables.append(
+                        {
+                            "df": df,
+                            "page": page_index + 1,
+                            "source": input_path,
+                            "name": f"{os.path.splitext(os.path.basename(input_path))[0]}_p{page_index + 1}_t{idx}",
+                        }
+                    )
 
         if method == "tables" and not tables:
             raise ValueError("No tables detected; try --method text or --method ocr.")
@@ -291,12 +302,12 @@ class Extractor:
 
     def _extract_pdf_ocr(self, input_path: str, page_indices: list[int]) -> list[dict[str, Any]]:
         try:
-            from pdf2image import convert_from_path  # type: ignore
             import pytesseract  # type: ignore
+            from pdf2image import convert_from_path  # type: ignore
         except Exception as exc:
             raise ImportError(
                 "OCR extraction requires pdf2image and pytesseract. "
-                "Install with `pip install \"undatum[extract]\"`."
+                'Install with `pip install "undatum[extract]"`.'
             ) from exc
 
         if not page_indices:
@@ -304,18 +315,22 @@ class Extractor:
 
         tables: list[dict[str, Any]] = []
         for page_index in page_indices:
-            images = convert_from_path(input_path, first_page=page_index + 1, last_page=page_index + 1)
+            images = convert_from_path(
+                input_path, first_page=page_index + 1, last_page=page_index + 1
+            )
             text_chunks = []
             for image in images:
                 text_chunks.append(pytesseract.image_to_string(image))
             lines = "\n".join(text_chunks).splitlines()
             df = _text_to_dataframe(lines)
-            tables.append({
-                "df": df,
-                "page": page_index + 1,
-                "source": input_path,
-                "name": f"{os.path.splitext(os.path.basename(input_path))[0]}_p{page_index + 1}_ocr",
-            })
+            tables.append(
+                {
+                    "df": df,
+                    "page": page_index + 1,
+                    "source": input_path,
+                    "name": f"{os.path.splitext(os.path.basename(input_path))[0]}_p{page_index + 1}_ocr",
+                }
+            )
         return tables
 
     def _extract_doc(
@@ -336,7 +351,7 @@ class Extractor:
             from docx import Document  # type: ignore
         except Exception as exc:
             raise ImportError(
-                "DOCX extraction requires python-docx. Install with `pip install \"undatum[extract]\"`."
+                'DOCX extraction requires python-docx. Install with `pip install "undatum[extract]"`.'
             ) from exc
 
         document = Document(input_path)
@@ -344,11 +359,13 @@ class Extractor:
         if method == "text":
             lines = [p.text for p in document.paragraphs if p.text.strip()]
             df = _text_to_dataframe(lines)
-            tables.append({
-                "df": df,
-                "source": input_path,
-                "name": f"{os.path.splitext(os.path.basename(input_path))[0]}_text",
-            })
+            tables.append(
+                {
+                    "df": df,
+                    "source": input_path,
+                    "name": f"{os.path.splitext(os.path.basename(input_path))[0]}_text",
+                }
+            )
             return tables
 
         for idx, table in enumerate(document.tables, start=1):
@@ -356,11 +373,13 @@ class Extractor:
             for row in table.rows:
                 rows.append([cell.text for cell in row.cells])
             df = _table_to_dataframe(rows)
-            tables.append({
-                "df": df,
-                "source": input_path,
-                "name": f"{os.path.splitext(os.path.basename(input_path))[0]}_t{idx}",
-            })
+            tables.append(
+                {
+                    "df": df,
+                    "source": input_path,
+                    "name": f"{os.path.splitext(os.path.basename(input_path))[0]}_t{idx}",
+                }
+            )
 
         if method == "tables" and not tables:
             raise ValueError("No tables detected; try --method text.")
@@ -372,17 +391,19 @@ class Extractor:
         except Exception as exc:
             raise ImportError(
                 "DOC extraction requires textract or convert to DOCX first. "
-                "Install with `pip install \"undatum[extract]\"`."
+                'Install with `pip install "undatum[extract]"`.'
             ) from exc
 
         raw = textract.process(input_path)
         text = raw.decode("utf8", errors="replace")
         df = _text_to_dataframe(text.splitlines())
-        return [{
-            "df": df,
-            "source": input_path,
-            "name": f"{os.path.splitext(os.path.basename(input_path))[0]}_text",
-        }]
+        return [
+            {
+                "df": df,
+                "source": input_path,
+                "name": f"{os.path.splitext(os.path.basename(input_path))[0]}_text",
+            }
+        ]
 
     def _extract_excel(self, input_path: str) -> list[dict[str, Any]]:
         try:
@@ -392,14 +413,18 @@ class Extractor:
 
         tables: list[dict[str, Any]] = []
         for idx, (sheet, df) in enumerate(data.items(), start=1):
-            tables.append({
-                "df": df,
-                "source": input_path,
-                "name": f"{os.path.splitext(os.path.basename(input_path))[0]}_{sheet or idx}",
-            })
+            tables.append(
+                {
+                    "df": df,
+                    "source": input_path,
+                    "name": f"{os.path.splitext(os.path.basename(input_path))[0]}_{sheet or idx}",
+                }
+            )
         return tables
 
-    def _write_tables_to_dir(self, tables: list[dict[str, Any]], output_format: str, output_dir: str) -> None:
+    def _write_tables_to_dir(
+        self, tables: list[dict[str, Any]], output_format: str, output_dir: str
+    ) -> None:
         for idx, table in enumerate(tables, start=1):
             name = table.get("name") or f"table_{idx}"
             filename = f"{name}{OUTPUT_EXT[output_format]}"

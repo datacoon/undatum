@@ -1,43 +1,34 @@
 """Data transformation module."""
+
 import logging
 import sys
 from runpy import run_path
 
 import orjson
-from iterable.helpers.detect import open_iterable
 
-#from xmlr import xmliter
+from ..common.command_utils import ITERABLE_OPTIONS_KEYS, get_iterable_options  # noqa: F401
+
+# from xmlr import xmliter
 from ..common.errors import FileNotFoundError, PermissionError, ValidationError, find_similar_files
 from ..common.path_utils import validate_file_path
+from ..common.s3_iterable import open_path as open_iterable
 from ..utils import dict_generator, get_option
-
-ITERABLE_OPTIONS_KEYS = ['tagname', 'delimiter', 'encoding', 'start_line', 'page']
-
-
-def get_iterable_options(options):
-    """Extract iterable-specific options from options dictionary."""
-    out = {}
-    for k in ITERABLE_OPTIONS_KEYS:
-        if k in options.keys():
-            out[k] = options[k]
-    return out
 
 DEFAULT_HEADERS_DETECT_LIMIT = 1000
 
 
-
 class Transformer:
     """Data transformation handler."""
+
     def __init__(self):
         pass
-
 
     def script(self, fromfile, options=None):
         """Run certain script against selected file"""
 
         if options is None:
             options = {}
-        
+
         # Validate input file exists and is readable
         try:
             validate_file_path(fromfile, check_read=True)
@@ -46,12 +37,12 @@ class Transformer:
             raise FileNotFoundError(fromfile, suggestions) from e
         except PermissionError as e:
             raise PermissionError(fromfile, operation="read") from e
-        
+
         # Validate script file exists
-        script_path = options.get('script')
+        script_path = options.get("script")
         if not script_path:
-            raise ValidationError("Script file path is required", field='script')
-        
+            raise ValidationError("Script file path is required", field="script")
+
         try:
             validate_file_path(script_path, check_read=True)
         except FileNotFoundError as e:
@@ -59,16 +50,16 @@ class Transformer:
             raise FileNotFoundError(script_path, suggestions) from e
         except PermissionError as e:
             raise PermissionError(script_path, operation="read") from e
-        
+
         try:
             script = run_path(script_path)
         except Exception as e:
-            raise ValidationError(f"Failed to load script: {e}", field='script') from e
-        
-        if 'process' not in script:
-            raise ValidationError("Script must define a 'process' function", field='script')
-        
-        __process_func = script['process']
+            raise ValidationError(f"Failed to load script: {e}", field="script") from e
+
+        if "process" not in script:
+            raise ValidationError("Script must define a 'process' function", field="script")
+
+        __process_func = script["process"]
 
         iterableargs = get_iterable_options(options)
 
@@ -76,7 +67,7 @@ class Transformer:
 
         # First pass: extract schema
         keys_set = set()  # Use set for O(1) lookup instead of O(n) list operations
-        read_iterable = open_iterable(fromfile, mode='r', iterableargs=iterableargs)
+        read_iterable = open_iterable(fromfile, mode="r", iterableargs=iterableargs)
         try:
             n = 0
             for item in read_iterable:
@@ -94,18 +85,18 @@ class Transformer:
 
         # Second pass: process and write
         write_to_iterable = False
-        to_file = get_option(options, 'output')
+        to_file = get_option(options, "output")
         if to_file:
             write_to_iterable = True
-            write_iterable = open_iterable(to_file, mode='w', iterableargs={'keys': keys})
+            write_iterable = open_iterable(to_file, mode="w", iterableargs={"keys": keys})
         else:
             write_iterable = None
 
         try:
-            read_iterable = open_iterable(fromfile, mode='r', iterableargs=iterableargs)
+            read_iterable = open_iterable(fromfile, mode="r", iterableargs=iterableargs)
             try:
                 # Try to use reset() if available
-                if hasattr(read_iterable, 'reset'):
+                if hasattr(read_iterable, "reset"):
                     read_iterable.reset()
 
                 n = 0
@@ -113,9 +104,9 @@ class Transformer:
                 for r in read_iterable:
                     n += 1
                     if n % 10000 == 0:
-                        logging.info('apply script: processing %d records of %s' % (n, fromfile))
+                        logging.info(f"apply script: processing {n} records of {fromfile}")
                         if write_to_iterable and len(batch) > 0:
-                            if hasattr(write_iterable, 'write_bulk'):
+                            if hasattr(write_iterable, "write_bulk"):
                                 write_iterable.write_bulk(batch)
                             else:
                                 for item in batch:
@@ -125,21 +116,21 @@ class Transformer:
                     if write_to_iterable:
                         batch.append(item)
                     else:
-                        sys.stdout.write(orjson.dumps(item, option=orjson.OPT_APPEND_NEWLINE).decode('utf8'))
+                        sys.stdout.write(
+                            orjson.dumps(item, option=orjson.OPT_APPEND_NEWLINE).decode("utf8")
+                        )
 
                 # Flush remaining batch
                 if write_to_iterable and len(batch) > 0:
-                    if hasattr(write_iterable, 'write_bulk'):
+                    if hasattr(write_iterable, "write_bulk"):
                         write_iterable.write_bulk(batch)
                     else:
                         for item in batch:
                             write_iterable.write(item)
 
-                logging.debug('apply script: %d records processed' % (n))
+                logging.debug(f"apply script: {n} records processed")
             finally:
                 read_iterable.close()
         finally:
             if write_iterable:
                 write_iterable.close()
-
-

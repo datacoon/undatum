@@ -1,4 +1,5 @@
 import pandas as pd
+
 from undatum.cmds.analyzer import duckdb_decompose
 
 DATA = [

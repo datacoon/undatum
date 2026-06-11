@@ -1,29 +1,26 @@
 """Rename command module - rename fields."""
+
 import logging
 import re
 import sys
 
-from iterable.helpers.detect import open_iterable
-
+from ..common.command_utils import ITERABLE_OPTIONS_KEYS, get_iterable_options  # noqa: F401
+from ..common.errors import (
+    FileNotFoundError,
+    FormatError,
+    PermissionError,
+    ValidationError,
+    find_similar_files,
+)
 from ..common.iterable import DataWriter
-from ..common.errors import FileNotFoundError, PermissionError, ValidationError, find_similar_files
 from ..common.path_utils import validate_file_path
+from ..common.s3_iterable import open_path as open_iterable
 from ..utils import get_file_type, get_option, normalize_for_json
-
-ITERABLE_OPTIONS_KEYS = ['tagname', 'delimiter', 'encoding', 'start_line', 'page']
-
-
-def get_iterable_options(options):
-    """Extract iterable-specific options from options dictionary."""
-    out = {}
-    for k in ITERABLE_OPTIONS_KEYS:
-        if k in options.keys():
-            out[k] = options[k]
-    return out
 
 
 class Renamer:
     """Renamer command handler - rename fields."""
+
     def __init__(self):
         pass
 
@@ -31,7 +28,7 @@ class Renamer:
         """Rename fields by exact mapping or regex patterns."""
         if options is None:
             options = {}
-        
+
         # Validate input file exists and is readable
         try:
             validate_file_path(fromfile, check_read=True)
@@ -40,33 +37,33 @@ class Renamer:
             raise FileNotFoundError(fromfile, suggestions) from e
         except PermissionError as e:
             raise PermissionError(fromfile, operation="read") from e
-        
-        logging.debug('Processing %s', fromfile)
+
+        logging.debug("Processing %s", fromfile)
         iterableargs = get_iterable_options(options)
-        mapping = get_option(options, 'map')
-        pattern = get_option(options, 'pattern')
-        replacement = get_option(options, 'replacement') or ''
-        to_file = get_option(options, 'output')
+        mapping = get_option(options, "map")
+        pattern = get_option(options, "pattern")
+        replacement = get_option(options, "replacement") or ""
+        to_file = get_option(options, "output")
 
         if not mapping and not pattern:
-            raise ValidationError("Either --map or --pattern option is required", field='map')
+            raise ValidationError("Either --map or --pattern option is required", field="map")
 
         # Build rename mapping
         rename_map = {}
         if mapping:
             # Parse mapping: "old1:new1,old2:new2"
-            for pair in mapping.split(','):
-                if ':' in pair:
-                    old_name, new_name = pair.split(':', 1)
+            for pair in mapping.split(","):
+                if ":" in pair:
+                    old_name, new_name = pair.split(":", 1)
                     rename_map[old_name.strip()] = new_name.strip()
         elif pattern:
             # Regex-based renaming
             try:
                 regex = re.compile(pattern)
             except re.error as e:
-                raise ValidationError(f"Invalid regex pattern: {e}", field='pattern') from e
+                raise ValidationError(f"Invalid regex pattern: {e}", field="pattern") from e
 
-        iterable = open_iterable(fromfile, mode='r', iterableargs=iterableargs)
+        iterable = open_iterable(fromfile, mode="r", iterableargs=iterableargs)
         items = []
         try:
             count = 0
@@ -87,18 +84,17 @@ class Renamer:
                     items.append(item_copy)
                     count += 1
                     if count % 10000 == 0:
-                        logging.debug('rename: processed %d records', count)
+                        logging.debug("rename: processed %d records", count)
         finally:
             iterable.close()
 
         if to_file:
             to_type = get_file_type(to_file)
             if not to_type:
-                logging.error('Output file type not supported')
-                return
-            out = open(to_file, 'w', encoding='utf8')
+                raise FormatError(to_file, to_file.rsplit(".", 1)[-1])
+            out = open(to_file, "w", encoding="utf8")
         else:
-            to_type = 'jsonl'
+            to_type = "jsonl"
             out = sys.stdout
 
         # Normalize items to convert non-JSON-serializable types (e.g., UUID) to strings
@@ -106,7 +102,7 @@ class Renamer:
 
         # Extract fieldnames from items for CSV output
         fieldnames = None
-        if to_type == 'csv' and normalized_items:
+        if to_type == "csv" and normalized_items:
             if isinstance(normalized_items[0], dict):
                 fieldnames = list(normalized_items[0].keys())
 
@@ -116,4 +112,4 @@ class Renamer:
         if to_file:
             out.close()
 
-        logging.debug('rename: processed %d records', count)
+        logging.debug("rename: processed %d records", count)

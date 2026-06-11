@@ -1,26 +1,18 @@
 """Fill command module - fill empty/null values."""
+
 import logging
 import sys
 
-from iterable.helpers.detect import open_iterable
-
+from ..common.command_utils import ITERABLE_OPTIONS_KEYS, get_iterable_options  # noqa: F401
+from ..common.errors import FormatError
 from ..common.iterable import DataWriter
+from ..common.s3_iterable import open_path as open_iterable
 from ..utils import get_file_type, get_option, normalize_for_json
-
-ITERABLE_OPTIONS_KEYS = ['tagname', 'delimiter', 'encoding', 'start_line', 'page']
-
-
-def get_iterable_options(options):
-    """Extract iterable-specific options from options dictionary."""
-    out = {}
-    for k in ITERABLE_OPTIONS_KEYS:
-        if k in options.keys():
-            out[k] = options[k]
-    return out
 
 
 class Filler:
     """Filler command handler - fill empty values."""
+
     def __init__(self):
         pass
 
@@ -28,26 +20,26 @@ class Filler:
         """Fill empty or null values with specified values or strategies."""
         if options is None:
             options = {}
-        logging.debug('Processing %s', fromfile)
+        logging.debug("Processing %s", fromfile)
         iterableargs = get_iterable_options(options)
-        fields = get_option(options, 'fields')
-        strategy = get_option(options, 'strategy') or 'constant'
-        value = get_option(options, 'value') or ''
-        to_file = get_option(options, 'output')
+        fields = get_option(options, "fields")
+        strategy = get_option(options, "strategy") or "constant"
+        value = get_option(options, "value") or ""
+        to_file = get_option(options, "output")
 
         # Field list for field-specific filling
         field_list = None
         if fields:
-            field_list = [f.strip() for f in fields.split(',')]
+            field_list = [f.strip() for f in fields.split(",")]
 
-        iterable = open_iterable(fromfile, mode='r', iterableargs=iterableargs)
+        iterable = open_iterable(fromfile, mode="r", iterableargs=iterableargs)
         items = []
         last_values = {}  # For forward/backward fill
 
         try:
             count = 0
             # For backward fill, need to process in reverse
-            if strategy == 'backward':
+            if strategy == "backward":
                 all_items = []
                 for item in iterable:
                     if isinstance(item, dict):
@@ -64,7 +56,7 @@ class Filler:
                         fill_fields = list(item.keys()) if isinstance(item, dict) else []
 
                     for field in fill_fields:
-                        if field not in item or item[field] is None or item[field] == '':
+                        if field not in item or item[field] is None or item[field] == "":
                             # Use next non-empty value (stored from previous iteration in reverse)
                             if field in next_values:
                                 item[field] = next_values[field]
@@ -87,8 +79,12 @@ class Filler:
                             fill_fields = list(item_copy.keys())
 
                         for field in fill_fields:
-                            if field not in item_copy or item_copy[field] is None or item_copy[field] == '':
-                                if strategy == 'forward':
+                            if (
+                                field not in item_copy
+                                or item_copy[field] is None
+                                or item_copy[field] == ""
+                            ):
+                                if strategy == "forward":
                                     # Use previous non-empty value
                                     if field in last_values:
                                         item_copy[field] = last_values[field]
@@ -103,18 +99,17 @@ class Filler:
                         items.append(item_copy)
                         count += 1
                         if count % 10000 == 0:
-                            logging.debug('fill: processed %d records', count)
+                            logging.debug("fill: processed %d records", count)
         finally:
             iterable.close()
 
         if to_file:
             to_type = get_file_type(to_file)
             if not to_type:
-                logging.error('Output file type not supported')
-                return
-            out = open(to_file, 'w', encoding='utf8')
+                raise FormatError(to_file, to_file.rsplit(".", 1)[-1])
+            out = open(to_file, "w", encoding="utf8")
         else:
-            to_type = 'jsonl'
+            to_type = "jsonl"
             out = sys.stdout
 
         # Normalize items to convert non-JSON-serializable types (e.g., UUID) to strings
@@ -122,7 +117,7 @@ class Filler:
 
         # Extract fieldnames from items for CSV output
         fieldnames = None
-        if to_type == 'csv' and normalized_items:
+        if to_type == "csv" and normalized_items:
             if isinstance(normalized_items[0], dict):
                 fieldnames = list(normalized_items[0].keys())
 
@@ -132,4 +127,4 @@ class Filler:
         if to_file:
             out.close()
 
-        logging.debug('fill: processed %d records', count)
+        logging.debug("fill: processed %d records", count)

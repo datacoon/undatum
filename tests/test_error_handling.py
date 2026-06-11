@@ -1,15 +1,11 @@
-# -*- coding: utf8 -*-
 """Tests for error handling infrastructure."""
+
 import os
 import sys
-import tempfile
-from pathlib import Path
-from unittest.mock import patch
 
 import pytest
 
 from undatum.common.errors import (
-    ConfigurationError,
     DatabaseError,
     DependencyError,
     FileNotFoundError,
@@ -17,8 +13,8 @@ from undatum.common.errors import (
     PermissionError,
     UndatumError,
     ValidationError,
-    find_similar_files,
     find_similar_field_names,
+    find_similar_files,
     format_error_message,
     handle_command_error,
 )
@@ -178,7 +174,7 @@ class TestErrorHelpers:
         (tmp_path / "file1.csv").touch()
         (tmp_path / "file2.csv").touch()
         (tmp_path / "data.json").touch()
-        
+
         # Test with similar file
         suggestions = find_similar_files(str(tmp_path / "file.csv"))
         assert len(suggestions) > 0
@@ -273,18 +269,18 @@ class TestValidateFilePath:
         """Test file validation with suggestions."""
         (tmp_path / "similar_file.csv").touch()
         test_file = tmp_path / "similar_fil.csv"  # Typo
-        
+
         with pytest.raises(FileNotFoundError) as exc_info:
             validate_file_path(str(test_file), check_read=True)
         # Should have suggestions
-        error_msg = str(exc_info.value)
+        str(exc_info.value)
         # Suggestions may or may not be found depending on similarity threshold
 
     def test_validate_file_path_permission(self, tmp_path):
         """Test validating file without read permission."""
         test_file = tmp_path / "test.csv"
         test_file.write_text("test")
-        
+
         # Remove read permission (Unix only)
         if sys.platform != "win32":
             os.chmod(test_file, 0o000)
@@ -315,7 +311,7 @@ class TestCommandErrorHandling:
     def test_converter_file_not_found(self):
         """Test converter with nonexistent file."""
         from undatum.cmds.converter import Converter
-        
+
         converter = Converter()
         with pytest.raises(FileNotFoundError):
             converter.convert("/nonexistent/file.csv", "output.csv", {})
@@ -323,7 +319,7 @@ class TestCommandErrorHandling:
     def test_schemer_file_not_found(self):
         """Test schemer with nonexistent file."""
         from undatum.cmds.schemer import Schemer
-        
+
         schemer = Schemer()
         with pytest.raises(FileNotFoundError):
             schemer.extract_schema("/nonexistent/file.csv", {})
@@ -331,7 +327,7 @@ class TestCommandErrorHandling:
     def test_validator_file_not_found(self):
         """Test validator with nonexistent file."""
         from undatum.cmds.validator import Validator
-        
+
         validator = Validator()
         with pytest.raises(FileNotFoundError):
             validator.validate("/nonexistent/file.csv", {})
@@ -339,10 +335,10 @@ class TestCommandErrorHandling:
     def test_selector_validation_error(self, tmp_path):
         """Test selector with missing fields option."""
         from undatum.cmds.selector import Selector
-        
+
         test_file = tmp_path / "test.csv"
         test_file.write_text("col1,col2\nval1,val2\n")
-        
+
         selector = Selector()
         with pytest.raises(ValidationError) as exc_info:
             selector.select(str(test_file), {})  # Missing 'fields' option
@@ -351,10 +347,10 @@ class TestCommandErrorHandling:
     def test_sorter_validation_error(self, tmp_path):
         """Test sorter with missing --by option."""
         from undatum.cmds.sorter import Sorter
-        
+
         test_file = tmp_path / "test.csv"
         test_file.write_text("col1,col2\nval1,val2\n")
-        
+
         sorter = Sorter()
         with pytest.raises(ValidationError) as exc_info:
             sorter.sort(str(test_file), {})  # Missing 'by' option
@@ -363,12 +359,12 @@ class TestCommandErrorHandling:
     def test_joiner_validation_error(self, tmp_path):
         """Test joiner with missing --on option."""
         from undatum.cmds.joiner import Joiner
-        
+
         test_file1 = tmp_path / "test1.csv"
         test_file1.write_text("id,col1\n1,val1\n")
         test_file2 = tmp_path / "test2.csv"
         test_file2.write_text("id,col2\n1,val2\n")
-        
+
         joiner = Joiner()
         with pytest.raises(ValidationError) as exc_info:
             joiner.join(str(test_file1), str(test_file2), {})  # Missing 'on' option
@@ -377,10 +373,10 @@ class TestCommandErrorHandling:
     def test_masker_validation_error(self, tmp_path):
         """Test masker with missing fields option."""
         from undatum.cmds.masker import Masker
-        
+
         test_file = tmp_path / "test.csv"
         test_file.write_text("email,phone\nuser@example.com,123456\n")
-        
+
         masker = Masker()
         with pytest.raises(ValidationError) as exc_info:
             masker.mask(str(test_file), "output.csv", {})  # Missing 'fields' option
@@ -389,10 +385,10 @@ class TestCommandErrorHandling:
     def test_masker_invalid_method(self, tmp_path):
         """Test masker with invalid method."""
         from undatum.cmds.masker import Masker
-        
+
         test_file = tmp_path / "test.csv"
         test_file.write_text("email\nuser@example.com\n")
-        
+
         masker = Masker()
         with pytest.raises(ValidationError) as exc_info:
             masker.mask(str(test_file), "output.csv", {"fields": "email", "method": "invalid"})

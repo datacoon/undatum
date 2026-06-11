@@ -1,7 +1,8 @@
 """Tests for Validator class."""
-import tempfile
+
 import os
-from unittest.mock import patch, MagicMock
+import tempfile
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -19,8 +20,8 @@ class TestValidator:
     def test_validate_missing_fields_option(self):
         """Test validate without fields option in legacy mode."""
         validator = Validator()
-        
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.jsonl', delete=False) as f:
+
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".jsonl", delete=False) as f:
             f.write('{"name": "Alice"}\n')
             temp_path = f.name
 
@@ -34,41 +35,42 @@ class TestValidator:
     def test_validate_missing_rule_option(self):
         """Test validate without rule option in legacy mode."""
         validator = Validator()
-        
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.jsonl', delete=False) as f:
+
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".jsonl", delete=False) as f:
             f.write('{"email": "test@example.com"}\n')
             temp_path = f.name
 
         try:
-            options = {'fields': 'email'}  # No rule option
+            options = {"fields": "email"}  # No rule option
             with pytest.raises(ValueError, match="validate requires 'rule' option"):
                 validator.validate(temp_path, options)
         finally:
             os.unlink(temp_path)
 
-    @patch('undatum.cmds.validator.parse_validation_rules')
+    @patch("undatum.cmds.validator.parse_validation_rules")
     def test_validate_with_rules_file(self, mock_parse_rules):
         """Test validate with rules file."""
         validator = Validator()
-        
+
         mock_rule_set = MagicMock()
         mock_rule_set.validate_record.return_value = []
         mock_parse_rules.return_value = mock_rule_set
-        
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.jsonl', delete=False) as f:
+
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".jsonl", delete=False) as f:
             f.write('{"email": "test@example.com"}\n')
             temp_path = f.name
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False) as rules_file:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as rules_file:
             rules_path = rules_file.name
 
         try:
-            options = {'rules': rules_path}
+            options = {"rules": rules_path}
             # Should use rules file mode
-            from iterable.helpers.detect import open_iterable
-            with patch('iterable.helpers.detect.open_iterable') as mock_open:
+            with patch("iterable.helpers.detect.open_iterable") as mock_open:
                 mock_iterable = MagicMock()
-                mock_iterable.__iter__ = MagicMock(return_value=iter([{'email': 'test@example.com'}]))
+                mock_iterable.__iter__ = MagicMock(
+                    return_value=iter([{"email": "test@example.com"}])
+                )
                 mock_open.return_value = mock_iterable
                 validator.validate(temp_path, options)
                 mock_parse_rules.assert_called_once_with(rules_path)

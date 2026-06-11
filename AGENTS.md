@@ -157,7 +157,7 @@ make check-all            # format-check + lint + type-check + test
 make ci                   # Alias for check-all
 
 # Build and clean
-make build                # python setup.py sdist bdist_wheel
+make build                # python -m build
 make clean                # Remove build artifacts, caches, .pyc files
 
 # Documentation

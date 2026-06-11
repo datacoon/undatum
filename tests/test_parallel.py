@@ -1,6 +1,6 @@
 """Tests for parallel processing utilities."""
-import time
-from unittest.mock import patch, MagicMock
+
+from unittest.mock import patch
 
 import pytest
 
@@ -15,19 +15,19 @@ from undatum.common.parallel import (
 class TestGetCpuCount:
     """Test get_cpu_count function."""
 
-    @patch('os.cpu_count')
+    @patch("os.cpu_count")
     def test_get_cpu_count_normal(self, mock_cpu_count):
         """Test get_cpu_count with normal CPU count."""
         mock_cpu_count.return_value = 4
         assert get_cpu_count() == 4
 
-    @patch('os.cpu_count')
+    @patch("os.cpu_count")
     def test_get_cpu_count_none(self, mock_cpu_count):
         """Test get_cpu_count when cpu_count returns None."""
         mock_cpu_count.return_value = None
         assert get_cpu_count() == 1
 
-    @patch('os.cpu_count')
+    @patch("os.cpu_count")
     def test_get_cpu_count_exception(self, mock_cpu_count):
         """Test get_cpu_count when cpu_count raises exception."""
         mock_cpu_count.side_effect = Exception("Test error")
@@ -39,20 +39,29 @@ class TestIsCpuBoundOperation:
 
     def test_cpu_bound_operations(self):
         """Test CPU-bound operations."""
-        cpu_bound_ops = ['convert', 'stats', 'frequency', 'dedup', 'search', 'fill', 'transform', 'apply']
+        cpu_bound_ops = [
+            "convert",
+            "stats",
+            "frequency",
+            "dedup",
+            "search",
+            "fill",
+            "transform",
+            "apply",
+        ]
         for op in cpu_bound_ops:
             assert is_cpu_bound_operation(op) is True
             assert is_cpu_bound_operation(op.upper()) is True
 
     def test_io_bound_operations(self):
         """Test I/O-bound operations."""
-        io_bound_ops = ['read', 'write', 'load', 'save', 'copy', 'move']
+        io_bound_ops = ["read", "write", "load", "save", "copy", "move"]
         for op in io_bound_ops:
             assert is_cpu_bound_operation(op) is False
 
     def test_unknown_operation(self):
         """Test unknown operation."""
-        assert is_cpu_bound_operation('unknown') is False
+        assert is_cpu_bound_operation("unknown") is False
 
 
 class TestParallelMap:
@@ -60,6 +69,7 @@ class TestParallelMap:
 
     def test_parallel_map_single_thread(self):
         """Test parallel_map with single thread (sequential)."""
+
         def square(x):
             return x * x
 
@@ -69,6 +79,7 @@ class TestParallelMap:
 
     def test_parallel_map_zero_threads(self):
         """Test parallel_map with zero threads (sequential)."""
+
         def square(x):
             return x * x
 
@@ -78,6 +89,7 @@ class TestParallelMap:
 
     def test_parallel_map_empty(self):
         """Test parallel_map with empty iterable."""
+
         def square(x):
             return x * x
 
@@ -87,6 +99,7 @@ class TestParallelMap:
 
     def test_parallel_map_with_chunk_size(self):
         """Test parallel_map with chunk size."""
+
         def square_list(chunk):
             return [x * x for x in chunk]
 
@@ -98,6 +111,7 @@ class TestParallelMap:
 
     def test_parallel_map_with_list_result(self):
         """Test parallel_map when function returns a list."""
+
         def chunk_square(chunk):
             return [x * x for x in chunk]
 
@@ -109,6 +123,7 @@ class TestParallelMap:
 
     def test_parallel_map_with_exception(self):
         """Test parallel_map when function raises exception."""
+
         def failing_func(chunk):
             # When chunk_size > 1, function receives chunks
             if isinstance(chunk, list):
@@ -130,6 +145,7 @@ class TestParallelProcessChunks:
 
     def test_parallel_process_chunks_single_thread(self):
         """Test parallel_process_chunks with single thread."""
+
         def square_chunk(chunk):
             return [x * x for x in chunk]
 
@@ -139,6 +155,7 @@ class TestParallelProcessChunks:
 
     def test_parallel_process_chunks_empty(self):
         """Test parallel_process_chunks with empty chunks."""
+
         def square_chunk(chunk):
             return [x * x for x in chunk]
 
@@ -148,6 +165,7 @@ class TestParallelProcessChunks:
 
     def test_parallel_process_chunks_zero_threads(self):
         """Test parallel_process_chunks with zero threads."""
+
         def square_chunk(chunk):
             return [x * x for x in chunk]
 
@@ -157,6 +175,7 @@ class TestParallelProcessChunks:
 
     def test_parallel_process_chunks_multithreaded(self):
         """Test parallel_process_chunks with multiple threads."""
+
         def square_chunk(chunk):
             return [x * x for x in chunk]
 
@@ -171,6 +190,7 @@ class TestParallelProcessChunks:
 
     def test_parallel_process_chunks_with_exception(self):
         """Test parallel_process_chunks when processor raises exception."""
+
         def failing_processor(chunk):
             if 3 in chunk:
                 raise ValueError("Test error")

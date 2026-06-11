@@ -48,7 +48,7 @@ clean: ## Clean build artifacts
 	find . -type f -name "*.pyc" -delete
 
 build: ## Build distribution packages
-	python setup.py sdist bdist_wheel
+	python -m build
 
 pre-commit-install: ## Install pre-commit hooks
 	pre-commit install

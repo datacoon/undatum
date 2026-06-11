@@ -244,7 +244,9 @@ make test                 # Via Makefile
 - **CLI arguments**: Highest precedence for configuration
 
 **Data Sources:**
-- File-based input/output (no database connections)
+- File-based input/output (primary)
+- Database connections for `ingest`, `db query`, and `db load` (MongoDB, PostgreSQL, DuckDB, MySQL, SQLite, Elasticsearch)
+- S3 object storage via `s3://` URIs (optional `s3` extra)
 - Support for compressed archives (ZIP, 7Z)
 - Network filesystems supported (no special handling required)
 
