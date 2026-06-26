@@ -3,7 +3,7 @@ undatum: a command-line tool for data processing. Brings CSV simplicity to JSON 
 
 """
 
-__version__ = "1.3.0"
+__version__ = "1.4.0"
 __author__ = "Ivan Begtin"
 __licence__ = "MIT"
 

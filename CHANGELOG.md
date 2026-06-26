@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-06-26
+
+### Added
+- **`ai` commands** - AI-assisted workflows backed by iterabledata's `iterable.ai` stack: `ai doc` (block-based dataset documentation with metadata enrichment and PII-safe sampling), `ai filter` (natural-language/DSL to filter translation, with `--apply` to execute and stream matching rows), `ai plan` (declarative conversion planning), and `ai suggest` (transform suggestions). Supports OpenAI, Anthropic, Gemini, Azure, OpenRouter, Ollama, LM Studio, and Perplexity, defaulting to undatum's existing AI configuration
+- **`formats` commands** - `formats list` surfaces iterabledata's full format catalog; `--capabilities` shows the runtime capability matrix (read/write/streaming/etc.) per format, with machine-readable JSON output
+- **`mcp` commands** - `mcp serve` starts a Model Context Protocol stdio server exposing undatum's agent tools; `mcp tools` lists the available tools. New `undatum-mcp` console script
+- **Agent tools (`undatum.tools`)** - 17 JSON-schema agent tools for LLM function calling: the 12 iterabledata foundation tools (detect, schema, stats, convert, validate, analyze, documentation, etc.) re-exported as the single source of truth, plus 5 undatum-specific tools (`query_sql`, `frequency`, `deduplicate`, `mask_fields`, `sample_data`). Includes OpenAI/Anthropic tool definitions, a unified `call_tool`, and a LangChain `get_tools()` adapter
+- **SDK DataFrame & typed-row interop** - `Dataset.to_pandas()`, `to_polars()`, `to_dask()`, `as_dataclasses()`, and `as_pydantic()`, delegating to iterabledata's adapters
+- **Bulk conversion** - `convert --recursive` (with `--to-ext`) converts a directory or glob pattern, treating OUTPUT as a directory
+- **Extended database engines** - `db query` and file-reading commands now reach MS SQL Server (`mssql://`, `sqlserver://`), ClickHouse (`clickhouse://`), MongoDB (`mongodb://`), and Elasticsearch/OpenSearch (`elasticsearch://`, `opensearch://`) via iterabledata's read-only drivers; driver options can be passed through the URI query string (`?collection=`, `?index=`, `?limit=`, ...). New `undatum/common/db_source.py`
+- **Cloud storage URIs beyond S3** - GCS (`gs://`/`gcs://`), Azure (`az://`/`abfs://`/`abfss://`), and `s3a://` are opened natively via iterabledata's fsspec support; `s3://` writes are now supported (delegated to iterabledata) instead of raising
+- New optional extras: `mcp`, `langchain`, `polars`, `dask`, `cloud` (fsspec/s3fs/gcsfs/adlfs), `mssql` (pyodbc), `clickhouse` (clickhouse-driver)
+
+### Changed
+- `convert` now routes through iterabledata's engine, supporting any format it can read/write (100+ formats, including cloud URIs) as input or output. Read-only and schema-required output formats (protobuf, Cap'n Proto, Thrift) fail fast with actionable, capability-aware error messages and writable-format suggestions
+- `SUPPORTED_FILE_TYPES`, `COMPRESSED_FILE_TYPES`, `TEXT_DATA_TYPES`, and `BINARY_FILE_TYPES` are now derived at import time from iterabledata's registries (with static fallbacks when iterabledata is unavailable), so undatum recognizes every format and codec the underlying engine supports
+- `doc` command metadata extraction (keywords, geographic/temporal coverage, language, theme) and semantic-type/PII detection now delegate to `iterable.ai.metadata` and `iterable.ai.semantic` while keeping CLI output backward compatible
+
 ## [1.3.0] - 2026-06-11
 
 ### Added

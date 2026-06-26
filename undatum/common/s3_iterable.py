@@ -11,6 +11,20 @@ from iterable.helpers.detect import open_iterable
 from ..common.path_utils import is_s3_uri
 from ..formats.s3 import get_s3_client, parse_s3_uri
 
+# Cloud storage URI schemes handled natively by iterabledata via fsspec
+# (GCS, Azure Blob/Data Lake, S3-over-s3a). Plain ``s3://`` keeps using the
+# boto3 download path below to preserve region/profile handling.
+_NATIVE_CLOUD_SCHEMES = ("gs://", "gcs://", "az://", "abfs://", "abfss://", "s3a://")
+
+
+def _is_native_cloud_uri(path: str) -> bool:
+    """Return True for cloud URIs that iterabledata can open directly.
+
+    Covers GCS, Azure, and ``s3a://`` but not plain ``s3://`` (which is served by
+    the boto3-based temp-file path so AWS region/profile options keep working).
+    """
+    return isinstance(path, str) and path.startswith(_NATIVE_CLOUD_SCHEMES)
+
 
 def _find_plugin_connector(path: str):
     """Return a ConnectorPlugin that can handle the path, if any.
@@ -57,30 +71,58 @@ def open_iterable_with_s3(
     region: Optional[str] = None,
     profile: Optional[str] = None,
 ):
-    """Open iterable data file, supporting both local paths and S3 URIs.
+    """Open iterable data file, supporting local paths and cloud URIs.
+
+    Supports local paths, ``s3://`` (via boto3, honoring ``region``/``profile``),
+    and GCS/Azure/``s3a://`` URIs (delegated to iterabledata's native fsspec
+    cloud support for both reading and writing).
 
     Args:
-        path: File path or S3 URI (s3://bucket/key)
+        path: File path or cloud URI (s3://, gs://, az://, abfs://, ...)
         mode: File mode ('r' for read, 'w' for write)
         iterableargs: Arguments for iterable processing
-        region: AWS region (for S3 URIs)
-        profile: AWS profile name (for S3 URIs)
+        region: AWS region (for s3:// URIs)
+        profile: AWS profile name (for s3:// URIs)
 
     Yields:
         Iterable object (context manager)
 
     Raises:
-        ImportError: If boto3 is not installed and S3 URI is provided
+        ImportError: If boto3 is not installed and an s3:// URI is provided
         ValueError: If S3 URI is invalid or credentials are missing
     """
     if iterableargs is None:
         iterableargs = {}
 
-    if is_s3_uri(path):
-        # Handle S3 URI: download to temp file and use that
-        if mode == "w":
-            raise NotImplementedError("S3 write mode not yet implemented via iterable wrapper")
+    # Database connection URIs (postgres, mysql, mssql, clickhouse, mongo, es)
+    # are read via iterabledata's DB drivers. Only for read modes.
+    if mode in ("r", "rb"):
+        from ..common.db_source import is_db_uri, open_db_source
 
+        if is_db_uri(path):
+            db_iterable = open_db_source(path, iterableargs=iterableargs)
+            try:
+                yield db_iterable
+            finally:
+                if hasattr(db_iterable, "close"):
+                    db_iterable.close()
+            return
+
+    # GCS/Azure/s3a are opened directly by iterabledata (read and write).
+    if _is_native_cloud_uri(path):
+        with open_iterable(path, mode=mode, iterableargs=iterableargs) as iterable:
+            yield iterable
+        return
+
+    if is_s3_uri(path):
+        if mode == "w":
+            # Delegate S3 writes to iterabledata's native fsspec cloud support
+            # instead of failing; reads still use the boto3 temp-file path below.
+            with open_iterable(path, mode=mode, iterableargs=iterableargs) as iterable:
+                yield iterable
+            return
+
+        # Handle S3 read: download to temp file and use that
         temp_file = None
         try:
             # Download S3 object to temporary file
@@ -143,14 +185,15 @@ def open_path(
     region: Optional[str] = None,
     profile: Optional[str] = None,
 ):
-    """Open a local path or S3 URI as an iterable (non-context-manager variant).
+    """Open a local path or cloud URI as an iterable (non-context-manager variant).
 
-    Drop-in replacement for ``open_iterable`` that adds read support for
-    ``s3://`` URIs. For S3 inputs the object is downloaded to a temporary
-    file which is removed when ``close()`` is called on the returned object.
+    Drop-in replacement for ``open_iterable`` that adds support for cloud URIs.
+    GCS/Azure/``s3a://`` and S3 writes are delegated to iterabledata's native
+    fsspec cloud support; ``s3://`` reads are downloaded to a temporary file
+    (removed when ``close()`` is called) so AWS region/profile keep working.
 
     Args:
-        path: File path or S3 URI (s3://bucket/key)
+        path: File path or cloud URI (s3://, gs://, az://, abfs://, ...)
         mode: File mode ('r' for read, 'w' for write)
         iterableargs: Arguments for iterable processing
         region: AWS region (for S3 URIs)
@@ -161,6 +204,17 @@ def open_path(
     """
     if iterableargs is None:
         iterableargs = {}
+
+    # Database connection URIs are read via iterabledata's DB drivers.
+    if mode in ("r", "rb"):
+        from ..common.db_source import is_db_uri, open_db_source
+
+        if is_db_uri(path):
+            return open_db_source(path, iterableargs=iterableargs)
+
+    # GCS/Azure/s3a are opened directly by iterabledata (read and write).
+    if _is_native_cloud_uri(path):
+        return open_iterable(path, mode=mode, iterableargs=iterableargs)
 
     if not is_s3_uri(path):
         connector = _find_plugin_connector(path)
@@ -180,7 +234,8 @@ def open_path(
         return open_iterable(path, mode=mode, iterableargs=iterableargs)
 
     if mode == "w":
-        raise NotImplementedError("S3 write mode not yet implemented via iterable wrapper")
+        # Delegate S3 writes to iterabledata's native fsspec cloud support.
+        return open_iterable(path, mode=mode, iterableargs=iterableargs)
 
     bucket, key = parse_s3_uri(path)
     client = get_s3_client(region=region, profile=profile)

@@ -103,8 +103,12 @@ class TestGetFileType:
         assert get_file_type("data.jsonl") == "jsonl"
 
     def test_get_file_type_unsupported(self):
-        """Test getting unsupported file type."""
-        assert get_file_type("data.txt") is None
+        """Test getting unsupported file type.
+
+        Supported formats are now driven by iterabledata's registry, so the
+        extension must be one the engine genuinely does not recognize.
+        """
+        assert get_file_type("data.unknownext") is None
         assert get_file_type("data") is None
 
 

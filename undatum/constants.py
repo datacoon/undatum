@@ -1,4 +1,15 @@
-"""Constants and configuration values for the undatum package."""
+"""Constants and configuration values for the undatum package.
+
+Supported format and compression-codec lists are derived at import time from the
+``iterabledata`` (``iterable``) package, which is the I/O foundation for undatum.
+This means undatum automatically recognizes every format and codec the underlying
+engine supports (100+ formats, 12 codecs) instead of a small hardcoded whitelist.
+Static fallback lists are used only when ``iterabledata`` cannot be imported.
+"""
+
+import logging
+
+logger = logging.getLogger(__name__)
 
 DATE_PATTERNS = [
     "%d.%m.%Y",
@@ -11,7 +22,12 @@ DATE_PATTERNS = [
 DEFAULT_DICT_SHARE = 70
 
 
-SUPPORTED_FILE_TYPES = [
+# Document formats handled by undatum's own ``extract`` command rather than by
+# iterabledata; always merged into the supported-types list.
+EXTRACT_FILE_TYPES = ["pdf", "doc", "docx"]
+
+# Static fallbacks used only when iterabledata is unavailable at import time.
+_FALLBACK_SUPPORTED_FILE_TYPES = [
     "xls",
     "xlsx",
     "csv",
@@ -26,9 +42,53 @@ SUPPORTED_FILE_TYPES = [
     "orc",
     "avro",
 ]
-COMPRESSED_FILE_TYPES = ["gz", "xz", "zip", "lz4", "7z", "bz2"]
-BINARY_FILE_TYPES = ["xls", "xlsx", "bson", "parquet", "irc"] + COMPRESSED_FILE_TYPES
-TEXT_DATA_TYPES = ["csv", "json", "jsonl", "xml", "yaml", "tsv", "sql"]
+_FALLBACK_COMPRESSED_FILE_TYPES = ["gz", "xz", "zip", "lz4", "7z", "bz2"]
+_FALLBACK_TEXT_DATA_TYPES = ["csv", "json", "jsonl", "xml", "yaml", "tsv", "sql"]
+
+
+def _build_supported_file_types() -> list[str]:
+    """Return all format ids/aliases known to iterabledata plus undatum extras."""
+    try:
+        from iterable.helpers.detect import DATATYPE_REGISTRY
+
+        types = set(DATATYPE_REGISTRY.keys())
+    except Exception as e:  # noqa: BLE001 - any import failure falls back
+        logger.debug("Falling back to static SUPPORTED_FILE_TYPES: %s", e)
+        types = set(_FALLBACK_SUPPORTED_FILE_TYPES)
+    types.update(EXTRACT_FILE_TYPES)
+    return sorted(types)
+
+
+def _build_compressed_file_types() -> list[str]:
+    """Return all compression-codec extensions known to iterabledata."""
+    try:
+        from iterable.helpers.detect import CODEC_REGISTRY
+
+        codecs = {c for c in CODEC_REGISTRY if c not in ("raw",)}
+    except Exception as e:  # noqa: BLE001 - any import failure falls back
+        logger.debug("Falling back to static COMPRESSED_FILE_TYPES: %s", e)
+        codecs = set(_FALLBACK_COMPRESSED_FILE_TYPES)
+    return sorted(codecs)
+
+
+def _build_text_data_types() -> list[str]:
+    """Return text-based format ids from iterabledata merged with undatum extras."""
+    text = set(_FALLBACK_TEXT_DATA_TYPES)
+    try:
+        from iterable.helpers.detect import TEXT_DATA_TYPES as _ITER_TEXT
+
+        text.update(_ITER_TEXT)
+    except Exception as e:  # noqa: BLE001 - any import failure falls back
+        logger.debug("Falling back to static TEXT_DATA_TYPES: %s", e)
+    return sorted(text)
+
+
+SUPPORTED_FILE_TYPES = _build_supported_file_types()
+COMPRESSED_FILE_TYPES = _build_compressed_file_types()
+TEXT_DATA_TYPES = _build_text_data_types()
+BINARY_FILE_TYPES = sorted(
+    (set(SUPPORTED_FILE_TYPES) - set(TEXT_DATA_TYPES)) | set(COMPRESSED_FILE_TYPES)
+)
 
 DEFAULT_OPTIONS = {"encoding": "utf8", "delimiter": ",", "limit": 1000}
 

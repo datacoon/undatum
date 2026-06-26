@@ -438,6 +438,110 @@ class Dataset:
 
         return list(deque(iter(self), maxlen=n))
 
+    def to_pandas(self, chunksize: Optional[int] = None) -> Any:
+        """Convert the dataset to a pandas DataFrame.
+
+        Args:
+            chunksize: If given, return an iterator of DataFrames of this many
+                rows each instead of a single DataFrame.
+
+        Returns:
+            A ``pandas.DataFrame`` (or an iterator of them when ``chunksize`` is set).
+
+        Example:
+            >>> df = Dataset.read("data.jsonl").to_pandas()
+        """
+        from iterable.dataframe_adapters import iterable_to_pandas
+
+        return iterable_to_pandas(iter(self), chunksize=chunksize)
+
+    def to_polars(self, chunksize: Optional[int] = None) -> Any:
+        """Convert the dataset to a Polars DataFrame.
+
+        Requires ``polars`` (``pip install undatum[polars]``).
+
+        Args:
+            chunksize: If given, return an iterator of DataFrames of this many
+                rows each instead of a single DataFrame.
+
+        Returns:
+            A ``polars.DataFrame`` (or an iterator of them when ``chunksize`` is set).
+
+        Example:
+            >>> df = Dataset.read("data.parquet").to_polars()
+        """
+        from iterable.dataframe_adapters import iterable_to_polars
+
+        return iterable_to_polars(iter(self), chunksize=chunksize)
+
+    def to_dask(self, chunksize: int = 1000000) -> Any:
+        """Convert the dataset to a Dask DataFrame.
+
+        Requires ``dask[dataframe]`` (``pip install undatum[dask]``).
+
+        Args:
+            chunksize: Approximate number of rows per Dask partition.
+
+        Returns:
+            A ``dask.dataframe.DataFrame``.
+
+        Example:
+            >>> ddf = Dataset.read("big.jsonl").to_dask()
+        """
+        from iterable.dataframe_adapters import iterable_to_dask
+
+        return iterable_to_dask(iter(self), chunksize=chunksize)
+
+    def as_dataclasses(self, dataclass_type: type, skip_empty: bool = True) -> Iterator[Any]:
+        """Iterate rows as instances of a dataclass.
+
+        Args:
+            dataclass_type: The dataclass type to convert rows into.
+            skip_empty: Skip empty rows.
+
+        Yields:
+            Instances of ``dataclass_type``.
+
+        Example:
+            >>> from dataclasses import dataclass
+            >>> @dataclass
+            ... class Person:
+            ...     name: str
+            ...     age: int
+            >>> for p in Dataset.read("people.csv").as_dataclasses(Person):
+            ...     print(p.name)
+        """
+        from iterable.helpers.typed import as_dataclasses
+
+        return as_dataclasses(self, dataclass_type, skip_empty=skip_empty)
+
+    def as_pydantic(
+        self, model_type: type, skip_empty: bool = True, validate: bool = True
+    ) -> Iterator[Any]:
+        """Iterate rows as instances of a Pydantic model.
+
+        Requires ``pydantic`` (already a core undatum dependency).
+
+        Args:
+            model_type: The Pydantic ``BaseModel`` subclass to convert rows into.
+            skip_empty: Skip empty rows.
+            validate: Validate rows against the model schema.
+
+        Yields:
+            Instances of ``model_type``.
+
+        Example:
+            >>> from pydantic import BaseModel
+            >>> class Person(BaseModel):
+            ...     name: str
+            ...     age: int
+            >>> for p in Dataset.read("people.csv").as_pydantic(Person):
+            ...     print(p.name)
+        """
+        from iterable.helpers.typed import as_pydantic
+
+        return as_pydantic(self, model_type, skip_empty=skip_empty, validate=validate)
+
     def _get_input_path(self) -> str:
         """Get input path for processing."""
         if self._source:

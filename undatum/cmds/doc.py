@@ -6,13 +6,9 @@ import json
 import logging
 import os
 import re
-import shutil
-import subprocess
 import sys
-from collections import Counter
 from typing import Any, Optional
 
-import pandas as pd
 import yaml
 from iterable.helpers.detect import detect_file_type, open_iterable
 from tabulate import tabulate
@@ -26,30 +22,6 @@ from .analyzer import OBJECTS_ANALYZE_LIMIT, analyze
 ITERABLE_OPTIONS_KEYS = ["tagname", "delimiter", "encoding", "start_line", "start_page"]
 
 logger = logging.getLogger(__name__)
-
-GEO_FIELD_HINTS = {
-    "country": {"country", "country_code", "countrycode", "nation"},
-    "region": {"region", "state", "province", "county", "district", "city", "municipality"},
-    "coordinates": {"lat", "latitude", "lon", "lng", "longitude", "x", "y"},
-}
-
-DATE_FIELD_HINTS = {"date", "time", "timestamp", "datetime", "year", "month", "day"}
-
-DATA_THEME_KEYWORDS = {
-    "AGRI": {"agri", "agriculture", "farm", "crop", "soil", "livestock"},
-    "ECON": {"economy", "economic", "finance", "trade", "gdp", "inflation"},
-    "EDUC": {"education", "school", "student", "university", "training"},
-    "ENVI": {"environment", "climate", "pollution", "emission", "biodiversity"},
-    "ENER": {"energy", "power", "electric", "fuel", "gas", "oil"},
-    "GOVE": {"government", "public", "administration", "policy", "budget"},
-    "HEAL": {"health", "medical", "hospital", "disease", "patient"},
-    "INTR": {"international", "foreign", "trade", "diplomacy"},
-    "JUST": {"justice", "crime", "law", "court", "police"},
-    "REGI": {"region", "regional", "urban", "rural", "territory"},
-    "SOCI": {"social", "population", "demography", "welfare", "community"},
-    "TECH": {"technology", "innovation", "digital", "software", "it"},
-    "TRAN": {"transport", "traffic", "mobility", "road", "rail", "aviation"},
-}
 
 DATA_THEME_URI_BY_LABEL = {theme["label"]: theme["uri"] for theme in EU_DATA_THEMES}
 
@@ -101,160 +73,41 @@ def _get_primary_fields(report) -> list[str]:
     return []
 
 
-def _iter_sample_values(samples: list[Any], field_names: list[str]):
-    for sample in samples:
-        if isinstance(sample, dict):
-            for name in field_names:
-                yield name, sample.get(name)
-        elif isinstance(sample, list):
-            for idx, name in enumerate(field_names):
-                if idx < len(sample):
-                    yield name, sample[idx]
-        else:
-            for name in field_names:
-                yield name, None
+# Metadata extraction is delegated to iterabledata's shared implementation
+# (``iterable.ai.metadata``) so undatum and the foundation stay in sync. The
+# theme URIs and detection heuristics are identical, so output is unchanged.
 
 
 def _extract_keywords(field_names: list[str], max_keywords: int = 15) -> list[str]:
-    tokens = []
-    for name in field_names:
-        parts = re.split(r"[^A-Za-z0-9]+", name)
-        tokens.extend([part.lower() for part in parts if len(part) > 2])
-    stopwords = {"and", "or", "the", "for", "with", "from", "data", "info"}
-    keywords = [token for token in tokens if token not in stopwords]
-    if not keywords:
-        return []
-    counts = Counter(keywords)
-    return [word for word, _ in counts.most_common(max_keywords)]
+    from iterable.ai.metadata import extract_keywords
+
+    return extract_keywords(field_names, max_keywords=max_keywords)
 
 
 def _extract_geographic_coverage(samples: list[Any], field_names: list[str]) -> dict[str, Any]:
-    field_map = {name: name.lower() for name in field_names}
-    coverage = {"countries": [], "regions": [], "coordinates_present": False}
-    coord_fields = {
-        name
-        for name, lname in field_map.items()
-        if any(hint in lname for hint in GEO_FIELD_HINTS["coordinates"])
-    }
-    if coord_fields:
-        coverage["coordinates_present"] = True
+    from iterable.ai.metadata import extract_geographic_coverage
 
-    country_fields = {
-        name
-        for name, lname in field_map.items()
-        if any(hint in lname for hint in GEO_FIELD_HINTS["country"])
-    }
-    region_fields = {
-        name
-        for name, lname in field_map.items()
-        if any(hint in lname for hint in GEO_FIELD_HINTS["region"])
-    }
-
-    countries = []
-    regions = []
-    for name, value in _iter_sample_values(samples, field_names):
-        if value is None:
-            continue
-        if name in country_fields and isinstance(value, str):
-            val = value.strip()
-            if 2 <= len(val) <= 64:
-                countries.append(val)
-        if name in region_fields and isinstance(value, str):
-            val = value.strip()
-            if 2 <= len(val) <= 64:
-                regions.append(val)
-    if countries:
-        coverage["countries"] = sorted(set(countries))[:10]
-    if regions:
-        coverage["regions"] = sorted(set(regions))[:10]
-    return coverage
+    return extract_geographic_coverage(samples, field_names)
 
 
 def _extract_temporal_coverage(
     samples: list[Any], field_names: list[str]
 ) -> Optional[dict[str, Any]]:
-    candidate_fields = [
-        name for name in field_names if any(hint in name.lower() for hint in DATE_FIELD_HINTS)
-    ]
-    if not candidate_fields:
-        return None
+    from iterable.ai.metadata import extract_temporal_coverage
 
-    values = []
-    for name, value in _iter_sample_values(samples, field_names):
-        if name not in candidate_fields:
-            continue
-        if value is None:
-            continue
-        values.append(value)
-    if not values:
-        return None
-
-    try:
-        series = pd.to_datetime(values, errors="coerce")
-    except Exception:
-        return None
-    series = series.dropna()
-    if series.empty:
-        return None
-
-    start = series.min()
-    end = series.max()
-    has_time = any(
-        getattr(dt, "hour", 0) or getattr(dt, "minute", 0) or getattr(dt, "second", 0)
-        for dt in series
-    )
-    granularity = "datetime" if has_time else "date"
-    return {"start": start.isoformat(), "end": end.isoformat(), "granularity": granularity}
+    return extract_temporal_coverage(samples, field_names)
 
 
 def _detect_languages(samples: list[Any], field_names: list[str]) -> list[dict[str, Any]]:
-    try:
-        from langdetect import detect  # type: ignore
-    except Exception:
-        return []
+    from iterable.ai.metadata import detect_languages
 
-    texts = []
-    for _name, value in _iter_sample_values(samples, field_names):
-        if isinstance(value, str) and len(value.strip()) >= 20:
-            texts.append(value.strip())
-        if len(texts) >= 50:
-            break
-
-    if not texts:
-        return []
-
-    counts = Counter()
-    total = 0
-    for text in texts:
-        try:
-            lang = detect(text)
-            counts[lang] += 1
-            total += 1
-        except Exception:
-            continue
-    if not total:
-        return []
-    return [
-        {"code": code, "confidence": round(count / total, 2)}
-        for code, count in counts.most_common(3)
-    ]
+    return detect_languages(samples, field_names)
 
 
 def _guess_data_theme(field_names: list[str], keywords: list[str]) -> Optional[dict[str, str]]:
-    tokens = set(keywords)
-    for name in field_names:
-        tokens.update([part.lower() for part in re.split(r"[^A-Za-z0-9]+", name) if part])
+    from iterable.ai.metadata import classify_data_theme
 
-    best_label = None
-    best_score = 0
-    for label, theme_keywords in DATA_THEME_KEYWORDS.items():
-        score = len(tokens.intersection(theme_keywords))
-        if score > best_score:
-            best_score = score
-            best_label = label
-    if not best_label or best_score == 0:
-        return None
-    return {"label": best_label, "uri": DATA_THEME_URI_BY_LABEL.get(best_label)}
+    return classify_data_theme(field_names, keywords)
 
 
 def _build_sample_csv(samples: list[Any], field_names: list[str]) -> str:
@@ -300,60 +153,21 @@ def _merge_ai_metadata(metadata: dict[str, Any], ai_metadata: dict[str, Any]) ->
         metadata["metadata_evidence"] = ai_metadata["evidence"]
 
 
+# Metacrafter semantic-type scanning and parsing are delegated to iterabledata's
+# shared implementation (``iterable.ai.semantic``). undatum keeps the
+# report-coupled ``_apply_semantic_types`` below, which consumes these results.
+
+
 def _parse_metacrafter_matches(entry: dict[str, Any]) -> list[dict[str, Any]]:
-    matches = entry.get("matches") or entry.get("datatypes") or entry.get("types")
-    if matches is None:
-        matches = []
-    if isinstance(matches, str):
-        matches = [m.strip() for m in matches.split(",") if m.strip()]
-    results = []
-    for match in matches:
-        if isinstance(match, dict):
-            match_type = match.get("type") or match.get("name") or match.get("label")
-            confidence = match.get("confidence")
-        else:
-            match_type = str(match).split()[0]
-            confidence = None
-            match_parts = str(match).split()
-            if len(match_parts) > 1:
-                try:
-                    confidence = float(match_parts[-1])
-                except ValueError:
-                    confidence = None
-        if match_type:
-            results.append(
-                {"type": match_type, "url": entry.get("datatype_url"), "confidence": confidence}
-            )
-    return results
+    from iterable.ai.semantic import _parse_metacrafter_matches as _parse
+
+    return _parse(entry)
 
 
 def _run_metacrafter_scan(filename: str) -> Optional[list[dict[str, Any]]]:
-    if shutil.which("metacrafter") is None:
-        return None
+    from iterable.ai.semantic import _run_metacrafter_scan as _scan
 
-    commands = [
-        ["metacrafter", "scan-file", "--format", "json", filename],
-        ["metacrafter", "scan-file", filename, "--format", "json"],
-    ]
-    for cmd in commands:
-        try:
-            result = subprocess.run(cmd, capture_output=True, text=True, check=False)
-            if result.returncode != 0:
-                continue
-            output = result.stdout.strip()
-            if not output:
-                continue
-            data = json.loads(output)
-            if isinstance(data, dict):
-                if "fields" in data:
-                    return data["fields"]
-                if "data" in data:
-                    return data["data"]
-            if isinstance(data, list):
-                return data
-        except (OSError, json.JSONDecodeError):
-            continue
-    return None
+    return _scan(filename)
 
 
 def _apply_semantic_types(report, metacrafter_entries: list[dict[str, Any]]) -> dict[str, Any]:
@@ -399,26 +213,9 @@ def _apply_semantic_types(report, metacrafter_entries: list[dict[str, Any]]) -> 
 def _mask_samples(
     samples: list[Any], field_names: list[str], pii_fields: list[dict[str, Any]]
 ) -> list[Any]:
-    if not pii_fields:
-        return samples
-    pii_set = {item.get("field") for item in pii_fields if item.get("field")}
-    masked = []
-    for sample in samples:
-        if isinstance(sample, dict):
-            new_sample = dict(sample)
-            for key in pii_set:
-                if key in new_sample:
-                    new_sample[key] = "***"
-            masked.append(new_sample)
-        elif isinstance(sample, list):
-            new_sample = list(sample)
-            for idx, name in enumerate(field_names):
-                if name in pii_set and idx < len(new_sample):
-                    new_sample[idx] = "***"
-            masked.append(new_sample)
-        else:
-            masked.append(sample)
-    return masked
+    from iterable.ai.semantic import mask_pii_samples
+
+    return mask_pii_samples(samples, field_names, pii_fields)
 
 
 def _build_stats(

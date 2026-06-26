@@ -38,7 +38,10 @@ def db_query(
 ):
     """Execute SQL query against database and output results.
 
-    Supports PostgreSQL, MySQL/MariaDB, and SQLite databases.
+    Natively supports PostgreSQL, MySQL/MariaDB, and SQLite. Additional engines
+    are served through iterabledata's read-only drivers: MS SQL Server (mssql://,
+    sqlserver://), ClickHouse (clickhouse://), MongoDB (mongodb://), and
+    Elasticsearch/OpenSearch (elasticsearch://, opensearch://).
     Results are streamed for efficient memory usage with large result sets.
 
     Examples:
@@ -50,6 +53,12 @@ def db_query(
 
         # Query SQLite and output CSV
         undatum db query "SELECT * FROM data" --db sqlite:///path/to/db.db --output-format csv
+
+        # Query ClickHouse / MS SQL Server (via iterabledata drivers)
+        undatum db query "SELECT * FROM events LIMIT 100" --db clickhouse://user:pass@host:9000/db
+
+        # Read a MongoDB collection (collection given in the URI, no SQL needed)
+        undatum db query "" --db "mongodb://host:27017/mydb?collection=users&limit=100"
 
         # Query from file
         undatum db query --query-file query.sql --db postgresql://user:pass@host/db

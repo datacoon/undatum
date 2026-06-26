@@ -3,7 +3,6 @@
 import csv
 import json
 import logging
-import os
 import xml.etree.ElementTree as etree
 from collections import defaultdict
 
@@ -14,13 +13,56 @@ from bson import ObjectId
 from xlrd import open_workbook as load_xls
 
 from ..common.command_utils import ITERABLE_OPTIONS_KEYS, get_iterable_options  # noqa: F401
-from ..common.errors import FileNotFoundError, FormatError, PermissionError, find_similar_files
-from ..common.path_utils import is_s3_uri, validate_file_path
-from ..common.progress import wrap_iterable
-from ..common.s3_iterable import open_iterable_with_s3
-from ..common.s3_iterable import open_path as open_iterable
-from ..formats.s3 import S3Writer, parse_s3_uri
-from ..utils import dict_generator, get_file_type, get_option
+from ..common.errors import (
+    FileNotFoundError,
+    FormatError,
+    PermissionError,
+    ValidationError,
+    find_similar_files,
+)
+from ..common.path_utils import validate_file_path
+from ..constants import COMPRESSED_FILE_TYPES, SUPPORTED_FILE_TYPES
+from ..utils import get_file_type, get_option
+
+# Preferred order for suggesting writable conversion targets. The list is
+# filtered against iterabledata's actual write capabilities at runtime so the
+# suggestions can never contradict the read-only check below.
+_PREFERRED_WRITABLE_FORMATS = ["csv", "jsonl", "json", "parquet", "orc", "avro", "bson"]
+
+
+def _writable_format_suggestions() -> list[str]:
+    """Return the preferred writable formats that iterabledata can actually write.
+
+    Falls back to the full preferred list if capability reporting is unavailable.
+    """
+    try:
+        from iterable.helpers.capabilities import supports_write
+    except Exception:  # noqa: BLE001 - capabilities unavailable: use static list
+        return list(_PREFERRED_WRITABLE_FORMATS)
+    writable = []
+    for fmt in _PREFERRED_WRITABLE_FORMATS:
+        try:
+            if supports_write(fmt) is not False:
+                writable.append(fmt)
+        except Exception:  # noqa: BLE001 - unknown format: skip it
+            continue
+    return writable or list(_PREFERRED_WRITABLE_FORMATS)
+
+
+# Formats commonly suggested as writable conversion targets (capability-filtered).
+WRITABLE_FORMAT_SUGGESTIONS = _writable_format_suggestions()
+
+# Formats that report as writable but require an externally-supplied schema or
+# message class to serialize (e.g. a compiled protobuf message). They cannot be
+# used as generic conversion targets, so we fail fast with an actionable error
+# instead of surfacing the engine's "requires '<x>' parameter" error. Keys are
+# resolved output format ids/extensions; values name the required input.
+_SCHEMA_REQUIRED_FORMATS: dict[str, str] = {
+    "pb": "a compiled protobuf message class (message_class)",
+    "protobuf": "a compiled protobuf message class (message_class)",
+    "capnp": "a Cap'n Proto schema (schema_file and schema_name)",
+    "thrift": "a generated Thrift struct class (struct_class)",
+}
 
 DEFAULT_BATCH_SIZE = 50000
 
@@ -337,7 +379,7 @@ def jsonl_to_csv(fromname, toname, options=None, default_options=None):
     analysis = express_analyze_jsonl(fromname, itemlimit=options["useitems"])
     if not options["force_flat"] and not analysis["isflat"]:
         logging.error(
-            "File %s is not flat and 'force_flat' flag not set. " "File not converted", fromname
+            "File %s is not flat and 'force_flat' flag not set. File not converted", fromname
         )
         return
     keys = analysis["keys"]
@@ -528,26 +570,6 @@ def csv_to_avro(fromname, toname, options=None, default_options=None):
                     print("Error processing row %d. Skip and continue", n)
 
 
-CONVERT_FUNC_MAP = {
-    "xls2csv": xls_to_csv,
-    "xls2jsonl": xls_to_jsonl,
-    "xls2bson": xls_to_bson,
-    "xlsx2jsonl": xlsx_to_jsonl,
-    "xlsx2bson": xlsx_to_bson,
-    "csv2jsonl": csv_to_jsonl,
-    "csv2bson": csv_to_bson,
-    "xml2jsonl": xml_to_jsonl,
-    "jsonl2csv": jsonl_to_csv,
-    "bson2jsonl": bson_to_jsonl,
-    "json2jsonl": json_to_jsonl,
-    "csv2parquet": csv_to_parquet,
-    "jsonl2parquet": jsonl_to_parquet,
-    "jsonl2orc": jsonl_to_orc,
-    "csv2orc": csv_to_orc,
-    "csv2avro": csv_to_avro,
-}
-
-
 DEFAULT_HEADERS_DETECT_LIMIT = 1000
 
 
@@ -569,169 +591,182 @@ class Converter:
         self.batch_size = batch_size
         pass
 
+    @staticmethod
+    def _resolve_output_format(tofile, options: dict) -> str | None:
+        """Determine the output data format id from the target path or options.
+
+        Strips a trailing compression-codec extension (e.g. ``.gz``) so that
+        ``out.csv.gz`` resolves to ``csv``.
+        """
+        fmt = options.get("format_out")
+        if fmt:
+            return fmt.lower()
+        basename = str(tofile).rsplit("/", 1)[-1]
+        parts = basename.split(".")
+        if len(parts) >= 2 and parts[-1].lower() in COMPRESSED_FILE_TYPES:
+            parts = parts[:-1]
+        if len(parts) >= 2:
+            return parts[-1].lower()
+        return None
+
+    def _check_output_schema_required(self, tofile, options: dict) -> None:
+        """Raise a clear error when the output format needs an external schema.
+
+        Some formats (protobuf, Cap'n Proto, Thrift) report as writable but
+        cannot serialize plain records without a compiled schema/message class,
+        so they are not valid generic conversion targets.
+        """
+        out_fmt = self._resolve_output_format(tofile, options)
+        if not out_fmt:
+            return
+        requirement = _SCHEMA_REQUIRED_FORMATS.get(out_fmt)
+        if requirement is not None:
+            raise ValidationError(
+                f"Output format '{out_fmt}' requires {requirement} and cannot be used as a "
+                f"generic conversion target. Convert to a self-describing format instead.",
+                field="output",
+                suggestions=[
+                    f for f in WRITABLE_FORMAT_SUGGESTIONS if f not in _SCHEMA_REQUIRED_FORMATS
+                ],
+            )
+
+    def _check_output_writable(self, tofile, options: dict) -> None:
+        """Raise a clear error when the output format is read-only.
+
+        Uses iterabledata's capability reporting so undatum fails fast with an
+        actionable message instead of a cryptic engine error.
+        """
+        out_fmt = self._resolve_output_format(tofile, options)
+        if not out_fmt:
+            return
+        try:
+            from iterable.helpers.capabilities import supports_write
+
+            writable = supports_write(out_fmt)
+        except Exception:  # noqa: BLE001 - unknown format: let the engine decide
+            return
+        if writable is False:
+            raise ValidationError(
+                f"Output format '{out_fmt}' is read-only; undatum can read it but cannot "
+                f"write to it.",
+                field="output",
+                suggestions=WRITABLE_FORMAT_SUGGESTIONS,
+            )
+
+    def _build_convert_kwargs(self, options: dict, limit) -> dict:
+        """Translate undatum convert options into iterabledata convert kwargs."""
+        iterableargs = get_iterable_options(options)
+        toiterableargs: dict = {}
+        delimiter = options.get("delimiter")
+        if delimiter:
+            toiterableargs["delimiter"] = delimiter
+        is_flatten = bool(get_option(options, "flatten"))
+        show_progress = get_option(options, "progress")
+        if show_progress is None:
+            show_progress = True
+        return {
+            "iterableargs": iterableargs,
+            "toiterableargs": toiterableargs,
+            "scan_limit": limit if limit is not None else DEFAULT_HEADERS_DETECT_LIMIT,
+            "batch_size": self.batch_size,
+            "is_flatten": is_flatten,
+            "silent": not show_progress,
+            "show_progress": show_progress,
+        }
+
     def convert(self, fromfile, tofile, options=None, limit=DEFAULT_HEADERS_DETECT_LIMIT):
-        """Convert file from one format to another.
+        """Convert a file (or cloud/DB source) to another format.
 
-        Processes files in two phases:
-        1. Schema extraction: Samples records to determine field structure
-        2. Conversion: Streams records from source to destination format
-
-        Uses sets for efficient key tracking during schema extraction.
+        Delegates to iterabledata's ``iterable.convert.convert``, which performs
+        schema scanning, batched streaming writes, optional flattening, progress
+        reporting, atomic local writes, and native cloud (s3/gs/az) handling.
+        Friendly errors for missing files and unsupported formats are preserved.
 
         Args:
-            fromfile: Path to input file.
-            tofile: Path to output file.
+            fromfile: Path or URI of the input source.
+            tofile: Path or URI of the output file.
             options: Dictionary of conversion options (encoding, delimiter, etc.).
             limit: Maximum records to sample for schema detection.
 
         Raises:
-            FileNotFoundError: If input file does not exist.
-            PermissionError: If file cannot be read or written.
-            FormatError: If file format is not supported.
+            FileNotFoundError: If a local input file does not exist.
+            PermissionError: If a local file cannot be read.
+            FormatError: If the input format is not supported.
         """
         if options is None:
             options = {}
 
-        # Validate input file exists and is readable
-        try:
-            validate_file_path(fromfile, check_read=True)
-        except FileNotFoundError as e:
-            # Re-raise with suggestions
-            suggestions = find_similar_files(fromfile)
-            raise FileNotFoundError(fromfile, suggestions) from e
-        except PermissionError as e:
-            raise PermissionError(fromfile, operation="read") from e
+        # Fail fast with an actionable message if the output format is read-only
+        # or requires an external schema (protobuf/capnp/thrift).
+        self._check_output_writable(tofile, options)
+        self._check_output_schema_required(tofile, options)
 
-        iterableargs = get_iterable_options(options)
-        is_flatten = get_option(options, "flatten")
-        show_progress = get_option(options, "progress")
-        if show_progress is None:
-            show_progress = True
-        keys_set = set()  # Use set for O(1) lookup instead of O(n) list operations
-
-        # Handle S3 output: write to temp file first, then upload
-        output_is_s3 = is_s3_uri(tofile)
-        actual_output = tofile
-        s3_writer = None
-        if output_is_s3:
-            import tempfile
-
-            suffix = os.path.splitext(parse_s3_uri(tofile)[1])[1] or ".tmp"
-            temp_fd, actual_output = tempfile.mkstemp(suffix=suffix)
-            os.close(temp_fd)
-            s3_writer = S3Writer(tofile)
-            s3_writer.__enter__()
-
-        try:
-            # First pass: extract schema
+        # Validate local input files; cloud/DB URIs are validated by the engine.
+        if "://" not in fromfile:
             try:
-                with open_iterable_with_s3(fromfile, mode="r", iterableargs=iterableargs) as it_in:
-                    n = 0
-                    logging.info("Extracting schema")
-                    for item in wrap_iterable(
-                        it_in,
-                        total=limit,
-                        desc="Extracting schema",
-                        unit="rows",
-                        show_progress=show_progress,
-                    ):
-                        if limit is not None and n > limit:
-                            break
-                        n += 1
-                        if not is_flatten:
-                            dk = dict_generator(item)
-                            for i in dk:
-                                k = ".".join(i[:-1])
-                                keys_set.add(k)
-                        else:
-                            item = make_flat(item)
-                            for k in item.keys():
-                                keys_set.add(k)
-            except Exception as e:
-                # Check if it's a file format issue
-                file_type = get_file_type(fromfile)
-                supported_formats = [
-                    "csv",
-                    "jsonl",
-                    "json",
-                    "xml",
-                    "xls",
-                    "xlsx",
-                    "parquet",
-                    "avro",
-                    "orc",
-                    "bson",
-                ]
-                if file_type not in supported_formats:
-                    raise FormatError(fromfile, file_type, supported_formats) from e
-                # Re-raise with better context
-                raise
+                validate_file_path(fromfile, check_read=True)
+            except FileNotFoundError as e:
+                suggestions = find_similar_files(fromfile)
+                raise FileNotFoundError(fromfile, suggestions) from e
+            except PermissionError as e:
+                raise PermissionError(fromfile, operation="read") from e
 
-            keys = list(keys_set)  # Convert to list for backward compatibility
+        from iterable.convert import convert as iterable_convert
 
-            # Second pass: convert data
-            with open_iterable(actual_output, mode="w", iterableargs={"keys": keys}) as it_out:
-                with open_iterable_with_s3(fromfile, mode="r", iterableargs=iterableargs) as it_in:
-                    # Try to use reset() if available
-                    if hasattr(it_in, "reset"):
-                        it_in.reset()
+        convert_kwargs = self._build_convert_kwargs(options, limit)
+        # Atomic writes append a ".tmp" suffix to the destination, which breaks
+        # format/codec detection for compressed or multi-extension outputs
+        # (e.g. "out.csv.gz" -> "out.csv.gz.tmp"). Keep writes non-atomic so the
+        # output extension drives detection correctly.
 
-                    logging.info("Converting data")
-                    n = 0
-                    batch = []
-                    for row in wrap_iterable(
-                        it_in, desc="Converting", unit="rows", show_progress=show_progress
-                    ):
-                        n += 1
-                        if is_flatten:
-                            for k in keys:
-                                if k not in row.keys():
-                                    row[k] = None
-                            batch.append(make_flat(row))
-                        else:
-                            batch.append(row)
-                        if n % self.batch_size == 0:
-                            if hasattr(it_out, "write_bulk"):
-                                it_out.write_bulk(batch)
-                            else:
-                                for item in batch:
-                                    it_out.write(item)
-                            batch = []
-                    if len(batch) > 0:
-                        if hasattr(it_out, "write_bulk"):
-                            it_out.write_bulk(batch)
-                        else:
-                            for item in batch:
-                                it_out.write(item)
+        try:
+            iterable_convert(fromfile, tofile, **convert_kwargs)
+        except (FileNotFoundError, PermissionError, FormatError):
+            raise
+        except Exception as e:
+            # Surface a helpful error when the input format is not supported.
+            file_type = get_file_type(fromfile)
+            if file_type is None or file_type not in SUPPORTED_FILE_TYPES:
+                raise FormatError(fromfile, file_type, SUPPORTED_FILE_TYPES) from e
+            raise
 
-            # Upload to S3 if needed
-            if output_is_s3 and s3_writer:
-                with open(actual_output, "rb") as f:
-                    s3_writer.client.upload_fileobj(f, s3_writer.bucket, s3_writer.key)
-        finally:
-            # Clean up temp file and S3 writer
-            if output_is_s3 and actual_output != tofile:
-                try:
-                    os.remove(actual_output)
-                except OSError:
-                    pass
-            if s3_writer:
-                s3_writer.__exit__(None, None, None)
+    def bulk_convert(self, source, dest, options=None, to_ext=None, parallel=None):
+        """Convert many files (directory or glob) via iterabledata's bulk_convert.
 
-    def convert_old(self, fromfile, tofile, options=None):
-        """Legacy conversion method."""
+        Args:
+            source: Directory path or glob pattern of input files.
+            dest: Output directory.
+            options: Conversion options (same as :meth:`convert`).
+            to_ext: Target extension (e.g. ``"parquet"``); falls back to the
+                ``format_out`` option.
+            parallel: Force parallel execution; defaults to True when a thread
+                count is supplied via options.
+
+        Raises:
+            ValueError: If no target extension can be determined.
+        """
         if options is None:
             options = {}
-        fromtype = (
-            options["format_in"] if options["format_in"] is not None else get_file_type(fromfile)
+        target_ext = to_ext or options.get("format_out")
+        if not target_ext:
+            raise ValueError(
+                "Bulk conversion requires a target extension (use --to-ext or --format-out)."
+            )
+
+        # Fail fast if the requested target format is read-only or schema-required.
+        self._check_output_writable(f"x.{target_ext}", {})
+        self._check_output_schema_required(f"x.{target_ext}", {})
+
+        from iterable.convert import bulk_convert as iterable_bulk_convert
+
+        convert_kwargs = self._build_convert_kwargs(options, DEFAULT_HEADERS_DETECT_LIMIT)
+        threads = options.get("threads")
+        use_parallel = parallel if parallel is not None else bool(threads)
+        return iterable_bulk_convert(
+            source,
+            dest,
+            to_ext=target_ext,
+            parallel=use_parallel,
+            workers=threads if threads else None,
+            **convert_kwargs,
         )
-        totype = (
-            options["format_out"] if options["format_out"] is not None else get_file_type(tofile)
-        )
-        key = f"{fromtype}2{totype}"
-        func = CONVERT_FUNC_MAP.get(key, None)
-        if func is None:
-            logging.error(f"Conversion between {fromtype} and {totype} not supported")
-        else:
-            logging.info(f"Convert {key} from {fromfile} to {tofile}")
-            func(fromfile, tofile, options)

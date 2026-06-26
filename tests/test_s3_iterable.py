@@ -73,11 +73,33 @@ class TestOpenIterableWithS3:
         mock_remove.assert_called_once_with(mock_temp_file)
 
     @patch("undatum.common.s3_iterable.is_s3_uri", return_value=True)
-    def test_open_s3_file_write_not_implemented(self, mock_is_s3_uri):
-        """Test that S3 write mode is not implemented."""
-        with pytest.raises(NotImplementedError, match="S3 write mode not yet implemented"):
-            with open_iterable_with_s3("s3://bucket/key", mode="w"):
-                pass
+    @patch("undatum.common.s3_iterable.open_iterable")
+    def test_open_s3_file_write_delegates_to_native_cloud(self, mock_open_iterable, mock_is_s3_uri):
+        """S3 write mode delegates to iterabledata's native cloud support."""
+        mock_iterable = MagicMock()
+        mock_open_iterable.return_value.__enter__.return_value = mock_iterable
+        mock_open_iterable.return_value.__exit__.return_value = None
+
+        with open_iterable_with_s3("s3://bucket/key.jsonl", mode="w") as result:
+            assert result == mock_iterable
+
+        mock_open_iterable.assert_called_once_with(
+            "s3://bucket/key.jsonl", mode="w", iterableargs={}
+        )
+
+    @patch("undatum.common.s3_iterable.open_iterable")
+    def test_open_gcs_file_delegates_to_native_cloud(self, mock_open_iterable):
+        """GCS URIs are opened directly via iterabledata (read and write)."""
+        mock_iterable = MagicMock()
+        mock_open_iterable.return_value.__enter__.return_value = mock_iterable
+        mock_open_iterable.return_value.__exit__.return_value = None
+
+        with open_iterable_with_s3("gs://bucket/data.jsonl", mode="r") as result:
+            assert result == mock_iterable
+
+        mock_open_iterable.assert_called_once_with(
+            "gs://bucket/data.jsonl", mode="r", iterableargs={}
+        )
 
     @patch("undatum.common.s3_iterable.is_s3_uri", return_value=True)
     @patch("undatum.common.s3_iterable.parse_s3_uri")

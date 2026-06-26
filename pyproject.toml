@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "undatum"
-version = "1.3.0"
+version = "1.4.0"
 description = "A powerful command-line tool for data processing and analysis"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -74,14 +74,38 @@ api = [
 plot = [
     "matplotlib",
 ]
+mcp = [
+    "mcp",
+]
+langchain = [
+    "langchain-core",
+]
+polars = [
+    "polars",
+]
+dask = [
+    "dask[dataframe]",
+]
 s3 = [
     "boto3",
+]
+cloud = [
+    "fsspec",
+    "s3fs",
+    "gcsfs",
+    "adlfs",
 ]
 postgres = [
     "psycopg2-binary",
 ]
 mysql = [
     "pymysql",
+]
+mssql = [
+    "pyodbc",
+]
+clickhouse = [
+    "clickhouse-driver",
 ]
 
 [project.urls]
@@ -92,6 +116,7 @@ Changelog = "https://github.com/datacoon/undatum/blob/master/CHANGELOG.md"
 [project.scripts]
 undatum = "undatum.__main__:main"
 data = "undatum.__main__:main"
+undatum-mcp = "undatum.mcp.server:main"
 
 [tool.setuptools.packages.find]
 include = ["undatum*"]

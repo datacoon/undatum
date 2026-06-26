@@ -6,17 +6,21 @@ Composes the Typer application from per-domain CLI modules in
 live in ``undatum.cli.data_commands`` and the other ``undatum.cli``
 modules.
 """
+
 import logging
 from typing import Annotated, Optional
 
 import typer
 
 from . import __version__
+from .cli.ai_cli import ai_app
 from .cli.api_cli import api_app
 from .cli.common import enable_verbose  # noqa: F401 - re-exported for backward compatibility
 from .cli.data_commands import data_app
 from .cli.db_cli import db_app
 from .cli.examples_cli import examples_app
+from .cli.formats_cli import formats_app
+from .cli.mcp_cli import mcp_app
 from .cli.package_cli import package_app
 from .cli.pipeline_cli import pipeline_app, templates_app  # noqa: F401
 from .cli.plugins_cli import plugin_manager, plugins_app
@@ -45,11 +49,14 @@ def _main_callback(
 # Merge top-level data commands into the main app
 app.registered_commands.extend(data_app.registered_commands)
 
+app.add_typer(ai_app, name="ai")
 app.add_typer(package_app, name="package")
 app.add_typer(api_app, name="api")
 app.add_typer(pipeline_app, name="pipeline")
 app.add_typer(db_app, name="db")
 app.add_typer(examples_app, name="examples")
+app.add_typer(formats_app, name="formats")
+app.add_typer(mcp_app, name="mcp")
 app.add_typer(plugins_app, name="plugins")
 
 # Load and register plugins after app is fully initialized

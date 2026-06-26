@@ -6,6 +6,7 @@ registered on ``data_app`` are merged into the main app by ``undatum.core``.
 
 import glob
 import logging
+import os
 import sys
 from typing import Annotated, Optional
 
@@ -101,10 +102,34 @@ def convert(
         int, typer.Option(help="Number of threads for parallel processing (default: CPU count).")
     ] = None,
     progress: Annotated[bool, typer.Option(help="Show progress bar.")] = True,
+    recursive: Annotated[
+        bool,
+        typer.Option(
+            help="Bulk-convert a directory or glob pattern; OUTPUT is treated as a directory."
+        ),
+    ] = False,
+    to_ext: Annotated[
+        str,
+        typer.Option(
+            help="Target extension for bulk conversion (e.g. 'parquet'). Defaults to --format-out."
+        ),
+    ] = None,
 ):
-    """Convert one file to another format.
+    """Convert one file (or a directory/glob with --recursive) to another format.
 
-    Supports conversion between XML, CSV, JSON, JSONL, BSON, Parquet, ORC, and AVRO formats.
+    Reading and writing are handled by the iterabledata engine, so any format it
+    supports (100+ formats, including cloud URIs like s3://, gs://, az://) can be
+    used as input or output. Use ``undatum formats list`` to see all formats.
+
+    Examples:
+        # Single file
+        undatum convert data.csv data.parquet
+
+        # Bulk-convert a directory of CSVs to Parquet
+        undatum convert ./raw ./processed --recursive --to-ext parquet
+
+        # Bulk-convert with a glob pattern
+        undatum convert "data/*.jsonl" ./out --recursive --to-ext csv
     """
     if verbose:
         enable_verbose()
@@ -126,7 +151,11 @@ def convert(
         "progress": progress,
     }
     acmd = Converter()
-    acmd.convert(input_file, output, options)
+    is_glob = any(ch in input_file for ch in "*?[")
+    if recursive or os.path.isdir(input_file) or is_glob:
+        acmd.bulk_convert(input_file, output, options, to_ext=to_ext)
+    else:
+        acmd.convert(input_file, output, options)
 
 
 @data_app.command()

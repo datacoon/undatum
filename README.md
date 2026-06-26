@@ -8,17 +8,23 @@
 
 ## Features
 
-- **Multi-format support**: CSV, JSON Lines, BSON, XML, XLS, XLSX, Parquet, AVRO, ORC
-- **Compression support**: ZIP, XZ, GZ, BZ2, ZSTD
+- **100+ formats via iterabledata**: CSV, JSON, JSON Lines, BSON, XML, XLS/XLSX, Parquet, AVRO, ORC, plus geospatial, statistical, scientific, RDF, log, config, graph, and feed formats. Run `undatum formats list` to see every supported format and its read/write capabilities.
+- **Compression support**: GZ, XZ, BZ2, ZIP, ZSTD, LZ4, 7Z, Brotli, Snappy, LZO
+- **Multi-cloud I/O**: Read and write `s3://`, `gs://`/`gcs://`, and `az://`/`abfs://`/`abfss://` URIs natively via iterabledata (`pip install "undatum[cloud]"`)
+- **Database sources**: Read from PostgreSQL, MySQL/MariaDB, SQLite, MS SQL Server, ClickHouse, MongoDB, and Elasticsearch/OpenSearch (`undatum db query`)
 - **Low memory footprint**: Streams data for efficient processing of large files
 - **Automatic detection**: Encoding, delimiters, and file types
 - **Data validation**: Built-in rules for emails, URLs, and custom validators
 - **Advanced statistics**: Field analysis, frequency calculations, and date detection
 - **Flexible filtering**: Query and filter data using expressions
+- **Bulk conversion**: Convert whole directories or glob patterns in parallel (`undatum convert --recursive`)
 - **Schema generation**: Automatic schema detection and generation
 - **Database ingestion**: Ingest data to MongoDB, PostgreSQL, DuckDB, MySQL, SQLite, and Elasticsearch with retry logic and error handling
 - **Ad-hoc SQL on files**: Run DuckDB SQL over CSV, JSONL, Parquet, and other formats (`undatum sql`)
-- **AI-powered documentation**: Automatic field and dataset descriptions using multiple LLM providers (OpenAI, OpenRouter, Ollama, LM Studio, Perplexity) with structured JSON output
+- **AI-powered tooling**: Dataset documentation, natural-language filtering, conversion planning, and transform suggestions via iterabledata's AI stack with many LLM providers (OpenAI, Anthropic, Gemini, Azure, OpenRouter, Ollama, LM Studio, Perplexity) — see `undatum ai`
+- **Agent tools & MCP server**: Expose undatum operations to LLM agents as JSON tools (`undatum.tools`), LangChain `StructuredTool`s, or a Model Context Protocol stdio server (`undatum mcp serve`)
+- **Format catalog**: Inspect formats and capabilities programmatically (`undatum formats list|describe|export`, including a full capability matrix via `undatum formats list --capabilities`)
+- **DataFrame & typed-row interop**: Convert datasets to pandas/Polars/Dask or iterate rows as dataclasses/Pydantic models from the `Dataset` SDK
 - **Optional Data API**: Serve file-backed datasets over HTTP with FastAPI + DuckDB
 
 ## Documentation
@@ -52,12 +58,27 @@ pip install "undatum[extract]"
 # Plotting (matplotlib)
 pip install "undatum[plot]"
 
+# MCP server for AI agents (Model Context Protocol)
+pip install "undatum[mcp]"
+
+# LangChain agent tools
+pip install "undatum[langchain]"
+
+# DataFrame interop (Polars / Dask)
+pip install "undatum[polars]"
+pip install "undatum[dask]"
+
 # S3 cloud storage support (boto3)
 pip install "undatum[s3]"
 
-# PostgreSQL / MySQL database connectors
+# Multi-cloud storage via fsspec (S3 + GCS + Azure)
+pip install "undatum[cloud]"
+
+# Database connectors
 pip install "undatum[postgres]"
 pip install "undatum[mysql]"
+pip install "undatum[mssql]"
+pip install "undatum[clickhouse]"
 ```
 
 After installation both `undatum` and the shorter `data` command are available:
@@ -399,7 +420,7 @@ undatum extract report.pdf --method text --pages 1-3 --output-format ndjson --ou
 
 ### `convert`
 
-Converts data between different formats. Supports CSV, JSON Lines, BSON, XML, XLS, XLSX, Parquet, AVRO, and ORC. Supports S3 URIs for cloud storage integration.
+Converts data between any formats supported by iterabledata (100+, see `undatum formats list`). Reading and writing are handled by the iterabledata engine, including cloud URIs (`s3://`, `gs://`, `az://`). Use `--recursive` to bulk-convert a directory or glob pattern.
 
 ```bash
 # XML to JSON Lines
@@ -413,6 +434,9 @@ undatum convert data.jsonl data.csv
 
 # Convert from S3 to local
 undatum convert s3://my-bucket/data.csv output.jsonl
+
+# Bulk-convert a directory of CSVs to Parquet
+undatum convert ./raw ./processed --recursive --to-ext parquet
 
 # Convert local to S3
 undatum convert input.csv s3://my-bucket/output.parquet
@@ -1751,6 +1775,42 @@ rows = ds.head(20)
 rows = ds.tail(20)
 ```
 
+### DataFrame and Typed-Row Interop
+
+Datasets can be handed off to DataFrame libraries or iterated as typed objects,
+delegating to iterabledata's adapters:
+
+```python
+# DataFrame conversion (pandas is bundled; Polars/Dask via extras)
+df = Dataset.read("data.jsonl").to_pandas()
+pdf = Dataset.read("data.parquet").to_polars()   # pip install "undatum[polars]"
+ddf = Dataset.read("big.jsonl").to_dask()        # pip install "undatum[dask]"
+
+# Chunked pandas frames for large files
+for chunk in Dataset.read("big.csv").to_pandas(chunksize=100_000):
+    ...
+
+# Typed iteration
+from dataclasses import dataclass
+
+@dataclass
+class Person:
+    name: str
+    age: int
+
+for person in Dataset.read("people.csv").as_dataclasses(Person):
+    print(person.name)
+
+from pydantic import BaseModel
+
+class PersonModel(BaseModel):
+    name: str
+    age: int
+
+for person in Dataset.read("people.csv").as_pydantic(PersonModel):
+    print(person.age)
+```
+
 ### S3 Support
 
 ```python
@@ -1779,6 +1839,58 @@ ds = (Dataset.read("data.jsonl")
       .select(["name", "email", "age"])
       .sample(n=1000))
 ds.write("output.parquet")
+```
+
+## AI Agent Tools and MCP Server
+
+undatum exposes its operations to LLM agents through a JSON tool layer that builds
+on iterabledata's foundation tools and adds undatum-specific tools (ad-hoc DuckDB
+SQL, value frequency, and confirm-gated dedup/mask/sample).
+
+### JSON tools and function-calling schemas
+
+```python
+from undatum import tools
+from undatum.tools import schemas
+
+# Call a tool directly (returns {"ok": ..., "data"/"error": ...})
+result = tools.detect_format("data.csv")
+freq = tools.frequency("data.csv", "country")
+
+# Dispatch by name (handy for agent runtimes)
+schemas.call_tool("query_sql", {"path": "data.parquet", "query": "SELECT * FROM data LIMIT 5"})
+
+# Export schemas for LLM function calling
+openai_fns = schemas.to_openai_functions()
+anthropic_tools = schemas.to_anthropic_tools()
+```
+
+Write tools (`deduplicate`, `mask_fields`, `sample_data`) require `confirm=True`
+to prevent accidental writes.
+
+### LangChain
+
+```python
+from undatum.tools.langchain import get_tools  # pip install "undatum[langchain]"
+
+lc_tools = get_tools()  # list[StructuredTool]
+```
+
+### MCP server
+
+Expose the tools to MCP-compatible agents (Claude Desktop, Cursor, etc.) over stdio:
+
+```bash
+pip install "undatum[mcp]"
+
+# List the tools the server exposes
+undatum mcp tools
+
+# Run the stdio server (wire this command into your MCP client)
+undatum mcp serve
+
+# Standalone console entry point (equivalent)
+undatum-mcp
 ```
 
 ## Pipeline Workflows
