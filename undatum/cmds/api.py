@@ -2,16 +2,22 @@
 
 from __future__ import annotations
 
+import datetime
+import decimal
 import json
 import logging
 import os
 import re
 import sys
-from typing import Any
+import uuid
+from typing import Any, Optional
 
 import yaml
 from iterable.helpers.detect import detect_file_type
+from pydantic import BaseModel, Field, create_model
+from starlette.requests import Request
 
+from .. import __version__
 from ..common.errors import FileNotFoundError, PermissionError, find_similar_files
 from ..common.path_utils import validate_file_path
 from ..common.schema_utils import duckdb_decompose
@@ -23,6 +29,14 @@ logger = logging.getLogger(__name__)
 DEFAULT_ALLOWED_OPS = ["eq", "ne", "lt", "gt", "le", "ge", "like"]
 DEFAULT_ORDER_DIRS = {"asc", "desc"}
 DEFAULT_PAGINATION = {"default_limit": 50, "max_limit": 1000}
+RESERVED_QUERY_PARAMS = {
+    "limit",
+    "offset",
+    "order_by",
+    "order_dir",
+    "sort",
+    "include_total",
+}
 OPERATOR_MAP = {
     "eq": "=",
     "ne": "!=",
@@ -34,11 +48,47 @@ OPERATOR_MAP = {
 }
 
 
+class PaginationMeta(BaseModel):
+    """Pagination metadata for list responses."""
+
+    limit: int
+    offset: int
+    count: int
+    total: Optional[int] = None
+
+
+def require_api_dependencies() -> None:
+    """Raise DependencyError when the optional Data API extra is not installed."""
+    try:
+        import fastapi  # noqa: F401
+        import uvicorn  # noqa: F401
+    except ImportError as exc:
+        from ..common.errors import DependencyError
+
+        raise DependencyError(
+            "fastapi",
+            feature="Data API",
+            install_command='pip install "undatum[api]"',
+        ) from exc
+
+
 def _normalize_resource_name(path: str, idx: int) -> str:
     stem = os.path.splitext(os.path.basename(path))[0]
     name = re.sub(r"[^A-Za-z0-9_]+", "_", stem).strip("_").lower()
     if not name:
         return f"resource_{idx}"
+    return name
+
+
+def _unique_resource_name(base: str, used: set[str]) -> str:
+    if base not in used:
+        used.add(base)
+        return base
+    counter = 2
+    while f"{base}_{counter}" in used:
+        counter += 1
+    name = f"{base}_{counter}"
+    used.add(name)
     return name
 
 
@@ -91,6 +141,117 @@ def _split_csv(value: str | None) -> list[str]:
     return [part.strip() for part in value.split(",") if part.strip()]
 
 
+def _json_safe_value(value: Any) -> Any:
+    if value is None:
+        return None
+    if isinstance(value, (str, int, float, bool)):
+        return value
+    if isinstance(value, (datetime.datetime, datetime.date, datetime.time)):
+        return value.isoformat()
+    if isinstance(value, decimal.Decimal):
+        return float(value)
+    if isinstance(value, bytes):
+        return value.decode("utf-8", errors="replace")
+    if isinstance(value, uuid.UUID):
+        return str(value)
+    return str(value)
+
+
+def _json_safe_row(row: dict[str, Any]) -> dict[str, Any]:
+    return {key: _json_safe_value(val) for key, val in row.items()}
+
+
+def _duckdb_type_to_python(dtype: str) -> type:
+    dtype = dtype.lower()
+    if any(token in dtype for token in ("int", "bigint", "smallint", "tinyint", "hugeint")):
+        return int
+    if any(token in dtype for token in ("double", "float", "real", "decimal", "numeric")):
+        return float
+    if "bool" in dtype:
+        return bool
+    return str
+
+
+def _model_name(resource_name: str, suffix: str) -> str:
+    safe = re.sub(r"[^A-Za-z0-9_]+", "_", resource_name).strip("_")
+    if not safe:
+        safe = "Resource"
+    if safe[0].isdigit():
+        safe = f"R_{safe}"
+    return f"{safe}{suffix}"
+
+
+def _create_row_model(resource_name: str, fields: list[dict[str, Any]]) -> type[BaseModel]:
+    field_defs: dict[str, Any] = {}
+    for field in fields:
+        name = field.get("name")
+        if not name:
+            continue
+        py_type = _duckdb_type_to_python(str(field.get("type", "varchar")))
+        field_defs[name] = (Optional[py_type], Field(default=None, description=field.get("type")))
+    if not field_defs:
+        field_defs["value"] = (Optional[Any], Field(default=None))
+    return create_model(_model_name(resource_name, "Row"), **field_defs)  # type: ignore[call-overload]
+
+
+def _create_list_response_model(
+    resource_name: str, row_model: type[BaseModel]
+) -> type[BaseModel]:
+    return create_model(
+        _model_name(resource_name, "ListResponse"),
+        data=(list[row_model], Field(description="Matching records")),  # type: ignore[valid-type]
+        pagination=(PaginationMeta, Field(description="Pagination metadata")),
+    )
+
+
+def _single_primary_key_field(primary_key: Any) -> str | None:
+    if isinstance(primary_key, str):
+        return primary_key
+    if isinstance(primary_key, list) and len(primary_key) == 1:
+        return primary_key[0]
+    return None
+
+
+def _apply_sort_alias(params: dict[str, str]) -> dict[str, str]:
+    merged = dict(params)
+    if "sort" in merged and "order_by" not in merged:
+        sort_val = merged.pop("sort")
+        if sort_val.startswith("-"):
+            merged["order_by"] = sort_val[1:]
+            merged["order_dir"] = "desc"
+        else:
+            merged["order_by"] = sort_val
+            merged.setdefault("order_dir", "asc")
+    return merged
+
+
+def _build_filter_openapi_extra(
+    fields: list[str], allowed_ops: list[str]
+) -> dict[str, list[dict[str, Any]]]:
+    parameters: list[dict[str, Any]] = []
+    for field in sorted(fields):
+        for op in sorted(allowed_ops):
+            parameters.append(
+                {
+                    "name": f"{field}__{op}",
+                    "in": "query",
+                    "required": False,
+                    "schema": {"type": "string"},
+                    "description": f"Filter where {field} {op} the given value.",
+                }
+            )
+        parameters.append(
+            {
+                "name": field,
+                "in": "query",
+                "required": False,
+                "schema": {"type": "string"},
+                "description": f"Shorthand for {field}__eq.",
+            }
+        )
+    return {"parameters": parameters}
+
+
 def load_api_config(path: str) -> dict[str, Any]:
     """Load API config from YAML or JSON."""
     with open(path, encoding="utf8") as handle:
@@ -113,18 +274,44 @@ def dump_api_config(
     return yaml.safe_dump(config, sort_keys=False, allow_unicode=False)
 
 
+def _validate_resources_config(config: dict[str, Any]) -> None:
+    resources = config.get("resources") or []
+    if not resources:
+        raise ValueError("API config must define at least one resource.")
+    for idx, resource in enumerate(resources, start=1):
+        name = resource.get("name") or f"resource_{idx}"
+        path = resource.get("path")
+        fmt = resource.get("format")
+        if not path or not fmt:
+            raise ValueError(f"Resource {name} missing path or format.")
+        try:
+            validate_file_path(path, check_read=True)
+        except FileNotFoundError as exc:
+            suggestions = find_similar_files(path)
+            raise FileNotFoundError(path, suggestions) from exc
+        except PermissionError as exc:
+            raise PermissionError(path, operation="read") from exc
+
+
 def _build_api_app(config: dict[str, Any]):
     try:
-        from fastapi import FastAPI, HTTPException, Request
+        from fastapi import FastAPI, HTTPException, Query
     except Exception as exc:
         raise ImportError(
             'Data API requires fastapi. Install with `pip install "undatum[api]"`.'
         ) from exc
     import duckdb
 
-    app = FastAPI(title="undatum Data API")
+    _validate_resources_config(config)
+
+    app = FastAPI(
+        title="undatum Data API",
+        description="Read-only HTTP API over file-backed datasets (CSV, JSON/JSONL, Parquet).",
+        version=__version__,
+    )
     conn = duckdb.connect(database=":memory:")
-    resource_index = {}
+    resource_index: dict[str, dict[str, Any]] = {}
+    resource_summaries: list[dict[str, Any]] = []
 
     resources = config.get("resources") or []
     for idx, resource in enumerate(resources, start=1):
@@ -146,19 +333,34 @@ def _build_api_app(config: dict[str, Any]):
             raise ValueError(f"Unsupported API format: {fmt}")
         conn.execute(f'CREATE OR REPLACE VIEW "{table_name}" AS SELECT * FROM {read_expr}')
 
-        fields = [field.get("name") for field in resource.get("fields") or [] if field.get("name")]
+        field_defs = resource.get("fields") or []
+        fields = [field.get("name") for field in field_defs if field.get("name")]
         allowed_ops = resource.get("query", {}).get("allowed_ops") or DEFAULT_ALLOWED_OPS
         allowed_order_by = resource.get("query", {}).get("allowed_order_by") or fields
         pagination = resource.get("pagination") or DEFAULT_PAGINATION
         primary_key = resource.get("primary_key")
-        resource_index[name] = {
+        meta = {
+            "name": name,
             "table": table_name,
             "fields": set(fields),
             "allowed_ops": set(allowed_ops),
             "allowed_order_by": set(allowed_order_by),
             "pagination": pagination,
             "primary_key": primary_key,
+            "row_model": _create_row_model(name, field_defs),
+            "list_model": None,
         }
+        meta["list_model"] = _create_list_response_model(name, meta["row_model"])
+        resource_index[name] = meta
+        pk_field = _single_primary_key_field(primary_key)
+        resource_summaries.append(
+            {
+                "name": name,
+                "list": f"/{name}",
+                "detail": f"/{name}/{{pk}}" if pk_field else None,
+                "primary_key": pk_field,
+            }
+        )
 
     def _parse_query(
         resource_meta: dict[str, Any], params: dict[str, str]
@@ -166,7 +368,7 @@ def _build_api_app(config: dict[str, Any]):
         clauses: list[str] = []
         values: list[Any] = []
         for key, value in params.items():
-            if key in {"limit", "offset", "order_by", "order_dir"}:
+            if key in RESERVED_QUERY_PARAMS:
                 continue
             if "__" in key:
                 field, op = key.split("__", 1)
@@ -185,19 +387,28 @@ def _build_api_app(config: dict[str, Any]):
     ) -> str:
         if not order_by:
             return sql
-        fields = [part.strip() for part in order_by.split(",") if part.strip()]
-        if not fields:
+        order_fields = [part.strip() for part in order_by.split(",") if part.strip()]
+        if not order_fields:
             return sql
-        for field in fields:
+        for field in order_fields:
             if field not in resource_meta["allowed_order_by"]:
                 raise HTTPException(status_code=400, detail=f"Order by not allowed: {field}")
         dir_lower = order_dir.lower()
         if dir_lower not in DEFAULT_ORDER_DIRS:
             raise HTTPException(status_code=400, detail=f"Invalid order_dir: {order_dir}")
-        order_clause = ", ".join(f'"{field}" {dir_lower.upper()}' for field in fields)
+        order_clause = ", ".join(f'"{field}" {dir_lower.upper()}' for field in order_fields)
         return f"{sql} ORDER BY {order_clause}"
 
-    def _handle_list(resource_meta: dict[str, Any], params: dict[str, str]) -> list[dict[str, Any]]:
+    def _count_rows(resource_meta: dict[str, Any], params: dict[str, str]) -> int:
+        where_clause, values = _parse_query(resource_meta, params)
+        sql = f'SELECT COUNT(*) FROM "{resource_meta["table"]}"'
+        if where_clause:
+            sql = f"{sql} WHERE {where_clause}"
+        result = conn.execute(sql, values).fetchone()
+        return int(result[0]) if result else 0
+
+    def _handle_list(resource_meta: dict[str, Any], params: dict[str, str]) -> dict[str, Any]:
+        params = _apply_sort_alias(params)
         pagination = resource_meta["pagination"]
         default_limit = int(pagination.get("default_limit", DEFAULT_PAGINATION["default_limit"]))
         max_limit = int(pagination.get("max_limit", DEFAULT_PAGINATION["max_limit"]))
@@ -207,6 +418,8 @@ def _build_api_app(config: dict[str, Any]):
             offset = int(params.get("offset", 0))
         except ValueError as exc:
             raise HTTPException(status_code=400, detail="limit/offset must be integers") from exc
+
+        include_total = params.get("include_total", "").lower() in {"1", "true", "yes"}
 
         if limit > max_limit:
             limit = max_limit
@@ -225,16 +438,21 @@ def _build_api_app(config: dict[str, Any]):
 
         cursor = conn.execute(sql, values)
         columns = [col[0] for col in cursor.description]
-        rows = cursor.fetchall()
-        return [dict(zip(columns, row)) for row in rows]
+        rows = [_json_safe_row(dict(zip(columns, row))) for row in cursor.fetchall()]
+
+        pagination_meta: dict[str, Any] = {
+            "limit": limit,
+            "offset": offset,
+            "count": len(rows),
+        }
+        if include_total:
+            pagination_meta["total"] = _count_rows(resource_meta, params)
+
+        return {"data": rows, "pagination": pagination_meta}
 
     def _handle_detail(resource_meta: dict[str, Any], pk_value: str) -> dict[str, Any]:
-        primary_key = resource_meta["primary_key"]
-        if isinstance(primary_key, list) and len(primary_key) == 1:
-            field = primary_key[0]
-        elif isinstance(primary_key, str):
-            field = primary_key
-        else:
+        field = _single_primary_key_field(resource_meta["primary_key"])
+        if not field:
             raise HTTPException(status_code=404, detail="Primary key endpoint not available")
         if field not in resource_meta["fields"]:
             raise HTTPException(status_code=404, detail="Primary key field not available")
@@ -245,24 +463,119 @@ def _build_api_app(config: dict[str, Any]):
         if not row:
             raise HTTPException(status_code=404, detail="Not found")
         columns = [col[0] for col in cursor.description]
-        return dict(zip(columns, row))
+        return _json_safe_row(dict(zip(columns, row)))
+
+    @app.get("/", tags=["meta"], summary="API discovery")
+    def api_root() -> dict[str, Any]:
+        return {
+            "name": "undatum Data API",
+            "version": __version__,
+            "docs": "/docs",
+            "openapi": "/openapi.json",
+            "resources": resource_summaries,
+        }
 
     for resource_name, meta in resource_index.items():
-        path = f"/{resource_name}"
+        route_path = f"/{resource_name}"
+        row_model = meta["row_model"]
+        list_model = meta["list_model"]
+        field_list = sorted(meta["fields"])
+        op_list = sorted(meta["allowed_ops"])
+        pagination = meta["pagination"]
+        default_limit = int(pagination.get("default_limit", DEFAULT_PAGINATION["default_limit"]))
+        max_limit = int(pagination.get("max_limit", DEFAULT_PAGINATION["max_limit"]))
+        openapi_extra = _build_filter_openapi_extra(field_list, op_list)
 
-        def list_handler(request: Request, resource_meta=meta):
-            params = dict(request.query_params)
-            return _handle_list(resource_meta, params)
+        def _make_list_handler(resource_meta: dict[str, Any]):
+            async def list_handler(
+                request: Request,
+                limit: int | None = Query(
+                    default=None,
+                    ge=0,
+                    le=max_limit,
+                    description=f"Page size (default {default_limit}, max {max_limit}).",
+                ),
+                offset: int = Query(default=0, ge=0, description="Number of rows to skip."),
+                order_by: str | None = Query(
+                    default=None, description="Comma-separated fields to sort by."
+                ),
+                order_dir: str = Query(
+                    default="asc", description="Sort direction: asc or desc."
+                ),
+                sort: str | None = Query(
+                    default=None,
+                    description="Sort alias: field name, or prefix with - for descending.",
+                ),
+                include_total: bool = Query(
+                    default=False,
+                    description="Include total matching row count (may be slower).",
+                ),
+            ):
+                params = {
+                    key: value
+                    for key, value in request.query_params.items()
+                    if key not in RESERVED_QUERY_PARAMS
+                }
+                params["limit"] = str(limit if limit is not None else default_limit)
+                params["offset"] = str(offset)
+                if order_by is not None:
+                    params["order_by"] = order_by
+                params["order_dir"] = order_dir
+                if sort is not None:
+                    params["sort"] = sort
+                params["include_total"] = "true" if include_total else "false"
+                return _handle_list(resource_meta, params)
 
-        app.get(path)(list_handler)
+            return list_handler
 
-        def detail_handler(pk: str, resource_meta=meta):
-            return _handle_detail(resource_meta, pk)
+        app.get(
+            route_path,
+            response_model=list_model,
+            tags=[resource_name],
+            summary=f"List {resource_name} records",
+            openapi_extra=openapi_extra,
+        )(_make_list_handler(meta))
 
-        if meta.get("primary_key"):
-            app.get(f"{path}" + "/{pk}")(detail_handler)
+        pk_field = _single_primary_key_field(meta.get("primary_key"))
+        if pk_field:
 
+            def _make_detail_handler(resource_meta: dict[str, Any]):
+                async def detail_handler(pk: str):
+                    return _handle_detail(resource_meta, pk)
+
+                return detail_handler
+
+            app.get(
+                f"{route_path}/{{pk}}",
+                response_model=row_model,
+                tags=[resource_name],
+                summary=f"Get a single {resource_name} record by primary key",
+            )(_make_detail_handler(meta))
+
+    app.state.resource_summaries = resource_summaries
     return app
+
+
+def _print_startup_banner(host: str, port: int, resource_summaries: list[dict[str, Any]]) -> None:
+    from rich.console import Console
+    from rich.panel import Panel
+
+    base = f"http://{host}:{port}"
+    lines = [f"[bold]Base URL:[/bold] {base}", "", "[bold]Resources:[/bold]"]
+    for resource in resource_summaries:
+        lines.append(f"  GET {base}{resource['list']}")
+        if resource.get("detail"):
+            lines.append(f"  GET {base}{resource['detail']}")
+    lines.extend(
+        [
+            "",
+            "[bold]Documentation:[/bold]",
+            f"  Swagger UI: {base}/docs",
+            f"  ReDoc:      {base}/redoc",
+            f"  OpenAPI:    {base}/openapi.json",
+        ]
+    )
+    Console().print(Panel("\n".join(lines), title="undatum Data API", border_style="green"))
 
 
 class DataApi:
@@ -287,27 +600,40 @@ class DataApi:
         allowed_ops = _split_csv(get_option(options, "allowed_ops")) or DEFAULT_ALLOWED_OPS
 
         resources = []
+        used_names: set[str] = set()
         for idx, path in enumerate(input_files, start=1):
-            # Validate file exists and is readable
             try:
                 validate_file_path(path, check_read=True)
-            except FileNotFoundError as e:
+            except FileNotFoundError as exc:
                 suggestions = find_similar_files(path)
-                raise FileNotFoundError(path, suggestions) from e
-            except PermissionError as e:
-                raise PermissionError(path, operation="read") from e
+                raise FileNotFoundError(path, suggestions) from exc
+            except PermissionError as exc:
+                raise PermissionError(path, operation="read") from exc
 
-            filetype = _detect_format(path, format_in)
+            abs_path = os.path.abspath(path)
+            filetype = _detect_format(abs_path, format_in)
             if not filetype:
                 from ..common.errors import FormatError
 
                 supported = ["csv", "json", "jsonl", "parquet"]
-                raise FormatError(path, "unknown", supported)
-            fields = _infer_fields(path, filetype)
-            primary_candidates = _infer_primary_key_candidates(path, filetype)
+                raise FormatError(abs_path, "unknown", supported)
+            fields = _infer_fields(abs_path, filetype)
+            primary_candidates = _infer_primary_key_candidates(abs_path, filetype)
+            base_name = _normalize_resource_name(abs_path, idx)
+            resource_name = _unique_resource_name(base_name, used_names)
+            if resource_name != base_name:
+                logger.warning(
+                    "Resource name collision for %s: using '%s' instead of '%s'",
+                    abs_path,
+                    resource_name,
+                    base_name,
+                )
+                sys.stderr.write(
+                    f"Warning: resource name collision; using '{resource_name}' for {abs_path}\n"
+                )
             resource = {
-                "name": _normalize_resource_name(path, idx),
-                "path": path,
+                "name": resource_name,
+                "path": abs_path,
                 "format": filetype,
                 "read_only": True,
                 "fields": fields,
@@ -343,12 +669,8 @@ class DataApi:
     ) -> None:
         if options is None:
             options = {}
-        try:
-            import uvicorn  # type: ignore
-        except Exception as exc:
-            raise ImportError(
-                'Data API requires uvicorn. Install with `pip install "undatum[api]"`.'
-            ) from exc
+        require_api_dependencies()
+        import uvicorn  # type: ignore
 
         if config is None:
             if not config_path:
@@ -359,7 +681,9 @@ class DataApi:
         port = int(get_option(options, "port") or 8000)
 
         app = _build_api_app(config)
-        uvicorn.run(app, host=host, port=port)
+        resource_summaries = getattr(app.state, "resource_summaries", [])
+        _print_startup_banner(host, port, resource_summaries)
+        uvicorn.run(app, host=host, port=port, log_level="info", access_log=True)
 
     def run(self, input_files: list[str], options: dict[str, Any] | None = None) -> None:
         if options is None:
@@ -368,3 +692,36 @@ class DataApi:
         options["emit"] = False
         config = self.discover(input_files, options)
         self.serve(None, options, config=config)
+
+    def export_openapi(
+        self, config_path: str, options: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
+        if options is None:
+            options = {}
+        require_api_dependencies()
+
+        config = load_api_config(config_path)
+        app = _build_api_app(config)
+        schema = app.openapi()
+
+        output = get_option(options, "output")
+        schema_format = get_option(options, "format")
+        if output and not schema_format:
+            schema_format = "yaml" if output.lower().endswith((".yml", ".yaml")) else "json"
+        schema_format = (schema_format or "json").lower()
+
+        if schema_format == "yaml":
+            payload = yaml.safe_dump(schema, sort_keys=False, allow_unicode=False)
+        else:
+            payload = json.dumps(schema, indent=2, ensure_ascii=False)
+
+        if output:
+            with open(output, "w", encoding="utf8") as handle:
+                handle.write(payload)
+                if not payload.endswith("\n"):
+                    handle.write("\n")
+        else:
+            sys.stdout.write(payload)
+            if not payload.endswith("\n"):
+                sys.stdout.write("\n")
+        return schema

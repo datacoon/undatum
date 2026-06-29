@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-06-27
+
+### Added
+- **`api openapi` command** — export OpenAPI 3.x schema from an API config without starting the server (`--output`, `--format json|yaml`)
+- **Data API discovery endpoint** — `GET /` returns resource list and documentation links
+- **Data API startup banner** — prints base URL, resource endpoints, and `/docs` links when the server starts
+- **`httpx`** added to the `api` optional extra (required for HTTP integration tests)
+
+### Changed
+- **Data API list responses** — endpoints now return `{data, pagination}` instead of a bare JSON array (**breaking** for API clients)
+- **Data API OpenAPI** — per-resource query parameters, field schemas, and `field__op` filter documentation in Swagger UI
+- **Data API sorting** — `sort=field` and `sort=-field` aliases supported alongside `order_by` / `order_dir`
+- **Data API pagination** — optional `include_total=true` adds total matching row count to the response envelope
+- **CI** — test job installs `undatum[api]` so Data API HTTP tests run in CI
+
+### Fixed
+- **Data API** — discover stores absolute file paths; warns on resource name collisions; validates files at serve time; skips composite primary-key detail routes; serializes DuckDB types (dates, decimals, UUIDs) to JSON-safe values
+- **Data API** — `serve`, `run`, and `openapi` raise a clear `DependencyError` when the `api` extra is not installed
+- **`api-serve-data` recipe** — default flow uses `api run`; config path defaults to `api-config.yml`
+
 ## [1.4.0] - 2026-06-26
 
 ### Added

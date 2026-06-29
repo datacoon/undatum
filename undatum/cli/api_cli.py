@@ -4,7 +4,7 @@ from typing import Annotated, Optional
 
 import typer
 
-from ..cmds.api import DataApi
+from ..cmds.api import DataApi, require_api_dependencies
 
 api_app = typer.Typer(help="File-backed Data API commands.")
 
@@ -44,6 +44,7 @@ def api_serve(
     port: Annotated[int, typer.Option(help="Port to bind (default: 8000).")] = 8000,
 ):
     """Serve API using a config file."""
+    require_api_dependencies()
     options = {"host": host, "port": port}
     DataApi().serve(config, options)
 
@@ -63,6 +64,7 @@ def api_run(
     port: Annotated[int, typer.Option(help="Port to bind (default: 8000).")] = 8000,
 ):
     """Discover resources from files and serve immediately."""
+    require_api_dependencies()
     options = {
         "format_in": format_in,
         "default_limit": default_limit,
@@ -72,3 +74,19 @@ def api_run(
         "port": port,
     }
     DataApi().run(input_files, options)
+
+
+@api_app.command("openapi")
+def api_openapi(
+    config: Annotated[str, typer.Option(help="Path to API config file.")],
+    output: Annotated[
+        Optional[str], typer.Option("--output", "-o", help="Write OpenAPI schema to this path.")
+    ] = None,
+    format: Annotated[
+        Optional[str], typer.Option(help="Output format: json or yaml (default: json).")
+    ] = None,
+):
+    """Export OpenAPI schema for an API config without starting the server."""
+    require_api_dependencies()
+    options = {"output": output, "format": format}
+    DataApi().export_openapi(config, options)

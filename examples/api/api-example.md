@@ -35,10 +35,20 @@ undatum api serve --config api-config.yml --host 127.0.0.1 --port 8000
 Once the server is running, you can access:
 
 ### List Endpoint
-Get paginated list of records:
+Get paginated list of records (response envelope):
 ```
 GET http://127.0.0.1:8000/data_20130920t1245
 ```
+
+Example response:
+```json
+{
+  "data": [{ "...": "..." }],
+  "pagination": { "limit": 50, "offset": 0, "count": 50 }
+}
+```
+
+Add `include_total=true` to include the total matching row count.
 
 ### Filtering
 Filter records using query parameters:
@@ -59,6 +69,7 @@ GET http://127.0.0.1:8000/data_20130920t1245?limit=10&offset=20
 Sort results by field:
 ```
 GET http://127.0.0.1:8000/data_20130920t1245?order_by=pubDate&order_dir=desc
+GET http://127.0.0.1:8000/data_20130920t1245?sort=-pubDate
 ```
 
 ### Detail Endpoint (if primary key is defined)
@@ -68,9 +79,14 @@ GET http://127.0.0.1:8000/data_20130920t1245/{guid}
 ```
 
 ### OpenAPI Documentation
-Interactive API documentation:
+Interactive API documentation (while the server is running):
 ```
 http://127.0.0.1:8000/docs
+```
+
+Export OpenAPI schema without starting the server:
+```bash
+undatum api openapi --config api-config.yml --output openapi.json
 ```
 
 ## Configuration Options
