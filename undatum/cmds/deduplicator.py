@@ -4,6 +4,7 @@ import logging
 import sys
 
 from ..common.command_utils import ITERABLE_OPTIONS_KEYS, get_iterable_options  # noqa: F401
+from ..common.disk_dedup import DiskDeduplicator
 from ..common.duckdb_config import create_duckdb_connection, get_duckdb_config_from_options
 from ..common.engine_selector import detect_engine
 from ..common.errors import FileNotFoundError, FormatError, PermissionError, find_similar_files
@@ -11,6 +12,9 @@ from ..common.iterable import DataWriter
 from ..common.path_utils import validate_file_path
 from ..common.s3_iterable import open_path as open_iterable
 from ..utils import get_file_type, get_option, normalize_for_json
+
+# Switch to disk-backed dedup after this many unique keys in memory
+DISK_DEDUP_THRESHOLD = 100000
 
 
 def _get_key_value(item, key_fields):
@@ -99,50 +103,90 @@ class Deduplicator:
                     # Deduplicate by all fields using DISTINCT
                     query = f"SELECT DISTINCT * FROM {read_expr}"
 
-                # Execute query and get results
+                # Prefer COPY for file outputs to avoid materializing results
+                if to_file:
+                    to_type = get_file_type(to_file) or "csv"
+                    if to_type == "csv":
+                        conn.execute(f"COPY ({query}) TO '{to_file}' (FORMAT CSV, HEADER)")
+                        conn.close()
+                        logging.info("dedup: completed using DuckDB COPY")
+                        return
+                    if to_type in ("json", "jsonl"):
+                        conn.execute(f"COPY ({query}) TO '{to_file}' (FORMAT JSON)")
+                        conn.close()
+                        logging.info("dedup: completed using DuckDB COPY")
+                        return
+                    if to_type == "parquet":
+                        conn.execute(f"COPY ({query}) TO '{to_file}' (FORMAT PARQUET)")
+                        conn.close()
+                        logging.info("dedup: completed using DuckDB COPY")
+                        return
+
                 relation = conn.execute(query)
                 column_names = relation.columns
                 rows = relation.fetchall()
                 items = [dict(zip(column_names, row)) for row in rows]
-                # Remove the rn column if it exists (from window function)
                 if key_field_list:
                     items = [{k: v for k, v in item.items() if k != "rn"} for item in items]
                 conn.close()
-                count = len(items)  # Approximate count
+                count = len(items)
                 logging.info(f"dedup: completed using DuckDB, {len(items)} unique records")
             except Exception as e:
                 logging.warning(f"DuckDB dedup failed, falling back to iterable: {e}")
                 detected_engine = "iterable"
 
         if detected_engine == "iterable":
-            # Use hash-based deduplication
-            seen = {}
-            items = []
+            low_memory = bool(get_option(options, "low_memory"))
+            temp_dir = get_option(options, "temp_dir") or get_option(options, "duckdb_temp_dir")
             iterable = open_iterable(fromfile, mode="r", iterableargs=iterableargs)
 
             try:
-                count = 0
-                for item in iterable:
-                    count += 1
-                    if isinstance(item, dict):
-                        key = _get_key_value(item, key_field_list)
+                if low_memory:
+                    items = list(
+                        _disk_dedup_stream(iterable, key_field_list, keep, temp_dir)
+                    )
+                    count = len(items)
+                else:
+                    seen = {}
+                    count = 0
+                    use_disk = False
+                    for item in iterable:
+                        count += 1
+                        if isinstance(item, dict):
+                            key = _get_key_value(item, key_field_list)
+                        else:
+                            key = item
 
                         if keep == "last":
-                            # Always update (will overwrite previous)
                             seen[key] = item
-                        else:
-                            # Keep first (default)
-                            if key not in seen:
-                                seen[key] = item
-                    else:
-                        # For non-dict items, use item itself as key
-                        if keep == "last" or item not in seen:
-                            seen[item] = item
+                        elif key not in seen:
+                            seen[key] = item
 
-                    if count % 100000 == 0:
-                        logging.debug("dedup: processed %d records, unique %d", count, len(seen))
+                        if not use_disk and len(seen) > DISK_DEDUP_THRESHOLD:
+                            use_disk = True
+                            logging.info(
+                                "dedup: unique keys exceeded %d, switching to disk-backed path",
+                                DISK_DEDUP_THRESHOLD,
+                            )
+                            # Re-process from scratch on disk for exactness
+                            iterable.close()
+                            iterable = open_iterable(
+                                fromfile, mode="r", iterableargs=iterableargs
+                            )
+                            items = list(
+                                _disk_dedup_stream(iterable, key_field_list, keep, temp_dir)
+                            )
+                            count = len(items)
+                            seen = None
+                            break
 
-                items = list(seen.values())
+                        if count % 100000 == 0:
+                            logging.debug(
+                                "dedup: processed %d records, unique %d", count, len(seen)
+                            )
+
+                    if seen is not None:
+                        items = list(seen.values())
             finally:
                 iterable.close()
 
@@ -155,10 +199,8 @@ class Deduplicator:
             to_type = "jsonl"
             out = sys.stdout
 
-        # Normalize items to convert non-JSON-serializable types (e.g., UUID) to strings
         normalized_items = [normalize_for_json(item) for item in items]
 
-        # Extract fieldnames from items for CSV output
         fieldnames = None
         if to_type == "csv" and normalized_items:
             if isinstance(normalized_items[0], dict):
@@ -171,3 +213,20 @@ class Deduplicator:
             out.close()
 
         logging.debug("dedup: processed %d records, unique %d", count, len(items))
+
+
+def _disk_dedup_stream(iterable, key_field_list, keep, temp_dir):
+    """Yield unique records using disk-backed exact deduplication."""
+
+    def key_fn(item):
+        if isinstance(item, dict):
+            return _get_key_value(item, key_field_list)
+        return item
+
+    with DiskDeduplicator(keep=keep, temp_dir=temp_dir) as deduper:
+        yield from deduper.process(iterable, key_fn)
+        logging.info(
+            "dedup: disk-backed complete, in=%d unique=%d",
+            deduper.stats[0],
+            deduper.stats[1],
+        )

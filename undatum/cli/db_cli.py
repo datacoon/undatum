@@ -6,6 +6,7 @@ from typing import Annotated
 
 import typer
 
+from ..cmds.db_dump import DatabaseDumper
 from ..cmds.db_load import DatabaseLoader
 from ..cmds.db_query import DatabaseQueryExecutor
 from .common import enable_verbose
@@ -132,6 +133,58 @@ def load(
         loader.load(input_file, db, table, mode, create_table, upsert_key)
     except Exception as e:
         logger.error(f"Load operation failed: {e}")
+        if verbose:
+            import traceback
+
+            traceback.print_exc()
+        sys.exit(1)
+
+
+@db_app.command()
+def dump(
+    db: Annotated[
+        str,
+        typer.Option(help="Database connection URI (e.g., postgresql://user:pass@host:port/db)."),
+    ],
+    output: Annotated[str, typer.Option(help="Output file path.")],
+    table: Annotated[
+        str, typer.Option(help="Table name to dump (use with --to / output format).")
+    ] = None,
+    query: Annotated[
+        str, typer.Option(help="SQL query to dump (alternative to --table).")
+    ] = None,
+    to_format: Annotated[
+        str,
+        typer.Option(
+            "--to",
+            help="Output format: 'parquet' (default), 'csv', or 'jsonl'.",
+        ),
+    ] = "parquet",
+    batch_size: Annotated[
+        int, typer.Option(help="Batch size for streaming results (default: 10000).")
+    ] = 10000,
+    verbose: Annotated[bool, typer.Option(help="Enable verbose logging output.")] = False,
+):
+    """Dump a database table or query result to a file.
+
+    Streams results for efficient memory usage. Prefer Parquet for large dumps.
+
+    Examples:
+        undatum db dump --db sqlite:///data.db --table users --output users.parquet
+
+        undatum db dump --db postgresql://user:pass@host/db --query "SELECT * FROM events" \\
+            --output events.csv --to csv
+    """
+    if verbose:
+        enable_verbose()
+
+    dumper = DatabaseDumper()
+    try:
+        dumper.dump(
+            db, output, table=table, query=query, output_format=to_format, batch_size=batch_size
+        )
+    except Exception as e:
+        logger.error(f"Dump operation failed: {e}")
         if verbose:
             import traceback
 

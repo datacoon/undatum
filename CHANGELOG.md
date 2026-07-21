@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **`--low-memory` on convert/sort/dedup** — spill-to-disk paths for large files (DuckDB COPY for duckable→Parquet converts; external merge sort; disk-backed exact dedup)
+- **`db dump`** — export a table or SQL query to Parquet/CSV/JSONL
+- **CI install-gate** — clean-venv wheel install smoke for convert/stats across Python versions
+- **`pyarrow`** as a default dependency so Parquet works out of the box
+- Quote-aware CSV delimiter sniffing via `csv.Sniffer` over multi-line samples
+- Excel `--start-page` support on `uniq`, `frequency`, and `select`
+- Docs: format support matrix, task quickstarts, tool positioning, uv/pipx install paths
 - **`package add-resource` and `package validate` subcommands** — extend existing packages and validate descriptors (full validation with optional `undatum[frictionless]`)
 - **`Dataset.package()` SDK method** — programmatic Frictionless Data Package generation
 - **Pipeline `package` step** — direct Packager integration for `create`, `add-resource`, and `validate`
@@ -16,6 +23,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **CSV delimiter auto-detection** — semicolon, tab, and pipe delimiters detected automatically when `--delimiter` is omitted (analyze, convert, select, doc, package, and shared read paths)
 
 ### Changed
+- **`DUCKABLE_CODECS`** accepts iterabledata's `"gz"` id (and `"gzip"`) so gzipped files route to DuckDB
+- Repo hygiene: removed committed `pylint_report.txt`, `data.csv`, and IDE dirs; fixed CHANGELOG placeholder dates
 - **`package create`** — emits Frictionless profile/resource metadata, inferred coverage fields, schema uniqueness constraints, wired read options (`delimiter`, `encoding`, `tagname`, etc.), single-pass `--autodoc`, Rich success output, portable relative resource paths, and optional `--zip` archive output
 - **Shared schema type mapping** — Frictionless/JSON Schema conversions centralized in `schema_utils`
 - **`analyze`** — DuckDB-accelerated tabular analysis, per-field uniqueness statistics, S3 URI support, and improved nested JSON/XML table handling
@@ -251,7 +260,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Fixed fragile AI response parsing**: Replaced error-prone text extraction with proper JSON parsing
 - **Fixed AI service initialization**: Added proper error handling and fallback when AI service fails to initialize
 
-## [1.0.15] - 2024-XX-XX
+## [1.0.15] - 2024-12-12
 
 ### Added
 - Code quality improvements and linting fixes
@@ -271,7 +280,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed JSON output for analyzer command
 - Minor fixes and improvements
 
-## [1.0.14] - 2024-XX-XX
+## [1.0.14] - 2024-11-20
 
 ### Added
 - Added support to convert CSV and JSONL to ORC and AVRO formats

@@ -28,26 +28,53 @@ def detect_encoding(filename: str, limit: int = 1000000) -> dict[str, Any]:
     return detected
 
 
-def detect_delimiter(filename: str, encoding: str = "utf8") -> str:
+def detect_delimiter(filename: str, encoding: str = "utf8", sample_lines: int = 20) -> str:
     """Detect delimiter used in a CSV-like file.
+
+    Uses ``csv.Sniffer`` over a multi-line sample for quote-aware detection,
+    falling back to first-line character counts when sniffing is inconclusive.
 
     Args:
         filename: Path to the CSV file to analyze.
         encoding: File encoding (default: 'utf8').
+        sample_lines: Number of lines to sample for sniffing (default: 20).
 
     Returns:
         Most likely delimiter character (',', ';', '\\t', or '|').
     """
-    with open(filename, encoding=encoding) as f:
-        line = f.readline()
-    dict1 = {
-        ",": line.count(","),
-        ";": line.count(";"),
-        "\t": line.count("\t"),
-        "|": line.count("|"),
+    import csv
+
+    try:
+        with open(filename, encoding=encoding, errors="replace") as handle:
+            sample_parts = []
+            for _ in range(max(sample_lines, 1)):
+                line = handle.readline()
+                if not line:
+                    break
+                sample_parts.append(line)
+            sample = "".join(sample_parts)
+    except OSError:
+        return ","
+
+    if not sample.strip():
+        return ","
+
+    try:
+        dialect = csv.Sniffer().sniff(sample, delimiters=",;\t|")
+        if dialect.delimiter in {",", ";", "\t", "|"}:
+            return dialect.delimiter
+    except csv.Error:
+        pass
+
+    # Fallback: first-line character counts
+    first_line = sample.splitlines()[0] if sample else ""
+    counts = {
+        ",": first_line.count(","),
+        ";": first_line.count(";"),
+        "\t": first_line.count("\t"),
+        "|": first_line.count("|"),
     }
-    delimiter = max(dict1, key=dict1.get)
-    return delimiter
+    return max(counts, key=counts.get)
 
 
 def get_file_type(filename: str) -> Optional[str]:

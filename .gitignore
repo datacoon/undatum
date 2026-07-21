@@ -132,3 +132,15 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# IDE / local tooling
+.idea/
+.vscode/
+*.iml
+pylint_report.txt
+pylint_report*.txt
+
+# Local data dumps (keep tests/fixtures/)
+/data.csv
+/*.parquet
+test.parquet

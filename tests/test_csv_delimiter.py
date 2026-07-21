@@ -39,6 +39,11 @@ class TestResolveCsvDelimiter:
         result = resolve_csv_delimiter({}, filename=semicolon_csv, filetype="csv")
         assert result == ";"
 
+    def test_sniffer_prefers_semicolon_with_commas_in_quotes(self, semicolon_csv):
+        from undatum.utils import detect_delimiter
+
+        assert detect_delimiter(semicolon_csv) == ";"
+
 
 class TestIterableCsvDelimiter:
     """Test iterable reader delimiter application."""

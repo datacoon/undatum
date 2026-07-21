@@ -40,6 +40,7 @@ dependencies = [
     "openpyxl>=3.1.2",
     "orjson>=3.9.8",
     "pandas>=2.0.3",
+    "pyarrow>=14.0.0",
     "py7zr>=0.20.6",
     "pydantic",
     "pymongo>=4.5.0",

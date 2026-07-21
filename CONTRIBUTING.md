@@ -6,7 +6,7 @@ Thank you for your interest in contributing to undatum! This document provides g
 
 ### Prerequisites
 
-- Python 3.8 or higher
+- Python 3.9 or higher
 - Git
 - pip
 
@@ -182,3 +182,21 @@ When reporting issues, please include:
 ## Questions?
 
 Feel free to open an issue for questions or reach out to the maintainers.
+
+## Community
+
+- Prefer **GitHub Discussions** (when enabled) for Q&A and ideas; use Issues for bugs and
+  actionable feature requests.
+- Look for the `good first issue` label when getting started.
+- External contributors are welcome — undatum has persistent usage but historically few PRs;
+  small focused patches (tests, docs, install fixes) are especially helpful.
+- Dependency-bot PRs should be auto-merged for patch-level security bumps or closed promptly
+  rather than left unattended.
+
+## Release discipline (CLI stability)
+
+- Follow semver for user-facing CLI changes.
+- Call out breaking command/flag changes loudly in `CHANGELOG.md`.
+- Prefer deprecation warnings before removing flags that agents or scripts may depend on.
+- Keep a stable-command guarantee for core verbs (`convert`, `stats`, `validate`, `select`)
+  whenever possible.

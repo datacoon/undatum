@@ -48,16 +48,26 @@ class TestDetectEngine:
         assert result == "duckdb"
 
     @patch("undatum.common.engine_selector.detect_file_type")
-    def test_detect_engine_compressed(self, mock_detect):
-        """Test engine detection with compressed file."""
+    def test_detect_engine_compressed_gzip_alias(self, mock_detect):
+        """Test engine detection with gzip codec id (alias)."""
         mock_detect.return_value = {
             "success": True,
             "datatype": MagicMock(id=lambda: "csv"),
             "codec": MagicMock(id=lambda: "gzip"),
         }
         result = detect_engine("test.csv.gz")
-        # Compressed files may use iterable engine depending on codec
-        assert result in ("duckdb", "iterable")
+        assert result == "duckdb"
+
+    @patch("undatum.common.engine_selector.detect_file_type")
+    def test_detect_engine_compressed_gz(self, mock_detect):
+        """Test engine detection with iterabledata's gz codec id."""
+        mock_detect.return_value = {
+            "success": True,
+            "datatype": MagicMock(id=lambda: "csv"),
+            "codec": MagicMock(id=lambda: "gz"),
+        }
+        result = detect_engine("test.csv.gz")
+        assert result == "duckdb"
 
     @patch("undatum.common.engine_selector.detect_file_type")
     def test_detect_engine_unsupported_compression(self, mock_detect):
@@ -122,6 +132,7 @@ class TestIsFormatSupportedByDuckdb:
         from undatum.common.engine_selector import is_format_supported_by_duckdb
 
         assert is_format_supported_by_duckdb("csv", "gzip") is True
+        assert is_format_supported_by_duckdb("csv", "gz") is True
         assert is_format_supported_by_duckdb("csv", "bz2") is False
 
     def test_is_format_supported_by_duckdb_default_compression(self):

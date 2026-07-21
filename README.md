@@ -30,6 +30,10 @@
 
 ## Documentation
 
+- [`docs/QUICKSTART.md`](docs/QUICKSTART.md) — task-oriented first success paths
+- [`docs/FORMAT_SUPPORT.md`](docs/FORMAT_SUPPORT.md) — honest format capability matrix
+- [`docs/POSITIONING.md`](docs/POSITIONING.md) — undatum vs miller / DuckDB / csvkit
+- [`docs/LARGE_FILES.md`](docs/LARGE_FILES.md) — multi-GB convert/sort/dedup guidance
 - [`CHANGELOG.md`](CHANGELOG.md) for version history (current release: **1.5.0**)
 - `WORKFLOW_GUIDE.md` for contributor workflow and OpenSpec usage
 - `openspec/` for change proposals, specs, and implementation summaries
@@ -39,14 +43,34 @@
 
 ## Installation
 
-### Using pip (Recommended)
+### Using uv or pipx (recommended for CLI use)
+
+```bash
+uv tool install undatum
+# or
+pipx install undatum
+```
+
+### Using pip
 
 ```bash
 pip install --upgrade pip setuptools
 pip install undatum
 ```
 
-Dependencies are declared in `pyproject.toml` and will be installed automatically by modern versions of `pip` (23+). If you see missing-module errors after installation, upgrade `pip` and retry.
+Dependencies are declared in `pyproject.toml` and will be installed automatically by modern versions of `pip` (23+), including **pyarrow** for Parquet. If you see missing-module errors after installation, upgrade `pip` and retry.
+
+### macOS
+
+Preferred paths:
+
+```bash
+brew install pipx && pipx install undatum
+# or
+uv tool install undatum
+```
+
+A Homebrew formula for undatum itself is tracked separately; `pipx`/`uv` are the supported macOS install methods today.
 
 Optional extras:
 

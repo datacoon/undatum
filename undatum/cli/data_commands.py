@@ -110,6 +110,17 @@ def convert(
         int, typer.Option(help="Number of threads for parallel processing (default: CPU count).")
     ] = None,
     progress: Annotated[bool, typer.Option(help="Show progress bar.")] = True,
+    low_memory: Annotated[
+        bool,
+        typer.Option(
+            help="Prefer spill-to-disk / smaller batches for large-file conversion "
+            "(DuckDB COPY when possible)."
+        ),
+    ] = False,
+    engine: Annotated[
+        str,
+        typer.Option(help="Conversion engine: 'auto' (default), 'duckdb', or 'python'."),
+    ] = "auto",
     recursive: Annotated[
         bool,
         typer.Option(
@@ -129,9 +140,15 @@ def convert(
     supports (100+ formats, including cloud URIs like s3://, gs://, az://) can be
     used as input or output. Use ``undatum formats list`` to see all formats.
 
+    For multi-GB files, prefer ``--low-memory`` (uses DuckDB spill-to-disk when the
+    format is duckable, and smaller Parquet write batches otherwise).
+
     Examples:
         # Single file
         undatum convert data.csv data.parquet
+
+        # Large file, low memory
+        undatum convert huge.jsonl.zst huge.parquet --low-memory
 
         # Bulk-convert a directory of CSVs to Parquet
         undatum convert ./raw ./processed --recursive --to-ext parquet
@@ -157,6 +174,8 @@ def convert(
         "atomic": atomic,
         "threads": threads,
         "progress": progress,
+        "low_memory": low_memory,
+        "engine": engine,
     }
     acmd = Converter(batch_size=batch_size)
     is_glob = any(ch in input_file for ch in "*?[")
@@ -225,8 +244,11 @@ def uniq(
     encoding: Annotated[str, typer.Option(help="File encoding (e.g., 'utf8', 'latin1').")] = None,
     verbose: Annotated[bool, typer.Option(help="Enable verbose logging output.")] = False,
     filetype: Annotated[
-        str, typer.Option(help="Override file type detection (e.g., 'csv', 'jsonl').")
+        str, typer.Option(help="Override file type detection (e.g., 'csv', 'jsonl', 'xlsx').")
     ] = None,
+    start_page: Annotated[
+        int, typer.Option(help="Sheet index (0-based) for Excel files.")
+    ] = 0,
     engine: Annotated[
         str, typer.Option(help="Processing engine: 'auto' (default), 'duckdb', or 'iterable'.")
     ] = "auto",
@@ -234,6 +256,7 @@ def uniq(
     """Extract all unique values from specified field(s).
 
     Returns unique values or unique combinations if multiple fields are specified.
+    Supports CSV, JSONL, Excel (XLS/XLSX), and other iterable formats.
     """
     if verbose:
         enable_verbose()
@@ -243,6 +266,7 @@ def uniq(
         "delimiter": delimiter,
         "encoding": encoding,
         "filetype": filetype,
+        "start_page": start_page,
         "engine": engine,
     }
     acmd = Selector()
@@ -407,8 +431,11 @@ def frequency(
     encoding: Annotated[str, typer.Option(help="File encoding (e.g., 'utf8', 'latin1').")] = None,
     verbose: Annotated[bool, typer.Option(help="Enable verbose logging output.")] = False,
     filetype: Annotated[
-        str, typer.Option(help="Override file type detection (e.g., 'csv', 'jsonl').")
+        str, typer.Option(help="Override file type detection (e.g., 'csv', 'jsonl', 'xlsx').")
     ] = None,
+    start_page: Annotated[
+        int, typer.Option(help="Sheet index (0-based) for Excel files.")
+    ] = 0,
     engine: Annotated[
         str, typer.Option(help="Processing engine: 'auto' (default), 'duckdb', or 'python'.")
     ] = "auto",
@@ -423,6 +450,7 @@ def frequency(
     """Calculate frequency distribution for specified fields.
 
     Counts occurrences of each unique value in the specified field(s).
+    Supports CSV, JSONL, Excel (XLS/XLSX), and other iterable formats.
     """
     if verbose:
         enable_verbose()
@@ -432,6 +460,7 @@ def frequency(
         "output": output,
         "encoding": encoding,
         "filetype": filetype,
+        "start_page": start_page,
         "engine": engine,
         "duckdb_threads": duckdb_threads,
         "duckdb_memory": duckdb_memory,
@@ -454,7 +483,7 @@ def select(
     encoding: Annotated[str, typer.Option(help="File encoding (e.g., 'utf8', 'latin1').")] = None,
     verbose: Annotated[bool, typer.Option(help="Enable verbose logging output.")] = False,
     format_in: Annotated[
-        str, typer.Option(help="Override input file format detection (e.g., 'csv', 'jsonl').")
+        str, typer.Option(help="Override input file format detection (e.g., 'csv', 'jsonl', 'xlsx').")
     ] = None,
     format_out: Annotated[
         str, typer.Option(help="Override output format (e.g., 'csv', 'jsonl').")
@@ -463,6 +492,9 @@ def select(
     filter_expr: Annotated[
         str, typer.Option(help="Filter expression to apply (e.g., \"`status` == 'active'\").")
     ] = None,
+    start_page: Annotated[
+        int, typer.Option(help="Sheet index (0-based) for Excel files.")
+    ] = 0,
     engine: Annotated[
         str, typer.Option(help="Processing engine: 'auto' (default), 'duckdb', or 'iterable'.")
     ] = "auto",
@@ -476,7 +508,7 @@ def select(
 ):
     """Select or reorder columns from file.
 
-    Supports CSV, JSONL, and BSON formats. Can also filter records.
+    Supports CSV, JSONL, BSON, Excel (XLS/XLSX), and other iterable formats. Can also filter records.
     """
     if verbose:
         enable_verbose()
@@ -489,6 +521,7 @@ def select(
         "format_out": format_out,
         "zipfile": zipfile,
         "filter": filter_expr,
+        "start_page": start_page,
         "engine": engine,
         "duckdb_threads": duckdb_threads,
         "duckdb_memory": duckdb_memory,
@@ -1700,11 +1733,15 @@ def sort(
         str, typer.Option(help="Memory limit for DuckDB (e.g., '4GB', '512MB').")
     ] = None,
     duckdb_temp_dir: Annotated[str, typer.Option(help="Temporary directory for DuckDB.")] = None,
+    low_memory: Annotated[
+        bool,
+        typer.Option(help="Force external merge sort (spill sorted runs to disk)."),
+    ] = False,
 ):
     """Sort rows by one or more columns.
 
     Supports multiple sort keys, ascending/descending order, and numeric sorting.
-    Uses external merge sort for large files.
+    Uses external merge sort for large files (auto above 100k rows, or with --low-memory).
     """
     if verbose:
         enable_verbose()
@@ -1720,6 +1757,8 @@ def sort(
         "duckdb_threads": duckdb_threads,
         "duckdb_memory": duckdb_memory,
         "duckdb_temp_dir": duckdb_temp_dir,
+        "low_memory": low_memory,
+        "temp_dir": duckdb_temp_dir,
     }
     acmd = Sorter()
     acmd.sort(input_file, options)
@@ -1859,10 +1898,15 @@ def dedup(
         str, typer.Option(help="Memory limit for DuckDB (e.g., '4GB', '512MB').")
     ] = None,
     duckdb_temp_dir: Annotated[str, typer.Option(help="Temporary directory for DuckDB.")] = None,
+    low_memory: Annotated[
+        bool,
+        typer.Option(help="Force disk-backed exact deduplication (spill keys to SQLite)."),
+    ] = False,
 ):
     """Remove duplicate rows.
 
     Can deduplicate by all fields or specified key fields. Supports keeping first or last occurrence.
+    Large unique-key sets automatically spill to disk; use --low-memory to force that path.
     """
     if verbose:
         enable_verbose()
@@ -1877,6 +1921,8 @@ def dedup(
         "duckdb_threads": duckdb_threads,
         "duckdb_memory": duckdb_memory,
         "duckdb_temp_dir": duckdb_temp_dir,
+        "low_memory": low_memory,
+        "temp_dir": duckdb_temp_dir,
     }
     acmd = Deduplicator()
     acmd.dedup(input_file, options)

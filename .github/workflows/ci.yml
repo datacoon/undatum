@@ -63,3 +63,35 @@ jobs:
     - name: Run tests with coverage
       run: |
         pytest --cov=undatum --cov-report=term --cov-fail-under=50
+
+  install-gate:
+    name: Clean wheel install smoke
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.9", "3.11", "3.13"]
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Build wheel
+      run: |
+        python -m pip install --upgrade pip build
+        python -m build --wheel
+    - name: Install wheel in clean venv and smoke-test
+      run: |
+        python -m venv /tmp/undatum-smoke
+        /tmp/undatum-smoke/bin/pip install --upgrade pip
+        /tmp/undatum-smoke/bin/pip install dist/*.whl
+        /tmp/undatum-smoke/bin/python -c "import chardet, xmltodict, pyarrow, undatum"
+        /tmp/undatum-smoke/bin/undatum --help
+        # Core format smoke: convert / stats / validate
+        printf 'name,age\nAlice,30\nBob,25\n' > /tmp/sample.csv
+        /tmp/undatum-smoke/bin/undatum convert /tmp/sample.csv /tmp/sample.parquet --no-progress
+        /tmp/undatum-smoke/bin/undatum convert /tmp/sample.csv /tmp/sample.jsonl --no-progress
+        /tmp/undatum-smoke/bin/undatum stats /tmp/sample.csv --limit 10
+        /tmp/undatum-smoke/bin/undatum validate /tmp/sample.csv || true
+        # gzip codec must be import-routable (engine selector smoke)
+        /tmp/undatum-smoke/bin/python -c "from undatum.constants import DUCKABLE_CODECS; assert 'gz' in DUCKABLE_CODECS"

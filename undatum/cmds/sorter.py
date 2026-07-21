@@ -14,6 +14,7 @@ from ..common.errors import (
     ValidationError,
     find_similar_files,
 )
+from ..common.external_sort import DEFAULT_RUN_SIZE, external_merge_sort
 from ..common.iterable import DataWriter
 from ..common.path_utils import validate_file_path
 from ..common.s3_iterable import open_path as open_iterable
@@ -172,24 +173,54 @@ class Sorter:
                 detected_engine = "iterable"
 
         if detected_engine == "iterable":
-            # Collect items and sort
-            iterable = open_iterable(fromfile, mode="r", iterableargs=iterableargs)
-            items = []
+            reverse = descending
+            key_fn = lambda x: _get_sort_key(x, sort_fields, numeric_set)
+            low_memory = bool(get_option(options, "low_memory"))
+            run_size = int(get_option(options, "run_size") or DEFAULT_RUN_SIZE)
+            temp_dir = get_option(options, "temp_dir") or get_option(options, "duckdb_temp_dir")
 
+            iterable = open_iterable(fromfile, mode="r", iterableargs=iterableargs)
             try:
-                count = 0
+                if low_memory:
+                    logging.info("sort: using external merge sort (--low-memory, run_size=%s)", run_size)
+                    sorted_iter = external_merge_sort(
+                        iterable,
+                        key_fn,
+                        reverse=reverse,
+                        run_size=run_size,
+                        temp_dir=temp_dir,
+                    )
+                    _write_sorted_stream(sorted_iter, to_file)
+                    return
+
+                buffered = []
                 for item in iterable:
-                    items.append(item)
-                    count += 1
-                    if count % 100000 == 0:
-                        logging.debug("sort: buffered %d records", count)
+                    buffered.append(item)
+                    if len(buffered) > EXTERNAL_SORT_THRESHOLD:
+                        logging.info(
+                            "sort: exceeded %d records, using external merge sort",
+                            EXTERNAL_SORT_THRESHOLD,
+                        )
+
+                        def _record_stream(first=buffered, rest=iterable):
+                            yield from first
+                            yield from rest
+
+                        sorted_iter = external_merge_sort(
+                            _record_stream(),
+                            key_fn,
+                            reverse=reverse,
+                            run_size=run_size,
+                            temp_dir=temp_dir,
+                        )
+                        _write_sorted_stream(sorted_iter, to_file)
+                        return
+
+                buffered.sort(key=key_fn, reverse=reverse)
+                items = buffered
+                logging.debug("sort: sorted %d records in memory", len(items))
             finally:
                 iterable.close()
-
-            # Sort items
-            reverse = descending
-            items.sort(key=lambda x: _get_sort_key(x, sort_fields, numeric_set), reverse=reverse)
-            logging.debug("sort: sorted %d records", len(items))
 
         if to_file:
             to_type = get_file_type(to_file)
@@ -212,5 +243,32 @@ class Sorter:
         writer = DataWriter(out, filetype=to_type, fieldnames=fieldnames)
         writer.write_items(normalized_items)
 
+        if to_file:
+            out.close()
+
+
+def _write_sorted_stream(sorted_iter, to_file):
+    """Stream sorted records to output without materializing the full list."""
+    if to_file:
+        to_type = get_file_type(to_file)
+        if not to_type:
+            raise FormatError(to_file, to_file.rsplit(".", 1)[-1])
+        out = open(to_file, "w", encoding="utf8")
+    else:
+        to_type = "jsonl"
+        out = sys.stdout
+
+    writer = None
+    count = 0
+    try:
+        for item in sorted_iter:
+            item = _normalize_for_json(item)
+            if writer is None:
+                fieldnames = list(item.keys()) if to_type == "csv" and isinstance(item, dict) else None
+                writer = DataWriter(out, filetype=to_type, fieldnames=fieldnames)
+            writer.write_items([item])
+            count += 1
+        logging.debug("sort: wrote %d records via external merge", count)
+    finally:
         if to_file:
             out.close()

@@ -12,6 +12,7 @@ from ..common.command_utils import (
     get_iterable_options,
     resolve_csv_delimiter,
 )
+from ..common.engine_selector import detect_engine, is_format_supported_by_duckdb
 from ..common.errors import (
     FileNotFoundError,
     FormatError,
@@ -20,7 +21,7 @@ from ..common.errors import (
     find_similar_files,
 )
 from ..common.path_utils import validate_file_path
-from ..constants import COMPRESSED_FILE_TYPES, SUPPORTED_FILE_TYPES
+from ..constants import COMPRESSED_FILE_TYPES, DUCKABLE_FILE_TYPES, SUPPORTED_FILE_TYPES
 from ..utils import get_file_type, get_option
 
 # Preferred order for suggesting writable conversion targets. The list is
@@ -64,6 +65,7 @@ _SCHEMA_REQUIRED_FORMATS: dict[str, str] = {
 }
 
 DEFAULT_BATCH_SIZE = 50000
+LOW_MEMORY_BATCH_SIZE = 5000
 DEFAULT_HEADERS_DETECT_LIMIT = 1000
 
 _DEPRECATED_CONVERT_OPTIONS: dict[str, Any] = {
@@ -257,10 +259,27 @@ class Converter:
 
         Uses iterabledata's capability reporting so undatum fails fast with an
         actionable message instead of a cryptic engine error.
+
+        Parquet is treated as writable when ``pyarrow`` is importable, even if
+        iterabledata's capability probe reports False (common when pyarrow was
+        missing at probe time). DuckDB can also write Parquet via COPY.
         """
         out_fmt = self._resolve_output_format(tofile, options)
         if not out_fmt:
             return
+        if out_fmt == "parquet":
+            try:
+                import pyarrow  # noqa: F401
+
+                return
+            except ImportError:
+                from ..common.errors import DependencyError
+
+                raise DependencyError(
+                    "pyarrow",
+                    feature="Parquet write",
+                    install_command="pip install pyarrow",
+                ) from None
         try:
             from iterable.helpers.capabilities import supports_write
 
@@ -310,6 +329,12 @@ class Converter:
         if scan_limit is None:
             scan_limit = limit if limit is not None else DEFAULT_HEADERS_DETECT_LIMIT
         batch_size = options.get("batch_size", self.batch_size)
+        if options.get("low_memory") and (
+            options.get("batch_size") is None or batch_size == self.batch_size == DEFAULT_BATCH_SIZE
+        ):
+            # Prefer smaller batches unless the user explicitly set batch_size.
+            if options.get("batch_size") is None:
+                batch_size = LOW_MEMORY_BATCH_SIZE
 
         return {
             "iterableargs": iterableargs,
@@ -322,6 +347,77 @@ class Converter:
             "atomic": bool(options.get("atomic", False)),
         }
 
+    def _try_duckdb_convert(self, fromfile, tofile, options: dict) -> bool:
+        """Attempt DuckDB spill-to-disk conversion for duckable → Parquet/CSV/JSONL.
+
+        Returns:
+            True if conversion completed via DuckDB, False if caller should fall back.
+        """
+        out_fmt = self._resolve_output_format(tofile, options)
+        if out_fmt not in ("parquet", "csv", "json", "jsonl"):
+            return False
+
+        engine = options.get("engine") or "auto"
+        low_memory = bool(options.get("low_memory"))
+        # Prefer DuckDB for low-memory parquet/csv/jsonl or when engine requests it.
+        if engine == "python":
+            return False
+        if engine == "auto" and not low_memory and out_fmt != "parquet":
+            # Keep existing iterable path as default for non-parquet unless low-memory.
+            return False
+
+        detected = detect_engine(fromfile, engine if engine != "auto" else "auto", operation="convert")
+        if detected != "duckdb" and not (low_memory and engine == "auto"):
+            # Still try duckdb if format looks duckable under low-memory.
+            ftype = get_file_type(fromfile)
+            if not is_format_supported_by_duckdb(ftype, "raw") and ftype not in DUCKABLE_FILE_TYPES:
+                return False
+
+        try:
+            from iterable.helpers.detect import detect_file_type
+
+            from ..common.duckdb_config import create_duckdb_connection, get_duckdb_config_from_options
+
+            ftype_info = detect_file_type(fromfile)
+            filetype = options.get("format_in")
+            compression = "raw"
+            if not filetype and ftype_info.get("success"):
+                filetype = ftype_info["datatype"].id()
+                if ftype_info.get("codec") is not None:
+                    compression = ftype_info["codec"].id()
+            filetype = (filetype or get_file_type(fromfile) or "").lower()
+            if not is_format_supported_by_duckdb(filetype, compression):
+                return False
+
+            if filetype == "csv":
+                read_expr = f"read_csv_auto('{fromfile}', all_varchar=true)"
+            elif filetype in ("json", "jsonl"):
+                read_expr = f"read_json_auto('{fromfile}')"
+            elif filetype == "parquet":
+                read_expr = f"read_parquet('{fromfile}')"
+            else:
+                return False
+
+            duckdb_config = get_duckdb_config_from_options(options)
+            if low_memory and not duckdb_config.get("memory"):
+                duckdb_config["memory"] = "1GB"
+            conn = create_duckdb_connection(**duckdb_config)
+            try:
+                query = f"SELECT * FROM {read_expr}"
+                if out_fmt == "parquet":
+                    conn.execute(f"COPY ({query}) TO '{tofile}' (FORMAT PARQUET)")
+                elif out_fmt == "csv":
+                    conn.execute(f"COPY ({query}) TO '{tofile}' (FORMAT CSV, HEADER)")
+                else:
+                    conn.execute(f"COPY ({query}) TO '{tofile}' (FORMAT JSON)")
+            finally:
+                conn.close()
+            logging.info("convert: completed via DuckDB spill path (%s → %s)", filetype, out_fmt)
+            return True
+        except Exception as exc:  # noqa: BLE001 - fall back to iterable path
+            logging.warning("DuckDB convert path failed, falling back to iterable: %s", exc)
+            return False
+
     def convert(self, fromfile, tofile, options=None, limit=DEFAULT_HEADERS_DETECT_LIMIT):
         """Convert a file (or cloud/DB source) to another format.
 
@@ -330,6 +426,9 @@ class Converter:
         reporting, atomic local writes, and native cloud (s3/gs/az) handling.
         Friendly errors for missing files and unsupported formats are preserved.
 
+        When ``low_memory`` is set (or converting duckable formats to Parquet),
+        prefers DuckDB ``COPY`` spill-to-disk when possible.
+
         Args:
             fromfile: Path or URI of the input source.
             tofile: Path or URI of the output file.
@@ -337,7 +436,8 @@ class Converter:
             limit: Maximum records to sample for schema detection.
 
         Returns:
-            iterabledata ``ConversionResult`` with row/byte metrics.
+            iterabledata ``ConversionResult`` with row/byte metrics, or ``None``
+            when DuckDB completed the conversion.
 
         Raises:
             FileNotFoundError: If a local input file does not exist.
@@ -364,6 +464,9 @@ class Converter:
             except PermissionError as e:
                 raise PermissionError(fromfile, operation="read") from e
 
+        if "://" not in fromfile and self._try_duckdb_convert(fromfile, tofile, options):
+            return None
+
         from iterable.convert import convert as iterable_convert
 
         convert_kwargs = self._build_convert_kwargs(options, limit, fromfile=fromfile)
@@ -377,6 +480,18 @@ class Converter:
             file_type = get_file_type(fromfile)
             if file_type is None or file_type not in SUPPORTED_FILE_TYPES:
                 raise FormatError(fromfile, file_type, SUPPORTED_FILE_TYPES) from e
+            # Actionable hint when Parquet support is missing
+            if "pyarrow" in str(e).lower() or "parquet" in str(e).lower():
+                try:
+                    import pyarrow  # noqa: F401
+                except ImportError as import_err:
+                    from ..common.errors import DependencyError
+
+                    raise DependencyError(
+                        "pyarrow",
+                        feature="Parquet read/write",
+                        install_command="pip install pyarrow",
+                    ) from import_err
             raise
 
         if options.get("summary", True):

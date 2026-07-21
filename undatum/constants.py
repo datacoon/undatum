@@ -93,7 +93,8 @@ BINARY_FILE_TYPES = sorted(
 DEFAULT_OPTIONS = {"encoding": "utf8", "delimiter": ",", "limit": 1000}
 
 DUCKABLE_FILE_TYPES = ["csv", "jsonl", "json", "parquet"]
-DUCKABLE_CODECS = ["zst", "gzip", "raw"]
+# iterabledata reports gzip as "gz"; accept both "gz" and "gzip"
+DUCKABLE_CODECS = ["zst", "gz", "gzip", "raw"]
 
 EU_DATA_THEMES = [
     {"label": "AGRI", "uri": "http://publications.europa.eu/resource/authority/data-theme/AGRI"},

@@ -1,7 +1,8 @@
 """Shared constants and base class for database ingesters."""
 
 DUCKABLE_FILE_TYPES = ["parquet", "csv", "jsonl", "json", "jsonl.gz"]
-DUCKABLE_CODECS = ["gz", "zst"]
+# Keep in sync with undatum.constants.DUCKABLE_CODECS (gz + gzip aliases)
+DUCKABLE_CODECS = ["gz", "gzip", "zst"]
 
 DEFAULT_BATCH_SIZE = 1000
 MAX_RETRIES = 3
