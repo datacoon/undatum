@@ -643,6 +643,33 @@ undatum convert s3://bucket/input.jsonl s3://bucket/output.parquet
 - `--atomic` — write to a temp file and rename on success (local paths only)
 - `--threads`, `--batch-size`, `--progress` — throughput and feedback controls
 
+### `repack`
+
+Recompress a file at **maximum compression by default**, preserving the data format.
+
+- Container codecs (`.gz`, `.zst`, `.bz2`, `.xz`, `.lz4`, …): stream-recompress with the same codec at max strength (or `--level`).
+- Built-in formats (Parquet / ORC / AVRO): rewrite using native compression (Parquet defaults to `zstd`).
+- Omitting OUTPUT rewrites the input atomically.
+
+```bash
+# In-place max recompress of a gzip file
+undatum repack data.csv.gz
+
+# Explicit output and faster level
+undatum repack data.jsonl.zst out.jsonl.zst --level 3
+
+# Parquet → zstd (built-in compression)
+undatum repack data.parquet out.parquet
+
+# Wrap an uncompressed file into a codec container
+undatum repack data.csv data.csv.zst
+```
+
+**Key options:**
+- `--level` / `-l` — compression level (overrides default maximum)
+- `--compression` — override codec (container or format-native)
+- `--progress` / `--no-progress` — progress bar (default: on)
+
 **Supported conversions:**
 
 `convert` uses iterabledata's engine, so any **readable** format can be converted to any **writable** one — there is no fixed pairwise matrix. The live catalog depends on installed optional dependencies; inspect it on your machine:

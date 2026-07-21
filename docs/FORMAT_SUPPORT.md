@@ -1,6 +1,6 @@
 # Format Support Matrix
 
-undatum supports **100+ formats** via [iterabledata](https://github.com/commondataio/iterabledata).
+undatum supports **100+ formats** via [iterabledata](https://github.com/datenoio/iterabledata/).
 Capabilities differ by format: many are **read-only**, some require extras, and streaming
 support varies.
 
@@ -32,6 +32,9 @@ undatum formats list --capabilities --json
 | YAML | yes | yes | limited | |
 
 Compression codecs commonly used with the above: `gz`/`gzip`, `zst`, `bz2`, `xz`, `lz4`, `zip`, `7z`.
+
+Use `undatum repack` to recompress container-coded files at maximum compression, or to rewrite
+Parquet/ORC/AVRO with format-native compression (see README `repack` section).
 
 ## Important caveats
 

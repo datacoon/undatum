@@ -48,11 +48,13 @@ def progress_bar(
         yield None
         return
 
+    pbar = None
     try:
         pbar = tqdm(total=total, desc=desc, unit=unit, file=sys.stdout)
         yield pbar
     finally:
-        if pbar:
+        # Use identity check: tqdm raises TypeError on bool(pbar) when total is None.
+        if pbar is not None:
             pbar.close()
 
 

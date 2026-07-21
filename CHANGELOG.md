@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **`repack` command** — recompress container codecs (`.gz`/`.zst`/…) at max by default, or rewrite Parquet/ORC/AVRO with native compression; supports `--level` and `--progress`
 - **`--low-memory` on convert/sort/dedup** — spill-to-disk paths for large files (DuckDB COPY for duckable→Parquet converts; external merge sort; disk-backed exact dedup)
 - **`db dump`** — export a table or SQL query to Parquet/CSV/JSONL
 - **CI install-gate** — clean-venv wheel install smoke for convert/stats across Python versions
@@ -35,6 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Shared `command_utils`** — centralized iterable read options, CSV delimiter resolution, and DuckDB read expressions
 
 ### Fixed
+- **`repack` progress bar** — closing an indeterminate tqdm bar (`total=None`) no longer raises `TypeError: bool() undefined…`
 - **`package create`** — uses `UndatumError` hierarchy for missing inputs/files; avoids duplicate LLM calls when `--autodoc` is enabled
 - **`analyze`** — handles empty record sets without failing schema inference
 

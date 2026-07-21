@@ -3,6 +3,8 @@
 import sys
 from unittest.mock import MagicMock, patch
 
+import pytest
+
 from undatum.common.progress import (
     is_tty,
     progress_bar,
@@ -81,6 +83,17 @@ class TestProgressBar:
         """Test progress bar when show_progress is False."""
         with progress_bar(total=100, desc="Test", show_progress=False) as pbar:
             assert pbar is None
+
+    @patch("undatum.common.progress.TQDM_AVAILABLE", True)
+    @patch("undatum.common.progress.is_tty", return_value=True)
+    def test_progress_bar_unknown_total_closes_cleanly(self, mock_is_tty):
+        """tqdm with total=None must not raise on context exit (bool(pbar) is unsafe)."""
+        pytest.importorskip("tqdm")
+        with progress_bar(total=None, desc="Repacking", unit="B") as pbar:
+            assert pbar is not None
+            pbar.update(10)
+        # Exiting the context previously raised:
+        # TypeError: bool() undefined when iterable == total == None
 
 
 class TestUpdateProgress:

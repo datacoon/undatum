@@ -34,6 +34,7 @@ from ..cmds.masker import Masker
 from ..cmds.plotter import Plotter
 from ..cmds.query import DataQuery
 from ..cmds.renamer import Renamer
+from ..cmds.repacker import Repacker
 from ..cmds.replacer import Replacer
 from ..cmds.reverser import Reverser
 from ..cmds.sampler import Sampler
@@ -190,6 +191,57 @@ def convert(
         acmd.bulk_convert(input_file, output, options, to_ext=to_ext)
     else:
         acmd.convert(input_file, output, options, limit=scan_limit)
+
+
+@data_app.command()
+def repack(
+    input_file: Annotated[str, typer.Argument(help="Path to input file to recompress.")],
+    output: Annotated[
+        Optional[str],
+        typer.Argument(help="Output path (defaults to atomic in-place rewrite of INPUT)."),
+    ] = None,
+    level: Annotated[
+        Optional[int],
+        typer.Option(
+            "--level",
+            "-l",
+            help="Compression level (overrides default maximum / max profile).",
+        ),
+    ] = None,
+    compression: Annotated[
+        Optional[str],
+        typer.Option(
+            help=(
+                "Override compression codec. For container files: gz/zst/bz2/…. "
+                "For Parquet/ORC/AVRO: format-native codec (e.g. zstd, snappy)."
+            ),
+        ),
+    ] = None,
+    progress: Annotated[bool, typer.Option(help="Show progress bar.")] = True,
+    verbose: Annotated[bool, typer.Option(help="Enable verbose logging output.")] = False,
+):
+    """Recompress a file at maximum compression by default.
+
+    Container-compressed files (``.gz``, ``.zst``, ``.bz2``, …) are stream-recompressed
+    with the same codec at max strength. Formats with built-in compression (Parquet,
+    ORC, AVRO) are rewritten using native compression (Parquet defaults to ``zstd``).
+
+    When OUTPUT is omitted, the input is replaced atomically after a successful write.
+
+    Examples:
+        undatum repack data.csv.gz
+        undatum repack data.csv.gz data.csv.gz --level 6
+        undatum repack data.parquet out.parquet
+        undatum repack data.csv data.csv.zst
+    """
+    if verbose:
+        enable_verbose()
+    options = {
+        "level": level,
+        "compression": compression,
+        "progress": progress,
+    }
+    Repacker().repack(input_file, output, options)
 
 
 @data_app.command()
