@@ -288,13 +288,15 @@ class Selector:
             out = sys.stdout
         fields = options["fields"].split(",")
         detected_engine = detect_engine(fromfile, engine, filetype, operation="uniq")
+        uniqval = None
+        output_type = "iterable"
         if detected_engine == "duckdb":
             try:
                 duckdb_config = get_duckdb_config_from_options(options)
-                output_type = "duckdb"
                 uniqval = get_duckdb_fields_uniq(
                     fromfile, fields, filetype=filetype, duckdb_config=duckdb_config, dolog=True
                 )
+                output_type = "duckdb"
             except Exception as e:
                 logging.warning(f"DuckDB uniq failed, falling back to iterable: {e}")
                 detected_engine = "iterable"
@@ -307,7 +309,7 @@ class Selector:
                 uniqval = get_iterable_fields_uniq(iterable, fields, dolog=True)
             finally:
                 iterable.close()
-        else:
+        elif uniqval is None:
             logging.info("Engine not supported. Please choose duckdb or iterable")
             return
         logging.debug(f"{len(uniqval)} unique values found")
@@ -380,7 +382,7 @@ class Selector:
             except Exception as e:
                 logging.warning(f"DuckDB frequency failed, falling back to iterable: {e}")
                 detected_engine = "iterable"
-        elif detected_engine == "iterable":
+        if detected_engine == "iterable":
             output_type = "iterable"
             iterable = open_iterable(fromfile, mode="r", iterableargs=iterableargs)
             try:
@@ -391,7 +393,7 @@ class Selector:
                     return
             finally:
                 iterable.close()
-        else:
+        elif not items and detected_engine != "duckdb":
             logging.debug("Data processing engine is not set and not detected")
             return
         logging.debug(f"frequency: {len(items)} unique values found")
