@@ -116,6 +116,35 @@ def get_dict_value(
     return out
 
 
+def select_fields(record: dict[str, Any], fields: list[list[str]]) -> dict[str, Any]:
+    """Select fields from a record without mutating the input.
+
+    Args:
+        record: Source dictionary.
+        fields: List of field paths (nested keys as lists).
+
+    Returns:
+        New dictionary containing only the requested fields.
+    """
+    result: dict[str, Any] = {}
+    for field_path in fields:
+        if not field_path:
+            continue
+        values = get_dict_value(record, field_path)
+        if not values:
+            continue
+        current = result
+        for key in field_path[:-1]:
+            nested = current.get(key)
+            if not isinstance(nested, dict):
+                nested = {}
+                current[key] = nested
+            current = nested
+        value = values[0] if len(values) == 1 else values
+        current[field_path[-1]] = value
+    return result
+
+
 def strip_dict_fields(
     record: dict[str, Any], fields: list[list[str]], startkey: int = 0
 ) -> dict[str, Any]:

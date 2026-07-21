@@ -22,7 +22,7 @@ from pyzstd import ZstdFile
 from qddate import DateParser
 
 from ..ai import get_ai_service, get_description, get_fields_info
-from ..common.schema_utils import duckdb_decompose
+from ..common.schema_utils import duckdb_decompose, duckdb_to_json_schema_type
 from ..common.scheme import generate_scheme_from_file
 from ..constants import DUCKABLE_CODECS, DUCKABLE_FILE_TYPES
 from ..utils import get_file_type, get_option
@@ -301,25 +301,7 @@ def _duckdb_to_json_schema_type(duckdb_type: str, is_array: bool) -> dict:
     Returns:
         JSON Schema type string or dict
     """
-    type_map = {
-        "VARCHAR": "string",
-        "BIGINT": "integer",
-        "INTEGER": "integer",
-        "DOUBLE": "number",
-        "FLOAT": "number",
-        "BOOLEAN": "boolean",
-        "DATE": "string",
-        "TIMESTAMP": "string",
-        "STRUCT": "object",
-        "JSON": "string",
-    }
-
-    json_type = type_map.get(duckdb_type, "string")
-
-    if is_array:
-        return {"type": "array", "items": {"type": json_type}}
-    else:
-        return json_type
+    return duckdb_to_json_schema_type(duckdb_type, is_array)
 
 
 def _duckdb_to_avro_type(duckdb_type: str, is_array: bool) -> Union[str, list]:

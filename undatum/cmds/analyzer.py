@@ -10,6 +10,7 @@ for key tracking), but further optimizations may be possible for very large data
 import csv
 import io
 import json
+import logging
 import os
 import sys
 import tempfile
@@ -24,15 +25,21 @@ import yaml
 from iterable.helpers.detect import detect_file_type
 from openpyxl import load_workbook
 from pydantic import BaseModel
-from pyzstd import ZstdFile
 
 from ..ai import AIService, get_ai_service, get_description, get_fields_info
+from ..common.command_utils import duckdb_read_csv_expr, resolve_csv_delimiter
+from ..common.engine_selector import is_format_supported_by_duckdb
+from ..common.s3_iterable import open_iterable_with_s3
 from ..common.schema_utils import duckdb_decompose
-from ..constants import DUCKABLE_CODECS, DUCKABLE_FILE_TYPES, TEXT_DATA_TYPES
+from ..constants import TEXT_DATA_TYPES
 from ..formats.docx import analyze_docx
 from ..utils import detect_encoding, get_dict_value
 
+logger = logging.getLogger(__name__)
+
 OBJECTS_ANALYZE_LIMIT = 10000
+
+TABULAR_ITERABLE_TYPES = ["csv", "tsv", "json", "jsonl"]
 
 
 DUCKDB_TYPES = ["VARCHAR", "DATE", "JSON", "BIGINT", "DOUBLE", "BOOLEAN"]
@@ -87,12 +94,13 @@ def _seek_xml_lists(data, level=0, path=None, candidates=None):
 def _process_json_data(
     data,
     report,
-    fullkey,
     objects_limit,
     use_pandas,
     autodoc,
     lang,
     ai_service: Optional[AIService] = None,
+    *,
+    stats: bool = True,
 ):
     """Process JSON data and add tables to report."""
     candidates = _seek_dict_lists(data, level=0)
@@ -109,6 +117,7 @@ def _process_json_data(
             autodoc=autodoc,
             lang=lang,
             ai_service=ai_service,
+            stats=stats,
         )
         report.tables.append(table)
         report.total_tables = len(report.tables)
@@ -127,6 +136,7 @@ def _process_json_data(
                 autodoc=autodoc,
                 lang=lang,
                 ai_service=ai_service,
+                stats=stats,
             )
             total += table.num_records
             report.tables.append(table)
@@ -141,6 +151,9 @@ class FieldSchema(BaseModel):
     ftype: str
     is_array: bool = False
     description: Optional[str] = None
+    unique_count: Optional[int] = None
+    total_count: Optional[int] = None
+    uniqueness_pct: Optional[float] = None
     sem_type: str = None
     sem_url: str = None
     semantic_types: Optional[list[dict]] = None
@@ -177,6 +190,53 @@ MAX_SAMPLE_SIZE = 200
 DELIMITED_FILES = ["csv", "tsv"]
 
 
+def _field_from_column(column: list, include_stats: bool = True) -> FieldSchema:
+    """Build a FieldSchema from a duckdb_decompose column row."""
+    is_array = column[2] if isinstance(column[2], bool) else str(column[2]).lower() == "true"
+    field = FieldSchema(name=column[0], ftype=column[1], is_array=is_array)
+    if include_stats and len(column) > 5:
+        try:
+            field.unique_count = int(column[3])
+            field.total_count = int(column[4])
+            field.uniqueness_pct = float(column[5])
+        except (ValueError, TypeError):
+            pass
+    return field
+
+
+def _duckdb_sample_as_csv(query_str: str, limit: int = MAX_SAMPLE_SIZE) -> str:
+    """Run a DuckDB query and return sample rows as CSV text with column headers."""
+    df = duckdb.sql(query_str).fetchdf()
+    if len(df) > limit:
+        df = df.head(limit)
+    return df.to_csv(index=False)
+
+
+def _objects_are_dict_records(objects: list) -> bool:
+    """Return True when objects look like JSON/XML record dicts."""
+    if not objects:
+        return False
+    sample = objects[: min(len(objects), 20)]
+    return all(isinstance(item, dict) for item in sample)
+
+
+def _write_objects_tempfile(objects: list, filetype: str, objects_limit: int) -> str:
+    """Write objects to an uncompressed temp file for DuckDB ingestion."""
+    suffix = "." + filetype
+    with tempfile.NamedTemporaryFile(
+        suffix=suffix, mode="w", encoding="utf8", delete=False
+    ) as tfile:
+        if filetype == "csv":
+            writer = csv.writer(tfile)
+            writer.writerows(objects[:objects_limit])
+        elif filetype in ("json", "jsonl"):
+            for row in objects[:objects_limit]:
+                tfile.write(json.dumps(row, ensure_ascii=False) + "\n")
+        else:
+            raise ValueError(f"Unsupported temp file type: {filetype}")
+        return tfile.name
+
+
 def table_from_objects(
     objects: list,
     table_id: str,
@@ -186,45 +246,100 @@ def table_from_objects(
     autodoc: bool = False,
     lang: str = "English",
     ai_service: Optional[AIService] = None,
+    stats: bool = True,
 ):
     """Reconstructs table schema from list of objects."""
     table = TableSchema(id=table_id)
     table.num_records = len(objects)
+    if not objects:
+        table.num_cols = 0
+        return table
+
     if autodoc:
+        sample = objects[:MAX_SAMPLE_SIZE]
         f = io.StringIO()
-        writer = csv.writer(f)
-        writer.writerows(objects[:MAX_SAMPLE_SIZE])
+        if _objects_are_dict_records(sample):
+            for row in sample:
+                f.write(json.dumps(row, ensure_ascii=False) + "\n")
+        else:
+            writer = csv.writer(f)
+            writer.writerows(sample)
         table.description = get_description(f.getvalue(), language=lang, ai_service=ai_service)
-    if use_pandas:
+
+    use_frame = use_pandas or _objects_are_dict_records(objects)
+    if use_frame:
         df = pd.DataFrame(objects)
-        columns_raw = duckdb_decompose(frame=df, path="*", limit=objects_limit, use_summarize=True)
+        columns_raw = duckdb_decompose(frame=df, path="*", limit=objects_limit, use_summarize=stats)
     else:
-        suffix = "." + filetype
-        tfile = tempfile.NamedTemporaryFile(suffix=suffix, mode="w", encoding="utf8", delete=False)
-        tfile.close()
-        with ZstdFile(tfile.name, mode="w", level_or_option=9) as tfile_real:
-            wrapper = io.TextIOWrapper(tfile_real, encoding="utf8", write_through=True)
-            if filetype == "csv":
-                writer = csv.writer(wrapper)
-                writer.writerows(objects[:objects_limit])
-            elif filetype == "jsonl":
-                for row in objects[:objects_limit]:
-                    wrapper.write(json.dumps(row) + "\n")
-        # Getting structure
-        columns_raw = duckdb_decompose(
-            tfile.name, filetype=filetype, path="*", limit=objects_limit, use_summarize=True
-        )
-        os.remove(tfile.name)
+        tfile_name = _write_objects_tempfile(objects, filetype, objects_limit)
+        try:
+            columns_raw = duckdb_decompose(
+                tfile_name,
+                filetype=filetype,
+                path="*",
+                limit=objects_limit,
+                use_summarize=stats,
+            )
+        finally:
+            os.remove(tfile_name)
     is_flat = True
     table.num_cols = len(columns_raw)
 
     for column in columns_raw:
-        field = FieldSchema(name=column[0], ftype=column[1], is_array=column[2])
+        field = _field_from_column(column, include_stats=stats)
         table.fields.append(field)
         if field.ftype == "STRUCT" or field.is_array:
             is_flat = False
         table.is_flat = is_flat
     table.num_records = len(objects)
+    return table
+
+
+def _analyze_iterable_file(
+    filename: str,
+    filetype: str,
+    objects_limit: int,
+    encoding: Optional[str],
+    delimiter: Optional[str],
+    use_pandas: bool,
+    autodoc: bool,
+    lang: str,
+    ai_service: Optional[AIService],
+    stats: bool,
+) -> TableSchema:
+    """Analyze a tabular file using the iterabledata row-by-row engine."""
+    iterableargs = {}
+    if encoding:
+        iterableargs["encoding"] = encoding
+    csv_delimiter = resolve_csv_delimiter(
+        iterableargs, filename=filename, filetype=filetype
+    )
+    if csv_delimiter:
+        iterableargs["delimiter"] = csv_delimiter
+
+    objects = []
+    total_records = 0
+    with open_iterable_with_s3(filename, mode="r", iterableargs=iterableargs) as iterable:
+        for item in iterable:
+            total_records += 1
+            if len(objects) < objects_limit:
+                if isinstance(item, dict):
+                    objects.append(item)
+                else:
+                    objects.append({"value": item})
+
+    table = table_from_objects(
+        objects,
+        table_id=os.path.basename(filename),
+        objects_limit=objects_limit,
+        use_pandas=use_pandas,
+        filetype=filetype if filetype in ("json", "jsonl") else "jsonl",
+        autodoc=autodoc,
+        lang=lang,
+        ai_service=ai_service,
+        stats=stats,
+    )
+    table.num_records = total_records
     return table
 
 
@@ -234,9 +349,10 @@ def analyze(
     compression: str = "raw",
     objects_limit: int = OBJECTS_ANALYZE_LIMIT,
     encoding: str = None,
+    delimiter: str = None,
     scan: bool = True,
     stats: bool = True,
-    engine: str = "auto",  # noqa: ARG001
+    engine: str = "auto",
     use_pandas: bool = False,
     ignore_errors: bool = True,
     autodoc: bool = False,
@@ -249,16 +365,19 @@ def analyze(
     Args:
         ai_provider: AI provider name (openai, openrouter, ollama, lmstudio, perplexity)
         ai_config: Optional AI configuration dictionary
+        delimiter: CSV/TSV delimiter (auto-detected for CSV when omitted)
+        scan: When False, return file metadata only (no table structure scan).
+        stats: When True, include uniqueness stats from DuckDB summarize.
+        engine: Processing engine ('auto', 'duckdb', or 'iterable').
     """
     fileext = filename.rsplit(".", 1)[-1].lower()
     filesize = os.path.getsize(filename)
-    if filetype is None:
-        ftype = detect_file_type(filename)
-        if ftype["success"]:
-            filetype = ftype["datatype"].id()
-            if ftype["codec"] is not None:
-                compression = ftype["codec"].id()
-    # Handling special cases
+
+    ftype = detect_file_type(filename)
+    if filetype is None and ftype["success"]:
+        filetype = ftype["datatype"].id()
+        if ftype["codec"] is not None:
+            compression = ftype["codec"].id()
     if filetype is None and fileext == "docx":
         filetype = "docx"
 
@@ -290,60 +409,112 @@ def analyze(
         else:
             report.metadata["encoding"] = encoding
     if scan:
-        duckable_cond = (
-            report.file_type in DUCKABLE_FILE_TYPES
-            and report.compression in DUCKABLE_CODECS
-            and engine in ["auto", "duckdb"]
+        use_duckdb = (
+            engine in ("auto", "duckdb")
+            and is_format_supported_by_duckdb(filetype, compression)
         )
-        if duckable_cond:
-            # Getting total count
-            text_ignore = ", ignore_errors=true" if ignore_errors else ""
-            if filetype in ["json", "jsonl"]:
-                query_str = f"select count(*) from read_json('{filename}'{text_ignore})"
-                num_records = duckdb.sql(query_str).fetchall()[0][0]
-            elif filetype in ["csv", "tsv"]:
-                query_str = f"select count(*) from read_csv('{filename}'{text_ignore})"
-                num_records = duckdb.sql(query_str).fetchall()[0][0]
-            else:
-                query_str = f"select count(*) from '{filename}'"
-                num_records = duckdb.sql(query_str).fetchall()[0][0]
-            table = TableSchema(id=os.path.basename(filename))
-            table.num_records = num_records
-            report.tables = [table]
-            report.total_records = table.num_records
-            report.total_tables = 1
+        if engine == "iterable":
+            use_duckdb = False
 
-            # Getting structure
-            columns_raw = duckdb_decompose(
-                filename, filetype=filetype, path="*", limit=objects_limit, use_summarize=True
-            )
-            is_flat = True
-            table.num_cols = len(columns_raw)
-            for column in columns_raw:
-                field = FieldSchema(name=column[0], ftype=column[1], is_array=column[2])
-                table.fields.append(field)
-                if field.ftype == "STRUCT" or field.is_array:
-                    is_flat = False
-            table.is_flat = is_flat
-            query_str = f"select * from '{filename}' limit {MAX_SAMPLE_SIZE}"
-            sample = duckdb.sql(query_str).fetchall()
-            f = io.StringIO()
-            writer = csv.writer(f)
-            writer.writerows(sample[:MAX_SAMPLE_SIZE])
-            if autodoc:
-                table.description = get_description(
-                    f.getvalue(), language=lang, ai_service=ai_service
+        duckdb_failed = False
+        if use_duckdb:
+            try:
+                iterableargs = {"delimiter": delimiter, "encoding": encoding}
+                csv_delimiter = resolve_csv_delimiter(
+                    iterableargs, filename=filename, filetype=filetype
                 )
-        else:
-            if engine == "duckdb":
+                text_ignore = ", ignore_errors=true" if ignore_errors else ""
+                if filetype in ["json", "jsonl"]:
+                    escaped = filename.replace("'", "''")
+                    query_str = f"select count(*) from read_json('{escaped}'{text_ignore})"
+                    num_records = duckdb.sql(query_str).fetchall()[0][0]
+                elif filetype in ["csv", "tsv"]:
+                    read_func = duckdb_read_csv_expr(
+                        filename, csv_delimiter, ignore_errors=ignore_errors
+                    )
+                    query_str = f"select count(*) from {read_func}"
+                    num_records = duckdb.sql(query_str).fetchall()[0][0]
+                else:
+                    escaped = filename.replace("'", "''")
+                    query_str = f"select count(*) from '{escaped}'"
+                    num_records = duckdb.sql(query_str).fetchall()[0][0]
+                table = TableSchema(id=os.path.basename(filename))
+                table.num_records = num_records
+                report.tables = [table]
+                report.total_records = table.num_records
+                report.total_tables = 1
+
+                columns_raw = duckdb_decompose(
+                    filename,
+                    filetype=filetype,
+                    path="*",
+                    limit=objects_limit,
+                    use_summarize=stats,
+                    ignore_errors=ignore_errors,
+                    delimiter=csv_delimiter,
+                )
+                is_flat = True
+                table.num_cols = len(columns_raw)
+                for column in columns_raw:
+                    field = _field_from_column(column, include_stats=stats)
+                    table.fields.append(field)
+                    if field.ftype == "STRUCT" or field.is_array:
+                        is_flat = False
+                table.is_flat = is_flat
+                if filetype in ["csv", "tsv"]:
+                    read_func = duckdb_read_csv_expr(
+                        filename, csv_delimiter, ignore_errors=ignore_errors
+                    )
+                    query_str = f"select * from {read_func} limit {MAX_SAMPLE_SIZE}"
+                elif filetype in ["json", "jsonl"]:
+                    escaped = filename.replace("'", "''")
+                    query_str = (
+                        f"select * from read_json('{escaped}'{text_ignore}) "
+                        f"limit {MAX_SAMPLE_SIZE}"
+                    )
+                else:
+                    escaped = filename.replace("'", "''")
+                    query_str = f"select * from '{escaped}' limit {MAX_SAMPLE_SIZE}"
+                if autodoc:
+                    table.description = get_description(
+                        _duckdb_sample_as_csv(query_str),
+                        language=lang,
+                        ai_service=ai_service,
+                    )
+            except duckdb.Error as exc:
+                if engine == "duckdb":
+                    report.success = False
+                    report.error = str(exc)
+                    return report
+                logger.warning("DuckDB analyze failed, falling back to iterable path: %s", exc)
+                duckdb_failed = True
+                report.tables = []
+
+        if not use_duckdb or duckdb_failed:
+            if engine == "duckdb" and not duckdb_failed:
                 report.success = False
                 report.error = (
                     f"Not supported file type {report.file_type} "
                     f"or compression {report.compression}"
                 )
             else:
-                # Processing MS Word XML files
-                if fileext == "docx":
+                if filetype in TABULAR_ITERABLE_TYPES:
+                    table = _analyze_iterable_file(
+                        filename,
+                        filetype=filetype,
+                        objects_limit=objects_limit,
+                        encoding=encoding,
+                        delimiter=delimiter,
+                        use_pandas=use_pandas,
+                        autodoc=autodoc,
+                        lang=lang,
+                        ai_service=ai_service,
+                        stats=stats,
+                    )
+                    report.tables = [table]
+                    report.total_records = table.num_records
+                    report.total_tables = 1
+                elif fileext == "docx":
                     docx_tables = analyze_docx(filename, extract_data=True)
                     total = 0
                     for dtable in docx_tables:
@@ -356,24 +527,23 @@ def analyze(
                             autodoc=autodoc,
                             lang=lang,
                             ai_service=ai_service,
+                            stats=stats,
                         )
                         total += table.num_records
                         report.tables.append(table)
                     report.total_records = total
                     report.total_tables = len(report.tables)
                 elif filetype == "xlsx":
-                    wb = load_workbook(filename)
+                    wb = load_workbook(filename, read_only=True, data_only=True)
                     total = 0
                     for sheetname in wb.sheetnames:
-                        sheet = wb.get_sheet_by_name(sheetname)
+                        sheet = wb[sheetname]
                         objects = []
-                        max_num = objects_limit if objects_limit < sheet.max_row else sheet.max_row
-                        for _n in range(0, max_num):
-                            row = next(sheet.iter_rows())
-                            tmp = []
-                            for cell in row:
-                                tmp.append(str(cell.value))
-                            objects.append(tmp)
+                        max_num = min(objects_limit, sheet.max_row or 0)
+                        for row in sheet.iter_rows(max_row=max_num, values_only=True):
+                            objects.append(
+                                [str(cell) if cell is not None else "" for cell in row]
+                            )
                         table = table_from_objects(
                             objects,
                             table_id=sheetname,
@@ -383,6 +553,7 @@ def analyze(
                             autodoc=autodoc,
                             lang=lang,
                             ai_service=ai_service,
+                            stats=stats,
                         )
                         total += table.num_records
                         report.tables.append(table)
@@ -411,6 +582,7 @@ def analyze(
                             autodoc=autodoc,
                             lang=lang,
                             ai_service=ai_service,
+                            stats=stats,
                         )
                         report.tables.append(table)
                         total += table.num_records
@@ -419,7 +591,7 @@ def analyze(
                 elif filetype == "xml":
                     fileobj = None
                     codec = None
-                    if ftype["codec"] is not None:
+                    if ftype.get("success") and ftype.get("codec") is not None:
                         codec = ftype["codec"](filename, open_it=True)
                         fileobj = codec.fileobj()
                     if fileobj is None:
@@ -441,6 +613,7 @@ def analyze(
                             autodoc=autodoc,
                             lang=lang,
                             ai_service=ai_service,
+                            stats=stats,
                         )
                         report.tables.append(table)
                         report.total_tables = len(report.tables)
@@ -458,6 +631,8 @@ def analyze(
                                 filetype="jsonl",
                                 autodoc=autodoc,
                                 lang=lang,
+                                ai_service=ai_service,
+                                stats=stats,
                             )
                             total += table.num_records
                             report.tables.append(table)
@@ -465,12 +640,12 @@ def analyze(
                         report.total_tables = len(report.tables)
                     if codec is not None:
                         codec.close()
-                    else:
+                    elif fileobj is not None:
                         fileobj.close()
                 elif filetype == "json":
                     fileobj = None
                     codec = None
-                    if ftype["codec"] is not None:
+                    if ftype.get("success") and ftype.get("codec") is not None:
                         codec = ftype["codec"](filename, open_it=True)
                         fileobj = codec.fileobj()
                     if fileobj is None:
@@ -479,7 +654,14 @@ def analyze(
                     else:
                         data = json.load(fileobj)
                     _process_json_data(
-                        data, report, fullkey, objects_limit, use_pandas, autodoc, lang, ai_service
+                        data,
+                        report,
+                        objects_limit,
+                        use_pandas,
+                        autodoc,
+                        lang,
+                        ai_service,
+                        stats=stats,
                     )
                     if codec is not None:
                         codec.close()
@@ -495,6 +677,8 @@ def analyze(
             for column in table.fields:
                 if column.name in descriptions:
                     column.description = descriptions[column.name]
+    if report.error is None:
+        report.success = True
     return report
 
 
@@ -558,7 +742,13 @@ def _write_analysis_output(report, options, output_stream):
             print("=" * 70, file=output_stream)
             print(file=output_stream)
 
-            tabheaders = ["Field Name", "Type", "Is Array", "Description"]
+            show_stats = options.get("stats", True) and any(
+                f.unique_count is not None for t in report.tables for f in (t.fields or [])
+            )
+            tabheaders = ["Field Name", "Type", "Is Array"]
+            if show_stats:
+                tabheaders.extend(["Unique", "Total", "Unique %"])
+            tabheaders.append("Description")
             for idx, rtable in enumerate(report.tables, 1):
                 if len(report.tables) > 1:
                     print(f"Table {idx}: {rtable.id}", file=output_stream)
@@ -573,7 +763,17 @@ def _write_analysis_output(report, options, output_stream):
                 table = []
                 for field in rtable.fields:
                     desc = field.description if field.description else "-"
-                    table.append([field.name, field.ftype, "Yes" if field.is_array else "No", desc])
+                    row = [field.name, field.ftype, "Yes" if field.is_array else "No"]
+                    if show_stats:
+                        row.extend(
+                            [
+                                _format_number(field.unique_count),
+                                _format_number(field.total_count),
+                                f"{field.uniqueness_pct:.2f}%" if field.uniqueness_pct is not None else "N/A",
+                            ]
+                        )
+                    row.append(desc)
+                    table.append(row)
                 print(tabulate(table, headers=tabheaders, tablefmt="grid"), file=output_stream)
 
                 if rtable.description:
@@ -599,12 +799,27 @@ class Analyzer:
 
     def analyze(self, filename, options):
         """Analyzes given data file and returns it's parameters"""
-        encoding = options.get("encoding")
+        from ..common.errors import FileNotFoundError, PermissionError, find_similar_files
+        from ..common.path_utils import validate_file_path
+
+        try:
+            validate_file_path(filename, check_read=True)
+        except FileNotFoundError as e:
+            suggestions = find_similar_files(filename)
+            raise FileNotFoundError(filename, suggestions) from e
+        except PermissionError as e:
+            raise PermissionError(filename, operation="read") from e
+
         report = analyze(
             filename,
-            encoding=encoding,
+            encoding=options.get("encoding"),
+            delimiter=options.get("delimiter"),
+            objects_limit=options.get("objects_limit", OBJECTS_ANALYZE_LIMIT),
+            scan=options.get("scan", True),
+            stats=options.get("stats", True),
             engine=options["engine"],
             use_pandas=options["use_pandas"],
+            ignore_errors=options.get("ignore_errors", True),
             autodoc=options["autodoc"],
             lang=options["lang"],
             ai_provider=options.get("ai_provider"),

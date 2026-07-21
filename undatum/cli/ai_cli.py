@@ -99,21 +99,49 @@ def doc(
 
     from iterable.ai import doc as ai_doc
 
+    from ..ai.doc_enrichment import enrich_blocks_result, prepare_doc_source, restore_source_filename
+
     resolved = _resolve_ai(provider, model, api_key, base_url)
     block_list = [b.strip() for b in blocks.split(",") if b.strip()] if blocks else None
 
-    result = ai_doc.generate(
-        filename,
-        provider=resolved["provider"],
-        model=resolved["model"],
-        api_key=resolved["api_key"],
-        base_url=resolved["base_url"],
-        format=output_format,
-        language=language,
-        pii_detect=pii_detect,
-        semantic_types=semantic_types,
-        blocks=block_list,
-    )
+    doc_path, cleanup, field_hints, field_names = prepare_doc_source(filename)
+    try:
+        if block_list and "schema" in block_list:
+            result = ai_doc.generate_blocks(
+                doc_path,
+                blocks=block_list,
+                provider=resolved["provider"],
+                model=resolved["model"],
+                api_key=resolved["api_key"],
+                base_url=resolved["base_url"],
+                language=language,
+                pii_detect=pii_detect,
+                semantic_types=semantic_types,
+            )
+            restore_source_filename(result, filename, doc_path)
+            enrich_blocks_result(
+                result,
+                field_hints,
+                known_names=field_names,
+                requested_blocks=block_list,
+            )
+            if output_format != "json":
+                result = result["full_document_markdown"]
+        else:
+            result = ai_doc.generate(
+                doc_path,
+                provider=resolved["provider"],
+                model=resolved["model"],
+                api_key=resolved["api_key"],
+                base_url=resolved["base_url"],
+                format=output_format,
+                language=language,
+                pii_detect=pii_detect,
+                semantic_types=semantic_types,
+                blocks=block_list,
+            )
+    finally:
+        cleanup()
 
     if isinstance(result, (dict, list)):
         text = json.dumps(result, indent=2, default=str)

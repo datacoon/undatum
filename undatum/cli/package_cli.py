@@ -10,6 +10,70 @@ from .common import enable_verbose
 package_app = typer.Typer(help="Frictionless Data Package commands.")
 
 
+def _build_package_options(
+    *,
+    output: Optional[str] = None,
+    package_dir: Optional[str] = None,
+    name: Optional[str] = None,
+    title: Optional[str] = None,
+    description: Optional[str] = None,
+    keywords: Optional[str] = None,
+    licenses: Optional[str] = None,
+    sources: Optional[str] = None,
+    contributors: Optional[str] = None,
+    version: Optional[str] = None,
+    sample_size: int = 10,
+    objects_limit: int = 10000,
+    engine: str = "auto",
+    delimiter: str = ",",
+    encoding: Optional[str] = None,
+    tagname: Optional[str] = None,
+    start_line: int = 0,
+    start_page: int = 0,
+    format_in: Optional[str] = None,
+    autodoc: bool = False,
+    lang: str = "English",
+    ai_provider: Optional[str] = None,
+    ai_model: Optional[str] = None,
+    ai_base_url: Optional[str] = None,
+    zip_output: Optional[str] = None,
+    quiet: bool = False,
+) -> dict:
+    ai_config = {}
+    if ai_model:
+        ai_config["model"] = ai_model
+    if ai_base_url:
+        ai_config["base_url"] = ai_base_url
+
+    return {
+        "output": output,
+        "package_dir": package_dir,
+        "name": name,
+        "title": title,
+        "description": description,
+        "keywords": keywords,
+        "licenses": licenses,
+        "sources": sources,
+        "contributors": contributors,
+        "version": version,
+        "sample_size": sample_size,
+        "objects_limit": objects_limit,
+        "engine": engine,
+        "delimiter": delimiter,
+        "encoding": encoding,
+        "tagname": tagname,
+        "start_line": start_line,
+        "start_page": start_page,
+        "format_in": format_in,
+        "autodoc": autodoc,
+        "lang": lang,
+        "ai_provider": ai_provider,
+        "ai_config": ai_config if ai_config else None,
+        "zip": zip_output,
+        "quiet": quiet,
+    }
+
+
 @package_app.command("create")
 def package_create(
     input_files: Annotated[list[str], typer.Argument(help="Input file(s) to package.")],
@@ -82,41 +146,117 @@ def package_create(
     ai_base_url: Annotated[
         Optional[str], typer.Option(help="Base URL for AI API (optional).")
     ] = None,
+    zip_output: Annotated[
+        Optional[str],
+        typer.Option(
+            "--zip",
+            help="Create a ZIP archive of the package directory (requires --package-dir).",
+        ),
+    ] = None,
     verbose: Annotated[bool, typer.Option(help="Enable verbose logging output.")] = False,
 ):
     """Generate a Frictionless Data Package descriptor."""
     if verbose:
         enable_verbose()
 
-    ai_config = {}
-    if ai_model:
-        ai_config["model"] = ai_model
-    if ai_base_url:
-        ai_config["base_url"] = ai_base_url
+    options = _build_package_options(
+        output=output,
+        package_dir=package_dir,
+        name=name,
+        title=title,
+        description=description,
+        keywords=keywords,
+        licenses=licenses,
+        sources=sources,
+        contributors=contributors,
+        version=version,
+        sample_size=sample_size,
+        objects_limit=objects_limit,
+        engine=engine,
+        delimiter=delimiter,
+        encoding=encoding,
+        tagname=tagname,
+        start_line=start_line,
+        start_page=start_page,
+        format_in=format_in,
+        autodoc=autodoc,
+        lang=lang,
+        ai_provider=ai_provider,
+        ai_model=ai_model,
+        ai_base_url=ai_base_url,
+        zip_output=zip_output,
+    )
+    Packager().create(input_files, options)
+
+
+@package_app.command("add-resource")
+def package_add_resource(
+    package_file: Annotated[
+        str, typer.Argument(help="Existing datapackage.json to extend.")
+    ],
+    input_files: Annotated[list[str], typer.Argument(help="Input file(s) to add.")],
+    package_dir: Annotated[
+        Optional[str],
+        typer.Option(help="Package directory containing data files (defaults to descriptor dir)."),
+    ] = None,
+    sample_size: Annotated[int, typer.Option(help="Sample size for metadata inference.")] = 10,
+    objects_limit: Annotated[int, typer.Option(help="Maximum objects to analyze.")] = 10000,
+    engine: Annotated[str, typer.Option(help="Processing engine.")] = "auto",
+    delimiter: Annotated[str, typer.Option(help="CSV delimiter character.")] = ",",
+    encoding: Annotated[Optional[str], typer.Option(help="File encoding.")] = None,
+    tagname: Annotated[Optional[str], typer.Option(help="XML record tag name.")] = None,
+    start_line: Annotated[int, typer.Option(help="Line number (0-based) to start reading from.")] = 0,
+    start_page: Annotated[int, typer.Option(help="Excel start page (0-based).")] = 0,
+    format_in: Annotated[Optional[str], typer.Option(help="Override input format.")] = None,
+    autodoc: Annotated[bool, typer.Option(help="Enable AI-powered metadata generation.")] = False,
+    lang: Annotated[str, typer.Option(help="Language for AI metadata.")] = "English",
+    ai_provider: Annotated[Optional[str], typer.Option(help="AI provider name.")] = None,
+    ai_model: Annotated[Optional[str], typer.Option(help="AI model name.")] = None,
+    ai_base_url: Annotated[Optional[str], typer.Option(help="AI API base URL.")] = None,
+    verbose: Annotated[bool, typer.Option(help="Enable verbose logging output.")] = False,
+):
+    """Add resources to an existing Frictionless Data Package descriptor."""
+    if verbose:
+        enable_verbose()
+
+    options = _build_package_options(
+        package_dir=package_dir,
+        sample_size=sample_size,
+        objects_limit=objects_limit,
+        engine=engine,
+        delimiter=delimiter,
+        encoding=encoding,
+        tagname=tagname,
+        start_line=start_line,
+        start_page=start_page,
+        format_in=format_in,
+        autodoc=autodoc,
+        lang=lang,
+        ai_provider=ai_provider,
+        ai_model=ai_model,
+        ai_base_url=ai_base_url,
+    )
+    Packager().add_resource(package_file, input_files, options)
+
+
+@package_app.command("validate")
+def package_validate(
+    package_file: Annotated[str, typer.Argument(help="Path to datapackage.json.")],
+    limit_rows: Annotated[
+        Optional[int], typer.Option(help="Limit rows validated per resource.")
+    ] = None,
+    check_data: Annotated[
+        bool, typer.Option(help="Validate resource data in addition to metadata.")
+    ] = True,
+    verbose: Annotated[bool, typer.Option(help="Enable verbose logging output.")] = False,
+):
+    """Validate a Frictionless Data Package descriptor."""
+    if verbose:
+        enable_verbose()
 
     options = {
-        "output": output,
-        "package_dir": package_dir,
-        "name": name,
-        "title": title,
-        "description": description,
-        "keywords": keywords,
-        "licenses": licenses,
-        "sources": sources,
-        "contributors": contributors,
-        "version": version,
-        "sample_size": sample_size,
-        "objects_limit": objects_limit,
-        "engine": engine,
-        "delimiter": delimiter,
-        "encoding": encoding,
-        "tagname": tagname,
-        "start_line": start_line,
-        "start_page": start_page,
-        "format_in": format_in,
-        "autodoc": autodoc,
-        "lang": lang,
-        "ai_provider": ai_provider,
-        "ai_config": ai_config if ai_config else None,
+        "limit_rows": limit_rows,
+        "check_data": check_data,
+        "quiet": False,
     }
-    Packager().create(input_files, options)
+    Packager().validate(package_file, options)

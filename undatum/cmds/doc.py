@@ -14,27 +14,15 @@ from iterable.helpers.detect import detect_file_type, open_iterable
 from tabulate import tabulate
 
 from ..ai import get_ai_service, get_structured_metadata
+from ..common.command_utils import get_iterable_options
 from ..common.schema_utils import duckdb_decompose
 from ..constants import DUCKABLE_CODECS, DUCKABLE_FILE_TYPES, EU_DATA_THEMES
 from ..utils import get_option, normalize_for_json
 from .analyzer import OBJECTS_ANALYZE_LIMIT, analyze
 
-ITERABLE_OPTIONS_KEYS = ["tagname", "delimiter", "encoding", "start_line", "start_page"]
-
 logger = logging.getLogger(__name__)
 
 DATA_THEME_URI_BY_LABEL = {theme["label"]: theme["uri"] for theme in EU_DATA_THEMES}
-
-
-def get_iterable_options(options: dict[str, Any]) -> dict[str, Any]:
-    """Extract iterable-specific options from options dictionary."""
-    out = {}
-    for k in ITERABLE_OPTIONS_KEYS:
-        if k in options and options[k] is not None:
-            out[k] = options[k]
-    if "start_page" in out:
-        out["page"] = out.pop("start_page")
-    return out
 
 
 def _format_file_size(size_bytes: int) -> str:

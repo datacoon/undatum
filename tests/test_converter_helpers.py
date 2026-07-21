@@ -4,14 +4,13 @@ import xml.etree.ElementTree as etree
 
 import pandas as pd
 
-import undatum.cmds.converter as converter_module
 from undatum.cmds.converter import (
     _is_flat,
     df_to_pyorc_schema,
     etree_to_dict,
-    get_iterable_options,
     make_flat,
 )
+from undatum.common.command_utils import get_iterable_options
 
 
 class TestGetIterableOptions:
@@ -25,6 +24,7 @@ class TestGetIterableOptions:
             "encoding": "utf-8",
             "start_line": 1,
             "page": 1,
+            "prefix_strip": True,
             "other": "value",
         }
         result = get_iterable_options(options)
@@ -34,7 +34,13 @@ class TestGetIterableOptions:
             "encoding": "utf-8",
             "start_line": 1,
             "page": 1,
+            "prefix_strip": True,
         }
+
+    def test_get_iterable_options_start_page(self):
+        """Test start_page is mapped to page."""
+        result = get_iterable_options({"start_page": 2})
+        assert result == {"page": 2}
 
     def test_get_iterable_options_empty(self):
         """Test extracting from empty options."""
@@ -69,32 +75,6 @@ class TestDfToPyorcSchema:
         df = pd.DataFrame({"col1": pd.to_datetime(["2024-01-01", "2024-01-02"])})
         schema = df_to_pyorc_schema(df)
         assert "col1:timestamp" in schema
-
-
-class TestCopyOptions:
-    """Test __copy_options function."""
-
-    def test_copy_options_missing_keys(self):
-        """Test copying missing keys from defaults."""
-        # getattr avoids class-scope name mangling of the dunder-prefixed name
-        copy_options = getattr(converter_module, "__copy_options")
-
-        user_options = {"key1": "value1"}
-        default_options = {"key1": "default1", "key2": "default2"}
-        result = copy_options(user_options, default_options)
-        assert result["key1"] == "value1"  # User value takes precedence
-        assert result["key2"] == "default2"  # Default value added
-
-    def test_copy_options_all_present(self):
-        """Test copying when all keys are present."""
-        # getattr avoids class-scope name mangling of the dunder-prefixed name
-        copy_options = getattr(converter_module, "__copy_options")
-
-        user_options = {"key1": "value1", "key2": "value2"}
-        default_options = {"key1": "default1", "key2": "default2"}
-        result = copy_options(user_options, default_options)
-        assert result["key1"] == "value1"
-        assert result["key2"] == "value2"
 
 
 class TestEtreeToDict:

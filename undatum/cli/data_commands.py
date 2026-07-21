@@ -15,6 +15,7 @@ import typer
 from ..cmds.analyzer import Analyzer
 from ..cmds.cat import Cat
 from ..cmds.converter import Converter
+from ..common.errors import ValidationError
 from ..cmds.counter import Counter
 from ..cmds.deduplicator import Deduplicator
 from ..cmds.differ import Differ
@@ -63,10 +64,14 @@ data_app = typer.Typer()
 def convert(
     input_file: Annotated[str, typer.Argument(help="Path to input file to convert.")],
     output: Annotated[str, typer.Argument(help="Path to output file.")],
-    delimiter: Annotated[str, typer.Option(help="CSV delimiter character.")] = ",",
+    delimiter: Annotated[
+        Optional[str],
+        typer.Option(help="CSV delimiter character (auto-detected when omitted)."),
+    ] = None,
     compression: Annotated[
-        str, typer.Option(help="Compression type (e.g., 'brotli', 'gzip', 'xz').")
-    ] = "brotli",
+        Optional[str],
+        typer.Option(help="Output compression codec (e.g. 'brotli', 'snappy', 'gzip')."),
+    ] = None,
     encoding: Annotated[str, typer.Option(help="File encoding (e.g., 'utf8', 'latin1').")] = "utf8",
     verbose: Annotated[bool, typer.Option(help="Enable verbose logging output.")] = False,
     flatten_data: Annotated[
@@ -75,14 +80,8 @@ def convert(
     prefix_strip: Annotated[
         bool, typer.Option(help="Strip XML namespace prefixes from element names.")
     ] = True,
-    fields: Annotated[
-        str, typer.Option(help="Comma-separated list of field names to include in output.")
-    ] = None,
     start_line: Annotated[
         int, typer.Option(help="Line number (0-based) to start reading from.")
-    ] = 0,
-    skip_end_rows: Annotated[
-        int, typer.Option(help="Number of rows to skip at the end of the file.")
     ] = 0,
     start_page: Annotated[
         int, typer.Option(help="Page number (0-based) to start from for Excel files.")
@@ -97,7 +96,16 @@ def convert(
     format_out: Annotated[
         str, typer.Option(help="Override output file format (e.g., 'csv', 'jsonl', 'parquet').")
     ] = None,
-    zipfile: Annotated[bool, typer.Option(help="Treat input file as a ZIP archive.")] = False,
+    batch_size: Annotated[
+        int, typer.Option(help="Number of records per conversion batch.")
+    ] = 50000,
+    scan_limit: Annotated[
+        int, typer.Option(help="Records to sample for output schema detection.")
+    ] = 1000,
+    atomic: Annotated[
+        bool,
+        typer.Option(help="Write to a temp file and rename on success (local output only)."),
+    ] = False,
     threads: Annotated[
         int, typer.Option(help="Number of threads for parallel processing (default: CPU count).")
     ] = None,
@@ -140,22 +148,29 @@ def convert(
         "encoding": encoding,
         "prefix_strip": prefix_strip,
         "start_line": start_line,
-        "skip_end_rows": skip_end_rows,
         "start_page": start_page,
         "tagname": tagname,
-        "fields": fields,
         "format_in": format_in,
         "format_out": format_out,
-        "zipfile": zipfile,
+        "batch_size": batch_size,
+        "scan_limit": scan_limit,
+        "atomic": atomic,
         "threads": threads,
         "progress": progress,
     }
-    acmd = Converter()
+    acmd = Converter(batch_size=batch_size)
     is_glob = any(ch in input_file for ch in "*?[")
-    if recursive or os.path.isdir(input_file) or is_glob:
+    is_dir = os.path.isdir(input_file)
+    if (is_dir or is_glob) and not recursive:
+        raise ValidationError(
+            "Bulk input detected (directory or glob pattern). "
+            "Use --recursive to bulk-convert.",
+            field="input",
+        )
+    if recursive:
         acmd.bulk_convert(input_file, output, options, to_ext=to_ext)
     else:
-        acmd.convert(input_file, output, options)
+        acmd.convert(input_file, output, options, limit=scan_limit)
 
 
 @data_app.command()
@@ -451,6 +466,13 @@ def select(
     engine: Annotated[
         str, typer.Option(help="Processing engine: 'auto' (default), 'duckdb', or 'iterable'.")
     ] = "auto",
+    duckdb_threads: Annotated[
+        int, typer.Option(help="Number of threads for DuckDB engine.")
+    ] = None,
+    duckdb_memory: Annotated[
+        str, typer.Option(help="Memory limit for DuckDB (e.g., '4GB', '512MB').")
+    ] = None,
+    duckdb_temp_dir: Annotated[str, typer.Option(help="Temporary directory for DuckDB.")] = None,
 ):
     """Select or reorder columns from file.
 
@@ -468,6 +490,9 @@ def select(
         "zipfile": zipfile,
         "filter": filter_expr,
         "engine": engine,
+        "duckdb_threads": duckdb_threads,
+        "duckdb_memory": duckdb_memory,
+        "duckdb_temp_dir": duckdb_temp_dir,
     }
     acmd = Selector()
     acmd.select(input_file, options)
@@ -755,6 +780,20 @@ def analyze(
             help="Base URL for AI API (optional, uses provider-specific defaults if not specified)."
         ),
     ] = None,
+    delimiter: Annotated[str, typer.Option(help="CSV delimiter character.")] = None,
+    encoding: Annotated[str, typer.Option(help="File encoding (e.g., 'utf8', 'latin1').")] = None,
+    objects_limit: Annotated[
+        int, typer.Option(help="Maximum number of records to scan for schema inference.")
+    ] = 10000,
+    ignore_errors: Annotated[
+        bool, typer.Option(help="Ignore parse errors in CSV/JSON files (default: True).")
+    ] = True,
+    no_scan: Annotated[
+        bool, typer.Option(help="Return file metadata only; skip structure scan.")
+    ] = False,
+    no_stats: Annotated[
+        bool, typer.Option(help="Skip uniqueness statistics in field analysis.")
+    ] = False,
 ):
     """Analyzes given data file and returns human readable insights.
 
@@ -780,6 +819,12 @@ def analyze(
         "lang": lang,
         "ai_provider": ai_provider,
         "ai_config": ai_config if ai_config else None,
+        "delimiter": delimiter,
+        "encoding": encoding,
+        "objects_limit": objects_limit,
+        "ignore_errors": ignore_errors,
+        "scan": not no_scan,
+        "stats": not no_stats,
     }
     acmd = Analyzer()
     acmd.analyze(input_file, options)

@@ -5,6 +5,7 @@ import json
 import pytest
 
 from undatum.cmds.converter import Converter
+from undatum.common.command_utils import get_iterable_options
 
 
 def _write_csv(path, rows="a,b\n1,2\n3,4\n"):
@@ -129,8 +130,63 @@ class TestBulkConvert:
         assert (out / "one.jsonl").exists()
 
     def test_bulk_requires_target_ext(self, tmp_path):
+        from undatum.common.errors import ValidationError
+
         raw = tmp_path / "raw"
         raw.mkdir()
         _write_csv(raw / "one.csv")
-        with pytest.raises(ValueError):
+        with pytest.raises(ValidationError, match="target extension"):
             Converter().bulk_convert(str(raw), str(tmp_path / "out"), {"progress": False})
+
+
+class TestBuildConvertKwargs:
+    def test_format_in_and_out_mapped(self, tmp_path):
+        kwargs = Converter()._build_convert_kwargs(
+            {"format_in": "jsonl", "format_out": "parquet", "compression": "snappy"},
+            limit=500,
+            fromfile=str(tmp_path / "data.csv"),
+        )
+        assert kwargs["iterableargs"]["format"] == "jsonl"
+        assert kwargs["toiterableargs"]["format"] == "parquet"
+        assert kwargs["toiterableargs"]["compression"] == "snappy"
+
+    def test_start_page_mapped_to_page(self):
+        kwargs = Converter()._build_convert_kwargs({"start_page": 2}, limit=100)
+        assert kwargs["iterableargs"]["page"] == 2
+        assert "start_page" not in kwargs["iterableargs"]
+
+    def test_scan_limit_and_batch_size(self):
+        kwargs = Converter()._build_convert_kwargs(
+            {"scan_limit": 250, "batch_size": 1000, "atomic": True},
+            limit=100,
+        )
+        assert kwargs["scan_limit"] == 250
+        assert kwargs["batch_size"] == 1000
+        assert kwargs["atomic"] is True
+
+
+class TestGetIterableOptions:
+    def test_start_page_alias(self):
+        assert get_iterable_options({"start_page": 1}) == {"page": 1}
+
+    def test_explicit_page_wins_over_start_page(self):
+        assert get_iterable_options({"start_page": 1, "page": 3}) == {"page": 3}
+
+
+class TestFormatOverrides:
+    def test_format_in_on_mislabeled_file(self, tmp_path):
+        src = tmp_path / "data"
+        dst = tmp_path / "out.jsonl"
+        src.write_text('{"a": 1}\n{"a": 2}\n')
+        Converter().convert(str(src), str(dst), {"format_in": "jsonl", "progress": False})
+        lines = [json.loads(line) for line in dst.read_text().splitlines() if line.strip()]
+        assert lines == [{"a": 1}, {"a": 2}]
+
+    def test_format_out_with_nonstandard_extension(self, tmp_path):
+        src = tmp_path / "in.csv"
+        dst = tmp_path / "out.bin"
+        _write_csv(src)
+        Converter().convert(
+            str(src), str(dst), {"format_out": "parquet", "progress": False, "summary": False}
+        )
+        assert dst.exists() and dst.stat().st_size > 0

@@ -1,18 +1,17 @@
 """File format conversion module."""
 
-import csv
-import json
 import logging
 import xml.etree.ElementTree as etree
 from collections import defaultdict
+from typing import Any
 
-import bson
-import orjson
 import pandas
-from bson import ObjectId
-from xlrd import open_workbook as load_xls
 
-from ..common.command_utils import ITERABLE_OPTIONS_KEYS, get_iterable_options  # noqa: F401
+from ..common.command_utils import (
+    ITERABLE_OPTIONS_KEYS,
+    get_iterable_options,
+    resolve_csv_delimiter,
+)
 from ..common.errors import (
     FileNotFoundError,
     FormatError,
@@ -65,12 +64,13 @@ _SCHEMA_REQUIRED_FORMATS: dict[str, str] = {
 }
 
 DEFAULT_BATCH_SIZE = 50000
+DEFAULT_HEADERS_DETECT_LIMIT = 1000
 
-
-PREFIX_STRIP = True
-PREFIX = ""
-
-LINEEND = b"\n"
+_DEPRECATED_CONVERT_OPTIONS: dict[str, Any] = {
+    "skip_end_rows": 0,
+    "fields": None,
+    "zipfile": False,
+}
 
 
 def df_to_pyorc_schema(df):
@@ -91,14 +91,6 @@ def df_to_pyorc_schema(df):
         else:
             struct_schema.append(f"{k}:string")
     return struct_schema
-
-
-def __copy_options(user_options, default_options):
-    """If user provided option so we use it, if not, default option value should be used"""
-    for k in default_options.keys():
-        if k not in user_options.keys():
-            user_options[k] = default_options[k]
-    return user_options
 
 
 def etree_to_dict(t, prefix_strip=True):
@@ -128,216 +120,6 @@ def etree_to_dict(t, prefix_strip=True):
     return d
 
 
-def xml_to_jsonl(fromname, toname, options=None, default_options=None):
-    """Convert XML file to JSONL format."""
-    if options is None:
-        options = {}
-    if default_options is None:
-        default_options = {"prefix_strip": True}
-    options = __copy_options(options, default_options)
-    with open(fromname, "rb") as ins, open(toname, "wb") as outf:
-        n = 0
-        for _event, elem in etree.iterparse(ins):
-            shorttag = elem.tag.rsplit("}", 1)[-1]
-            if shorttag == options["tagname"]:
-                n += 1
-                if options["prefix_strip"]:
-                    j = etree_to_dict(elem, prefix_strip=options["prefix_strip"])
-                else:
-                    j = etree_to_dict(elem)
-                outf.write(orjson.dumps(j[shorttag]))
-                outf.write(LINEEND)
-            if n % 500 == 0:
-                logging.info("xml2jsonl: processed %d xml tags", n)
-        logging.info("xml2jsonl: processed %d xml tags finally", n)
-
-
-def xls_to_csv(fromname, toname, options=None, default_options=None):
-    """Convert XLS file to CSV format."""
-    if options is None:
-        options = {}
-    if default_options is None:
-        default_options = {
-            "start_line": 0,
-            "skip_end_rows": 0,
-            "delimiter": ",",
-            "encoding": "utf8",
-        }
-    options = __copy_options(options, default_options)
-    b = load_xls(fromname)
-    s = b.sheet_by_index(0)
-    with open(toname, "w", encoding=options["encoding"]) as bc:
-        bcw = csv.writer(bc, delimiter=options["delimiter"])
-        n = 0
-        end_row = s.nrows - options["skip_end_rows"]
-        for row in range(options["start_line"], end_row):
-            n += 1
-            this_row = []
-            for col in range(s.ncols):
-                v = str(s.cell_value(row, col))
-                v = v.replace("\n", " ").strip()
-                this_row.append(v)
-            bcw.writerow(this_row)
-            if n % 10000 == 0:
-                logging.info("xls2csv: processed %d records", n)
-
-
-def csv_to_bson(fromname, toname, options=None, default_options=None):
-    """Convert CSV file to BSON format."""
-    if options is None:
-        options = {}
-    if default_options is None:
-        default_options = {"encoding": "utf8", "delimiter": ","}
-    options = __copy_options(options, default_options)
-    with open(fromname, encoding=options["encoding"]) as source:
-        reader = csv.DictReader(source, delimiter=options["delimiter"])
-        with open(toname, "wb") as output:
-            n = 0
-            for j in reader:
-                n += 1
-                rec = bson.BSON.encode(j)
-                output.write(rec)
-                if n % 10000 == 0:
-                    logging.info("csv2bson: processed %d records", n)
-
-
-def csv_to_jsonl(fromname, toname, options=None, default_options=None):
-    """Convert CSV file to JSONL format."""
-    if options is None:
-        options = {}
-    if default_options is None:
-        default_options = {"encoding": "utf8", "delimiter": ","}
-    options = __copy_options(options, default_options)
-    with open(fromname, encoding=options["encoding"]) as source:
-        reader = csv.DictReader(source, delimiter=options["delimiter"])
-        with open(toname, "wb") as output:
-            n = 0
-            for j in reader:
-                n += 1
-                output.write(json.dumps(j, ensure_ascii=False).encode("utf8"))
-                output.write(b"\n")
-                if n % 10000 == 0:
-                    logging.info("csv2jsonl: processed %d records", n)
-
-
-def xls_to_jsonl(fromname, toname, options=None, default_options=None):
-    """Convert XLS file to JSONL format."""
-    if options is None:
-        options = {}
-    if default_options is None:
-        default_options = {"start_page": 0, "start_line": 0, "fields": None}
-    options = __copy_options(options, default_options)
-    source = load_xls(fromname)
-    sheet = source.sheet_by_index(options["start_page"])
-    with open(toname, "wb") as output:
-        n = 0
-        fields = options["fields"].split(",") if options["fields"] is not None else None
-        for rownum in range(options["start_line"], sheet.nrows):
-            n += 1
-            tmp = []
-            for i in range(0, sheet.ncols):
-                tmp.append(sheet.row_values(rownum)[i])
-            if n == 1 and fields is None:
-                fields = tmp
-                continue
-            line = orjson.dumps(dict(zip(fields, tmp)))
-            output.write(line + LINEEND)
-            if n % 10000 == 0:
-                logging.info("xls2jsonl: processed %d records", n)
-
-
-def xlsx_to_jsonl(fromname, toname, options=None, default_options=None):
-    """Convert XLSX file to JSONL format."""
-    if options is None:
-        options = {}
-    if default_options is None:
-        default_options = {"start_page": 0, "start_line": 0}
-    from openpyxl import load_workbook as load_xlsx
-
-    options = __copy_options(options, default_options)
-    source = load_xlsx(fromname)
-    # Use start_page to select the correct worksheet
-    start_page = options.get("start_page", 0)
-    if start_page >= len(source.worksheets):
-        raise ValueError(
-            f"start_page {start_page} exceeds available worksheets ({len(source.worksheets)})"
-        )
-    sheet = source.worksheets[start_page]
-    with open(toname, "wb") as output:
-        n = 0
-        fields = options["fields"].split(",") if options["fields"] is not None else None
-        for row in sheet.iter_rows():
-            n += 1
-            if n < options["start_line"]:
-                continue
-            tmp = []
-
-            for cell in row:
-                tmp.append(cell.value)
-            if n == 1 and fields is None:
-                fields = tmp
-                continue
-            line = orjson.dumps(dict(zip(fields, tmp)))
-            output.write(line)
-            output.write(LINEEND)
-            if n % 10000 == 0:
-                logging.debug("xlsx2bson: processed %d records", n)
-    source.close()
-
-
-def xlsx_to_bson(fromname, toname, options=None, default_options=None):
-    """Convert XLSX file to BSON format."""
-    if options is None:
-        options = {}
-    if default_options is None:
-        default_options = {"start_page": 0, "start_line": 0}
-    from openpyxl import load_workbook as load_xlsx
-
-    options = __copy_options(options, default_options)
-    source = load_xlsx(fromname)
-    sheet = source.active  # FIXME! Use start_page instead
-    with open(toname, "wb") as output:
-        n = 0
-        fields = options["fields"].split(",") if options["fields"] is not None else None
-        for row in sheet.iter_rows():
-            n += 1
-            if n < options["start_line"]:
-                continue
-            tmp = []
-
-            for cell in row:
-                tmp.append(cell.value)
-            if n == 1 and fields is None:
-                fields = tmp
-                continue
-            output.write(bson.BSON.encode(dict(zip(fields, tmp))))
-
-            if n % 10000 == 0:
-                logging.debug("xlsx2bson: processed %d records", n)
-    source.close()
-
-
-def xls_to_bson(fromname, toname, options=None, default_options=None):
-    """Convert XLS file to BSON format."""
-    if options is None:
-        options = {}
-    if default_options is None:
-        default_options = {"start_page": 0, "start_line": 0}
-    options = __copy_options(options, default_options)
-    source = load_xls(fromname)
-    sheet = source.sheet_by_index(options["start_page"])
-    with open(toname, "wb") as output:
-        n = 0
-        for rownum in range(options["start_line"], sheet.nrows):
-            n += 1
-            tmp = []
-            for i in range(0, sheet.ncols):
-                tmp.append(sheet.row_values(rownum)[i])
-            output.write(bson.BSON.encode(dict(zip(options["fields"], tmp))))
-            if n % 10000 == 0:
-                logging.info("xls2bson: processed %d records", n)
-
-
 def _is_flat(item):
     """Check if dictionary item is flat (no nested structures)."""
     for _k, v in item.items():
@@ -348,6 +130,8 @@ def _is_flat(item):
 
 def express_analyze_jsonl(filename, itemlimit=100):
     """Quickly analyze JSONL file structure."""
+    import orjson
+
     isflat = True
     n = 0
     keys = set()
@@ -369,210 +153,6 @@ def express_analyze_jsonl(filename, itemlimit=100):
     return {"isflat": isflat, "keys": keys}
 
 
-def jsonl_to_csv(fromname, toname, options=None, default_options=None):
-    """Convert JSONL file to CSV format."""
-    if options is None:
-        options = {}
-    if default_options is None:
-        default_options = {"force_flat": False, "useitems": 100, "delimiter": ","}
-    options = __copy_options(options, default_options)
-    analysis = express_analyze_jsonl(fromname, itemlimit=options["useitems"])
-    if not options["force_flat"] and not analysis["isflat"]:
-        logging.error(
-            "File %s is not flat and 'force_flat' flag not set. File not converted", fromname
-        )
-        return
-    keys = analysis["keys"]
-    with open(toname, "w", encoding="utf8") as out:
-        writer = csv.writer(out, delimiter=options["delimiter"])
-        writer.writerow(keys)
-        with open(fromname, encoding="utf8") as f:
-            n = 0
-            for line in f:
-                n += 1
-                record = orjson.loads(line)
-                item = []
-                for k in keys:
-                    if k in record:
-                        item.append(record[k])
-                    else:
-                        item.append("")
-                writer.writerow(item)
-                if n % 10000 == 0:
-                    logging.info("jsonl2csv: processed %d records", n)
-
-
-def default(obj):
-    """Default serializer for BSON ObjectId."""
-    if isinstance(obj, ObjectId):
-        return str(obj)
-    return None
-
-
-def bson_to_jsonl(fromname, toname, options=None, default_options=None):
-    """Convert BSON file to JSONL format."""
-    if options is None:
-        options = {}
-    if default_options is None:
-        default_options = {}
-    options = __copy_options(options, default_options)
-    with open(fromname, "rb") as source:
-        with open(toname, "wb") as output:
-            n = 0
-            for r in bson.decode_file_iter(source):
-                n += 1
-                output.write(orjson.dumps(r, default=default))
-                output.write(LINEEND)
-                if n % 10000 == 0:
-                    logging.info("bson2jsonl: processed %d records", n)
-
-
-def json_to_jsonl(fromname, toname, options=None, default_options=None):
-    """Simple implementation of JSON to JSON lines conversion.
-
-    Assumes that JSON is an array or dict with 1st level value with data.
-    """
-    if options is None:
-        options = {}
-    if default_options is None:
-        default_options = {}
-    options = __copy_options(options, default_options)
-    source = open(fromname, "rb")
-    source_data = json.load(source)
-    data = source_data
-    if "tagname" in options.keys():
-        if isinstance(source_data, dict) and options["tagname"] in source_data:
-            data = data[options["tagname"]]
-    with open(toname, "wb") as output:
-        n = 0
-        for r in data:
-            n += 1
-            output.write(orjson.dumps(r) + LINEEND)
-            if n % 10000 == 0:
-                logging.info("json2jsonl: processed %d records", n)
-    source.close()
-
-
-def csv_to_parquet(fromname, toname, options=None, default_options=None):
-    """Convert CSV file to Parquet format."""
-    if options is None:
-        options = {}
-    if default_options is None:
-        default_options = {"encoding": "utf8", "delimiter": ",", "compression": "brotli"}
-    options = __copy_options(options, default_options)
-    df = pandas.read_csv(fromname, delimiter=options["delimiter"], encoding=options["encoding"])
-    comp = options["compression"] if options["compression"] != "None" else None
-    df.to_parquet(toname, compression=comp)
-
-
-def jsonl_to_parquet(fromname, toname, options=None, default_options=None):
-    """Convert JSONL file to Parquet format."""
-    if options is None:
-        options = {}
-    if default_options is None:
-        default_options = {"force_flat": False, "useitems": 100, "compression": "brotli"}
-    options = __copy_options(options, default_options)
-    df = pandas.read_json(fromname, lines=True, encoding=options["encoding"])
-    comp = options["compression"] if options["compression"] != "None" else None
-    df.to_parquet(toname, compression=comp)
-
-
-PYORC_COMPRESSION_MAP = {"zstd": 5, "snappy": 2, "zlib": 1, "lzo": 3, "lz4": 4, "None": 0}
-
-
-def csv_to_orc(fromname, toname, options=None, default_options=None):
-    """Converts CSV file to ORC file."""
-    if options is None:
-        options = {}
-    if default_options is None:
-        default_options = {"encoding": "utf8", "delimiter": ",", "compression": "zstd"}
-    import pyorc
-
-    options = __copy_options(options, default_options)
-    comp_key = options["compression"]
-    compression = PYORC_COMPRESSION_MAP[comp_key] if comp_key in PYORC_COMPRESSION_MAP.keys() else 0
-    with open(fromname, encoding=options["encoding"]) as source:
-        reader = csv.DictReader(source, delimiter=options["delimiter"])
-        struct_schema = []
-        for field in reader.fieldnames:
-            struct_schema.append(f"{field}:string")
-        schema_str = ",".join(struct_schema)
-        with open(toname, "wb") as output:
-            writer = pyorc.Writer(
-                output,
-                f"struct<{schema_str}>",
-                struct_repr=pyorc.StructRepr.DICT,
-                compression=compression,
-                compression_strategy=1,
-            )
-            n = 0
-            for row in reader:
-                n += 1
-                try:
-                    writer.write(row)
-                except TypeError:
-                    print("Error processing row %d. Skip and continue", n)
-
-
-def jsonl_to_orc(fromname, toname, options=None, default_options=None):
-    """Converts JSON file to ORC file."""
-    if options is None:
-        options = {}
-    if default_options is None:
-        default_options = {"force_flat": False, "useitems": 100, "compression": "zstd"}
-    import pyorc
-
-    options = __copy_options(options, default_options)
-    comp_key = options["compression"]
-    compression = PYORC_COMPRESSION_MAP[comp_key] if comp_key in PYORC_COMPRESSION_MAP.keys() else 0
-    df = pandas.read_json(fromname, lines=True, encoding=options["encoding"])
-    df.info()
-    struct_schema = df_to_pyorc_schema(df)
-    schema_str = ",".join(struct_schema)
-    with open(toname, "wb") as output:
-        writer = pyorc.Writer(
-            output,
-            f"struct<{schema_str}>",
-            struct_repr=pyorc.StructRepr.DICT,
-            compression=compression,
-            compression_strategy=1,
-        )
-        writer.writerows(df.to_dict(orient="records"))
-
-
-def csv_to_avro(fromname, toname, options=None, default_options=None):
-    """Converts CSV file to AVRO file."""
-    if options is None:
-        options = {}
-    if default_options is None:
-        default_options = {"encoding": "utf8", "delimiter": ",", "compression": "deflate"}
-    import avro.schema
-    from avro.datafile import DataFileWriter
-    from avro.io import DatumWriter
-
-    options = __copy_options(options, default_options)
-    with open(fromname, encoding=options["encoding"]) as source:
-        reader = csv.DictReader(source, delimiter=options["delimiter"])
-
-        schema_dict = {"namespace": "data.avro", "type": "record", "name": "Record", "fields": []}
-
-        for field in reader.fieldnames:
-            schema_dict["fields"].append({"name": field, "type": "string"})
-        schema = avro.schema.parse(json.dumps(schema_dict))
-        with open(toname, "wb") as output:
-            writer = DataFileWriter(output, DatumWriter(), schema, codec=options["compression"])
-            n = 0
-            for row in reader:
-                n += 1
-                try:
-                    writer.append(row)
-                except TypeError:
-                    print("Error processing row %d. Skip and continue", n)
-
-
-DEFAULT_HEADERS_DETECT_LIMIT = 1000
-
-
 def make_flat(item):
     """Flatten nested structures in dictionary by converting to strings."""
     result = {}
@@ -584,12 +164,54 @@ def make_flat(item):
     return result
 
 
+def _warn_deprecated_convert_options(options: dict) -> None:
+    """Warn when legacy convert flags are set but not supported by the engine."""
+    for key, default in _DEPRECATED_CONVERT_OPTIONS.items():
+        value = options.get(key)
+        if value not in (None, default):
+            logging.warning(
+                "Option '%s' is deprecated for convert and has no effect with the "
+                "iterabledata engine",
+                key,
+            )
+
+
+def _format_bytes(num_bytes: int | None) -> str:
+    if num_bytes is None:
+        return ""
+    if num_bytes < 1024:
+        return f"{num_bytes} B"
+    if num_bytes < 1024 * 1024:
+        return f"{num_bytes / 1024:.1f} KB"
+    return f"{num_bytes / (1024 * 1024):.1f} MB"
+
+
+def format_conversion_summary(result) -> str:
+    """Format a one-line summary from iterabledata's ConversionResult."""
+    parts = [f"Converted {result.rows_out:,} rows in {result.elapsed_seconds:.1f}s"]
+    if result.bytes_written:
+        parts.append(f"({_format_bytes(result.bytes_written)} written)")
+    if result.errors:
+        parts.append(f"({len(result.errors)} errors)")
+    return " ".join(parts)
+
+
+def format_bulk_conversion_summary(result) -> str:
+    """Format a one-line summary from iterabledata's BulkConversionResult."""
+    parts = [
+        f"Bulk converted {result.successful_files}/{result.total_files} files",
+        f"({result.total_rows_out:,} rows in {result.total_elapsed_seconds:.1f}s)",
+    ]
+    if result.failed_files:
+        parts.append(f"({result.failed_files} failed)")
+    return " ".join(parts)
+
+
 class Converter:
     """File format converter handler."""
 
     def __init__(self, batch_size=DEFAULT_BATCH_SIZE):
         self.batch_size = batch_size
-        pass
 
     @staticmethod
     def _resolve_output_format(tofile, options: dict) -> str | None:
@@ -653,25 +275,51 @@ class Converter:
                 suggestions=WRITABLE_FORMAT_SUGGESTIONS,
             )
 
-    def _build_convert_kwargs(self, options: dict, limit) -> dict:
+    def _build_convert_kwargs(
+        self, options: dict, limit, fromfile: str | None = None
+    ) -> dict:
         """Translate undatum convert options into iterabledata convert kwargs."""
         iterableargs = get_iterable_options(options)
         toiterableargs: dict = {}
-        delimiter = options.get("delimiter")
+
+        format_in = options.get("format_in")
+        format_out = options.get("format_out")
+        if format_in:
+            iterableargs["format"] = str(format_in).lower()
+        if format_out:
+            toiterableargs["format"] = str(format_out).lower()
+
+        compression = options.get("compression")
+        if compression:
+            toiterableargs["compression"] = compression
+
+        filetype = iterableargs.get("format") or (
+            get_file_type(fromfile) if fromfile else None
+        )
+        delimiter = resolve_csv_delimiter(iterableargs, filename=fromfile, filetype=filetype)
         if delimiter:
+            iterableargs["delimiter"] = delimiter
             toiterableargs["delimiter"] = delimiter
+
         is_flatten = bool(get_option(options, "flatten"))
         show_progress = get_option(options, "progress")
         if show_progress is None:
             show_progress = True
+
+        scan_limit = options.get("scan_limit")
+        if scan_limit is None:
+            scan_limit = limit if limit is not None else DEFAULT_HEADERS_DETECT_LIMIT
+        batch_size = options.get("batch_size", self.batch_size)
+
         return {
             "iterableargs": iterableargs,
             "toiterableargs": toiterableargs,
-            "scan_limit": limit if limit is not None else DEFAULT_HEADERS_DETECT_LIMIT,
-            "batch_size": self.batch_size,
+            "scan_limit": scan_limit,
+            "batch_size": batch_size,
             "is_flatten": is_flatten,
             "silent": not show_progress,
             "show_progress": show_progress,
+            "atomic": bool(options.get("atomic", False)),
         }
 
     def convert(self, fromfile, tofile, options=None, limit=DEFAULT_HEADERS_DETECT_LIMIT):
@@ -688,6 +336,9 @@ class Converter:
             options: Dictionary of conversion options (encoding, delimiter, etc.).
             limit: Maximum records to sample for schema detection.
 
+        Returns:
+            iterabledata ``ConversionResult`` with row/byte metrics.
+
         Raises:
             FileNotFoundError: If a local input file does not exist.
             PermissionError: If a local file cannot be read.
@@ -695,6 +346,8 @@ class Converter:
         """
         if options is None:
             options = {}
+
+        _warn_deprecated_convert_options(options)
 
         # Fail fast with an actionable message if the output format is read-only
         # or requires an external schema (protobuf/capnp/thrift).
@@ -713,14 +366,10 @@ class Converter:
 
         from iterable.convert import convert as iterable_convert
 
-        convert_kwargs = self._build_convert_kwargs(options, limit)
-        # Atomic writes append a ".tmp" suffix to the destination, which breaks
-        # format/codec detection for compressed or multi-extension outputs
-        # (e.g. "out.csv.gz" -> "out.csv.gz.tmp"). Keep writes non-atomic so the
-        # output extension drives detection correctly.
+        convert_kwargs = self._build_convert_kwargs(options, limit, fromfile=fromfile)
 
         try:
-            iterable_convert(fromfile, tofile, **convert_kwargs)
+            result = iterable_convert(fromfile, tofile, **convert_kwargs)
         except (FileNotFoundError, PermissionError, FormatError):
             raise
         except Exception as e:
@@ -729,6 +378,10 @@ class Converter:
             if file_type is None or file_type not in SUPPORTED_FILE_TYPES:
                 raise FormatError(fromfile, file_type, SUPPORTED_FILE_TYPES) from e
             raise
+
+        if options.get("summary", True):
+            logging.info(format_conversion_summary(result))
+        return result
 
     def bulk_convert(self, source, dest, options=None, to_ext=None, parallel=None):
         """Convert many files (directory or glob) via iterabledata's bulk_convert.
@@ -742,15 +395,23 @@ class Converter:
             parallel: Force parallel execution; defaults to True when a thread
                 count is supplied via options.
 
+        Returns:
+            iterabledata ``BulkConversionResult``.
+
         Raises:
-            ValueError: If no target extension can be determined.
+            ValidationError: If no target extension can be determined.
         """
         if options is None:
             options = {}
+
+        _warn_deprecated_convert_options(options)
+
         target_ext = to_ext or options.get("format_out")
         if not target_ext:
-            raise ValueError(
-                "Bulk conversion requires a target extension (use --to-ext or --format-out)."
+            raise ValidationError(
+                "Bulk conversion requires a target extension (use --to-ext or --format-out).",
+                field="output",
+                suggestions=WRITABLE_FORMAT_SUGGESTIONS,
             )
 
         # Fail fast if the requested target format is read-only or schema-required.
@@ -759,10 +420,14 @@ class Converter:
 
         from iterable.convert import bulk_convert as iterable_bulk_convert
 
-        convert_kwargs = self._build_convert_kwargs(options, DEFAULT_HEADERS_DETECT_LIMIT)
+        convert_kwargs = self._build_convert_kwargs(
+            options, DEFAULT_HEADERS_DETECT_LIMIT, fromfile=source
+        )
         threads = options.get("threads")
         use_parallel = parallel if parallel is not None else bool(threads)
-        return iterable_bulk_convert(
+
+        logging.info("Bulk mode: converting %s -> %s (target: .%s)", source, dest, target_ext)
+        result = iterable_bulk_convert(
             source,
             dest,
             to_ext=target_ext,
@@ -770,3 +435,6 @@ class Converter:
             workers=threads if threads else None,
             **convert_kwargs,
         )
+        if options.get("summary", True):
+            logging.info(format_bulk_conversion_summary(result))
+        return result

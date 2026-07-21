@@ -43,19 +43,22 @@ class TestAiDoc:
         assert result.exit_code == 0
         assert "# Documentation" in result.stdout
         mock_generate.assert_called_once()
-        # Filename forwarded as first positional argument.
-        assert mock_generate.call_args[0][0] == "data.csv"
 
-    @patch("iterable.ai.doc.generate")
-    def test_doc_blocks_and_format(self, mock_generate):
-        mock_generate.return_value = {"general": "x"}
+    @patch("undatum.ai.doc_enrichment.enrich_blocks_result")
+    @patch("iterable.ai.doc.generate_blocks")
+    def test_doc_schema_blocks_use_generate_blocks(self, mock_blocks, mock_enrich):
+        mock_blocks.return_value = {
+            "full_document_markdown": "# Doc",
+            "blocks": {"schema": {"data": {"fields": []}}},
+        }
         result = runner.invoke(
             app,
             ["ai", "doc", "data.csv", "--format", "json", "--blocks", "general,schema"],
         )
         assert result.exit_code == 0
-        kwargs = mock_generate.call_args[1]
-        assert kwargs["format"] == "json"
+        mock_blocks.assert_called_once()
+        mock_enrich.assert_called_once()
+        kwargs = mock_blocks.call_args[1]
         assert kwargs["blocks"] == ["general", "schema"]
 
 

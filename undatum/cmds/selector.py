@@ -9,7 +9,12 @@ import zipfile
 import bson
 import orjson
 
-from ..common.command_utils import ITERABLE_OPTIONS_KEYS, get_iterable_options  # noqa: F401
+from ..common.command_utils import (
+    ITERABLE_OPTIONS_KEYS,
+    duckdb_read_expr,
+    get_iterable_options,
+    quote_sql_identifier,
+)  # noqa: F401
 from ..common.duckdb_config import create_duckdb_connection, get_duckdb_config_from_options
 from ..common.engine_selector import detect_engine
 from ..common.errors import (
@@ -30,11 +35,92 @@ from ..utils import (
     get_file_type,
     get_option,
     normalize_for_json,
+    select_fields,
     strip_dict_fields,
 )
 
 LINEEND = b"\n"
 SELECT_BATCH_SIZE = 1000
+
+
+class _SelectOutput:
+    """Unified output writer for select command (file or stdout)."""
+
+    def __init__(self, to_file, format_out, fields):
+        self._to_file = to_file
+        self._format_out = format_out
+        self._fields = fields
+        self._out_iterable = None
+        self._stdout_writer = None
+        self._stdout_csv_writer = None
+        self._stdout_csv_header_written = False
+
+    def write_batch(self, items):
+        if not items:
+            return
+        normalized_items = [normalize_for_json(item) for item in items]
+        if self._to_file:
+            if self._out_iterable is None:
+                to_type = self._format_out or get_file_type(self._to_file)
+                output_args = {"keys": self._fields}
+                if self._format_out:
+                    output_args["format_out"] = self._format_out
+                self._out_iterable = open_iterable(
+                    self._to_file, mode="w", iterableargs=output_args
+                )
+            if hasattr(self._out_iterable, "write_bulk"):
+                self._out_iterable.write_bulk(normalized_items)
+            else:
+                for item in normalized_items:
+                    self._out_iterable.write(item)
+            return
+
+        stdout_type = self._format_out or "jsonl"
+        if stdout_type == "csv":
+            if self._stdout_csv_writer is None:
+                self._stdout_csv_writer = csv.DictWriter(sys.stdout, fieldnames=self._fields)
+            if not self._stdout_csv_header_written:
+                self._stdout_csv_writer.writeheader()
+                self._stdout_csv_header_written = True
+            self._stdout_csv_writer.writerows(normalized_items)
+        else:
+            if self._stdout_writer is None:
+                self._stdout_writer = DataWriter(
+                    sys.stdout, filetype=stdout_type, fieldnames=self._fields
+                )
+            self._stdout_writer.write_items(normalized_items)
+
+    def close(self):
+        if self._out_iterable is not None:
+            self._out_iterable.close()
+            self._out_iterable = None
+
+
+def _has_nested_fields(fields: list[str]) -> bool:
+    return any("." in field for field in fields)
+
+
+def _build_select_query(fields: list[str], source: str, filter_sql: str | None = None) -> str:
+    field_sql = ", ".join(quote_sql_identifier(field) for field in fields)
+    query = f"SELECT {field_sql} FROM {source}"
+    if filter_sql:
+        query = f"{query} WHERE {filter_sql}"
+    return query
+
+
+def _duckdb_copy_select(conn, query: str, to_file: str, to_type: str) -> bool:
+    """Write select results directly to file via DuckDB COPY. Returns True if handled."""
+    escaped = to_file.replace("'", "''")
+    if to_type == "csv":
+        conn.execute(f"COPY ({query}) TO '{escaped}' (FORMAT CSV, HEADER)")
+        return True
+    if to_type in ("json", "jsonl"):
+        conn.execute(f"COPY ({query}) TO '{escaped}' (FORMAT JSON)")
+        return True
+    if to_type == "parquet":
+        conn.execute(f"COPY ({query}) TO '{escaped}' (FORMAT PARQUET)")
+        return True
+    return False
 
 
 def get_iterable_fields_uniq(
@@ -344,53 +430,23 @@ class Selector:
                 "select requires at least one field name in 'fields'", field="fields"
             )
 
+        to_type = None
         if to_file:
             to_type = format_out or get_file_type(to_file)
             if not to_type:
                 raise FormatError(to_file, to_file.rsplit(".", 1)[-1])
-            output_args = {"keys": fields}
-            if format_out:
-                output_args["format_out"] = format_out
-            out_iterable = open_iterable(to_file, mode="w", iterableargs=output_args)
-        else:
-            out_iterable = None
 
         fields_list = [field.split(".") for field in fields]
-        stdout_writer = None
-        stdout_csv_writer = None
-        stdout_csv_header_written = False
-
-        def write_batch(items):
-            if not items:
-                return
-            normalized_items = [normalize_for_json(item) for item in items]
-            if out_iterable:
-                if hasattr(out_iterable, "write_bulk"):
-                    out_iterable.write_bulk(normalized_items)
-                else:
-                    for item in normalized_items:
-                        out_iterable.write(item)
-            else:
-                nonlocal stdout_writer, stdout_csv_writer, stdout_csv_header_written
-                stdout_type = format_out or "jsonl"
-                if stdout_type == "csv":
-                    if stdout_csv_writer is None:
-                        stdout_csv_writer = csv.DictWriter(sys.stdout, fieldnames=fields)
-                    if not stdout_csv_header_written:
-                        stdout_csv_writer.writeheader()
-                        stdout_csv_header_written = True
-                    stdout_csv_writer.writerows(normalized_items)
-                else:
-                    if stdout_writer is None:
-                        stdout_writer = DataWriter(
-                            sys.stdout, filetype=stdout_type, fieldnames=fields
-                        )
-                    stdout_writer.write_items(normalized_items)
+        output = _SelectOutput(to_file, format_out, fields)
 
         filter_expr = get_option(options, "filter")
         detected_engine = detect_engine(fromfile, engine, filetype, operation="select")
         filter_sql = None
-        if detected_engine == "duckdb" and filter_expr:
+
+        if _has_nested_fields(fields):
+            logging.info("select: nested fields require iterable engine")
+            detected_engine = "iterable"
+        elif detected_engine == "duckdb" and filter_expr:
             filter_sql = translate_filter_to_sql(filter_expr)
             if filter_sql is None:
                 logging.info("select: filter not translatable to SQL, falling back to iterable")
@@ -402,21 +458,13 @@ class Selector:
             try:
                 duckdb_config = get_duckdb_config_from_options(options)
                 conn = create_duckdb_connection(**duckdb_config)
+                source = duckdb_read_expr(fromfile, filetype, iterableargs, all_varchar=True)
+                query = _build_select_query(fields, source, filter_sql)
 
-                fieldstext = ",".join(fields)
-                source_type = filetype or get_file_type(fromfile) or "csv"
-                if source_type == "csv":
-                    source = f"read_csv_auto('{fromfile}', all_varchar=true)"
-                elif source_type in ("json", "jsonl"):
-                    source = f"read_json_auto('{fromfile}')"
-                elif source_type == "parquet":
-                    source = f"read_parquet('{fromfile}')"
-                else:
-                    raise ValueError(f"Unsupported file type for DuckDB: {source_type}")
-
-                query = f"SELECT {fieldstext} FROM {source}"
-                if filter_sql:
-                    query = f"{query} WHERE {filter_sql}"
+                if to_file and _duckdb_copy_select(conn, query, to_file, to_type):
+                    conn.close()
+                    logging.info("select: completed using DuckDB COPY")
+                    return
 
                 relation = conn.execute(query)
                 while True:
@@ -425,7 +473,7 @@ class Selector:
                         break
                     batch = [dict(zip(fields, row)) for row in rows]
                     n += len(batch)
-                    write_batch(batch)
+                    output.write_batch(batch)
                 conn.close()
             except Exception as exc:
                 if n > 0:
@@ -442,18 +490,17 @@ class Selector:
                     if filter_expr is not None:
                         if not match_filter(r, filter_expr):
                             continue
-                    r_selected = strip_dict_fields(r, fields_list, 0)
+                    r_selected = select_fields(r, fields_list)
                     batch.append(r_selected)
                     if len(batch) >= SELECT_BATCH_SIZE:
-                        write_batch(batch)
+                        output.write_batch(batch)
                         batch = []
                 if batch:
-                    write_batch(batch)
+                    output.write_batch(batch)
             finally:
                 iterable.close()
 
-        if out_iterable:
-            out_iterable.close()
+        output.close()
 
     def split_new(self, fromfile, options=None):
         """Splits the given file with data into chunks based on chunk size or field value."""

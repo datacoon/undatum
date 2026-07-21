@@ -86,6 +86,9 @@ class PipelineRunner:
         command = step.get("command")
         args = step.get("args", {})
 
+        if command == "package":
+            return self._execute_package_step(args, step_name)
+
         # Resolve input/output paths
         resolved_args = self._resolve_paths(args, step_name)
 
@@ -139,6 +142,51 @@ class PipelineRunner:
             logger.error(f"Step '{step_name}' failed: {error_msg}")
             return False
 
+    def _execute_package_step(self, args: dict[str, Any], step_name: str) -> bool:
+        """Execute a package pipeline step via Packager."""
+        from .packager import Packager
+
+        resolved = dict(args)
+        subcommand = resolved.pop("subcommand", "create")
+        input_files = resolved.pop("input_files", None) or resolved.pop("input", None)
+        if isinstance(input_files, str):
+            input_files = [input_files]
+        if not input_files:
+            logger.error("Step '%s': package step requires 'input' or 'input_files'", step_name)
+            return False
+
+        packager = Packager()
+        try:
+            if subcommand == "create":
+                packager.create(input_files, resolved)
+            elif subcommand == "add-resource":
+                package_file = resolved.pop("package_file", None) or resolved.pop("output", None)
+                if not package_file:
+                    logger.error(
+                        "Step '%s': package add-resource requires 'package_file' or 'output'",
+                        step_name,
+                    )
+                    return False
+                packager.add_resource(package_file, input_files, resolved)
+            elif subcommand == "validate":
+                package_file = resolved.pop("package_file", None) or resolved.pop("output", None)
+                if not package_file:
+                    logger.error(
+                        "Step '%s': package validate requires 'package_file' or 'output'",
+                        step_name,
+                    )
+                    return False
+                packager.validate(package_file, resolved)
+            else:
+                logger.error("Step '%s': unknown package subcommand '%s'", step_name, subcommand)
+                return False
+            return True
+        except Exception as exc:
+            from ..common.errors import format_error_message
+
+            logger.error("Step '%s' failed: %s", step_name, format_error_message(exc, verbose=False))
+            return False
+
     def _execute_via_cli(self, command: str, args: dict[str, Any]) -> bool:
         """Execute command via CLI subprocess.
 
@@ -151,8 +199,13 @@ class PipelineRunner:
         """
         import subprocess
 
+        args = dict(args)
         # Build command line
-        cmd = ["undatum", command]
+        cmd = ["undatum"]
+        if command == "package":
+            cmd.extend(["package", args.pop("subcommand", "create")])
+        else:
+            cmd.append(command)
 
         # Convert args to CLI options
         for key, value in args.items():

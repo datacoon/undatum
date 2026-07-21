@@ -2,7 +2,7 @@
 
 > A powerful command-line tool for data processing and analysis
 
-**Version:** 1.3.0
+**Version:** 1.5.0
 
 **undatum** (pronounced *un-da-tum*) is a modern CLI tool designed to make working with large datasets as simple and efficient as possible. It provides a unified interface for converting, analyzing, validating, and transforming data across multiple formats.
 
@@ -13,7 +13,8 @@
 - **Multi-cloud I/O**: Read and write `s3://`, `gs://`/`gcs://`, and `az://`/`abfs://`/`abfss://` URIs natively via iterabledata (`pip install "undatum[cloud]"`)
 - **Database sources**: Read from PostgreSQL, MySQL/MariaDB, SQLite, MS SQL Server, ClickHouse, MongoDB, and Elasticsearch/OpenSearch (`undatum db query`)
 - **Low memory footprint**: Streams data for efficient processing of large files
-- **Automatic detection**: Encoding, delimiters, and file types
+- **Automatic detection**: Encoding, delimiters (comma, semicolon, tab, pipe), and file types
+- **Frictionless Data Packaging**: Create, extend, and validate `datapackage.json` descriptors with schema inference, coverage metadata, and optional AI autodoc (`undatum package`)
 - **Data validation**: Built-in rules for emails, URLs, and custom validators
 - **Advanced statistics**: Field analysis, frequency calculations, and date detection
 - **Flexible filtering**: Query and filter data using expressions
@@ -29,6 +30,7 @@
 
 ## Documentation
 
+- [`CHANGELOG.md`](CHANGELOG.md) for version history (current release: **1.5.0**)
 - `WORKFLOW_GUIDE.md` for contributor workflow and OpenSpec usage
 - `openspec/` for change proposals, specs, and implementation summaries
 - `examples/doc/` for dataset documentation output samples
@@ -79,6 +81,9 @@ pip install "undatum[postgres]"
 pip install "undatum[mysql]"
 pip install "undatum[mssql]"
 pip install "undatum[clickhouse]"
+
+# Frictionless Data Package validation
+pip install "undatum[frictionless]"
 ```
 
 After installation both `undatum` and the shorter `data` command are available:
@@ -126,6 +131,15 @@ python -m pip install build && python -m build
 ## Quick Start
 
 ```bash
+# Inspect supported formats
+undatum formats list --capabilities
+
+# AI block-based documentation
+undatum ai doc data.csv
+
+# Bulk-convert a directory to Parquet
+undatum convert ./raw ./processed --recursive --to-ext parquet
+
 # Print version
 undatum --version
 
@@ -138,8 +152,9 @@ undatum analyze data.jsonl
 # Generate dataset documentation
 undatum doc data.jsonl --format markdown --output docs/dataset.md
 
-# Create a Frictionless Data Package
+# Create and validate a Frictionless Data Package
 undatum package create data.csv --output datapackage.json
+undatum package validate datapackage.json
 
 # Extract tables from a PDF
 undatum extract report.pdf --output-format csv --output report.csv
@@ -186,6 +201,26 @@ undatum table data.csv --limit 20
 
 ## Commands
 
+All commands are available as `undatum <command>` or via the shorter `data` alias (`data convert ...` is identical to `undatum convert ...`).
+
+**Top-level data commands:** `convert`, `extract`, `analyze`, `doc`, `stats` (`profile`), `validate`, `schema`, `schema_bulk`, `sql`, `select`, `search`, `query`, `mask`, `plot`, `ingest`, and the transform/inspection commands documented below.
+
+**Command groups:**
+
+| Group | Subcommands |
+|-------|-------------|
+| `ai` | `doc`, `filter`, `plan`, `suggest` |
+| `api` | `discover`, `serve`, `run`, `openapi` |
+| `db` | `query`, `load` |
+| `package` | `create`, `add-resource`, `validate` |
+| `pipeline` | `run`, `validate`, `templates list`, `templates init` |
+| `formats` | `list`, `describe`, `export` |
+| `mcp` | `serve`, `tools` |
+| `examples` | `list`, `show`, `run` |
+| `plugins` | `list`, `info` |
+
+See also: [Cloud Storage](#cloud-storage-support) · [Python SDK](#python-sdk) · [AI Agent Tools & MCP](#ai-agent-tools-and-mcp-server) · [Pipeline Workflows](#pipeline-workflows)
+
 ### `analyze`
 
 Analyzes data files and provides human-readable insights about structure, encoding, fields, and data types. With `--autodoc`, automatically generates field descriptions and dataset summaries using AI.
@@ -208,13 +243,19 @@ undatum analyze data.jsonl --output report.yaml --autodoc
 - File type, encoding, compression
 - Number of records and fields
 - Field types and structure
+- Per-field uniqueness statistics (unique count, total count, uniqueness %)
 - Table detection for nested data (JSON/XML)
 - AI-generated field descriptions (with `--autodoc`)
 - AI-generated dataset summary (with `--autodoc`)
 
+**Read options** (auto-detected when omitted):
+- `--delimiter` — CSV/TSV separator (comma, semicolon, tab, or pipe)
+- `--encoding` — file encoding
+- `--engine` — `auto` (default) or `duckdb` for accelerated tabular analysis
+
 **AI Provider Options:**
-- `--ai-provider`: Choose provider (openai, openrouter, ollama, lmstudio, perplexity)
-- `--ai-model`: Specify model name (provider-specific)
+- `--ai-provider`: Provider id (`openai`, `anthropic`, `gemini`, `azure`, `openrouter`, `ollama`, `lmstudio`, `perplexity`)
+- `--ai-model`: Model name (provider-specific)
 - `--ai-base-url`: Custom API endpoint URL
 
 **Supported AI Providers:**
@@ -225,27 +266,46 @@ undatum analyze data.jsonl --output report.yaml --autodoc
    undatum analyze data.csv --autodoc --ai-provider openai --ai-model gpt-4o-mini
    ```
 
-2. **OpenRouter** (supports multiple models via unified API)
+2. **Anthropic**
+   ```bash
+   export ANTHROPIC_API_KEY=sk-ant-...
+   undatum analyze data.csv --autodoc --ai-provider anthropic --ai-model claude-3-5-haiku-latest
+   ```
+
+3. **Google Gemini**
+   ```bash
+   export GEMINI_API_KEY=...
+   undatum analyze data.csv --autodoc --ai-provider gemini --ai-model gemini-2.0-flash
+   ```
+
+4. **Azure OpenAI**
+   ```bash
+   export AZURE_OPENAI_API_KEY=...
+   export AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com/
+   undatum analyze data.csv --autodoc --ai-provider azure --ai-model gpt-4o-mini
+   ```
+
+5. **OpenRouter** (unified API for many hosted models)
    ```bash
    export OPENROUTER_API_KEY=sk-or-...
    undatum analyze data.csv --autodoc --ai-provider openrouter --ai-model openai/gpt-4o-mini
    ```
 
-3. **Ollama** (local models, no API key required)
+6. **Ollama** (local models, no API key required)
    ```bash
    # Start Ollama and pull a model first: ollama pull llama3.2
    undatum analyze data.csv --autodoc --ai-provider ollama --ai-model llama3.2
    # Or set custom URL: export OLLAMA_BASE_URL=http://localhost:11434
    ```
 
-4. **LM Studio** (local models, OpenAI-compatible API)
+7. **LM Studio** (local models, OpenAI-compatible API)
    ```bash
    # Start LM Studio and load a model
    undatum analyze data.csv --autodoc --ai-provider lmstudio --ai-model local-model
    # Or set custom URL: export LMSTUDIO_BASE_URL=http://localhost:1234/v1
    ```
 
-5. **Perplexity** (backward compatible, uses `PERPLEXITY_API_KEY`)
+8. **Perplexity** (backward compatible, uses `PERPLEXITY_API_KEY`)
    ```bash
    export PERPLEXITY_API_KEY=pplx-...
    undatum analyze data.csv --autodoc --ai-provider perplexity
@@ -313,9 +373,31 @@ undatum doc data.csv --pii-detect --pii-mask-samples --format json
 - `metacrafter` (for semantic types and PII detection)
 - `langdetect` (for language detection in metadata)
 
+### `ai`
+
+AI-assisted workflows backed by iterabledata's `iterable.ai` stack. Subcommands: `doc`, `filter`, `plan`, and `suggest`. Supports OpenAI, Anthropic, Gemini, Azure OpenAI, OpenRouter, Ollama, LM Studio, and Perplexity — configure via `undatum.yaml`, environment variables, or CLI flags (see [AI Provider Options](#analyze) under `analyze`).
+
+```bash
+# Block-based dataset documentation (markdown default)
+undatum ai doc data.csv
+
+# JSON output with selected blocks; schema enrichment maps LLM field names
+# to canonical columns and fills SDMX-style hints (e.g. FREQ:Frequency)
+undatum ai doc data.csv --format json --blocks general,schema,quality
+
+# Natural-language filter translation (use --apply to stream matching rows)
+undatum ai filter data.csv "active users in New York" --apply
+
+# Conversion planning and transform suggestions
+undatum ai plan data.csv --to parquet
+undatum ai suggest data.csv "normalize phone numbers"
+```
+
+For block-based documentation with schema enrichment, prefer `ai doc` over legacy `analyze --autodoc` / `schema --autodoc` workflows.
+
 ### `package`
 
-Generates a Frictionless Data Package descriptor (`datapackage.json`) from one or more data files. Supports optional package metadata, schema inference, and AI-powered metadata generation with `--autodoc`.
+Generates, extends, and validates Frictionless Data Package descriptors (`datapackage.json`) from one or more data files. Supports optional package metadata, schema inference, and AI-powered metadata generation with `--autodoc`.
 
 ```bash
 # Create datapackage.json for a single file
@@ -324,10 +406,24 @@ undatum package create data.csv --output datapackage.json
 # Create a package directory with data file copies
 undatum package create data.csv --package-dir out/package
 
+# Zip the materialized package directory
+undatum package create data.csv --package-dir out/package --zip out/package.zip
+
+# Add another resource to an existing package
+undatum package add-resource out/package/datapackage.json new.csv
+
+# Validate a package descriptor
+undatum package validate out/package/datapackage.json
+
 # Provide metadata and enable AI metadata generation
 undatum package create data.csv --title "Sales data" --keywords sales,finance \
   --autodoc --ai-provider openai --ai-model gpt-4o-mini
 ```
+
+**Subcommands:**
+- `create` — generate a new descriptor (default workflow)
+- `add-resource` — append resources to an existing descriptor
+- `validate` — validate descriptor structure (full checks with `pip install undatum[frictionless]`)
 
 **Metadata options:**
 - `--name`, `--title`, `--description`, `--keywords`
@@ -337,17 +433,21 @@ undatum package create data.csv --title "Sales data" --keywords sales,finance \
 - `--version` - Package version string
 
 **Features:**
-- **Schema inference**: Automatically infers field types and generates Frictionless schema
+- **Frictionless profile**: Emits `profile: tabular-data-package` with resource `format`/`mediatype`
+- **Schema inference**: Automatically infers field types, descriptions, and uniqueness constraints
 - **Multiple resources**: Package multiple files as separate resources
 - **Remote URIs**: Support for HTTP/HTTPS URLs as resource paths
 - **Package directory**: Bundle `datapackage.json` with data file copies
-- **AI metadata**: Use `--autodoc` to generate metadata with AI assistance
+- **AI metadata**: Use `--autodoc` to generate metadata with AI assistance (single-pass, no duplicate LLM calls)
 - **Streaming-safe**: Processes large datasets without loading everything into memory
+- **Python SDK**: `Dataset.read("data.csv").package(output="datapackage.json")`
 
 **Additional options:**
 - `--package-dir`: Create a package directory with data file copies
+- `--zip`: Create a ZIP archive of the package directory (requires `--package-dir`)
 - `--autodoc`: Enable AI-powered metadata generation (reuses `doc` command logic)
 - `--engine`: Processing engine (`auto` or `duckdb`)
+- `--delimiter`, `--encoding`, `--tagname`, `--start-line`, `--start-page`: Passed through to analysis and sampling
 - `--objects-limit`: Maximum objects to analyze for schema inference (default: 10000)
 - `--sample-size`: Number of sample records for metadata inference (default: 10)
 
@@ -509,22 +609,69 @@ undatum convert input.csv s3://my-bucket/output.parquet
 undatum convert s3://bucket/input.jsonl s3://bucket/output.parquet
 ```
 
-**S3 Support:**
-- Input and output paths support S3 URIs (`s3://bucket/path`)
-- AWS credentials via environment variables (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_PROFILE`, `AWS_REGION`)
-- Automatic temporary file handling for S3 operations
+**Cloud storage:** Input and output paths support `s3://`, `gs://`/`gcs://`, and `az://`/`abfs://` URIs when the cloud extra is installed. See [Cloud Storage Support](#cloud-storage-support).
+
+**Key options:**
+- `--format-in` / `--format-out` — override format detection
+- `--delimiter`, `--encoding`, `--tagname` — passed through to the reader (delimiter auto-detected for CSV when omitted)
+- `--recursive` / `--to-ext` — bulk-convert directories or globs
+- `--flatten` — flatten nested records to a flat schema
+- `--atomic` — write to a temp file and rename on success (local paths only)
+- `--threads`, `--batch-size`, `--progress` — throughput and feedback controls
 
 **Supported conversions:**
 
-| From / To | CSV | JSONL | BSON | JSON | XLS | XLSX | XML | Parquet | ORC | AVRO |
-|-----------|-----|-------|------|------|-----|------|-----|---------|-----|------|
-| CSV       | -   | ✓     | ✓    | -    | -   | -    | -   | ✓       | ✓   | ✓    |
-| JSONL    | ✓   | -     | -    | -    | -   | -    | -   | ✓       | ✓   | -    |
-| BSON     | -   | ✓     | -    | -    | -   | -    | -   | -       | -   | -    |
-| JSON     | -   | ✓     | -    | -    | -   | -    | -   | -       | -   | -    |
-| XLS      | -   | ✓     | ✓    | -    | -   | -    | -   | -       | -   | -    |
-| XLSX     | -   | ✓     | ✓    | -    | -   | -    | -   | -       | -   | -    |
-| XML      | -   | ✓     | -    | -    | -   | -    | -   | -       | -   | -    |
+`convert` uses iterabledata's engine, so any **readable** format can be converted to any **writable** one — there is no fixed pairwise matrix. The live catalog depends on installed optional dependencies; inspect it on your machine:
+
+```bash
+# All formats with read/write flags
+undatum formats list
+
+# Formats that can be used as conversion output
+undatum formats list --writable
+
+# Read-only inputs (e.g. ARFF, Delta, GPX, HDF5)
+undatum formats list --read-only
+
+# Capability matrix (bulk read/write, streaming, totals, tables, nested)
+undatum formats list --capabilities
+
+# Single-format details (aliases, optional extras, limitations)
+undatum formats describe parquet
+
+# Machine-readable catalog export
+undatum formats export --output formats.json
+```
+
+**Common examples:**
+
+| Use case | Example |
+|----------|---------|
+| Tabular text → columnar | `undatum convert data.csv data.parquet` |
+| Columnar → tabular text | `undatum convert data.parquet data.csv` |
+| JSON Lines ↔ CSV | `undatum convert data.jsonl data.csv` |
+| Excel → JSON Lines | `undatum convert sheet.xlsx sheet.jsonl` |
+| XML → JSON Lines | `undatum convert --tagname item feed.xml feed.jsonl` |
+| Geospatial | `undatum convert points.geojson points.parquet` |
+| Bulk directory/glob | `undatum convert ./raw ./out --recursive --to-ext parquet` |
+
+**Format families** (non-exhaustive; run `formats list` for the full set):
+
+| Family | Examples |
+|--------|----------|
+| Tabular text | `csv` (alias: `tsv`), `jsonl` (alias: `ndjson`), `annotatedcsv`, `csvw`, `fwf`, `ssv` |
+| Columnar / analytics | `parquet`, `orc`, `avro`, `arrow`, `geoparquet`, `ddb` |
+| Documents / config | `json`, `yml` (alias: `yaml`), `xml`, `toml` |
+| Geospatial | `geojson`, `geojsonseq`, `gml`, `gpx`, `shp`, `gpkg`, `kml` |
+| Scientific / statistical | `h5`, `nc`, `sas`, `sav`, `dta` (many are read-only) |
+| Logs / feeds | `log`, `gelf`, `cef`, `rss`, `kafka` |
+| Graph / RDF | `graphml`, `gexf`, `jsonld`, `nt`, `ttl`, `trig` |
+
+**Limitations:**
+
+- **Read-only formats** can be inputs but not outputs — check with `formats list --writable`.
+- **Schema-required outputs** (`protobuf`, `capnp`, `thrift`) need an externally supplied schema or message class and cannot be used as generic conversion targets.
+- Override detection when the file extension is ambiguous: `--format-in` / `--format-out` (see `undatum convert --help`).
 
 ### `count`
 
@@ -999,12 +1146,13 @@ undatum fmt data.csv --line-ending crlf output.csv
 
 ### `select`
 
-Selects and reorders columns from files. Supports filtering and engine selection.
+Selects and reorders columns from files. Supports filtering, nested dot-notation fields, and engine selection. When the DuckDB engine is used, filter expressions are pushed to SQL when possible and results can be written directly via `COPY` for CSV, JSON, and Parquet output.
 
 ```bash
 undatum select --fields name,email,status data.jsonl
 undatum select --fields name,email --filter "`status` == 'active'" data.jsonl
-undatum select --fields name,email --engine duckdb data.jsonl
+undatum select --fields user.name,user.email --engine duckdb data.jsonl
+undatum select --fields name,email --engine duckdb --output subset.csv data.jsonl
 ```
 
 ### `split`
@@ -1185,7 +1333,7 @@ undatum schema data.jsonl --autodoc --output schema.yaml
 - **JSON Schema**: API documentation, data validation in web applications, OpenAPI specifications
 - **Avro**: Kafka message schemas, Hadoop ecosystem integration, schema registry compatibility
 - **Parquet**: Data lake schemas, Parquet file metadata, analytics pipeline definitions
-- **Cerberus**: Python data validation (legacy, use `scheme` command or `schema --format cerberus`)
+- **Cerberus**: Python data validation (`schema --format cerberus`; the legacy `scheme` command is deprecated)
 
 **Examples:**
 
@@ -1263,7 +1411,7 @@ undatum apply --script transform.py data.jsonl output.jsonl
 
 ### `ingest`
 
-Ingests data from files into databases. Supports MongoDB, PostgreSQL, and Elasticsearch with robust error handling, retry logic, and progress tracking.
+Ingests data from files into databases. Supports MongoDB, PostgreSQL, DuckDB, MySQL, SQLite, and Elasticsearch with retry logic, progress tracking, and optional table auto-creation. For a simpler load syntax, see [`db load`](#db-query--db-load).
 
 ```bash
 # Ingest to MongoDB
@@ -1467,9 +1615,27 @@ undatum db query "SELECT * FROM large_table" --db postgresql://... --output-form
 ```
 
 **Supported Databases:**
-- PostgreSQL (`postgresql://user:pass@host:port/db`)
-- MySQL/MariaDB (`mysql://user:pass@host:port/db`)
-- SQLite (`sqlite:///path/to/db.db` or `sqlite:///:memory:`)
+
+| Engine | URI scheme | Notes |
+|--------|------------|-------|
+| PostgreSQL | `postgresql://user:pass@host:port/db` | Native driver |
+| MySQL / MariaDB | `mysql://user:pass@host:port/db` | Native driver |
+| SQLite | `sqlite:///path/to/db.db`, `sqlite:///:memory:` | Native driver |
+| MS SQL Server | `mssql://`, `sqlserver://` | Via iterabledata; `pip install "undatum[mssql]"` |
+| ClickHouse | `clickhouse://user:pass@host:9000/db` | Via iterabledata; `pip install "undatum[clickhouse]"` |
+| MongoDB | `mongodb://host:27017/db?collection=name&limit=N` | Read-only; pass collection/limit in URI query string |
+| Elasticsearch / OpenSearch | `elasticsearch://`, `opensearch://` | Read-only; pass `index=` in URI query string |
+
+```bash
+# ClickHouse
+undatum db query "SELECT * FROM events LIMIT 100" --db clickhouse://user:pass@host:9000/db
+
+# MongoDB collection (empty SQL argument; collection in URI)
+undatum db query "" --db "mongodb://host:27017/mydb?collection=users&limit=100"
+
+# Elasticsearch index
+undatum db query "" --db "elasticsearch://host:9200?index=logs&limit=100"
+```
 
 **Output Formats:**
 - `jsonl` (default) - JSON Lines format, one record per line
@@ -1592,7 +1758,7 @@ undatum plot data.csv --field age --title "Age Distribution" \
 - `--color`: Color scheme name (matplotlib colormap)
 
 **Requirements:**
-- `matplotlib` is required for plotting. Install with: `pip install matplotlib`
+- Install the plot extra: `pip install "undatum[plot]"` (includes matplotlib)
 
 ### `examples`
 
@@ -1626,15 +1792,16 @@ undatum examples run database-query-export --interactive
 - **transformation** - Data cleaning and transformation
 
 **Available Recipes:**
-- `csv-to-jsonl` - Convert CSV to JSONL format
-- `data-validation` - Validate data using validation rules
-- `database-query-export` - Query database and export results
-- `data-profiling` - Profile dataset with statistics and documentation
-- `data-cleaning` - Clean data by removing duplicates and filling missing values
+- `csv-to-jsonl` — Convert CSV to JSONL format
+- `data-validation` — Validate data using validation rules
+- `database-query-export` — Query database and export results
+- `data-profiling` — Profile dataset with statistics and documentation
+- `data-cleaning` — Clean data by removing duplicates and filling missing values
+- `api-serve-data` — Discover and serve a file-backed Data API
 
 **Recipe Format:**
 
-Recipes are defined in YAML files in `examples/recipes/` directory:
+Recipes ship inside the package under `undatum/recipes/` (also mirrored in the repo at `examples/recipes/`):
 
 ```yaml
 name: recipe-name
@@ -1717,50 +1884,109 @@ class MyPlugin(CommandPlugin):
 
 Plugins are automatically discovered from installed packages via the `undatum.plugins` entry point group. No configuration needed - just install the plugin package and undatum will find it.
 
+### `formats`
+
+Inspect the iterabledata format catalog (100+ formats). The list reflects installed optional dependencies and runtime capabilities on your machine.
+
+```bash
+# All formats with read/write flags
+undatum formats list
+
+# Writable outputs only (useful before choosing a conversion target)
+undatum formats list --writable
+
+# Read-only inputs
+undatum formats list --read-only
+
+# Full capability matrix (bulk read/write, streaming, totals, tables, nested)
+undatum formats list --capabilities
+
+# Single format (aliases, optional pip extra, limitations)
+undatum formats describe parquet
+undatum formats describe geojson --json
+
+# Export catalog for tooling or CI checks
+undatum formats export --output formats.json
+```
+
+### `pipeline`
+
+Run and validate multi-step YAML/JSON workflows. Each step invokes an undatum command. See [Pipeline Workflows](#pipeline-workflows) for the full DSL, templates, and examples.
+
+```bash
+# Validate before running
+undatum pipeline validate my-pipeline.yml
+
+# Execute with variable overrides
+undatum pipeline run my-pipeline.yml --var input=data.csv --var output=out/
+
+# Dry-run (print resolved steps without executing)
+undatum pipeline run my-pipeline.yml --dry-run
+
+# List built-in templates and scaffold a new pipeline
+undatum pipeline templates list
+undatum pipeline templates init basic-cleaning --output pipeline.yml
+```
+
+Built-in templates: `basic-cleaning`, `data-quality`, `profile-dataset`, `s3-etl`.
+
+### `mcp`
+
+Expose undatum operations to MCP-compatible agents (Cursor, Claude Desktop, etc.) over stdio. Requires `pip install "undatum[mcp]"`. See also [AI Agent Tools and MCP Server](#ai-agent-tools-and-mcp-server).
+
+```bash
+# List tools exposed to agents
+undatum mcp tools
+
+# Start the stdio MCP server
+undatum mcp serve
+
+# Standalone entry point (equivalent)
+undatum-mcp
+```
+
 ## Cloud Storage Support
 
-### AWS S3 Integration
+undatum reads and writes cloud object storage URIs natively through iterabledata. Install the appropriate extra before using cloud paths in commands like `convert`, `stats`, `count`, `mask`, and the Python SDK.
 
-Undatum supports direct read/write operations with AWS S3 using S3 URIs (`s3://bucket/path`). This enables seamless integration with cloud data workflows without manual download/upload steps.
-
-**Setup:**
 ```bash
-# Option 1: Environment variables
-export AWS_ACCESS_KEY_ID=your-access-key
-export AWS_SECRET_ACCESS_KEY=your-secret-key
-export AWS_REGION=us-east-1
+# AWS S3 only
+pip install "undatum[s3]"
 
-# Option 2: AWS Profile
-export AWS_PROFILE=my-profile
-
-# Option 3: Default AWS credentials (~/.aws/credentials)
-# No configuration needed if using default profile
+# S3 + Google Cloud Storage + Azure Blob (recommended for multi-cloud)
+pip install "undatum[cloud]"
 ```
 
-**Usage Examples:**
+### Supported URI schemes
+
+| Provider | URI examples | Credential setup |
+|----------|--------------|------------------|
+| **AWS S3** | `s3://bucket/path`, `s3a://bucket/path` | `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_PROFILE`, `AWS_REGION`, or `~/.aws/credentials` |
+| **Google Cloud Storage** | `gs://bucket/path`, `gcs://bucket/path` | Application Default Credentials, `GOOGLE_APPLICATION_CREDENTIALS`, or gcloud user credentials |
+| **Azure Blob / ADLS** | `az://container/path`, `abfs://container/path`, `abfss://container/path` | `AZURE_STORAGE_ACCOUNT`, `AZURE_STORAGE_KEY`, or Azure identity chain via `adlfs` |
+
+### Usage examples
+
 ```bash
-# Read from S3
-undatum stats s3://my-bucket/data.csv
+# Read from cloud storage
+undatum stats gs://my-bucket/data.csv
 undatum count s3://my-bucket/data.jsonl
 
-# Write to S3
+# Write to cloud storage
 undatum convert local.csv s3://my-bucket/output.parquet
+undatum convert data.csv gs://my-bucket/output.parquet
 
-# S3 to S3 operations
-undatum convert s3://bucket/input.jsonl s3://bucket/output.parquet
-undatum mask s3://bucket/data.csv --fields email --method hash s3://bucket/masked.csv
+# Cloud-to-cloud conversion
+undatum convert s3://bucket/input.jsonl gs://bucket/output.parquet
+undatum mask s3://bucket/data.csv --fields email --method hash az://container/masked.csv
 ```
 
-**Supported Commands:**
-- `convert` - S3 input and output
-- `stats` - S3 input
-- `count` - S3 input
-- `ingest` - S3 input
-- `mask` - S3 input and output
-- All commands that accept file paths (with S3 URI support)
+**Supported commands:** Any command that accepts file paths — including `convert`, `stats`, `count`, `analyze`, `select`, `validate`, `ingest`, `mask`, and SDK `Dataset.read()` / `write()`.
 
-**Dependencies:**
-- `boto3` (optional, install with `pip install boto3`)
+**Notes:**
+- Cloud I/O is streaming-aware; large files do not need to be downloaded manually first.
+- Local-only options such as `--atomic` apply to local output paths only.
+- For S3-only workflows, `undatum[s3]` is sufficient; use `undatum[cloud]` when you need GCS or Azure.
 
 ## Python SDK
 
@@ -1837,6 +2063,10 @@ n = ds.count()
 # Get first/last rows
 rows = ds.head(20)
 rows = ds.tail(20)
+
+# Generate a Frictionless Data Package descriptor
+result = ds.package(output="datapackage.json")
+result = ds.package(output="datapackage.json", package_dir="out/package", autodoc=True)
 ```
 
 ### DataFrame and Typed-Row Interop
@@ -1875,20 +2105,28 @@ for person in Dataset.read("people.csv").as_pydantic(PersonModel):
     print(person.age)
 ```
 
-### S3 Support
+### Cloud Storage
 
 ```python
-# Read from S3
+# AWS S3
 ds = Dataset.read("s3://bucket/data.jsonl")
-
-# Write to S3
 ds.write("s3://bucket/output.parquet")
 
-# Chain with S3
+# Google Cloud Storage
+ds = Dataset.read("gs://bucket/data.csv")
+ds.write("gs://bucket/output.parquet")
+
+# Azure Blob Storage
+ds = Dataset.read("az://container/data.jsonl")
+ds.write("az://container/output.parquet")
+
+# Chain transforms on cloud input
 ds = Dataset.read("s3://bucket/input.csv")
 ds = ds.fill("age", value=0).dedup(keys=["id"])
-ds.write("s3://bucket/output.jsonl")
+ds.write("gs://bucket/output.jsonl")
 ```
+
+Install `pip install "undatum[cloud]"` (or `undatum[s3]` for S3 only). See [Cloud Storage Support](#cloud-storage-support) for credential setup.
 
 ### Method Chaining
 
@@ -2010,6 +2248,14 @@ steps:
     command: stats
     args:
       input: ${output_dir}/data_final.parquet
+
+  - name: publish_package
+    command: package
+    args:
+      subcommand: create
+      input: ${output_dir}/data_final.parquet
+      output: ${output_dir}/datapackage.json
+      package_dir: ${output_dir}/package
 ```
 
 ### Variable Substitution
@@ -2183,7 +2429,7 @@ undatum pipeline templates init profile-dataset \
 **Available Templates:**
 - `basic-cleaning` - Clean CSV/JSONL data (fill missing values, remove duplicates)
 - `profile-dataset` - Profile dataset with sampling, statistics, and documentation
-- `s3-etl` - S3-based ETL workflow (download, process, upload)
+- `s3-etl` - Cloud ETL workflow (`s3://`, `gs://`, or local paths: convert, process, upload)
 - `data-quality` - Data quality checks and validation
 
 **Template Features:**
@@ -2229,20 +2475,39 @@ undatum uniq --fields country --format-in jsonl data.jsonl.xz
 
 ### Filtering Data
 
-Most commands support filtering using expressions:
+Filter rows with MistQL expressions on commands that support `--filter` (`select`, `frequency`, and others). With the DuckDB engine, comparison and boolean filters are pushed to SQL when possible for faster execution.
 
 ```bash
 # Filter by field value
 undatum select --fields name,email --filter "`status` == 'active'" data.jsonl
 
 # Complex filters
-undatum frequency --fields category --filter "`price` > 100" data.jsonl
+undatum frequency --fields category --filter "`price` > 100 and `status` == 'active'" data.jsonl
+
+# DuckDB-accelerated select with SQL pushdown
+undatum select --fields name,email --filter "`status` == 'active'" --engine duckdb data.jsonl
+
+# Natural-language filter (translates to an expression; use --apply to run)
+undatum ai filter data.csv "customers in California with orders over 1000" --apply
 ```
 
-**Filter syntax:**
-- Field names: `` `fieldname` ``
+**Filter syntax (MistQL):**
+- Field names: `` `fieldname` `` or dot notation `` `user.name` ``
 - String values: `'value'`
-- Operators: `==`, `!=`, `>`, `<`, `>=`, `<=`, `and`, `or`
+- Operators: `==`, `!=`, `>`, `<`, `>=`, `<=`, `and`, `or`, `in`
+
+For ad-hoc SQL over files, use [`sql`](#sql) or [`db query`](#db-query--db-load) against a database URI.
+
+### Custom Encoding and Delimiters
+
+CSV/TSV delimiters (comma, semicolon, tab, pipe) and encoding are **auto-detected** when `--delimiter` / `--encoding` are omitted on supported commands (`convert`, `analyze`, `select`, `doc`, `package`, and shared read paths).
+
+Override when needed:
+
+```bash
+undatum headers --encoding cp1251 --delimiter ";" data.csv
+undatum convert --encoding utf-8 --delimiter "," data.csv data.jsonl
+```
 
 ### Date Detection
 
@@ -2254,38 +2519,55 @@ undatum stats --checkdates data.jsonl
 
 This uses the `qddate` library to automatically identify and parse date fields.
 
-### Custom Encoding and Delimiters
-
-Override automatic detection:
-
-```bash
-undatum headers --encoding cp1251 --delimiter ";" data.csv
-undatum convert --encoding utf-8 --delimiter "," data.csv data.jsonl
-```
-
 ## Data Formats
 
-### JSON Lines (JSONL)
+undatum supports **120+ formats** through iterabledata. Format detection is automatic from file extensions and content; override with `--format-in` / `--format-out` when needed. Run `undatum formats list` for the authoritative catalog on your installation.
 
-JSON Lines is a text format where each line is a valid JSON object. It combines JSON flexibility with line-by-line processing capabilities, making it ideal for large datasets.
+### Core tabular formats
 
-```jsonl
-{"name": "Alice", "age": 30}
-{"name": "Bob", "age": 25}
-{"name": "Charlie", "age": 35}
+| Format | Extensions / ids | Notes |
+|--------|------------------|-------|
+| **CSV / TSV** | `.csv`, `.tsv` (`csv`, alias `tsv`) | Delimiter and encoding auto-detected |
+| **JSON Lines** | `.jsonl`, `.ndjson` (`jsonl`, alias `ndjson`) | One JSON object per line; ideal for streaming |
+| **JSON** | `.json` | Array or object documents |
+| **Parquet / ORC / Avro** | `.parquet`, `.orc`, `.avro` | Columnar and binary row formats for analytics |
+| **Excel** | `.xls`, `.xlsx`, `.xlsb`, `.ods` | Sheet selection via `--start-page` on convert |
+| **BSON** | `.bson` | Binary JSON (MongoDB) |
+
+### Structured, geospatial, and scientific
+
+- **XML** — convert with `--tagname` to specify the record element
+- **YAML / TOML / INI** — config and metadata formats (`yml`, `toml`, `ini`)
+- **Geospatial** — `geojson`, `geoparquet`, `gml`, `gpx`, `shp`, `gpkg`, `kml`, …
+- **Scientific / statistical** — `h5`, `nc`, `sas`, `sav`, `dta`, and others (many read-only)
+- **Graph / RDF** — `graphml`, `gexf`, `jsonld`, `nt`, `ttl`, `trig`, …
+
+### Compression
+
+Read and write through compressed containers without manual decompression: **GZ, XZ, BZ2, ZIP, ZSTD, LZ4, 7Z**, and other codecs supported by iterabledata.
+
+```bash
+# Process JSONL inside a ZIP or XZ archive
+undatum headers --format-in jsonl data.zip
+undatum count data.jsonl.xz
 ```
 
-### CSV
+### Choosing a format
 
-Standard comma-separated values format. undatum automatically detects delimiters (comma, semicolon, tab) and encoding.
+| Use case | Recommended formats |
+|----------|---------------------|
+| Streaming ETL / logs | JSON Lines, CSV |
+| Analytics / data lakes | Parquet, ORC, Avro |
+| API interchange | JSON, JSON Schema |
+| Packaging / catalogs | Frictionless Data Package (`undatum package`) |
+| Geospatial pipelines | GeoJSON → GeoParquet |
 
-### BSON
+Inspect read/write capabilities before converting:
 
-Binary JSON format used by MongoDB. Efficient for binary data storage.
-
-### XML
-
-XML files can be converted to JSON Lines by specifying the tag name containing records.
+```bash
+undatum formats describe parquet
+undatum formats list --writable --capabilities
+```
 
 ## AI Provider Troubleshooting
 
@@ -2305,6 +2587,9 @@ undatum analyze data.csv --autodoc --ai-provider openai
 # Error: API key is required
 # Solution: Set provider-specific API key
 export OPENAI_API_KEY=sk-...
+export ANTHROPIC_API_KEY=sk-ant-...
+export GEMINI_API_KEY=...
+export AZURE_OPENAI_API_KEY=...
 export OPENROUTER_API_KEY=sk-or-...
 export PERPLEXITY_API_KEY=pplx-...
 ```
@@ -2334,43 +2619,54 @@ export LMSTUDIO_BASE_URL=http://localhost:1234/v1
 
 ### Provider-Specific Notes
 
-- **OpenAI**: Requires API key, supports `gpt-4o-mini`, `gpt-4o`, `gpt-3.5-turbo`, etc.
-- **OpenRouter**: Unified API for multiple providers, supports models from OpenAI, Anthropic, Google, etc.
-- **Ollama**: Local models, no API key needed, but requires Ollama to be installed and running
-- **LM Studio**: Local models, OpenAI-compatible API, requires LM Studio to be running
-- **Perplexity**: Requires API key, uses `sonar` model by default
+- **OpenAI**: Requires API key; models include `gpt-4o-mini`, `gpt-4o`, `gpt-3.5-turbo`
+- **Anthropic**: Requires `ANTHROPIC_API_KEY`; models include Claude 3.5/3 Haiku and Sonnet families
+- **Gemini**: Requires `GEMINI_API_KEY`; models include `gemini-2.0-flash` and Pro variants
+- **Azure OpenAI**: Requires `AZURE_OPENAI_API_KEY` and `AZURE_OPENAI_ENDPOINT`
+- **OpenRouter**: Unified API for hosted models from OpenAI, Anthropic, Google, Meta, and others
+- **Ollama**: Local models, no API key; requires Ollama installed and running
+- **LM Studio**: Local models via OpenAI-compatible API; requires LM Studio server running
+- **Perplexity**: Requires API key; uses `sonar` model by default
 
 ## Performance Tips
 
-1. **Use appropriate formats**: Parquet/ORC for analytics, JSONL for streaming
-2. **Compression**: Use ZSTD or GZIP for better compression ratios
-3. **Chunking**: Split large files for parallel processing
-4. **Filtering**: Apply filters early to reduce data volume
-5. **Streaming**: undatum streams data by default for low memory usage
-6. **AI Documentation**: Use local providers (Ollama/LM Studio) for faster, free documentation generation
-7. **Batch Processing**: AI descriptions are generated per-table, consider splitting large datasets
+1. **Use appropriate formats**: Parquet/ORC/Avro for analytics, JSONL for streaming
+2. **DuckDB engine**: Pass `--engine duckdb` on `stats`, `select`, `count`, `sort`, `join`, and related commands for accelerated tabular workloads
+3. **Compression**: Use ZSTD or GZIP for better compression ratios
+4. **Chunking**: Split large files for parallel processing
+5. **Filtering**: Apply filters early (`select --filter`, `search`) to reduce data volume; DuckDB pushdown is used when possible
+6. **Streaming**: undatum streams data by default for low memory usage
+7. **AI documentation**: Prefer `ai doc` for block-based output; use local providers (Ollama/LM Studio) for zero-cost runs
+8. **Cloud I/O**: Read/write directly from `s3://`, `gs://`, or `az://` URIs instead of staging files locally
 
 ## AI-Powered Documentation
 
-The `analyze` command can automatically generate field descriptions and dataset summaries using AI when `--autodoc` is enabled. This feature supports multiple LLM providers and uses structured JSON output for reliable parsing.
+undatum offers several AI documentation paths:
+
+| Command | Best for |
+|---------|----------|
+| `ai doc` | Block-based docs (general, schema, quality, …) with schema enrichment — **recommended** |
+| `doc --autodoc` | Markdown/JSON/YAML dataset documentation with metadata and PII options |
+| `analyze --autodoc` | Human-readable analysis report with field descriptions |
+| `schema --autodoc` / `schema_bulk --autodoc` | Schema files with AI field descriptions |
+| `package create --autodoc` | Frictionless Data Package metadata |
+
+All paths share the same provider configuration (`undatum.yaml`, environment variables, CLI flags). Supported providers: OpenAI, Anthropic, Gemini, Azure OpenAI, OpenRouter, Ollama, LM Studio, Perplexity.
 
 ### Quick Examples
 
 ```bash
-# Basic AI documentation (auto-detects provider from environment)
+# Recommended: block-based documentation
+undatum ai doc data.csv --format json --blocks general,schema,quality
+
+# Legacy analyze autodoc (still supported)
 undatum analyze data.csv --autodoc
 
-# Use OpenAI with specific model
-undatum analyze data.csv --autodoc --ai-provider openai --ai-model gpt-4o-mini
+# Dataset documentation with PII detection
+undatum doc data.csv --autodoc --pii-detect --format markdown
 
-# Use local Ollama model
-undatum analyze data.csv --autodoc --ai-provider ollama --ai-model llama3.2
-
-# Use OpenRouter to access various models
-undatum analyze data.csv --autodoc --ai-provider openrouter --ai-model anthropic/claude-3-haiku
-
-# Output to YAML with AI descriptions
-undatum analyze data.csv --autodoc --output schema.yaml --outtype yaml
+# Schema with AI field descriptions
+undatum schema data.csv --autodoc --format jsonschema --output schema.json
 ```
 
 ### Configuration File Example
@@ -2534,6 +2830,7 @@ MIT License - see LICENSE file for details.
 ## Links
 
 - [GitHub Repository](https://github.com/datacoon/undatum)
+- [Changelog](CHANGELOG.md)
 - [Issue Tracker](https://github.com/datacoon/undatum/issues)
 
 ## Support

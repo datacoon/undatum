@@ -7,7 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.5.0] - 2026-06-27
+### Added
+- **`package add-resource` and `package validate` subcommands** — extend existing packages and validate descriptors (full validation with optional `undatum[frictionless]`)
+- **`Dataset.package()` SDK method** — programmatic Frictionless Data Package generation
+- **Pipeline `package` step** — direct Packager integration for `create`, `add-resource`, and `validate`
+- **`undatum[frictionless]` optional extra** — installs `frictionless` for full package validation
+- **`ai doc` schema enrichment** — SDMX-style field-name hints, LLM field-name remapping to canonical columns, and BOM-stripped JSONL keys for block-based schema documentation
+- **CSV delimiter auto-detection** — semicolon, tab, and pipe delimiters detected automatically when `--delimiter` is omitted (analyze, convert, select, doc, package, and shared read paths)
+
+### Changed
+- **`package create`** — emits Frictionless profile/resource metadata, inferred coverage fields, schema uniqueness constraints, wired read options (`delimiter`, `encoding`, `tagname`, etc.), single-pass `--autodoc`, Rich success output, portable relative resource paths, and optional `--zip` archive output
+- **Shared schema type mapping** — Frictionless/JSON Schema conversions centralized in `schema_utils`
+- **`analyze`** — DuckDB-accelerated tabular analysis, per-field uniqueness statistics, S3 URI support, and improved nested JSON/XML table handling
+- **`ai doc`** — uses block-based schema generation with post-enrichment; preserves the original source filename in output
+- **`select`** — DuckDB `COPY` fast path for CSV/JSON/Parquet output; dot-notation nested field selection; filter expressions pushed to SQL when translatable
+- **`filter` SQL translation** — comparison and boolean expressions translate to DuckDB `WHERE` clauses for accelerated filtering
+- **`convert`** — removed legacy format-specific converters; routes through iterabledata with shared delimiter resolution
+- **Shared `command_utils`** — centralized iterable read options, CSV delimiter resolution, and DuckDB read expressions
+
+### Fixed
+- **`package create`** — uses `UndatumError` hierarchy for missing inputs/files; avoids duplicate LLM calls when `--autodoc` is enabled
+- **`analyze`** — handles empty record sets without failing schema inference
+
+## [1.5.0] - 2026-06-29
 
 ### Added
 - **`api openapi` command** — export OpenAPI 3.x schema from an API config without starting the server (`--output`, `--format json|yaml`)
@@ -301,7 +323,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - First public release on PyPI and updated github code
 
-[Unreleased]: https://github.com/datacoon/undatum/compare/v1.1.1...HEAD
+[Unreleased]: https://github.com/datacoon/undatum/compare/v1.5.0...HEAD
+[1.5.0]: https://github.com/datacoon/undatum/compare/v1.4.0...v1.5.0
+[1.4.0]: https://github.com/datacoon/undatum/compare/v1.3.0...v1.4.0
+[1.3.0]: https://github.com/datacoon/undatum/compare/v1.1.1...v1.3.0
 [1.1.1]: https://github.com/datacoon/undatum/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/datacoon/undatum/compare/v1.0.18...v1.1.0
 [1.0.18]: https://github.com/datacoon/undatum/compare/v1.0.17...v1.0.18

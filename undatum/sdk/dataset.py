@@ -268,11 +268,16 @@ class Dataset:
             fields = [fields]
 
         selector = Selector()
-        output_path = self._get_temp_output()
+        output_path = options.get("output") or self._get_temp_output()
 
-        select_opts = {"fields": ",".join(fields), "filter": filter_expr, **options}
+        select_opts = {
+            "fields": ",".join(fields),
+            "filter": filter_expr,
+            "output": output_path,
+            **options,
+        }
 
-        selector.select(self._get_input_path(), output_path, select_opts)
+        selector.select(self._get_input_path(), select_opts)
         return Dataset(source=output_path)
 
     def join(
@@ -389,6 +394,36 @@ class Dataset:
         stats_opts = {**self._options, "quiet": True, "progress": False, **options}
         profile = processor.stats(self._get_input_path(), stats_opts)
         return profile or {}
+
+    def package(
+        self,
+        output: Optional[str] = None,
+        package_dir: Optional[str] = None,
+        **options,
+    ) -> dict[str, Any]:
+        """Generate a Frictionless Data Package descriptor for this dataset.
+
+        Args:
+            output: Output ``datapackage.json`` path.
+            package_dir: Optional directory to materialize the package.
+            **options: Additional packaging options (autodoc, metadata, etc.).
+
+        Returns:
+            Dictionary with ``package``, ``output_file``, and optional ``archive_path``.
+
+        Example:
+            >>> result = Dataset.read("data.csv").package(output="datapackage.json")
+            >>> result["package"]["name"]
+            'data'
+        """
+        from ..cmds.packager import Packager
+
+        pack_opts = {**self._options, "quiet": True, **options}
+        if output:
+            pack_opts["output"] = output
+        if package_dir:
+            pack_opts["package_dir"] = package_dir
+        return Packager().create([self._get_input_path()], pack_opts)
 
     def count(self, **options) -> int:
         """Count the number of rows in the dataset.

@@ -87,3 +87,14 @@ class TestConverter:
         """Test Converter initialization with custom batch size."""
         converter = Converter(batch_size=10000)
         assert converter.batch_size == 10000
+
+    def test_convert_returns_result(self, tmp_path):
+        """Test convert returns ConversionResult with row metrics."""
+        src = tmp_path / "in.csv"
+        dst = tmp_path / "out.jsonl"
+        src.write_text("a,b\n1,2\n")
+        result = Converter().convert(
+            str(src), str(dst), {"progress": False, "summary": False}
+        )
+        assert result.rows_out == 1
+        assert result.elapsed_seconds >= 0

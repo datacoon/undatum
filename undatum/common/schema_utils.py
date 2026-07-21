@@ -4,10 +4,40 @@ This module provides common functions used by both schema extraction
 and data analysis commands to eliminate code duplication.
 """
 
-from typing import Optional
+from typing import Any, Optional, Union
 
 import duckdb
 import pandas as pd
+
+from .command_utils import duckdb_read_csv_expr, duckdb_read_csv_options
+
+# DuckDB type → Frictionless Table Schema type (shared by packager and schemer).
+DUCKDB_FRICTIONLESS_TYPE_MAP = {
+    "VARCHAR": "string",
+    "BIGINT": "integer",
+    "INTEGER": "integer",
+    "DOUBLE": "number",
+    "FLOAT": "number",
+    "BOOLEAN": "boolean",
+    "DATE": "date",
+    "TIMESTAMP": "datetime",
+    "STRUCT": "object",
+    "JSON": "object",
+}
+
+# DuckDB type → JSON Schema type string (schemer JSON Schema export).
+DUCKDB_JSON_SCHEMA_TYPE_MAP = {
+    "VARCHAR": "string",
+    "BIGINT": "integer",
+    "INTEGER": "integer",
+    "DOUBLE": "number",
+    "FLOAT": "number",
+    "BOOLEAN": "boolean",
+    "DATE": "string",
+    "TIMESTAMP": "string",
+    "STRUCT": "object",
+    "JSON": "string",
+}
 
 
 def column_type_parse(column_type: str) -> list:
@@ -33,6 +63,59 @@ def column_type_parse(column_type: str) -> list:
     return [atype, str(is_array)]
 
 
+def duckdb_to_frictionless_type(duckdb_type: str, is_array: bool) -> dict[str, Any]:
+    """Convert DuckDB type to Frictionless Table Schema field type descriptor.
+
+    Args:
+        duckdb_type: DuckDB type string (e.g., 'VARCHAR', 'BIGINT').
+        is_array: Whether the field is an array.
+
+    Returns:
+        Frictionless type dict or scalar type string wrapper.
+    """
+    base_type = DUCKDB_FRICTIONLESS_TYPE_MAP.get(duckdb_type, "string")
+    if is_array:
+        return {"type": "array", "items": {"type": base_type}}
+    return {"type": base_type}
+
+
+def duckdb_to_json_schema_type(duckdb_type: str, is_array: bool) -> Union[str, dict[str, Any]]:
+    """Convert DuckDB type to JSON Schema type.
+
+    Args:
+        duckdb_type: DuckDB type string.
+        is_array: Whether the field is an array.
+
+    Returns:
+        JSON Schema type string or dict.
+    """
+    json_type = DUCKDB_JSON_SCHEMA_TYPE_MAP.get(duckdb_type, "string")
+    if is_array:
+        return {"type": "array", "items": {"type": json_type}}
+    return json_type
+
+
+def field_to_frictionless_schema(field: Any) -> dict[str, Any]:
+    """Convert an analyzer ``FieldSchema`` to a Frictionless Table Schema field.
+
+    Args:
+        field: Object with ``name``, ``ftype``, ``is_array``, optional stats and description.
+
+    Returns:
+        Frictionless Table Schema field dictionary.
+    """
+    field_schema: dict[str, Any] = {"name": field.name}
+    field_schema.update(duckdb_to_frictionless_type(field.ftype, field.is_array))
+    if getattr(field, "description", None):
+        field_schema["description"] = field.description
+    unique_count = getattr(field, "unique_count", None)
+    total_count = getattr(field, "total_count", None)
+    if unique_count is not None and total_count is not None and total_count > 0:
+        if unique_count == total_count:
+            field_schema["unique"] = True
+    return field_schema
+
+
 def duckdb_decompose(
     filename: Optional[str] = None,
     frame: Optional[pd.DataFrame] = None,
@@ -43,6 +126,7 @@ def duckdb_decompose(
     root: str = "",
     ignore_errors: bool = True,
     use_summarize: bool = False,
+    delimiter: Optional[str] = None,
 ):
     """Decompose file or DataFrame structure using DuckDB.
 
@@ -60,6 +144,7 @@ def duckdb_decompose(
         root: Root path prefix for nested queries (used internally for recursion).
         ignore_errors: Whether to ignore parsing errors in DuckDB (default: True).
         use_summarize: If True, use 'summarize' (for analyzer), else use 'describe' (for schemer).
+        delimiter: CSV/TSV delimiter (passed to DuckDB read_csv when set).
 
     Returns:
         List of lists containing field information:
@@ -73,19 +158,26 @@ def duckdb_decompose(
     if filename is None and frame is None:
         raise ValueError("Either filename or frame must be provided")
 
-    text_ignore = ", ignore_errors=true" if ignore_errors else ""
+    json_ignore = ", ignore_errors=true" if ignore_errors else ""
     if filetype in ["csv", "tsv"]:
         if filename is not None:
             # For schemer (describe), use sample_size; for analyzer (summarize), don't
             if use_summarize:
-                read_func = f"read_csv('{filename}'{text_ignore})"
+                read_func = duckdb_read_csv_expr(
+                    filename, delimiter, ignore_errors=ignore_errors
+                )
             else:
-                read_func = f"read_csv('{filename}'{text_ignore}, sample_size={limit})"
+                read_func = duckdb_read_csv_expr(
+                    filename,
+                    delimiter,
+                    ignore_errors=ignore_errors,
+                    sample_size=limit,
+                )
         else:
             read_func = "frame"
     elif filetype in ["json", "jsonl"]:
         if filename is not None:
-            read_func = f"read_json('{filename}'{text_ignore})"
+            read_func = f"read_json('{filename}'{json_ignore})"
         else:
             read_func = "frame"
     else:
@@ -354,6 +446,7 @@ def duckdb_decompose(
                         root=item[0] if item and len(item) > 0 else sub_path,
                         ignore_errors=ignore_errors,
                         use_summarize=use_summarize,
+                        delimiter=delimiter,
                     )
                     for subitem in subtable:
                         table.append(subitem)

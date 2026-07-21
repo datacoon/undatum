@@ -8,6 +8,7 @@ from typing import Any, Optional
 
 from iterable.helpers.detect import open_iterable
 
+from ..common.command_utils import apply_iterable_csv_delimiter
 from ..common.path_utils import is_s3_uri
 from ..formats.s3 import get_s3_client, parse_s3_uri
 
@@ -24,6 +25,11 @@ def _is_native_cloud_uri(path: str) -> bool:
     the boto3-based temp-file path so AWS region/profile options keep working).
     """
     return isinstance(path, str) and path.startswith(_NATIVE_CLOUD_SCHEMES)
+
+
+def _configure_iterable(iterable, path: str, iterableargs: dict) -> None:
+    """Apply undatum-specific iterable configuration after open."""
+    apply_iterable_csv_delimiter(iterable, path, iterableargs)
 
 
 def _find_plugin_connector(path: str):
@@ -102,6 +108,7 @@ def open_iterable_with_s3(
         if is_db_uri(path):
             db_iterable = open_db_source(path, iterableargs=iterableargs)
             try:
+                _configure_iterable(db_iterable, path, iterableargs)
                 yield db_iterable
             finally:
                 if hasattr(db_iterable, "close"):
@@ -111,6 +118,7 @@ def open_iterable_with_s3(
     # GCS/Azure/s3a are opened directly by iterabledata (read and write).
     if _is_native_cloud_uri(path):
         with open_iterable(path, mode=mode, iterableargs=iterableargs) as iterable:
+            _configure_iterable(iterable, path, iterableargs)
             yield iterable
         return
 
@@ -119,6 +127,7 @@ def open_iterable_with_s3(
             # Delegate S3 writes to iterabledata's native fsspec cloud support
             # instead of failing; reads still use the boto3 temp-file path below.
             with open_iterable(path, mode=mode, iterableargs=iterableargs) as iterable:
+                _configure_iterable(iterable, path, iterableargs)
                 yield iterable
             return
 
@@ -140,6 +149,7 @@ def open_iterable_with_s3(
 
             # Use temporary file with open_iterable
             with open_iterable(temp_file, mode=mode, iterableargs=iterableargs) as iterable:
+                _configure_iterable(iterable, temp_file, iterableargs)
                 yield iterable
         finally:
             # Clean up temporary file
@@ -151,6 +161,7 @@ def open_iterable_with_s3(
     else:
         # Local file: use open_iterable directly
         with open_iterable(path, mode=mode, iterableargs=iterableargs) as iterable:
+            _configure_iterable(iterable, path, iterableargs)
             yield iterable
 
 
@@ -210,11 +221,15 @@ def open_path(
         from ..common.db_source import is_db_uri, open_db_source
 
         if is_db_uri(path):
-            return open_db_source(path, iterableargs=iterableargs)
+            db_iterable = open_db_source(path, iterableargs=iterableargs)
+            _configure_iterable(db_iterable, path, iterableargs)
+            return db_iterable
 
     # GCS/Azure/s3a are opened directly by iterabledata (read and write).
     if _is_native_cloud_uri(path):
-        return open_iterable(path, mode=mode, iterableargs=iterableargs)
+        iterable = open_iterable(path, mode=mode, iterableargs=iterableargs)
+        _configure_iterable(iterable, path, iterableargs)
+        return iterable
 
     if not is_s3_uri(path):
         connector = _find_plugin_connector(path)
@@ -230,8 +245,11 @@ def open_path(
                 if os.path.exists(temp_file):
                     os.remove(temp_file)
                 raise
+            _configure_iterable(inner, temp_file, iterableargs)
             return _TempFileCleanupIterable(inner, temp_file)
-        return open_iterable(path, mode=mode, iterableargs=iterableargs)
+        inner = open_iterable(path, mode=mode, iterableargs=iterableargs)
+        _configure_iterable(inner, path, iterableargs)
+        return inner
 
     if mode == "w":
         # Delegate S3 writes to iterabledata's native fsspec cloud support.
@@ -251,4 +269,5 @@ def open_path(
         if os.path.exists(temp_file):
             os.remove(temp_file)
         raise
+    _configure_iterable(inner, temp_file, iterableargs)
     return _TempFileCleanupIterable(inner, temp_file)

@@ -96,6 +96,9 @@ cloud = [
     "gcsfs",
     "adlfs",
 ]
+frictionless = [
+    "frictionless>=5.0",
+]
 postgres = [
     "psycopg2-binary",
 ]

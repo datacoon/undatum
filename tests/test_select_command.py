@@ -5,7 +5,9 @@ from pathlib import Path
 
 import pytest
 
+from undatum import Dataset
 from undatum.cmds.selector import Selector
+from undatum.utils import select_fields
 
 
 def read_jsonl(path: str) -> list[dict]:
@@ -68,6 +70,7 @@ def test_select_filter_translation_matches_iterable(sample_csv_file, tmp_path):
     )
 
     assert read_jsonl(str(iterable_output)) == read_jsonl(str(duckdb_output))
+    assert read_jsonl(str(iterable_output)) == [{"name": "Alice", "age": "30"}]
 
 
 def test_select_stdout_jsonl(capsys, sample_csv_file):
@@ -94,3 +97,70 @@ def test_select_large_batch(sample_csv_file, tmp_path):
     )
 
     assert len(read_jsonl(str(output_file))) == 1505
+
+
+def test_select_nested_fields_uses_iterable(sample_jsonl_file, tmp_path):
+    nested_file = tmp_path / "nested.jsonl"
+    nested_file.write_text(
+        json.dumps({"user": {"name": "Alice", "city": "NYC"}, "age": 30}) + "\n"
+        + json.dumps({"user": {"name": "Bob", "city": "LA"}, "age": 25}) + "\n"
+    )
+
+    output_file = tmp_path / "nested_select.jsonl"
+    Selector().select(
+        str(nested_file),
+        {
+            "fields": "user.name,user.city",
+            "output": str(output_file),
+            "engine": "duckdb",
+            "format_in": "jsonl",
+        },
+    )
+
+    assert read_jsonl(str(output_file)) == [
+        {"user": {"name": "Alice", "city": "NYC"}},
+        {"user": {"name": "Bob", "city": "LA"}},
+    ]
+
+
+def test_select_non_comma_csv_duckdb(tmp_path):
+    csv_file = tmp_path / "semicolon.csv"
+    csv_file.write_text("name;age\nAlice;30\nBob;25\n")
+
+    output_file = tmp_path / "semicolon_out.jsonl"
+    Selector().select(
+        str(csv_file),
+        {
+            "fields": "name,age",
+            "delimiter": ";",
+            "output": str(output_file),
+            "engine": "duckdb",
+            "format_in": "csv",
+        },
+    )
+
+    assert read_jsonl(str(output_file)) == [
+        {"name": "Alice", "age": "30"},
+        {"name": "Bob", "age": "25"},
+    ]
+
+
+def test_select_fields_non_destructive():
+    record = {"name": "Alice", "age": 30, "city": "NYC"}
+    original = dict(record)
+    selected = select_fields(record, [["name"], ["age"]])
+
+    assert record == original
+    assert selected == {"name": "Alice", "age": 30}
+
+
+def test_dataset_select_sdk(sample_csv_file, tmp_path):
+    output_file = tmp_path / "sdk_select.jsonl"
+    ds = Dataset.read(sample_csv_file)
+    result = ds.select(["name", "city"], output=str(output_file))
+
+    assert result._source == str(output_file)
+    assert read_jsonl(str(output_file)) == [
+        {"name": "Alice", "city": "New York"},
+        {"name": "Bob", "city": "London"},
+    ]

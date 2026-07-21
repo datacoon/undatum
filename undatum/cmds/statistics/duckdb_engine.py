@@ -6,6 +6,11 @@ import duckdb
 from iterable.helpers.detect import detect_file_type
 from tqdm import tqdm
 
+from ...common.command_utils import (
+    duckdb_read_csv_expr,
+    get_iterable_options,
+    resolve_csv_delimiter,
+)
 from ...common.s3_iterable import open_iterable_with_s3
 from ...common.schema_utils import duckdb_decompose
 from ...constants import DEFAULT_DICT_SHARE
@@ -15,7 +20,7 @@ from ...utils import dict_generator, get_option, guess_datatype
 class DuckDBStatsMixin:
     """DuckDB statistics engine methods for StatProcessor."""
 
-    def _compute_duckdb_basic_stats(self, fromfile, filetype):
+    def _compute_duckdb_basic_stats(self, fromfile, filetype, delimiter=None):
         """Compute basic statistics using DuckDB's duckdb_decompose with summarize.
 
         Args:
@@ -38,6 +43,7 @@ class DuckDBStatsMixin:
             recursive=True,
             ignore_errors=True,
             use_summarize=True,
+            delimiter=delimiter,
         )
 
         fielddata = {}
@@ -122,7 +128,7 @@ class DuckDBStatsMixin:
 
         return fielddata, fieldtypes, total_count
 
-    def _compute_duckdb_length_stats(self, fromfile, filetype, field_paths):
+    def _compute_duckdb_length_stats(self, fromfile, filetype, field_paths, delimiter=None):
         """Compute length statistics (minlen, maxlen, avglen) for each field using DuckDB.
 
         Args:
@@ -136,11 +142,10 @@ class DuckDBStatsMixin:
         length_stats = {}
 
         # Determine read function based on file type
-        ignore_errors = ", ignore_errors=true"
         if filetype in ["csv", "tsv"]:
-            read_func = f"read_csv('{fromfile}'{ignore_errors})"
+            read_func = duckdb_read_csv_expr(fromfile, delimiter)
         elif filetype in ["json", "jsonl"]:
-            read_func = f"read_json('{fromfile}'{ignore_errors})"
+            read_func = f"read_json('{fromfile}', ignore_errors=true)"
         else:
             # For other formats (like Parquet), use direct table reference
             read_func = f"'{fromfile}'"
@@ -223,13 +228,12 @@ class DuckDBStatsMixin:
         return length_stats
 
     @staticmethod
-    def _duckdb_read_func(fromfile, filetype):
+    def _duckdb_read_func(fromfile, filetype, delimiter=None):
         """Build a DuckDB read function expression for the given file."""
-        ignore_errors = ", ignore_errors=true"
         if filetype in ["csv", "tsv"]:
-            return f"read_csv('{fromfile}'{ignore_errors})"
+            return duckdb_read_csv_expr(fromfile, delimiter)
         if filetype in ["json", "jsonl"]:
-            return f"read_json('{fromfile}'{ignore_errors})"
+            return f"read_json('{fromfile}', ignore_errors=true)"
         return f"'{fromfile}'"
 
     @staticmethod
@@ -247,7 +251,7 @@ class DuckDBStatsMixin:
             return None
         return ".".join(f'"{part}"' for part in field_parts)
 
-    def _compute_duckdb_missing_values(self, fromfile, filetype, field_paths, total_count):
+    def _compute_duckdb_missing_values(self, fromfile, filetype, field_paths, total_count, delimiter=None):
         """Compute missing value counts and cardinality for each field using DuckDB.
 
         Args:
@@ -261,7 +265,7 @@ class DuckDBStatsMixin:
                 'missing_rate' and 'cardinality_pct' keys
         """
         missing_stats = {}
-        read_func = self._duckdb_read_func(fromfile, filetype)
+        read_func = self._duckdb_read_func(fromfile, filetype, delimiter)
 
         for field_path in field_paths:
             quoted_field = self._quote_field_path(field_path)
@@ -294,7 +298,7 @@ class DuckDBStatsMixin:
 
         return missing_stats
 
-    def _compute_duckdb_distributions(self, fromfile, filetype, field_paths, finfields):
+    def _compute_duckdb_distributions(self, fromfile, filetype, field_paths, finfields, delimiter=None):
         """Compute distribution statistics (mean, median, min, max, stddev) for numerical fields.
 
         Args:
@@ -308,7 +312,7 @@ class DuckDBStatsMixin:
                 'median' and 'stddev' keys (numerical fields only)
         """
         distribution_stats = {}
-        read_func = self._duckdb_read_func(fromfile, filetype)
+        read_func = self._duckdb_read_func(fromfile, filetype, delimiter)
 
         for field_path in field_paths:
             if finfields.get(field_path) not in ("int", "float", "numeric"):
@@ -458,7 +462,7 @@ class DuckDBStatsMixin:
 
         return type_distributions
 
-    def _compute_duckdb_dictionaries(self, fromfile, filetype, fielddata, finfields, dictshare):
+    def _compute_duckdb_dictionaries(self, fromfile, filetype, fielddata, finfields, dictshare, delimiter=None):
         """Compute value frequency dictionaries for low-cardinality fields using DuckDB GROUP BY.
 
         Args:
@@ -474,11 +478,10 @@ class DuckDBStatsMixin:
         dictionaries = {}
 
         # Determine read function based on file type
-        ignore_errors = ", ignore_errors=true"
         if filetype in ["csv", "tsv"]:
-            read_func = f"read_csv('{fromfile}'{ignore_errors})"
+            read_func = duckdb_read_csv_expr(fromfile, delimiter)
         elif filetype in ["json", "jsonl"]:
-            read_func = f"read_json('{fromfile}'{ignore_errors})"
+            read_func = f"read_json('{fromfile}', ignore_errors=true)"
         else:
             read_func = f"'{fromfile}'"
 
@@ -596,6 +599,9 @@ class DuckDBStatsMixin:
         if filetype is None:
             raise ValueError(f"Could not detect file type for {fromfile}")
 
+        iterableargs = get_iterable_options(options)
+        csv_delimiter = resolve_csv_delimiter(iterableargs, filename=fromfile, filetype=filetype)
+
         dictshare = get_option(options, "dictshare")
         if dictshare and str(dictshare).isdigit():
             dictshare = int(dictshare)
@@ -606,11 +612,12 @@ class DuckDBStatsMixin:
         total_count = 0
         if show_progress:
             try:
-                ignore_errors = ", ignore_errors=true"
                 if filetype in ["json", "jsonl"]:
-                    query_str = f"SELECT COUNT(*) FROM read_json('{fromfile}'{ignore_errors})"
+                    query_str = f"SELECT COUNT(*) FROM read_json('{fromfile}', ignore_errors=true)"
                 elif filetype in ["csv", "tsv"]:
-                    query_str = f"SELECT COUNT(*) FROM read_csv('{fromfile}'{ignore_errors})"
+                    query_str = (
+                        f"SELECT COUNT(*) FROM {duckdb_read_csv_expr(fromfile, csv_delimiter)}"
+                    )
                 else:
                     query_str = f"SELECT COUNT(*) FROM '{fromfile}'"
                 with tqdm(desc="Counting rows", unit="rows", leave=False, total=None) as pbar:
@@ -630,7 +637,7 @@ class DuckDBStatsMixin:
                 leave=False,
             ) as pbar:
                 fielddata, fieldtypes, computed_count = self._compute_duckdb_basic_stats(
-                    fromfile, filetype
+                    fromfile, filetype, csv_delimiter
                 )
                 # Use computed count if we didn't get it from Phase 0
                 if total_count == 0:
@@ -640,7 +647,7 @@ class DuckDBStatsMixin:
                 pbar.update(0)  # Already at total, just refresh display
         else:
             fielddata, fieldtypes, computed_count = self._compute_duckdb_basic_stats(
-                fromfile, filetype
+                fromfile, filetype, csv_delimiter
             )
             if total_count == 0:
                 total_count = computed_count
@@ -665,7 +672,7 @@ class DuckDBStatsMixin:
 
         # Phase 3: Compute missing values and cardinality
         missing_stats = self._compute_duckdb_missing_values(
-            fromfile, filetype, field_paths, total_count
+            fromfile, filetype, field_paths, total_count, csv_delimiter
         )
 
         # Merge missing value statistics into fielddata
@@ -676,7 +683,9 @@ class DuckDBStatsMixin:
                 fielddata[field_path]["cardinality_pct"] = stats["cardinality_pct"]
 
         # Phase 4: Compute length statistics (minlen, maxlen, avglen)
-        length_stats = self._compute_duckdb_length_stats(fromfile, filetype, field_paths)
+        length_stats = self._compute_duckdb_length_stats(
+            fromfile, filetype, field_paths, csv_delimiter
+        )
 
         # Merge length statistics into fielddata
         for field_path, stats in length_stats.items():
@@ -724,7 +733,7 @@ class DuckDBStatsMixin:
 
         # Phase 6: Compute distribution statistics for numerical fields
         distribution_stats = self._compute_duckdb_distributions(
-            fromfile, filetype, field_paths, finfields
+            fromfile, filetype, field_paths, finfields, csv_delimiter
         )
 
         # Merge distribution statistics into fielddata
@@ -744,7 +753,7 @@ class DuckDBStatsMixin:
 
         # Phase 8: Dictionary construction for low-cardinality fields
         dictionaries = self._compute_duckdb_dictionaries(
-            fromfile, filetype, fielddata, finfields, dictshare
+            fromfile, filetype, fielddata, finfields, dictshare, csv_delimiter
         )
 
         # Build dictkeys list and populate dicts
