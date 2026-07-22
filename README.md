@@ -2,7 +2,7 @@
 
 > A powerful command-line tool for data processing and analysis
 
-**Version:** 1.5.0
+**Version:** 1.6.0
 
 **undatum** (pronounced *un-da-tum*) is a modern CLI tool designed to make working with large datasets as simple and efficient as possible. It provides a unified interface for converting, analyzing, validating, and transforming data across multiple formats.
 
@@ -34,7 +34,7 @@
 - [`docs/FORMAT_SUPPORT.md`](docs/FORMAT_SUPPORT.md) — honest format capability matrix
 - [`docs/POSITIONING.md`](docs/POSITIONING.md) — undatum vs miller / DuckDB / csvkit
 - [`docs/LARGE_FILES.md`](docs/LARGE_FILES.md) — multi-GB convert/sort/dedup guidance
-- [`CHANGELOG.md`](CHANGELOG.md) for version history (current release: **1.5.0**)
+- [`CHANGELOG.md`](CHANGELOG.md) for version history (current release: **1.6.0**)
 - `WORKFLOW_GUIDE.md` for contributor workflow and OpenSpec usage
 - `openspec/` for change proposals, specs, and implementation summaries
 - `examples/doc/` for dataset documentation output samples

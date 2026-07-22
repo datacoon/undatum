@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.0] - 2026-07-22
+
 ### Added
 - **`repack` command** — recompress container codecs (`.gz`/`.zst`/…) at max by default, or rewrite Parquet/ORC/AVRO with native compression; supports `--level` and `--progress`
 - **`--low-memory` on convert/sort/dedup** — spill-to-disk paths for large files (DuckDB COPY for duckable→Parquet converts; external merge sort; disk-backed exact dedup)
@@ -40,6 +42,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`repack` progress bar** — closing an indeterminate tqdm bar (`total=None`) no longer raises `TypeError: bool() undefined…`
 - **`package create`** — uses `UndatumError` hierarchy for missing inputs/files; avoids duplicate LLM calls when `--autodoc` is enabled
 - **`analyze`** — handles empty record sets without failing schema inference
+- **`uniq`** — DuckDB engine keeps results instead of reporting an unsupported engine
 
 ### Notes
 - **iterabledata engine upgrades** (inherited when `pip` resolves a recent iterabledata on Python 3.10+; undatum still declares `requires-python >= 3.9`):
@@ -342,7 +345,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - First public release on PyPI and updated github code
 
-[Unreleased]: https://github.com/datacoon/undatum/compare/v1.5.0...HEAD
+[Unreleased]: https://github.com/datacoon/undatum/compare/v1.6.0...HEAD
+[1.6.0]: https://github.com/datacoon/undatum/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/datacoon/undatum/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/datacoon/undatum/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/datacoon/undatum/compare/v1.1.1...v1.3.0
