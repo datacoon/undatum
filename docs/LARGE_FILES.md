@@ -12,10 +12,27 @@ undatum convert huge.jsonl.zst huge.parquet --low-memory
 # Force smaller iterabledata write batches even when DuckDB is unavailable
 undatum convert data.xml data.parquet --low-memory --engine python --batch-size 5000
 
+# Multiprocessing for CPU-bound Python-engine convert (GitHub #18 / P1.8)
+# Uses process-pool chunk batches; preserves row order; omit --threads for sequential
+undatum convert big.csv out.jsonl --engine python --threads 8
+
+# Parallel rule-file validation / iterable stats
+undatum validate data.csv --rules rules.yml --threads 4
+undatum stats data.csv --engine iterable --threads 4
+
 # External merge sort / disk-backed dedup
 undatum sort data.jsonl --by ts --low-memory --output sorted.jsonl
 undatum dedup data.jsonl --key-fields id --low-memory --output unique.jsonl
 ```
+
+## Multiprocessing notes
+
+- `--threads N` opts into undatum process-pool chunk parallelism on **Python/iterable**
+  paths. Small files may be slower due to process startup overhead.
+- DuckDB already parallelizes internally. Prefer `--engine duckdb` / `--duckdb-threads`
+  for duckable formats; undatum does **not** wrap DuckDB `COPY` in an extra process pool.
+- Bulk directory conversion (`--recursive`) already uses `--threads` as concurrent file workers.
+- Order-sensitive whole-file ops (`sort`, global `dedup`) are not parallelized this way.
 
 ## Notes
 

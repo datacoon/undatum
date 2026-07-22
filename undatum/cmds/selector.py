@@ -188,10 +188,46 @@ def get_duckdb_fields_uniq(
 
 
 def get_iterable_fields_freq(
-    iterable, fields, dolog=False, filter_expr=None, dq_instance=None
+    iterable, fields, dolog=False, filter_expr=None, dq_instance=None, threads=None
 ):  # pylint: disable=unused-argument
-    """Iterates and returns most frequent values."""
-    # dq_instance parameter kept for backward compatibility (no longer used)
+    """Iterates and returns most frequent values.
+
+    Args:
+        iterable: Record iterable.
+        fields: Field names to count.
+        dolog: Emit progress logs.
+        filter_expr: Optional filter expression.
+        dq_instance: Unused; kept for backward compatibility.
+        threads: When > 1, accumulate frequencies in a process pool.
+    """
+    use_parallel = bool(threads) and int(threads) > 1
+    if use_parallel:
+        from ..common.chunked_io import chunked_reader
+        from ..common.parallel import parallel_process_chunks
+        from ..common.parallel_workers import frequency_chunk, merge_frequency_partials
+
+        def _payloads():
+            for chunk in chunked_reader(iterable, chunk_size=5000):
+                yield (list(chunk), fields, filter_expr)
+
+        partials = list(
+            parallel_process_chunks(
+                frequency_chunk,
+                _payloads(),
+                num_threads=int(threads),
+                use_processes=True,
+                preserve_order=False,
+            )
+        )
+        valuedict = merge_frequency_partials(partials)
+        items = []
+        for k, v in valuedict.items():
+            row = k.split("\t")
+            row.append(v)
+            items.append(row)
+        items.sort(key=lambda x: x[-1], reverse=True)
+        return items
+
     n = 0
     valuedict = {}
     items = []
@@ -387,7 +423,13 @@ class Selector:
             iterable = open_iterable(fromfile, mode="r", iterableargs=iterableargs)
             try:
                 if iterable is not None:
-                    items = get_iterable_fields_freq(iterable, fields, dolog=True)
+                    items = get_iterable_fields_freq(
+                        iterable,
+                        fields,
+                        dolog=True,
+                        filter_expr=options.get("filter"),
+                        threads=options.get("threads"),
+                    )
                 else:
                     logging.info("File type not supported")
                     return

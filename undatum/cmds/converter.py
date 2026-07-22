@@ -1,14 +1,12 @@
 """File format conversion module."""
 
 import logging
-import xml.etree.ElementTree as etree
+import time
 from collections import defaultdict
-from typing import Any
+from typing import Any, Optional
 
-import pandas
-
+from ..common.chunked_io import chunked_reader
 from ..common.command_utils import (
-    ITERABLE_OPTIONS_KEYS,
     get_iterable_options,
     resolve_csv_delimiter,
 )
@@ -20,7 +18,10 @@ from ..common.errors import (
     ValidationError,
     find_similar_files,
 )
+from ..common.parallel import parallel_process_chunks
+from ..common.parallel_workers import transform_convert_chunk
 from ..common.path_utils import validate_file_path
+from ..common.progress import wrap_iterable
 from ..constants import COMPRESSED_FILE_TYPES, DUCKABLE_FILE_TYPES, SUPPORTED_FILE_TYPES
 from ..utils import get_file_type, get_option
 
@@ -376,7 +377,10 @@ class Converter:
         try:
             from iterable.helpers.detect import detect_file_type
 
-            from ..common.duckdb_config import create_duckdb_connection, get_duckdb_config_from_options
+            from ..common.duckdb_config import (
+                create_duckdb_connection,
+                get_duckdb_config_from_options,
+            )
 
             ftype_info = detect_file_type(fromfile)
             filetype = options.get("format_in")
@@ -467,9 +471,31 @@ class Converter:
         if "://" not in fromfile and self._try_duckdb_convert(fromfile, tofile, options):
             return None
 
-        from iterable.convert import convert as iterable_convert
-
         convert_kwargs = self._build_convert_kwargs(options, limit, fromfile=fromfile)
+        threads = options.get("threads")
+        # Process-pool path for single-file Python/iterable engine only.
+        # Skip cloud/DB URIs and DuckDB (already handled above).
+        if (
+            threads
+            and int(threads) > 1
+            and "://" not in fromfile
+            and "://" not in str(tofile)
+            and (options.get("engine") or "auto") != "duckdb"
+        ):
+            try:
+                result = self._convert_python_parallel(
+                    fromfile, tofile, convert_kwargs, int(threads), options
+                )
+                if options.get("summary", True):
+                    logging.info(format_conversion_summary(result))
+                return result
+            except Exception as e:
+                logging.warning(
+                    "Parallel convert failed (%s); falling back to sequential iterable path",
+                    e,
+                )
+
+        from iterable.convert import convert as iterable_convert
 
         try:
             result = iterable_convert(fromfile, tofile, **convert_kwargs)
@@ -497,6 +523,148 @@ class Converter:
         if options.get("summary", True):
             logging.info(format_conversion_summary(result))
         return result
+
+    def _convert_python_parallel(
+        self,
+        fromfile: str,
+        tofile: str,
+        convert_kwargs: dict,
+        threads: int,
+        options: dict,
+    ):
+        """Convert via process-pool chunk transforms with ordered writes.
+
+        Reads and writes stay on the main process; CPU-bound flatten/pad work
+        runs in worker processes. Record order is preserved.
+        """
+        import os
+
+        from iterable.helpers.detect import is_flat, open_iterable
+        from iterable.helpers.utils import dict_generator, make_flat
+        from iterable.types import ConversionResult
+
+        start = time.time()
+        iterableargs = dict(convert_kwargs.get("iterableargs") or {})
+        toiterableargs = dict(convert_kwargs.get("toiterableargs") or {})
+        scan_limit = convert_kwargs.get("scan_limit")
+        batch_size = int(convert_kwargs.get("batch_size") or self.batch_size)
+        is_flatten = bool(convert_kwargs.get("is_flatten"))
+        show_progress = bool(convert_kwargs.get("show_progress", True))
+        atomic = bool(convert_kwargs.get("atomic", False))
+        silent = bool(convert_kwargs.get("silent", False))
+
+        # Smaller in-flight window under low-memory mode.
+        window_factor = 1 if options.get("low_memory") else 2
+        max_in_flight = max(threads * window_factor, threads)
+
+        source_engine = iterableargs.pop("engine", "internal")
+
+        def reopen_source():
+            return open_iterable(
+                fromfile, mode="r", engine=source_engine, iterableargs=iterableargs
+            )
+
+        actual_tofile = tofile
+        temp_file: Optional[str] = None
+        if atomic:
+            temp_file = os.path.join(
+                os.path.dirname(tofile) or ".", os.path.basename(tofile) + ".tmp"
+            )
+            if os.path.exists(temp_file):
+                os.remove(temp_file)
+            actual_tofile = temp_file
+
+        it_in = reopen_source()
+        it_out = None
+        rows_in = 0
+        rows_out = 0
+        try:
+            keys: list[str] = []
+            is_flat_output = is_flat(tofile)
+            if is_flat_output:
+                key_set: set[str] = set()
+                n = 0
+                for item in it_in:
+                    if scan_limit is not None and n >= scan_limit:
+                        break
+                    n += 1
+                    if is_flatten:
+                        key_set.update(make_flat(item).keys())
+                    else:
+                        for path in dict_generator(item):
+                            key_set.add(".".join(path[:-1]))
+                keys = sorted(key_set)
+                try:
+                    it_in.reset()
+                except NotImplementedError:
+                    it_in.close()
+                    it_in = reopen_source()
+
+            out_args: dict[str, Any] = dict(toiterableargs)
+            if is_flat_output:
+                out_args = {"keys": keys, **out_args}
+            if actual_tofile != tofile and "format" not in out_args:
+                out_ext = tofile.lower().rsplit(".", 1)[-1] if "." in tofile else ""
+                if out_ext:
+                    out_args["format"] = out_ext
+
+            it_out = open_iterable(actual_tofile, mode="w", iterableargs=out_args)
+
+            records = wrap_iterable(
+                it_in,
+                desc="Converting",
+                unit="rows",
+                show_progress=show_progress and not silent,
+            )
+            chunks = chunked_reader(records, chunk_size=batch_size)
+
+            def _payload_chunks():
+                for chunk in chunks:
+                    yield (list(chunk), keys, is_flatten)
+
+            for processed in parallel_process_chunks(
+                transform_convert_chunk,
+                _payload_chunks(),
+                num_threads=threads,
+                use_processes=True,
+                preserve_order=True,
+                max_in_flight=max_in_flight,
+            ):
+                if not processed:
+                    continue
+                it_out.write_bulk(processed)
+                rows_in += len(processed)
+                rows_out += len(processed)
+
+            if atomic and temp_file:
+                os.replace(temp_file, tofile)
+                temp_file = None
+        finally:
+            if it_out is not None:
+                try:
+                    it_out.close()
+                except Exception:  # noqa: BLE001
+                    pass
+            try:
+                it_in.close()
+            except Exception:  # noqa: BLE001
+                pass
+            if temp_file and os.path.exists(temp_file):
+                try:
+                    os.remove(temp_file)
+                except OSError:
+                    pass
+
+        logging.info(
+            "convert: completed via parallel Python path (%d workers, %d rows)",
+            threads,
+            rows_out,
+        )
+        return ConversionResult(
+            rows_in=rows_in,
+            rows_out=rows_out,
+            elapsed_seconds=time.time() - start,
+        )
 
     def bulk_convert(self, source, dest, options=None, to_ext=None, parallel=None):
         """Convert many files (directory or glob) via iterabledata's bulk_convert.

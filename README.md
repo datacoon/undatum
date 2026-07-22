@@ -641,7 +641,7 @@ undatum convert s3://bucket/input.jsonl s3://bucket/output.parquet
 - `--recursive` / `--to-ext` — bulk-convert directories or globs
 - `--flatten` — flatten nested records to a flat schema
 - `--atomic` — write to a temp file and rename on success (local paths only)
-- `--threads`, `--batch-size`, `--progress` — throughput and feedback controls
+- `--threads`, `--batch-size`, `--progress` — throughput and feedback controls (`--threads` enables process-pool chunk parallelism for single-file Python-engine convert; also used as concurrent workers for `--recursive` bulk convert)
 
 ### `repack`
 
@@ -2693,12 +2693,13 @@ export LMSTUDIO_BASE_URL=http://localhost:1234/v1
 
 1. **Use appropriate formats**: Parquet/ORC/Avro for analytics, JSONL for streaming
 2. **DuckDB engine**: Pass `--engine duckdb` on `stats`, `select`, `count`, `sort`, `join`, and related commands for accelerated tabular workloads
-3. **Compression**: Use ZSTD or GZIP for better compression ratios
-4. **Chunking**: Split large files for parallel processing
-5. **Filtering**: Apply filters early (`select --filter`, `search`) to reduce data volume; DuckDB pushdown is used when possible
-6. **Streaming**: undatum streams data by default for low memory usage
-7. **AI documentation**: Prefer `ai doc` for block-based output; use local providers (Ollama/LM Studio) for zero-cost runs
-8. **Cloud I/O**: Read/write directly from `s3://`, `gs://`, or `az://` URIs instead of staging files locally
+3. **Multiprocessing (`--threads N`)**: For Python-engine `convert`, `validate` (rules), `stats`, and `frequency`, use process-pool chunk parallelism on multi-core machines. Example: `undatum convert big.csv out.jsonl --engine python --threads 8`. Prefer DuckDB for duckable formats instead of nesting pools. See [`docs/LARGE_FILES.md`](docs/LARGE_FILES.md).
+4. **Compression**: Use ZSTD or GZIP for better compression ratios
+5. **Chunking**: Split large files for parallel processing, or use `--batch-size` with `--threads`
+6. **Filtering**: Apply filters early (`select --filter`, `search`) to reduce data volume; DuckDB pushdown is used when possible
+7. **Streaming**: undatum streams data by default for low memory usage
+8. **AI documentation**: Prefer `ai doc` for block-based output; use local providers (Ollama/LM Studio) for zero-cost runs
+9. **Cloud I/O**: Read/write directly from `s3://`, `gs://`, or `az://` URIs instead of staging files locally
 
 ## AI-Powered Documentation
 

@@ -108,7 +108,15 @@ def convert(
         typer.Option(help="Write to a temp file and rename on success (local output only)."),
     ] = False,
     threads: Annotated[
-        int, typer.Option(help="Number of threads for parallel processing (default: CPU count).")
+        int,
+        typer.Option(
+            help=(
+                "Worker processes for Python-engine chunk parallelism "
+                "(single-file convert and bulk --recursive). "
+                "Omit for sequential processing. DuckDB uses its own threading "
+                "(see --engine / duckdb thread settings); not nested around DuckDB COPY."
+            )
+        ),
     ] = None,
     progress: Annotated[bool, typer.Option(help="Show progress bar.")] = True,
     low_memory: Annotated[
@@ -156,6 +164,9 @@ def convert(
 
         # Bulk-convert with a glob pattern
         undatum convert "data/*.jsonl" ./out --recursive --to-ext csv
+
+        # Parallel Python-engine convert (CPU-bound transforms / multi-core)
+        undatum convert big.csv out.jsonl --engine python --threads 8
     """
     if verbose:
         enable_verbose()
@@ -404,7 +415,13 @@ def stats(
         ),
     ] = "auto",
     threads: Annotated[
-        int, typer.Option(help="Number of threads for parallel processing (default: CPU count).")
+        int,
+        typer.Option(
+            help=(
+                "Worker processes for Python/iterable-engine chunk parallelism. "
+                "Omit for sequential. For DuckDB, prefer --duckdb-threads / engine settings."
+            )
+        ),
     ] = None,
 ):
     """Generate detailed statistics about a dataset.
@@ -491,6 +508,15 @@ def frequency(
     engine: Annotated[
         str, typer.Option(help="Processing engine: 'auto' (default), 'duckdb', or 'python'.")
     ] = "auto",
+    threads: Annotated[
+        int,
+        typer.Option(
+            help=(
+                "Worker processes for Python/iterable-engine frequency counting. "
+                "Omit for sequential. For DuckDB, use --duckdb-threads."
+            )
+        ),
+    ] = None,
     duckdb_threads: Annotated[
         int, typer.Option(help="Number of threads for DuckDB engine.")
     ] = None,
@@ -514,6 +540,7 @@ def frequency(
         "filetype": filetype,
         "start_page": start_page,
         "engine": engine,
+        "threads": threads,
         "duckdb_threads": duckdb_threads,
         "duckdb_memory": duckdb_memory,
         "duckdb_temp_dir": duckdb_temp_dir,
@@ -693,6 +720,15 @@ def validate(
         ),
     ] = None,
     progress: Annotated[bool, typer.Option(help="Show progress bar.")] = False,
+    threads: Annotated[
+        int,
+        typer.Option(
+            help=(
+                "Worker processes for rule-file validation chunk parallelism. "
+                "Omit for sequential processing."
+            )
+        ),
+    ] = None,
 ):
     """Validate data against validation rules.
 
@@ -703,6 +739,9 @@ def validate(
     Examples:
         # Rich validation with rule file
         undatum validate data.csv --rules validation-rules.yml
+
+        # Parallel rule-file validation
+        undatum validate data.csv --rules validation-rules.yml --threads 4
 
         # Legacy mode (backward compatible)
         undatum validate data.csv --fields email --rule common.email
@@ -731,6 +770,7 @@ def validate(
         "fail_on_warnings": fail_on_warnings,
         "max_violations": max_violations,
         "progress": progress,
+        "threads": threads,
     }
     acmd = Validator()
     acmd.validate(input_file, options)

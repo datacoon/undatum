@@ -10,6 +10,7 @@ from collections import defaultdict
 import bson
 import orjson
 
+from ..common.chunked_io import chunked_reader
 from ..common.errors import (
     FileNotFoundError,
     FormatError,
@@ -17,6 +18,8 @@ from ..common.errors import (
     find_similar_files,
 )
 from ..common.filter import match_filter
+from ..common.parallel import parallel_process_chunks
+from ..common.parallel_workers import validate_rules_chunk
 from ..common.path_utils import validate_file_path
 from ..common.progress import wrap_iterable
 from ..common.s3_iterable import open_iterable_with_s3
@@ -88,19 +91,42 @@ class Validator:
             use_context = False
 
         show_progress = get_option(options, "progress") or False
+        filter_expr = options.get("filter")
+        threads = options.get("threads")
+        use_parallel = bool(threads) and int(threads) > 1 and not use_context
 
         try:
-            for record_index, record in enumerate(
-                wrap_iterable(it_in, desc="Validating", unit="rows", show_progress=show_progress)
-            ):
-                total_records += 1
-                filter_expr = options.get("filter")
-                if filter_expr:
-                    if not match_filter(record, filter_expr):
-                        continue
+            records = wrap_iterable(
+                it_in, desc="Validating", unit="rows", show_progress=show_progress
+            )
+            if use_parallel:
+                chunk_size = int(options.get("batch_size") or 1000)
+                start_index = 0
 
-                violations = rule_set.validate_record(record, record_index)
-                all_violations.extend(violations)
+                def _payloads():
+                    nonlocal start_index
+                    for chunk in chunked_reader(records, chunk_size=chunk_size):
+                        payload = (list(chunk), start_index, rules_file, filter_expr)
+                        start_index += len(payload[0])
+                        yield payload
+
+                for violations, seen in parallel_process_chunks(
+                    validate_rules_chunk,
+                    _payloads(),
+                    num_threads=int(threads),
+                    use_processes=True,
+                    preserve_order=False,
+                ):
+                    total_records += seen
+                    all_violations.extend(violations)
+                all_violations.sort(key=lambda v: v.get("record_index", 0))
+            else:
+                for record_index, record in enumerate(records):
+                    total_records += 1
+                    if filter_expr and not match_filter(record, filter_expr):
+                        continue
+                    violations = rule_set.validate_record(record, record_index)
+                    all_violations.extend(violations)
         finally:
             if use_context:
                 iterable_context.__exit__(None, None, None)

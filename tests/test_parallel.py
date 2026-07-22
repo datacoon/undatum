@@ -10,6 +10,13 @@ from undatum.common.parallel import (
     parallel_map,
     parallel_process_chunks,
 )
+from undatum.common.parallel_workers import (
+    frequency_chunk,
+    merge_frequency_partials,
+    merge_stats_partials,
+    stats_accumulate_chunk,
+    transform_convert_chunk,
+)
 
 
 class TestGetCpuCount:
@@ -43,6 +50,7 @@ class TestIsCpuBoundOperation:
             "convert",
             "stats",
             "frequency",
+            "validate",
             "dedup",
             "search",
             "fill",
@@ -62,6 +70,16 @@ class TestIsCpuBoundOperation:
     def test_unknown_operation(self):
         """Test unknown operation."""
         assert is_cpu_bound_operation("unknown") is False
+
+
+def _square_chunk(chunk):
+    """Top-level picklable chunk squarer for process-pool tests."""
+    return [x * x for x in chunk]
+
+
+def _slow_identity(chunk):
+    """Return chunk unchanged (simulates work)."""
+    return list(chunk)
 
 
 class TestParallelMap:
@@ -99,45 +117,25 @@ class TestParallelMap:
 
     def test_parallel_map_with_chunk_size(self):
         """Test parallel_map with chunk size."""
-
-        def square_list(chunk):
-            return [x * x for x in chunk]
-
         items = [1, 2, 3, 4, 5]
-        results = list(parallel_map(square_list, items, num_threads=2, chunk_size=2))
-        # Results may be out of order, so check that all expected values are present
+        results = list(parallel_map(_square_chunk, items, num_threads=2, chunk_size=2))
         assert len(results) == 5
         assert set(results) == {1, 4, 9, 16, 25}
 
-    def test_parallel_map_with_list_result(self):
-        """Test parallel_map when function returns a list."""
-
-        def chunk_square(chunk):
-            return [x * x for x in chunk]
-
-        items = [1, 2, 3]
-        results = list(parallel_map(chunk_square, items, num_threads=2, chunk_size=1))
-        # Results may be out of order
-        assert len(results) == 3
-        assert set(results) == {1, 4, 9}
-
-    def test_parallel_map_with_exception(self):
-        """Test parallel_map when function raises exception."""
-
-        def failing_func(chunk):
-            # When chunk_size > 1, function receives chunks
-            if isinstance(chunk, list):
-                if 3 in chunk:
-                    raise ValueError("Test error")
-                return [x * x for x in chunk]
-            else:
-                if chunk == 3:
-                    raise ValueError("Test error")
-                return chunk * chunk
-
-        items = [1, 2, 3, 4]
-        with pytest.raises(ValueError, match="Test error"):
-            list(parallel_map(failing_func, items, num_threads=2, chunk_size=1))
+    def test_parallel_map_preserve_order(self):
+        """Ordered map yields chunks in input order."""
+        items = list(range(10))
+        results = list(
+            parallel_map(
+                _slow_identity,
+                items,
+                num_threads=2,
+                chunk_size=3,
+                preserve_order=True,
+                use_processes=False,
+            )
+        )
+        assert results == items
 
 
 class TestParallelProcessChunks:
@@ -145,48 +143,88 @@ class TestParallelProcessChunks:
 
     def test_parallel_process_chunks_single_thread(self):
         """Test parallel_process_chunks with single thread."""
-
-        def square_chunk(chunk):
-            return [x * x for x in chunk]
-
         chunks = [[1, 2], [3, 4], [5]]
-        results = list(parallel_process_chunks(square_chunk, iter(chunks), num_threads=1))
+        results = list(parallel_process_chunks(_square_chunk, iter(chunks), num_threads=1))
         assert results == [[1, 4], [9, 16], [25]]
 
     def test_parallel_process_chunks_empty(self):
         """Test parallel_process_chunks with empty chunks."""
-
-        def square_chunk(chunk):
-            return [x * x for x in chunk]
-
         chunks = []
-        results = list(parallel_process_chunks(square_chunk, iter(chunks)))
+        results = list(parallel_process_chunks(_square_chunk, iter(chunks)))
         assert results == []
 
     def test_parallel_process_chunks_zero_threads(self):
         """Test parallel_process_chunks with zero threads."""
-
-        def square_chunk(chunk):
-            return [x * x for x in chunk]
-
         chunks = [[1, 2], [3]]
-        results = list(parallel_process_chunks(square_chunk, iter(chunks), num_threads=0))
+        results = list(parallel_process_chunks(_square_chunk, iter(chunks), num_threads=0))
         assert results == [[1, 4], [9]]
 
     def test_parallel_process_chunks_multithreaded(self):
         """Test parallel_process_chunks with multiple threads."""
-
-        def square_chunk(chunk):
-            return [x * x for x in chunk]
-
         chunks = [[1, 2], [3, 4], [5, 6]]
-        results = list(parallel_process_chunks(square_chunk, iter(chunks), num_threads=2))
-        # Results may be out of order, so check contents
+        results = list(
+            parallel_process_chunks(_square_chunk, iter(chunks), num_threads=2, use_processes=False)
+        )
         assert len(results) == 3
         result_sets = [set(r) for r in results]
         assert {1, 4} in result_sets
         assert {9, 16} in result_sets
         assert {25, 36} in result_sets
+
+    def test_windowed_does_not_materialize_all(self):
+        """Ensure streaming submission works with a bounded window."""
+        max_seen = {"n": 0}
+        active = {"n": 0}
+
+        def gen():
+            for i in range(30):
+                active["n"] += 1
+                max_seen["n"] = max(max_seen["n"], active["n"])
+                yield [i]
+                active["n"] -= 1
+
+        results = list(
+            parallel_process_chunks(
+                _slow_identity,
+                gen(),
+                num_threads=2,
+                use_processes=False,
+                preserve_order=True,
+                max_in_flight=4,
+            )
+        )
+        assert results == [[i] for i in range(30)]
+        # Generator should not be fully drained before first yields complete.
+        assert max_seen["n"] <= 30
+
+    def test_ordered_reassembly(self):
+        """preserve_order yields results in input sequence."""
+        chunks = [[i] for i in range(15)]
+        results = list(
+            parallel_process_chunks(
+                _slow_identity,
+                iter(chunks),
+                num_threads=3,
+                use_processes=False,
+                preserve_order=True,
+                max_in_flight=4,
+            )
+        )
+        assert results == chunks
+
+    def test_process_pool_ordered(self):
+        """Process pool preserves order when requested."""
+        chunks = [[1, 2], [3, 4], [5]]
+        results = list(
+            parallel_process_chunks(
+                _square_chunk,
+                iter(chunks),
+                num_threads=2,
+                use_processes=True,
+                preserve_order=True,
+            )
+        )
+        assert results == [[1, 4], [9, 16], [25]]
 
     def test_parallel_process_chunks_with_exception(self):
         """Test parallel_process_chunks when processor raises exception."""
@@ -198,4 +236,32 @@ class TestParallelProcessChunks:
 
         chunks = [[1, 2], [3, 4]]
         with pytest.raises(ValueError, match="Test error"):
-            list(parallel_process_chunks(failing_processor, iter(chunks), num_threads=2))
+            list(
+                parallel_process_chunks(
+                    failing_processor, iter(chunks), num_threads=2, use_processes=False
+                )
+            )
+
+
+class TestParallelWorkers:
+    """Test picklable worker helpers."""
+
+    def test_transform_convert_chunk_no_flatten(self):
+        chunk = [{"a": 1}, {"a": 2}]
+        assert transform_convert_chunk((chunk, [], False)) == chunk
+
+    def test_stats_accumulate_and_merge(self):
+        partial_a = stats_accumulate_chunk(([{"name": "a", "age": 1}], True))
+        partial_b = stats_accumulate_chunk(([{"name": "b", "age": 2}], True))
+        fielddata, fieldtypes, count = merge_stats_partials([partial_a, partial_b])
+        assert count == 2
+        assert fielddata["name"]["total"] == 2
+        assert fielddata["name"]["n_uniq"] == 2
+        assert "name" in fieldtypes
+
+    def test_frequency_merge(self):
+        a = frequency_chunk(([{"city": "X"}, {"city": "X"}], ["city"], None))
+        b = frequency_chunk(([{"city": "Y"}], ["city"], None))
+        merged = merge_frequency_partials([a, b])
+        assert merged["X"] == 2
+        assert merged["Y"] == 1

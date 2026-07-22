@@ -1,57 +1,49 @@
-# Change: Add Parallel & Chunked Processing
+# Change: Add Multiprocessing for Data Conversion and Processing
 
 ## Why
 
-Undatum currently processes data sequentially, which limits performance on large files and
-multi-core systems. When DuckDB is not used (unsupported formats or forced Python engine),
-operations can be slow for multi-GB files. Parallel processing and chunked I/O would enable
-efficient processing of large datasets on modest hardware.
+GitHub issue [#18](https://github.com/datacoon/undatum/issues/18) requests multiprocessing for
+data conversion and processing so large files can use multiple CPU cores. Today, recursive
+multi-file conversion already accepts `--threads`, but **single-file** conversion and other
+CPU-bound Python-engine paths still run sequentially. On multi-core machines that leaves large
+CSV/JSONL transforms much slower than necessary (same class of speedup described in the
+[KDnuggets parallel large-file article](https://www.kdnuggets.com/2022/07/parallel-processing-large-file-python.html)
+referenced in #18).
 
-**Current Issues:**
-1. **Sequential processing**: All operations run on a single thread
-2. **Memory pressure**: Large files may be loaded entirely into memory
-3. **No progress indication**: Users cannot track progress of long-running operations
-4. **Underutilized hardware**: Multi-core systems are not leveraged
-
-**Expected Benefits:**
-- **2-8x performance improvement** on multi-core systems for CPU-bound operations
-- **Constant memory usage** regardless of file size
-- **Better user experience** with progress indicators
-- **Scalability** for large files on modest hardware
-
-## Implementation Reference
-
-**Primary Reference Document:** `dev/docs/mirothinker/MIROTHINKER_IMPROVEMENT_ROADMAP.md` (Section 1.2)
+This is roadmap item **P1.8** in `dev/docs/undatum-improvement-recommendations.md`.
 
 ## What Changes
 
-- **ADDED**: Chunked streaming I/O for all commands
-  - Read N lines/records at a time (configurable batch size)
-  - Process and write output incrementally
-  - Keep memory usage roughly constant
-- **ADDED**: `--threads N` option for CPU-bound operations
-  - Apply to `convert`, `stats`, `frequency`, `dedup`, `search`, etc.
-  - Use multiprocessing or multithreading depending on workload
-  - Default to number of CPU cores when not specified
-- **ADDED**: `--progress` flag for progress indication
-  - Textual or progress-bar style indicator
-  - Show approximate percentage, estimated time, and throughput
-  - Optional for all commands
+- **Harden** `undatum/common/parallel.py` for production use:
+  - Prefer **process pools** for CPU-bound chunk work (bypass GIL), with threads only for I/O-bound
+    workloads
+  - Process **batches/chunks** (not one task per record) to keep overhead low
+  - Bound memory with a sliding window of in-flight chunks (do not materialize the whole file)
+  - Optional ordered reassembly when callers require row order
+- **Wire** `--threads N` into single-file Python-engine paths where parallelism is safe:
+  - Primary: `convert` (chunked record transform / format write helpers)
+  - Next: order-insensitive or mergeable ops (`validate`, `stats`/`frequency` aggregation merge)
+- **Keep** existing multi-file bulk convert parallelism (`--recursive` + `--threads`) as-is
+- **Preserve** sequential, order-preserving behavior as the default when `--threads` is omitted
+- **Clarify** CLI help: `--threads` controls worker processes/threads for undatum parallel paths;
+  DuckDB continues to use its own `--duckdb-threads` / engine settings where applicable
+- Progress indication already exists for several commands; ensure parallel convert reports useful
+  chunk/file progress without corrupting stdout when piping
 
-All changes maintain backward compatibility. Single-threaded processing remains default when
-`--threads` is not specified.
+Infrastructure already present (partial): `chunked_io.py`, `parallel.py`, `progress.py`, unit tests
+for helpers, CLI `--threads` on `convert`/`stats` (bulk path only for convert today).
 
 ## Impact
 
-- **Affected specs**: `data-processing` capability
-- **Affected code**:
-  - `undatum/cmds/converter.py` - Add chunked I/O and threading
-  - `undatum/cmds/statistics.py` - Add parallel processing for stats
-  - `undatum/cmds/searcher.py` - Add parallel search processing
-  - `undatum/cmds/deduplicator.py` - Add parallel deduplication
-  - `undatum/cmds/filler.py` - Add parallel processing
-  - `undatum/core.py` - Add `--threads` and `--progress` options
-  - New shared module for parallel processing utilities
-  - New shared module for progress indication
-- **Dependencies**: No new dependencies (use standard library `multiprocessing` and `threading`)
-- **Backward compatibility**: Fully backward compatible - single-threaded processing remains default
+- Affected specs: `data-processing`
+- Affected code:
+  - `undatum/common/parallel.py` — windowed process-pool chunk processing, order option
+  - `undatum/common/chunked_io.py` — integrate with parallel convert loop if needed
+  - `undatum/cmds/converter.py` — single-file parallel path when `--threads` > 1 and engine is Python
+  - Selected CPU-bound commands (`validate`, stats/frequency merge paths) as follow-on wiring
+  - `undatum/cli/data_commands.py` — help text / examples for `--threads`
+  - Tests + README / large-file docs
+- Dependencies: no new packages (stdlib `concurrent.futures` / `multiprocessing`)
+- Backward compatibility: additive; omit `--threads` → current sequential behavior
+- Related changes: complements `add-streaming-parquet-low-memory` and DuckDB engine routing (prefer
+  DuckDB when it already parallelizes; use process pools for non-duckable Python paths)

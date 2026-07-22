@@ -5,7 +5,10 @@ import time
 
 from tqdm import tqdm
 
+from ...common.chunked_io import chunked_reader
 from ...common.command_utils import get_iterable_options
+from ...common.parallel import parallel_process_chunks
+from ...common.parallel_workers import merge_stats_partials, stats_accumulate_chunk
 from ...common.s3_iterable import open_iterable_with_s3
 from ...constants import DEFAULT_DICT_SHARE
 from ...utils import dict_generator, get_option, guess_datatype
@@ -42,129 +45,55 @@ class IterableStatsMixin:
         if "no_progress" in options and options["no_progress"]:
             show_progress = False
 
+        threads = options.get("threads")
+        use_parallel = bool(threads) and int(threads) > 1
+        nodates = self.qd is None
+
         # process data items one by one
         logging.debug(f"Start processing {fromfile}")
         start_time = time.time()
         try:
-            # Wrap iterable with tqdm if progress should be shown
-            if show_progress:
-                iterable_wrapped = tqdm(iterable, desc="Analyzing statistics", unit="rows")
-            else:
-                iterable_wrapped = iterable
+            if use_parallel:
+                batch_size = int(options.get("batch_size") or 5000)
+                records = (
+                    tqdm(iterable, desc="Analyzing statistics", unit="rows")
+                    if show_progress
+                    else iterable
+                )
 
-            # Use context manager for tqdm to ensure proper cleanup
-            if show_progress:
+                def _payloads():
+                    for chunk in chunked_reader(records, chunk_size=batch_size):
+                        yield (list(chunk), nodates)
+
+                partials = list(
+                    parallel_process_chunks(
+                        stats_accumulate_chunk,
+                        _payloads(),
+                        num_threads=int(threads),
+                        use_processes=True,
+                        preserve_order=False,
+                    )
+                )
+                fielddata, fieldtypes, count = merge_stats_partials(partials)
+            elif show_progress:
+                iterable_wrapped = tqdm(iterable, desc="Analyzing statistics", unit="rows")
                 with iterable_wrapped as pbar:
                     for item in pbar:
                         count += 1
-                        dk = dict_generator(item)
                         if count % 1000 == 0:
                             logging.debug(f"Processing {count} records of {fromfile}")
-                            # Update throughput in progress bar
                             elapsed = time.time() - start_time
                             if elapsed > 0:
-                                throughput = count / elapsed
-                                pbar.set_postfix({"throughput": f"{throughput:.0f} rows/s"})
-                        for i in dk:
-                            #            print(i)
-                            k = ".".join(i[:-1])
-                            if len(i) == 0:
-                                continue
-                            if i[0].isdigit():
-                                continue
-                            if len(i[0]) == 1:
-                                continue
-                            v = i[-1]
-                            if (
-                                k not in fielddata
-                            ):  # Use direct dict membership check instead of list()
-                                fielddata[k] = {
-                                    "key": k,
-                                    "uniq": {},
-                                    "n_uniq": 0,
-                                    "total": 0,
-                                    "share_uniq": 0.0,
-                                    "minlen": None,
-                                    "maxlen": 0,
-                                    "avglen": 0,
-                                    "totallen": 0,
-                                }
-                            fd = fielddata[k]
-                            uniqval = fd["uniq"].get(v, 0)
-                            fd["uniq"][v] = uniqval + 1
-                            fd["total"] += 1
-                            if uniqval == 0:
-                                fd["n_uniq"] += 1
-                                fd["share_uniq"] = (fd["n_uniq"] * 100.0) / fd["total"]
-                            fl = len(str(v))
-                            if fd["minlen"] is None:
-                                fd["minlen"] = fl
-                            else:
-                                fd["minlen"] = fl if fl < fd["minlen"] else fd["minlen"]
-                            fd["maxlen"] = fl if fl > fd["maxlen"] else fd["maxlen"]
-                            fd["totallen"] += fl
-                            fielddata[k] = fd
-                            if (
-                                k not in fieldtypes
-                            ):  # Use direct dict membership check instead of list()
-                                fieldtypes[k] = {"key": k, "types": {}}
-                            fd = fieldtypes[k]
-                            thetype = guess_datatype(v, self.qd)["base"]
-                            uniqval = fd["types"].get(thetype, 0)
-                            fd["types"][thetype] = uniqval + 1
-                            fieldtypes[k] = fd
+                                pbar.set_postfix(
+                                    {"throughput": f"{count / elapsed:.0f} rows/s"}
+                                )
+                        self._accumulate_stats_item(item, fielddata, fieldtypes)
             else:
-                for item in iterable_wrapped:
+                for item in iterable:
                     count += 1
-                    dk = dict_generator(item)
                     if count % 1000 == 0:
                         logging.debug(f"Processing {count} records of {fromfile}")
-                    for i in dk:
-                        #            print(i)
-                        k = ".".join(i[:-1])
-                        if len(i) == 0:
-                            continue
-                        if i[0].isdigit():
-                            continue
-                        if len(i[0]) == 1:
-                            continue
-                        v = i[-1]
-                        if k not in fielddata:  # Use direct dict membership check instead of list()
-                            fielddata[k] = {
-                                "key": k,
-                                "uniq": {},
-                                "n_uniq": 0,
-                                "total": 0,
-                                "share_uniq": 0.0,
-                                "minlen": None,
-                                "maxlen": 0,
-                                "avglen": 0,
-                                "totallen": 0,
-                            }
-                        fd = fielddata[k]
-                        uniqval = fd["uniq"].get(v, 0)
-                        fd["uniq"][v] = uniqval + 1
-                        fd["total"] += 1
-                        if uniqval == 0:
-                            fd["n_uniq"] += 1
-                            fd["share_uniq"] = (fd["n_uniq"] * 100.0) / fd["total"]
-                        fl = len(str(v))
-                        if fd["minlen"] is None:
-                            fd["minlen"] = fl
-                        else:
-                            fd["minlen"] = fl if fl < fd["minlen"] else fd["minlen"]
-                        fd["maxlen"] = fl if fl > fd["maxlen"] else fd["maxlen"]
-                        fd["totallen"] += fl
-                        fielddata[k] = fd
-                        if (
-                            k not in fieldtypes
-                        ):  # Use direct dict membership check instead of list()
-                            fieldtypes[k] = {"key": k, "types": {}}
-                        fd = fieldtypes[k]
-                        thetype = guess_datatype(v, self.qd)["base"]
-                        uniqval = fd["types"].get(thetype, 0)
-                        fd["types"][thetype] = uniqval + 1
-                        fieldtypes[k] = fd
+                    self._accumulate_stats_item(item, fielddata, fieldtypes)
         finally:
             iterable.close()
             iterable_context.__exit__(None, None, None)
@@ -218,6 +147,52 @@ class IterableStatsMixin:
         if not get_option(options, "quiet"):
             self._display_enhanced_statistics_table(fielddata, finfields, dictkeys)
         return profile
+
+    def _accumulate_stats_item(self, item, fielddata, fieldtypes):
+        """Update fielddata/fieldtypes for a single record (sequential path)."""
+        for i in dict_generator(item):
+            if len(i) == 0:
+                continue
+            if i[0].isdigit():
+                continue
+            if len(i[0]) == 1:
+                continue
+            k = ".".join(i[:-1])
+            v = i[-1]
+            if k not in fielddata:
+                fielddata[k] = {
+                    "key": k,
+                    "uniq": {},
+                    "n_uniq": 0,
+                    "total": 0,
+                    "share_uniq": 0.0,
+                    "minlen": None,
+                    "maxlen": 0,
+                    "avglen": 0,
+                    "totallen": 0,
+                }
+            fd = fielddata[k]
+            uniqval = fd["uniq"].get(v, 0)
+            fd["uniq"][v] = uniqval + 1
+            fd["total"] += 1
+            if uniqval == 0:
+                fd["n_uniq"] += 1
+                fd["share_uniq"] = (fd["n_uniq"] * 100.0) / fd["total"]
+            fl = len(str(v))
+            if fd["minlen"] is None:
+                fd["minlen"] = fl
+            else:
+                fd["minlen"] = fl if fl < fd["minlen"] else fd["minlen"]
+            fd["maxlen"] = fl if fl > fd["maxlen"] else fd["maxlen"]
+            fd["totallen"] += fl
+            fielddata[k] = fd
+            if k not in fieldtypes:
+                fieldtypes[k] = {"key": k, "types": {}}
+            fd = fieldtypes[k]
+            thetype = guess_datatype(v, self.qd)["base"]
+            uniqval = fd["types"].get(thetype, 0)
+            fd["types"][thetype] = uniqval + 1
+            fieldtypes[k] = fd
 
     def _display_statistics_table(self, fielddata, finfields, dictkeys):
         """Display statistics table using Rich library.
