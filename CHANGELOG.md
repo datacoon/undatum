@@ -34,11 +34,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`filter` SQL translation** — comparison and boolean expressions translate to DuckDB `WHERE` clauses for accelerated filtering
 - **`convert`** — removed legacy format-specific converters; routes through iterabledata with shared delimiter resolution
 - **Shared `command_utils`** — centralized iterable read options, CSV delimiter resolution, and DuckDB read expressions
+- **Docs synced with iterabledata 1.0.14–1.0.18** — format matrix and README now cover Avro writes, codec profiles (`fast`/`balanced`/`max`), GeoJSON Text Sequence / TAR / genomic VCF, Zarr / FlatGeobuf / genomic-interval / OTLP profiles, experimental open-data GIS/scientific/business formats, Paimon and DuckLake, and Delta/Iceberg write support (via `iterabledata[lakehouse]` and related extras). Catalog described as 140+ formats; `formats list --capabilities` remains authoritative for the installed engine
 
 ### Fixed
 - **`repack` progress bar** — closing an indeterminate tqdm bar (`total=None`) no longer raises `TypeError: bool() undefined…`
 - **`package create`** — uses `UndatumError` hierarchy for missing inputs/files; avoids duplicate LLM calls when `--autodoc` is enabled
 - **`analyze`** — handles empty record sets without failing schema inference
+
+### Notes
+- **iterabledata engine upgrades** (inherited when `pip` resolves a recent iterabledata on Python 3.10+; undatum still declares `requires-python >= 3.9`):
+  - **1.0.14** — Avro write support; ORC schema inference for unusual column names; DuckDB/SQLite default table names from output filename
+  - **1.0.16** — `geojsonseq`, read-only `tar` multi-member containers, `genomic_vcf`; XXE-hardened XML; stricter parse-error policy on some formats
+  - **1.0.17** — codec performance profiles; native Parquet/Arrow batch conversion; Zarr, GeoParquet, FlatGeobuf, BED/GFF, CRAM, OTLP profiles; bounded columnar I/O
+  - **1.0.18** — experimental open-data format pack (FileGDB, MIF, LAS, Access, MAT, SEG-Y, GRIB2, IATI, …); Paimon Row/Mosaic/tables and DuckLake; Delta Lake and Iceberg bounded writes (Hudi remains read-only)
 
 ## [1.5.0] - 2026-06-29
 

@@ -25,6 +25,9 @@ undatum dedup data.jsonl --key-fields id --low-memory --output unique.jsonl
 - Dedup spills unique keys to a temporary SQLite store when the in-memory set grows large, or
   immediately with `--low-memory`.
 - Temp files use the system temp directory unless `--duckdb-temp-dir` / temp options are set.
+- iterabledata 1.0.17+ keeps Parquet/Arrow writes in bounded batches (`row_group_size` / flush
+  batches) and exposes codec profiles `fast` / `balanced` / `max`; `undatum repack` defaults
+  to maximum container or format-native compression.
 
-See also: [Quickstarts](QUICKSTART.md), issue-oriented roadmap in
-`docs/undatum-improvement-recommendations.md`.
+See also: [Quickstarts](QUICKSTART.md), [Format support](FORMAT_SUPPORT.md), issue-oriented
+roadmap in `dev/docs/undatum-improvement-recommendations.md`.

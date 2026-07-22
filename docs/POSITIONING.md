@@ -15,7 +15,7 @@ Use the others when you want their specialized strengths.
 
 ## undatum strengths
 
-- Breadth: 100+ formats via iterabledata (inspect with `undatum formats list --capabilities`)
+- Breadth: 140+ formats via iterabledata (tabular, geospatial, lakehouse, scientific; inspect with `undatum formats list --capabilities`)
 - Streaming-first CLI with `--low-memory` for multi-GB converts/sorts/dedups
 - Validation, masking, Frictionless packaging, AI doc helpers
 - Agent-native surface (MCP + JSON tools)
@@ -30,4 +30,4 @@ Use the others when you want their specialized strengths.
 
 - [Quickstarts](QUICKSTART.md)
 - [Format support](FORMAT_SUPPORT.md)
-- Improvement roadmap signal summary: `docs/undatum-improvement-recommendations.md`
+- Improvement roadmap signal summary: `dev/docs/undatum-improvement-recommendations.md`

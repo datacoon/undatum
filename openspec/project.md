@@ -22,7 +22,7 @@
 ### Data Processing
 - **Pandas** - Data manipulation and analysis
 - **DuckDB** - In-memory analytics database for statistics
-- **iterabledata** - Streaming data processing utilities
+- **iterabledata** - Streaming multi-format engine (140+ formats; lakehouse/open-data packs in 1.0.18+; prefer ≥1.0.18 on Python 3.10+)
 - **orjson** - Fast JSON parsing
 
 ### Format Support

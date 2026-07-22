@@ -42,6 +42,7 @@ undatum db dump --db sqlite:///app.db --table users --output users.parquet --to 
 
 ## Next steps
 
-- [Format support matrix](FORMAT_SUPPORT.md)
+- [Format support matrix](FORMAT_SUPPORT.md) — 140+ formats, lakehouse/open-data notes, extras
 - [When to use undatum](POSITIONING.md)
+- [Large files](LARGE_FILES.md)
 - [Error handling](ERROR_HANDLING.md)

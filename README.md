@@ -8,7 +8,7 @@
 
 ## Features
 
-- **100+ formats via iterabledata**: CSV, JSON, JSON Lines, BSON, XML, XLS/XLSX, Parquet, AVRO, ORC, plus geospatial, statistical, scientific, RDF, log, config, graph, and feed formats. Run `undatum formats list` to see every supported format and its read/write capabilities.
+- **140+ formats via iterabledata**: CSV, JSON, JSON Lines, BSON, XML, XLS/XLSX, Parquet, AVRO, ORC, plus geospatial, lakehouse (Delta/Iceberg/Lance/DuckLake/Paimon), scientific, RDF, log, config, graph, and feed formats. Run `undatum formats list` to see every supported format and its read/write capabilities.
 - **Compression support**: GZ, XZ, BZ2, ZIP, ZSTD, LZ4, 7Z, Brotli, Snappy, LZO
 - **Multi-cloud I/O**: Read and write `s3://`, `gs://`/`gcs://`, and `az://`/`abfs://`/`abfss://` URIs natively via iterabledata (`pip install "undatum[cloud]"`)
 - **Database sources**: Read from PostgreSQL, MySQL/MariaDB, SQLite, MS SQL Server, ClickHouse, MongoDB, and Elasticsearch/OpenSearch (`undatum db query`)
@@ -608,7 +608,7 @@ undatum extract report.pdf --method text --pages 1-3 --output-format ndjson --ou
 
 ### `convert`
 
-Converts data between any formats supported by iterabledata (100+, see `undatum formats list`). Reading and writing are handled by the iterabledata engine, including cloud URIs (`s3://`, `gs://`, `az://`). Use `--recursive` to bulk-convert a directory or glob pattern.
+Converts data between any formats supported by iterabledata (140+, see `undatum formats list`). Reading and writing are handled by the iterabledata engine, including cloud URIs (`s3://`, `gs://`, `az://`). Use `--recursive` to bulk-convert a directory or glob pattern.
 
 ```bash
 # XML to JSON Lines
@@ -681,7 +681,7 @@ undatum formats list
 # Formats that can be used as conversion output
 undatum formats list --writable
 
-# Read-only inputs (e.g. ARFF, Delta, GPX, HDF5)
+# Read-only inputs (e.g. ARFF, Hudi, GPX, HDF5, TAR)
 undatum formats list --read-only
 
 # Capability matrix (bulk read/write, streaming, totals, tables, nested)
@@ -704,6 +704,7 @@ undatum formats export --output formats.json
 | Excel → JSON Lines | `undatum convert sheet.xlsx sheet.jsonl` |
 | XML → JSON Lines | `undatum convert --tagname item feed.xml feed.jsonl` |
 | Geospatial | `undatum convert points.geojson points.parquet` |
+| GeoJSON Text Sequence | `undatum convert features.geojsonl features.parquet` |
 | Bulk directory/glob | `undatum convert ./raw ./out --recursive --to-ext parquet` |
 
 **Format families** (non-exhaustive; run `formats list` for the full set):
@@ -711,18 +712,23 @@ undatum formats export --output formats.json
 | Family | Examples |
 |--------|----------|
 | Tabular text | `csv` (alias: `tsv`), `jsonl` (alias: `ndjson`), `annotatedcsv`, `csvw`, `fwf`, `ssv` |
-| Columnar / analytics | `parquet`, `orc`, `avro`, `arrow`, `geoparquet`, `ddb` |
+| Columnar / analytics | `parquet`, `orc`, `avro`, `arrow`, `geoparquet`, `zarr`, `ddb` |
+| Lakehouse | `delta`, `iceberg`, `lance`, `ducklake`, `paimon` (Hudi remains read-only) |
 | Documents / config | `json`, `yml` (alias: `yaml`), `xml`, `toml` |
-| Geospatial | `geojson`, `geojsonseq`, `gml`, `gpx`, `shp`, `gpkg`, `kml` |
-| Scientific / statistical | `h5`, `nc`, `sas`, `sav`, `dta` (many are read-only) |
+| Geospatial | `geojson`, `geojsonseq`, `gml`, `gpx`, `shp`, `gpkg`, `kml`, `fgdb`, `mif`, `las` |
+| Scientific / statistical | `h5`, `nc`, `mat`, `segy`, `grib2`, `sas`, `sav`, `dta` (many are read-only) |
+| Containers | `zip`, `tar` (read-only multi-member), WebDataset |
 | Logs / feeds | `log`, `gelf`, `cef`, `rss`, `kafka` |
-| Graph / RDF | `graphml`, `gexf`, `jsonld`, `nt`, `ttl`, `trig` |
+| Graph / RDF | `graphml`, `gexf`, `jsonld`, `nt`, `ttl`, `trig`, `hdt` |
+
+See [`docs/FORMAT_SUPPORT.md`](docs/FORMAT_SUPPORT.md) for extras (`iterabledata[lakehouse]`, GIS/scientific packs) and version notes.
 
 **Limitations:**
 
 - **Read-only formats** can be inputs but not outputs — check with `formats list --writable`.
 - **Schema-required outputs** (`protobuf`, `capnp`, `thrift`) need an externally supplied schema or message class and cannot be used as generic conversion targets.
 - Override detection when the file extension is ambiguous: `--format-in` / `--format-out` (see `undatum convert --help`).
+- Lakehouse and many open-data formats need the matching **iterabledata** optional extra and Python 3.10+.
 
 ### `count`
 
@@ -1937,7 +1943,7 @@ Plugins are automatically discovered from installed packages via the `undatum.pl
 
 ### `formats`
 
-Inspect the iterabledata format catalog (100+ formats). The list reflects installed optional dependencies and runtime capabilities on your machine.
+Inspect the iterabledata format catalog (140+ formats). The list reflects installed optional dependencies and runtime capabilities on your machine.
 
 ```bash
 # All formats with read/write flags
@@ -2572,7 +2578,7 @@ This uses the `qddate` library to automatically identify and parse date fields.
 
 ## Data Formats
 
-undatum supports **120+ formats** through iterabledata. Format detection is automatic from file extensions and content; override with `--format-in` / `--format-out` when needed. Run `undatum formats list` for the authoritative catalog on your installation.
+undatum supports **140+ formats** through iterabledata (exact catalog depends on the iterabledata version and optional extras). Format detection is automatic from file extensions and content; override with `--format-in` / `--format-out` when needed. Run `undatum formats list` for the authoritative catalog on your installation. Prefer **iterabledata ≥ 1.0.18** on Python 3.10+ for lakehouse writes and the open-data format pack — see [`docs/FORMAT_SUPPORT.md`](docs/FORMAT_SUPPORT.md).
 
 ### Core tabular formats
 
@@ -2581,21 +2587,25 @@ undatum supports **120+ formats** through iterabledata. Format detection is auto
 | **CSV / TSV** | `.csv`, `.tsv` (`csv`, alias `tsv`) | Delimiter and encoding auto-detected |
 | **JSON Lines** | `.jsonl`, `.ndjson` (`jsonl`, alias `ndjson`) | One JSON object per line; ideal for streaming |
 | **JSON** | `.json` | Array or object documents |
-| **Parquet / ORC / Avro** | `.parquet`, `.orc`, `.avro` | Columnar and binary row formats for analytics |
+| **Parquet / ORC / Avro** | `.parquet`, `.orc`, `.avro` | Columnar and binary row formats; Avro is writable (iterabledata 1.0.14+) |
+| **Arrow / Feather** | `.arrow`, `.feather` | Bounded batch I/O; native batch convert path available |
 | **Excel** | `.xls`, `.xlsx`, `.xlsb`, `.ods` | Sheet selection via `--start-page` on convert |
 | **BSON** | `.bson` | Binary JSON (MongoDB) |
+| **DuckDB / SQLite** | `.ddb`, `.duckdb`, `.sqlite`, `.db` | Table name defaults from output filename when omitted |
 
-### Structured, geospatial, and scientific
+### Structured, geospatial, scientific, and lakehouse
 
-- **XML** — convert with `--tagname` to specify the record element
+- **XML** — convert with `--tagname` to specify the record element (XXE-hardened parsers in iterabledata 1.0.16+)
 - **YAML / TOML / INI** — config and metadata formats (`yml`, `toml`, `ini`)
-- **Geospatial** — `geojson`, `geoparquet`, `gml`, `gpx`, `shp`, `gpkg`, `kml`, …
-- **Scientific / statistical** — `h5`, `nc`, `sas`, `sav`, `dta`, and others (many read-only)
-- **Graph / RDF** — `graphml`, `gexf`, `jsonld`, `nt`, `ttl`, `trig`, …
+- **Geospatial** — `geojson`, `geojsonseq`, `geoparquet`, `fgb`, `gpx`, `shp`, `gpkg`, `kml`, FileGDB (`fgdb`), MapInfo MIF, LAS, …
+- **Lakehouse** — Delta and Iceberg support bounded writes (1.0.18+); also Lance, DuckLake, Paimon; Hudi remains read-only. Install with `pip install "iterabledata[lakehouse]"` (and related extras)
+- **Scientific / statistical** — `h5`, `nc`, `mat`, `segy`, `grib2`, `sas`, `sav`, `dta`, and others (many read-only)
+- **Containers** — ZIP; read-only TAR multi-member archives (`tar` / `.tgz`); WebDataset
+- **Graph / RDF** — `graphml`, `gexf`, `jsonld`, `nt`, `ttl`, `trig`, `hdt`, …
 
 ### Compression
 
-Read and write through compressed containers without manual decompression: **GZ, XZ, BZ2, ZIP, ZSTD, LZ4, 7Z**, and other codecs supported by iterabledata.
+Read and write through compressed containers without manual decompression: **GZ, XZ, BZ2, ZIP, ZSTD, LZ4, 7Z**, and other codecs supported by iterabledata. Codec profiles `fast` / `balanced` / `max` are available in iterabledata 1.0.17+; `undatum repack` defaults to maximum compression.
 
 ```bash
 # Process JSONL inside a ZIP or XZ archive
@@ -2608,10 +2618,10 @@ undatum count data.jsonl.xz
 | Use case | Recommended formats |
 |----------|---------------------|
 | Streaming ETL / logs | JSON Lines, CSV |
-| Analytics / data lakes | Parquet, ORC, Avro |
+| Analytics / data lakes | Parquet, ORC, Avro, Delta, Iceberg |
 | API interchange | JSON, JSON Schema |
 | Packaging / catalogs | Frictionless Data Package (`undatum package`) |
-| Geospatial pipelines | GeoJSON → GeoParquet |
+| Geospatial pipelines | GeoJSON / GeoJSONSeq → GeoParquet |
 
 Inspect read/write capabilities before converting:
 

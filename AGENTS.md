@@ -31,8 +31,8 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 
 ### Key Capabilities
 
-- Multi-format I/O: CSV, JSON Lines, BSON, XML, XLS, XLSX, Parquet, AVRO, ORC, YAML, TSV
-- Compression: ZIP, XZ, GZ, BZ2, ZSTD, LZ4, 7Z
+- Multi-format I/O: CSV, JSON Lines, BSON, XML, XLS, XLSX, Parquet, AVRO, ORC, YAML, TSV, plus 140+ formats via `iterabledata` (geospatial, lakehouse, scientific; see `docs/FORMAT_SUPPORT.md`)
+- Compression: ZIP, XZ, GZ, BZ2, ZSTD, LZ4, 7Z (codec profiles `fast`/`balanced`/`max` via iterabledata)
 - Streaming processing for large files via `iterabledata`
 - Automatic encoding, delimiter, and file type detection
 - Data validation with built-in and custom rules
