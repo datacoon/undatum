@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Raised minimum dependency versions to address historical Snyk advisories for `setuptools`,
+  `dnspython`, `numpy`, and `zipp`.
+
 ## [1.6.0] - 2026-07-22
 
 ### Added

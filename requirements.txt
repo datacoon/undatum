@@ -1,12 +1,14 @@
 avro>=1.10.2
 chardet>=5.2.0
 click>=8.0.3
+dnspython>=2.6.1
 duckdb
 elasticsearch
 iterabledata
 jsonlines>=4.0.0
 lz4>=4.3.2
 mistql>=0.4.11
+numpy>=1.22.2
 openpyxl>=3.1.2
 orjson>=3.9.8
 pandas>=2.0.3
@@ -20,7 +22,7 @@ pyzstd
 qddate>=1.0.4
 requests
 rich>=13.6.0
-setuptools>=65.5.0
+setuptools>=70.0.0
 tabulate>=0.8.7
 tqdm
 typer
@@ -29,3 +31,4 @@ xlrd>=2.0.1
 xlwt
 xmltodict>=0.13.0
 xxhash
+zipp>=3.19.1
