@@ -149,7 +149,7 @@ def df_to_pyorc_schema(df):
             struct_schema.append(f"{k}:float")
         elif v == "float32":
             struct_schema.append(f"{k}:float")
-        elif v == "datetime64[ns]":
+        elif v.startswith("datetime64"):
             struct_schema.append(f"{k}:timestamp")
         elif v == "int32":
             struct_schema.append(f"{k}:int")

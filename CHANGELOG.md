@@ -5,7 +5,9 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased](https://github.com/datacoon/undatum/compare/v1.6.0...HEAD)
+## [Unreleased](https://github.com/datacoon/undatum/compare/v1.7.0...HEAD)
+
+## [1.7.0](https://github.com/datacoon/undatum/compare/v1.6.0...v1.7.0) - 2026-08-13
 
 ### Added
 
@@ -57,13 +59,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `**plot --filter` / `--aggregate**` — filter records before plotting; bar charts support `count`/`sum`/`mean` with `--value-field` and `--top-n`
 - `**frequency` / `uniq --filter**` — DuckDB `WHERE` pushdown when the expression translates to SQL; otherwise the same comparison subset is evaluated in-process
 - **JSON analysis output** — `headers`, `frequency`, and `uniq` accept `--format-out json` (also inferred from a `.json` output path); `sniff` accepts `--format-out json` / `.json` output
-- **CLI defaults config** — `defaults:` in `undatum.yaml` or `~/.undatum/config.yaml` ~~(and~~ `UNDATUM_`* ~~env vars) set engine, threads, progress, encoding, delimiter, and format_out; inspect with~~ `undatum config show`
-- `**undatum(1)` ~~man page** — generated from the CLI (~~`make man`~~); installed to~~ `share/man/man1`
-- `**analyze --format-out**` ~~— JSON/YAML/Markdown also inferred from~~ `.json` ~~/~~ `.yaml` ~~/~~ `.md` ~~output paths; omitted~~ `--engine` ~~no longer disables DuckDB~~
-- `**pipeline doc**` ~~— Mermaid flowchart (Markdown by default) from a pipeline YAML/JSON spec~~
-- ~~Pipeline validation accepts current commands (~~`sql`~~,~~ `plot`~~,~~ `repack`~~,~~ `profile`~~, …) by reading the~~ live CLI (`tui` and `web` are excluded)
-- `**jsonl-normalization` pipeline template** and example connector/transform plugins
+- **CLI defaults config** — `defaults:` in `undatum.yaml` or `~/.undatum/config.yaml` (and `UNDATUM_*` env vars) set engine, threads, progress, encoding, delimiter, and format_out; inspect with `undatum config show`
+- **`undatum(1)` man page** — generated from the CLI (`make man`); installed to `share/man/man1`
+- **`analyze --format-out`** — JSON/YAML/Markdown also inferred from `.json` / `.yaml` / `.md` output paths; omitted `--engine` no longer disables DuckDB
+- **`pipeline doc`** — Mermaid flowchart (Markdown by default) from a pipeline YAML/JSON spec
+- Pipeline validation accepts current commands (`sql`, `plot`, `repack`, `profile`, …) by reading the live CLI (`tui` and `web` are excluded)
+- **`jsonl-normalization` pipeline template** and example connector/transform plugins
 - Dependabot config for pip security patches and GitHub Actions updates
+- **`--threads` process-pool parallelism** — opt-in chunk parallelism for Python-engine `convert`, `validate`, `stats`, and `frequency` (GitHub #18); ordered output; DuckDB paths stay single-process
 
 ### Changed
 

@@ -236,23 +236,16 @@ class TestDuckDBFilterPushdown:
         values = {row[0] for row in rows[1:]}
         assert values == {"New York", "Paris"}
 
-    def test_frequency_untranslatable_filter_falls_back(self, sample_jsonl_file, tmp_path, caplog):
-        """IN/LIKE/match cannot be pushed to SQL; iterable engine still applies the filter."""
-        import csv
-
-        output_file = str(tmp_path / "freq_fallback.csv")
-        with caplog.at_level("INFO"):
+    def test_frequency_untranslatable_filter_errors(self, sample_jsonl_file, tmp_path):
+        """IN/LIKE/match are rejected; use undatum sql instead of in-process fallback."""
+        with pytest.raises(ValueError, match="undatum sql"):
             Selector().frequency(
                 sample_jsonl_file,
                 {
                     "format_in": "jsonl",
                     "fields": "city",
                     "filter": 'match "New.*" city',
-                    "output": output_file,
+                    "output": str(tmp_path / "freq_fallback.csv"),
                     "engine": "duckdb",
                 },
             )
-        assert "falling back to iterable" in caplog.text
-        rows = list(csv.reader(open(output_file, encoding="utf8")))
-        body = {row[0]: int(row[1]) for row in rows[1:]}
-        assert body == {"New York": 1}
