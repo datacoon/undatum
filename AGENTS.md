@@ -55,7 +55,7 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 | Compression | `lz4`, `py7zr`, `pyzstd` |
 | Excel | `openpyxl`, `xlrd`, `xlwt` |
 | Validation | `validators`, `pydantic` |
-| Query/filter | `mistql` |
+| Query/filter | DuckDB SQL (`undatum sql`); comparison `--filter` expressions |
 | AI providers | `requests` (OpenAI, OpenRouter, Ollama, LM Studio, Perplexity) |
 | Testing | `pytest`, `pytest-cov`, `pytest-benchmark` |
 | Linting/formatting | `black`, `ruff`, `pylint`, `mypy` |

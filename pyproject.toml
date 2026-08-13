@@ -34,10 +34,9 @@ dependencies = [
     "dnspython>=2.6.1",
     "duckdb",
     "elasticsearch",
-    "iterabledata",
+    "iterabledata>=1.0.18",
     "jsonlines>=4.0.0",
     "lz4>=4.3.2",
-    "mistql>=0.4.11",
     "numpy>=1.22.2",
     "openpyxl>=3.1.2",
     "orjson>=3.9.8",
@@ -79,6 +78,16 @@ api = [
 plot = [
     "matplotlib",
 ]
+tui = [
+    "textual>=0.80",
+]
+web = [
+    "fastapi",
+    "uvicorn",
+    "jinja2",
+    "python-multipart",
+    "httpx",
+]
 mcp = [
     "mcp",
 ]
@@ -115,6 +124,24 @@ mssql = [
 clickhouse = [
     "clickhouse-driver",
 ]
+lakehouse = [
+    "iterabledata[lakehouse]",
+]
+gis = [
+    "iterabledata[geospatial]",
+    "iterabledata[lidar]",
+]
+scientific = [
+    "iterabledata[mat]",
+    "iterabledata[geophysical]",
+    "iterabledata[hdf5]",
+]
+access = [
+    "iterabledata[access]",
+]
+compression = [
+    "iterabledata[compression]",
+]
 
 [project.urls]
 Homepage = "https://github.com/datacoon/undatum"
@@ -132,6 +159,10 @@ include = ["undatum*"]
 [tool.setuptools.package-data]
 "undatum.templates" = ["*.yml"]
 "undatum.recipes" = ["*.yml"]
+"undatum.web" = ["templates/*.html", "static/*"]
+
+[tool.setuptools.data-files]
+"share/man/man1" = ["man/undatum.1"]
 
 [tool.black]
 line-length = 100

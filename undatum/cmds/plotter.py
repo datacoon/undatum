@@ -16,6 +16,8 @@ except ImportError:
 
 from tqdm import tqdm
 
+from ..common.command_utils import get_iterable_options, iter_command_rows
+from ..common.filter import match_filter
 from ..common.s3_iterable import open_iterable_with_s3
 
 logger = logging.getLogger(__name__)
@@ -61,12 +63,16 @@ class Plotter:
             height: Figure height in inches
             dpi: Resolution for raster formats
             color: Color scheme name
-            **options: Additional options
+            **options: Additional options (filter, aggregate, value_field, top_n)
         """
         if not MATPLOTLIB_AVAILABLE:
             raise ImportError(
                 "matplotlib is required for plotting. Install with: pip install matplotlib"
             )
+
+        style = options.get("style")
+        if style:
+            plt.style.use(style)
 
         # Parse field names
         fields = [f.strip() for f in field.split(",")]
@@ -83,6 +89,8 @@ class Plotter:
 
         # Read data
         data = self._read_data(fromfile, fields, options)
+        data = self._filter_data(data, options.get("filter"))
+        data = self._aggregate_data(data, fields, options, plot_type)
 
         # Generate plot
         if plot_type == "histogram":
@@ -148,10 +156,12 @@ class Plotter:
         """Auto-detect appropriate plot type based on field types."""
         # Sample data to detect types
         try:
-            iterable_context = open_iterable_with_s3(fromfile, mode="r", iterableargs={})
+            iterable_context = open_iterable_with_s3(
+                fromfile, mode="r", iterableargs=get_iterable_options(options)
+            )
             iterable = iterable_context.__enter__()
             try:
-                sample = next(iterable)
+                sample = next(iter_command_rows(iterable, options), None)
                 if isinstance(sample, dict):
                     # Check field types
                     for field in fields:
@@ -190,15 +200,24 @@ class Plotter:
     ) -> list[dict[str, Any]]:
         """Read data from file for plotting."""
         data = []
-        iterable_context = open_iterable_with_s3(fromfile, mode="r", iterableargs={})
+        extra_fields = []
+        value_field = options.get("value_field")
+        if value_field and value_field not in fields:
+            extra_fields.append(value_field)
+        keep_all = bool(options.get("filter"))
+        iterable_context = open_iterable_with_s3(
+            fromfile, mode="r", iterableargs=get_iterable_options(options)
+        )
         iterable = iterable_context.__enter__()
 
         try:
-            for record in tqdm(iterable, desc="Reading data"):
+            for record in tqdm(iter_command_rows(iterable, options), desc="Reading data"):
                 if isinstance(record, dict):
-                    # Extract only requested fields
-                    filtered_record = {f: record.get(f) for f in fields}
-                    data.append(filtered_record)
+                    if keep_all:
+                        data.append(record)
+                    else:
+                        keys = list(fields) + extra_fields
+                        data.append({f: record.get(f) for f in keys})
                 else:
                     # Handle non-dict records
                     if len(fields) == 1 and len(record) > 0:
@@ -210,6 +229,70 @@ class Plotter:
             iterable_context.__exit__(None, None, None)
 
         return data
+
+    def _filter_data(
+        self, data: list[dict[str, Any]], filter_expr: Optional[str]
+    ) -> list[dict[str, Any]]:
+        """Apply an optional filter expression before plotting."""
+        if not filter_expr:
+            return data
+        return [record for record in data if match_filter(record, filter_expr)]
+
+    def _aggregate_data(
+        self,
+        data: list[dict[str, Any]],
+        fields: list[str],
+        options: dict[str, Any],
+        plot_type: str,
+    ) -> list[dict[str, Any]]:
+        """Aggregate records for bar charts (count/sum/mean).
+
+        ``aggregate`` defaults to ``count`` (frequency of the plotted field).
+        ``sum`` and ``mean`` require ``value_field``. ``top_n`` keeps the highest
+        aggregated groups for bar charts. Histogram/scatter/line plots skip
+        aggregation so raw values are preserved.
+        """
+        from collections import defaultdict
+
+        aggregate = (options.get("aggregate") or "count").lower()
+        value_field = options.get("value_field")
+        top_n = options.get("top_n")
+        if plot_type != "bar" or aggregate == "none":
+            return data
+        if aggregate not in {"count", "sum", "mean", "none"}:
+            raise ValueError(f"Unsupported aggregate: {aggregate}")
+        if aggregate in {"sum", "mean"} and not value_field:
+            raise ValueError("--value-field is required for sum/mean aggregation")
+
+        group_field = fields[0]
+        grouped: dict[Any, list[float]] = defaultdict(list)
+        for record in data:
+            key = record.get(group_field)
+            if key is None:
+                continue
+            if aggregate == "count":
+                grouped[key].append(1.0)
+            else:
+                raw = record.get(value_field)
+                try:
+                    grouped[key].append(float(raw))
+                except (TypeError, ValueError):
+                    continue
+
+        aggregated = []
+        for key, values in grouped.items():
+            if aggregate == "count":
+                metric = float(len(values))
+            elif aggregate == "sum":
+                metric = sum(values)
+            else:
+                metric = sum(values) / len(values) if values else 0.0
+            aggregated.append({group_field: key, "_count": metric})
+
+        if top_n:
+            aggregated.sort(key=lambda row: row.get("_count") or 0, reverse=True)
+            aggregated = aggregated[: int(top_n)]
+        return aggregated
 
     def _plot_histogram(
         self,
@@ -273,13 +356,15 @@ class Plotter:
             ax = axes[idx]
             values = [r.get(field) for r in data if r.get(field) is not None]
 
-            # Count frequencies
-            from collections import Counter
+            if data and "_count" in data[0]:
+                categories = [r.get(field) for r in data if r.get(field) is not None]
+                frequencies = [r.get("_count") or 0 for r in data if r.get(field) is not None]
+            else:
+                from collections import Counter
 
-            counts = Counter(values)
-
-            categories = list(counts.keys())
-            frequencies = list(counts.values())
+                counts = Counter(values)
+                categories = list(counts.keys())
+                frequencies = list(counts.values())
 
             # Sort by frequency (descending)
             sorted_pairs = sorted(zip(categories, frequencies), key=lambda x: x[1], reverse=True)

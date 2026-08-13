@@ -31,6 +31,30 @@ def test_doc_json_output(tmp_path):
     assert len(data["samples"]) == 2
 
 
+def test_doc_flatten_nested_samples(tmp_path):
+    src = tmp_path / "nested.jsonl"
+    src.write_text(
+        '{"name": "TJK", "capital_city": {"lat": 38.56, "lon": 68.77}}\n',
+        encoding="utf8",
+    )
+    output_file = tmp_path / "doc.json"
+    Documenter().document(
+        str(src),
+        options={
+            "format": "json",
+            "output": str(output_file),
+            "sample_size": 1,
+            "flatten_nested": True,
+            "engine": "iterable",
+        },
+    )
+    data = json.loads(output_file.read_text(encoding="utf8"))
+    assert data["samples"][0]["capital_city.lat"] == 38.56
+    names = [field["name"] for field in data["schema"]["tables"][0]["fields"]]
+    assert "capital_city.lat" in names
+    assert "capital_city.lon" in names
+
+
 def test_doc_markdown_output(tmp_path):
     input_file = Path(__file__).parent / "fixtures" / "2cols6rows.csv"
     output_file = tmp_path / "doc.md"

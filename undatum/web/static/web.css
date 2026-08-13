@@ -1,0 +1,82 @@
+:root {
+  color-scheme: light dark;
+  --bg: #f6f4ef;
+  --fg: #1c1917;
+  --muted: #57534e;
+  --accent: #0f766e;
+  --card: #fff;
+  --border: #d6d3d1;
+  --error: #9f1239;
+  --notice: #166534;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1c1917;
+    --fg: #f5f5f4;
+    --muted: #a8a29e;
+    --accent: #5eead4;
+    --card: #292524;
+    --border: #44403c;
+    --error: #fda4af;
+    --notice: #86efac;
+  }
+}
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+}
+header, .banner, .layout {
+  padding: 1rem 1.25rem;
+}
+h1 { margin: 0 0 0.25rem; font-size: 1.4rem; }
+.lede, .status, .cli { color: var(--muted); }
+.layout {
+  display: grid;
+  grid-template-columns: minmax(16rem, 22rem) 1fr;
+  gap: 1.25rem;
+  align-items: start;
+}
+aside section, .result {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+  margin-bottom: 0.75rem;
+}
+h2 { font-size: 1rem; margin: 0 0 0.5rem; }
+h3 { font-size: 0.9rem; margin: 0.75rem 0 0.35rem; }
+form { display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 0.6rem; }
+label { font-size: 0.85rem; display: flex; flex-direction: column; gap: 0.2rem; }
+input, select, textarea, button {
+  font: inherit;
+  padding: 0.35rem 0.5rem;
+}
+button {
+  background: var(--accent);
+  color: var(--bg);
+  border: 0;
+  border-radius: 0.3rem;
+  cursor: pointer;
+}
+button.linkish {
+  background: none;
+  color: var(--accent);
+  text-align: left;
+  padding: 0;
+}
+.banner.error { color: var(--error); }
+.banner.notice { color: var(--notice); }
+.htmx-indicator { display: none; }
+.htmx-request .htmx-indicator,
+.htmx-indicator.htmx-request { display: block; }
+.table-wrap { overflow: auto; max-height: 28rem; border: 1px solid var(--border); }
+table { border-collapse: collapse; width: 100%; font-size: 0.9rem; }
+th, td { border-bottom: 1px solid var(--border); padding: 0.3rem 0.5rem; text-align: left; }
+.fields, .recent, .actions { list-style: none; padding: 0; margin: 0; }
+.fields li, .actions li { margin: 0.25rem 0; }
+code { font-size: 0.85em; }
+@media (max-width: 800px) {
+  .layout { grid-template-columns: 1fr; }
+}

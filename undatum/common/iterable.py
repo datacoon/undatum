@@ -11,6 +11,7 @@ writing to an already-open file object such as ``sys.stdout``.
 """
 
 import csv
+import json
 
 import bson
 import jsonlines
@@ -52,7 +53,7 @@ class DataWriter:
 
         Args:
             fileobj: Open file-like object to write to.
-            filetype: Output format: 'csv', 'jsonl', or 'bson'.
+            filetype: Output format: 'csv', 'jsonl', 'json', or 'bson'.
             output_type: Source engine hint: 'iterable' (default) or 'duckdb'.
             delimiter: CSV delimiter character.
             fieldnames: Field names for CSV header or dict construction.
@@ -67,6 +68,10 @@ class DataWriter:
             self.writer = jsonlines.Writer(self.fileobj)
         elif self.filetype == "bson":
             self.writer = BSONWriter(self.fileobj)
+        elif self.filetype == "json":
+            self.writer = None
+        else:
+            self.writer = None
 
     def write_items(self, outdata):
         """Write a list of records, adapting strings/sequences to dicts."""
@@ -84,6 +89,15 @@ class DataWriter:
                     self.writer.writerow(item)
             else:
                 self.writer.writerows(outdata)
+        elif self.filetype == "json":
+            if isinstance(outdata[0], str):
+                records = [{self.fieldnames[0]: rawitem} for rawitem in outdata]
+            elif isinstance(outdata[0], (list, tuple)):
+                records = [dict(zip(self.fieldnames, rawitem)) for rawitem in outdata]
+            else:
+                records = list(outdata)
+            json.dump(records, self.fileobj, indent=2, ensure_ascii=False, default=str)
+            self.fileobj.write("\n")
         elif self.filetype in ["jsonl", "bson"]:
             # If our data is just array of strings, we just transform it to dict
             if isinstance(outdata[0], str):

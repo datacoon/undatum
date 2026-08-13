@@ -5,6 +5,8 @@ import os
 import tempfile
 from typing import Any, Optional
 
+from typer.main import get_command
+
 from ..common.errors import FileNotFoundError, PermissionError, ValidationError
 from ..common.pipeline_parser import (
     PipelineSpec,
@@ -12,6 +14,119 @@ from ..common.pipeline_parser import (
 )
 
 logger = logging.getLogger(__name__)
+
+_ARG_ALIASES = {
+    "input_file": ("input_file", "input", "fromfile", "from"),
+    "input_files": ("input_files", "input", "inputs", "fromfile"),
+    "output": ("output", "output_file", "tofile", "to"),
+    "query": ("query", "sql", "query_expr"),
+    "key_fields": ("key_fields", "keys", "key"),
+    "filter_expr": ("filter_expr", "filter"),
+}
+
+
+def _pop_aliased(args: dict[str, Any], name: str) -> Any:
+    """Pop a value for a Click parameter, accepting pipeline aliases."""
+    if name in args:
+        return args.pop(name)
+    for alias in _ARG_ALIASES.get(name, ()):
+        if alias in args:
+            return args.pop(alias)
+    return None
+
+
+def _click_root():
+    from ..core import app
+
+    return get_command(app)
+
+
+def _click_command(name: str):
+    root = _click_root()
+    ctx = root.make_context("undatum", [], resilient_parsing=True)
+    return root.get_command(ctx, name)
+
+
+def build_pipeline_argv(command: str, args: dict[str, Any]) -> list[str]:
+    """Build a Typer argv list from a pipeline step's command and args.
+
+    Maps ``input``/``output`` aliases onto each command's positional arguments
+    and options so ``convert`` gets ``undatum convert in.csv out.jsonl`` rather
+    than invalid ``--input`` flags.
+    """
+    remaining = dict(args)
+    cmd = _click_command(command)
+    argv = [command]
+    if cmd is None:
+        for key, value in remaining.items():
+            if value is None:
+                continue
+            option = key.replace("_", "-")
+            if isinstance(value, bool):
+                if value:
+                    argv.append(f"--{option}")
+            else:
+                argv.extend([f"--{option}", str(value)])
+        return argv
+
+    for param in cmd.params:
+        kind = getattr(param, "param_type_name", None)
+        if kind == "argument":
+            value = _pop_aliased(remaining, param.name or "")
+            if value is None:
+                continue
+            if isinstance(value, (list, tuple)):
+                argv.extend(str(item) for item in value)
+            else:
+                argv.append(str(value))
+            continue
+        if kind != "option":
+            continue
+        value = _pop_aliased(remaining, param.name or "")
+        if value is None:
+            continue
+        flags = [opt for opt in param.opts if opt.startswith("--")]
+        flag = flags[0] if flags else (param.opts[0] if param.opts else f"--{param.name}")
+        if isinstance(value, bool) or getattr(param, "is_flag", False):
+            if value:
+                argv.append(flag)
+            else:
+                no_flags = [
+                    opt
+                    for opt in (getattr(param, "secondary_opts", None) or [])
+                    if str(opt).startswith("--")
+                ]
+                if no_flags:
+                    argv.append(no_flags[0])
+            continue
+        if isinstance(value, (list, tuple)):
+            if param.name and "field" in param.name:
+                argv.extend([flag, ",".join(str(item) for item in value)])
+            else:
+                for item in value:
+                    argv.extend([flag, str(item)])
+            continue
+        argv.extend([flag, str(value)])
+
+    for key, value in remaining.items():
+        if value is None:
+            continue
+        option = key.replace("_", "-")
+        if isinstance(value, bool):
+            if value:
+                argv.append(f"--{option}")
+        elif isinstance(value, (list, tuple)):
+            argv.extend([f"--{option}", ",".join(str(item) for item in value)])
+        else:
+            argv.extend([f"--{option}", str(value)])
+    return argv
+
+
+def _command_accepts_output(command: str) -> bool:
+    cmd = _click_command(command)
+    if cmd is None:
+        return False
+    return any(getattr(param, "name", None) in {"output", "output_file"} for param in cmd.params)
 
 
 class PipelineRunner:
@@ -27,6 +142,7 @@ class PipelineRunner:
         self.working_dir = os.getcwd()
         self.temp_files = []
         self.step_outputs = {}  # Track outputs from each step
+        self.last_output = None
 
     def run(self, spec: PipelineSpec, variables: Optional[dict[str, str]] = None) -> bool:
         """Execute pipeline specification.
@@ -56,8 +172,8 @@ class PipelineRunner:
         # Execute steps
         try:
             for i, step in enumerate(resolved_spec.steps):
-                step_name = step.get("name", f"step_{i+1}")
-                logger.info(f"Executing step {i+1}/{len(resolved_spec.steps)}: {step_name}")
+                step_name = step.get("name", f"step_{i + 1}")
+                logger.info(f"Executing step {i + 1}/{len(resolved_spec.steps)}: {step_name}")
 
                 success = self._execute_step(step, step_name)
                 if not success:
@@ -89,43 +205,9 @@ class PipelineRunner:
         if command == "package":
             return self._execute_package_step(args, step_name)
 
-        # Resolve input/output paths
-        resolved_args = self._resolve_paths(args, step_name)
-
-        # Map pipeline args to CLI command invocation
+        resolved_args = self._resolve_paths(args, step_name, command=command)
         try:
-            # Import command processors dynamically
-            from ..core import app
-
-            # Get command function from typer app
-            command_func = None
-            for cmd_name, _cmd_info in app.registered_commands.items():
-                if cmd_name == command:
-                    # Find the command callback
-                    for group in app.registered_groups.values():
-                        if command in group.commands:
-                            command_func = group.commands[command].callback
-                            break
-                    if not command_func:
-                        # Try direct command
-                        if hasattr(app, "commands") and command in app.commands:
-                            command_func = app.commands[command].callback
-                    break
-
-            if not command_func:
-                # Fallback: use subprocess to call CLI
-                return self._execute_via_cli(command, resolved_args)
-
-            # Convert args to function parameters
-            # This is a simplified approach - in practice, we'd need to map
-            # pipeline args to CLI option names
-            try:
-                # For now, use subprocess approach which is more reliable
-                return self._execute_via_cli(command, resolved_args)
-            except Exception as e:
-                logger.error(f"Error executing step '{step_name}': {e}")
-                return False
-
+            return self._execute_via_cli(command, resolved_args)
         except FileNotFoundError as e:
             logger.error(f"Step '{step_name}' failed: {e}")
             return False
@@ -184,11 +266,13 @@ class PipelineRunner:
         except Exception as exc:
             from ..common.errors import format_error_message
 
-            logger.error("Step '%s' failed: %s", step_name, format_error_message(exc, verbose=False))
+            logger.error(
+                "Step '%s' failed: %s", step_name, format_error_message(exc, verbose=False)
+            )
             return False
 
     def _execute_via_cli(self, command: str, args: dict[str, Any]) -> bool:
-        """Execute command via CLI subprocess.
+        """Execute a command in-process through the Typer app.
 
         Args:
             command: Command name
@@ -197,62 +281,35 @@ class PipelineRunner:
         Returns:
             True if command succeeded, False otherwise
         """
-        import subprocess
+        from typer.testing import CliRunner
 
-        args = dict(args)
-        # Build command line
-        cmd = ["undatum"]
-        if command == "package":
-            cmd.extend(["package", args.pop("subcommand", "create")])
-        else:
-            cmd.append(command)
+        from ..core import app
 
-        # Convert args to CLI options
-        for key, value in args.items():
-            if value is None:
-                continue
+        argv = build_pipeline_argv(command, args)
+        result = CliRunner().invoke(app, argv)
+        if result.exit_code != 0:
+            logger.error("Command failed: undatum %s", " ".join(argv))
+            err = (result.stderr or "") + (result.stdout or "")
+            if result.exception:
+                from ..common.errors import format_error_message
 
-            # Convert snake_case to kebab-case
-            option = key.replace("_", "-")
-
-            if isinstance(value, bool):
-                if value:
-                    cmd.append(f"--{option}")
-            elif isinstance(value, (list, tuple)):
-                # Handle list values (e.g., fields)
-                if key == "fields" or key.endswith("_fields"):
-                    cmd.extend([f"--{option}", ",".join(str(v) for v in value)])
-                else:
-                    for v in value:
-                        cmd.extend([f"--{option}", str(v)])
-            else:
-                cmd.extend([f"--{option}", str(value)])
-
-        # Execute command
-        try:
-            result = subprocess.run(cmd, capture_output=True, text=True, check=False)
-
-            if result.returncode != 0:
-                logger.error(f"Command failed: {' '.join(cmd)}")
-                if result.stderr:
-                    logger.error(f"Error output: {result.stderr}")
-                return False
-
-            if result.stdout:
-                logger.debug(f"Command output: {result.stdout}")
-
-            return True
-
-        except Exception as e:
-            logger.error(f"Error executing command: {e}")
+                err = (err + "\n" + format_error_message(result.exception, verbose=False)).strip()
+            if err:
+                logger.error("Error output: %s", err)
             return False
+        if result.stdout:
+            logger.debug("Command output: %s", result.stdout)
+        return True
 
-    def _resolve_paths(self, args: dict[str, Any], step_name: str) -> dict[str, Any]:
+    def _resolve_paths(
+        self, args: dict[str, Any], step_name: str, command: Optional[str] = None
+    ) -> dict[str, Any]:
         """Resolve input/output paths, handling step dependencies.
 
         Args:
             args: Step arguments
             step_name: Step name
+            command: Pipeline command name (used to decide whether to inject output)
 
         Returns:
             Resolved arguments with paths updated
@@ -260,13 +317,22 @@ class PipelineRunner:
         resolved = dict(args)
 
         # Check for input path
-        for input_key in ("input", "input_file", "fromfile", "from"):
+        input_keys = ("input", "input_file", "fromfile", "from", "input_files", "inputs")
+        found_input = False
+        for input_key in input_keys:
             if input_key in resolved:
+                found_input = True
                 input_path = resolved[input_key]
                 # Check if this references a previous step's output
-                if input_path.startswith("$") and input_path[1:] in self.step_outputs:
+                if (
+                    isinstance(input_path, str)
+                    and input_path.startswith("$")
+                    and input_path[1:] in self.step_outputs
+                ):
                     resolved[input_key] = self.step_outputs[input_path[1:]]
                 break
+        if not found_input and self.last_output:
+            resolved["input"] = self.last_output
 
         # Check for output path
         output_path = None
@@ -275,14 +341,19 @@ class PipelineRunner:
                 output_path = resolved[output_key]
                 break
 
-        # If no explicit output, create temp file
-        if not output_path and "output" not in resolved:
+        if (
+            not output_path
+            and "output" not in resolved
+            and command
+            and _command_accepts_output(command)
+        ):
             output_path = self._create_temp_file(step_name)
             resolved["output"] = output_path
 
         # Store output for next steps
         if output_path:
             self.step_outputs[step_name] = output_path
+            self.last_output = output_path
 
         return resolved
 

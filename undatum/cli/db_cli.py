@@ -2,7 +2,7 @@
 
 import logging
 import sys
-from typing import Annotated
+from typing import Annotated, Optional
 
 import typer
 
@@ -105,6 +105,64 @@ def load(
     upsert_key: Annotated[
         str, typer.Option(help="Key field(s) for upsert mode (comma-separated).")
     ] = None,
+    source_table: Annotated[
+        Optional[str],
+        typer.Option(
+            "--source-table",
+            "--sheet",
+            help="Source table or sheet name for multi-table files (Excel, SQLite, lakehouse).",
+        ),
+    ] = None,
+    start_page: Annotated[int, typer.Option(help="Sheet index (0-based) for Excel files.")] = 0,
+    trust: Annotated[
+        bool,
+        typer.Option(
+            "--trust",
+            help="Acknowledge pickle deserialization risk when reading pickle sources.",
+        ),
+    ] = False,
+    on_error: Annotated[
+        Optional[str],
+        typer.Option(
+            "--on-error",
+            help="Parse-error policy: raise (default), skip, or warn.",
+        ),
+    ] = None,
+    error_log: Annotated[
+        Optional[str],
+        typer.Option(
+            "--error-log",
+            help="Append parse errors as JSONL (use with --on-error skip or warn).",
+        ),
+    ] = None,
+    quotechar: Annotated[
+        Optional[str],
+        typer.Option(
+            "--quotechar",
+            help="CSV quote character (iterabledata default '\"' when omitted).",
+        ),
+    ] = None,
+    flatten_nested: Annotated[
+        bool,
+        typer.Option(
+            "--flatten-nested",
+            help="Unfold nested dict / array-of-dict fields into dotted paths (e.g. city.lat).",
+        ),
+    ] = False,
+    max_nested_depth: Annotated[
+        Optional[int],
+        typer.Option(
+            "--max-nested-depth",
+            help="With --flatten-nested, maximum nest depth to unfold (engine default 5).",
+        ),
+    ] = None,
+    keep_nested_parents: Annotated[
+        bool,
+        typer.Option(
+            "--keep-nested-parents/--no-keep-nested-parents",
+            help="With --flatten-nested, keep parent dict/array fields alongside dotted children.",
+        ),
+    ] = True,
     verbose: Annotated[bool, typer.Option(help="Enable verbose logging output.")] = False,
 ):
     """Load data from file to database table.
@@ -124,13 +182,30 @@ def load(
 
         # Auto-create table
         undatum db load data.parquet --db sqlite:///db.db --table new_table --create-table
+        undatum db load nested.jsonl --db sqlite:///db.db --table cities --create-table --flatten-nested
     """
     if verbose:
         enable_verbose()
 
     loader = DatabaseLoader()
     try:
-        loader.load(input_file, db, table, mode, create_table, upsert_key)
+        loader.load(
+            input_file,
+            db,
+            table,
+            mode,
+            create_table,
+            upsert_key,
+            source_table=source_table,
+            start_page=start_page,
+            trust=trust,
+            on_error=on_error,
+            error_log=error_log,
+            quotechar=quotechar,
+            flatten_nested=flatten_nested,
+            max_nested_depth=max_nested_depth,
+            keep_nested_parents=keep_nested_parents,
+        )
     except Exception as e:
         logger.error(f"Load operation failed: {e}")
         if verbose:
@@ -150,9 +225,7 @@ def dump(
     table: Annotated[
         str, typer.Option(help="Table name to dump (use with --to / output format).")
     ] = None,
-    query: Annotated[
-        str, typer.Option(help="SQL query to dump (alternative to --table).")
-    ] = None,
+    query: Annotated[str, typer.Option(help="SQL query to dump (alternative to --table).")] = None,
     to_format: Annotated[
         str,
         typer.Option(

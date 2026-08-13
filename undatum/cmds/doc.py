@@ -10,11 +10,12 @@ import sys
 from typing import Any, Optional
 
 import yaml
-from iterable.helpers.detect import detect_file_type, open_iterable
+from iterable.helpers.detect import detect_file_type
 from tabulate import tabulate
 
 from ..ai import get_ai_service, get_structured_metadata
-from ..common.command_utils import get_iterable_options
+from ..common.command_utils import get_iterable_options, iter_command_rows
+from ..common.s3_iterable import open_path as open_iterable
 from ..common.schema_utils import duckdb_decompose
 from ..constants import DUCKABLE_CODECS, DUCKABLE_FILE_TYPES, EU_DATA_THEMES
 from ..utils import get_option, normalize_for_json
@@ -210,6 +211,8 @@ def _build_stats(
     fromfile: str, filetype: str, compression: str, options: dict[str, Any]
 ) -> Optional[dict[str, Any]]:
     """Build statistics summary using DuckDB when available."""
+    if options.get("flatten_nested"):
+        return None
     engine = get_option(options, "engine") or "auto"
     if engine not in ["auto", "duckdb"]:
         return None
@@ -260,7 +263,7 @@ def _build_samples(fromfile: str, options: dict[str, Any]) -> list[Any]:
     try:
         iterable = open_iterable(fromfile, mode="r", iterableargs=iterableargs)
         try:
-            for item in iterable:
+            for item in iter_command_rows(iterable, options):
                 samples.append(normalize_for_json(item))
                 if len(samples) >= sample_size:
                     break
@@ -649,6 +652,12 @@ class Documenter:
             lang=options.get("lang", "English"),
             ai_provider=options.get("ai_provider"),
             ai_config=options.get("ai_config"),
+            table_name=options.get("table"),
+            start_page=options.get("start_page") or 0,
+            trust=bool(options.get("trust")),
+            engine=get_option(options, "engine") or "auto",
+            delimiter=options.get("delimiter"),
+            options=options,
         )
         logger.debug(
             "doc: analysis complete tables=%s records=%s", report.total_tables, report.total_records

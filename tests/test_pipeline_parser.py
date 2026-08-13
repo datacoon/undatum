@@ -292,6 +292,17 @@ class TestValidatePipeline:
         assert len(errors) > 0
         assert any("unknown command" in error.lower() for error in errors)
 
+    def test_validate_pipeline_accepts_sql_and_plot(self):
+        """Newer commands such as sql and plot are valid pipeline steps."""
+        spec = PipelineSpec(
+            [
+                {"name": "query_files", "command": "sql", "args": {"query": "SELECT 1"}},
+                {"name": "chart", "command": "plot", "args": {"field": "age"}},
+                {"name": "compress", "command": "repack", "args": {}},
+            ]
+        )
+        assert validate_pipeline(spec) == []
+
     def test_validate_pipeline_missing_args(self):
         """Test validating pipeline with missing args."""
         steps = [{"name": "step1", "command": "convert"}]

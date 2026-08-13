@@ -7,7 +7,7 @@ __version__ = "1.6.0"
 __author__ = "Ivan Begtin"
 __licence__ = "MIT"
 
-__all__ = ["Dataset"]
+__all__ = ["Dataset", "QueryResult", "StatsResult"]
 
 
 def __getattr__(name):
@@ -16,4 +16,8 @@ def __getattr__(name):
         from .sdk.dataset import Dataset
 
         return Dataset
+    if name in {"StatsResult", "QueryResult"}:
+        from .sdk.results import QueryResult, StatsResult
+
+        return StatsResult if name == "StatsResult" else QueryResult
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

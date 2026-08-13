@@ -3,7 +3,11 @@
 import logging
 from typing import Optional
 
-from ..common.command_utils import ITERABLE_OPTIONS_KEYS, get_iterable_options  # noqa: F401
+from ..common.command_utils import (
+    ITERABLE_OPTIONS_KEYS,  # noqa: F401
+    get_iterable_options,
+    iter_command_rows,
+)
 from ..common.errors import FileNotFoundError, PermissionError, ValidationError, find_similar_files
 from ..common.masking import mask_value
 from ..common.path_utils import is_s3_uri, validate_file_path
@@ -110,14 +114,13 @@ class Masker:
             # Determine output keys from first record
             first_record = None
             keys = None
+            records = iter_command_rows(it_in, options)
 
             # Read first record to determine schema
             try:
-                first_record = next(it_in)
+                first_record = next(records)
                 if isinstance(first_record, dict):
                     keys = list(first_record.keys())
-                elif hasattr(it_in, "reset"):
-                    it_in.reset()
             except StopIteration:
                 pass
 
@@ -144,7 +147,7 @@ class Masker:
                 batch = []
                 batch_size = 10000
 
-                for record in it_in:
+                for record in records:
                     masked_record = self._mask_record(record, fields_to_mask, method, salt)
                     batch.append(masked_record)
                     count += 1

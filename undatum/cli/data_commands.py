@@ -15,7 +15,6 @@ import typer
 from ..cmds.analyzer import Analyzer
 from ..cmds.cat import Cat
 from ..cmds.converter import Converter
-from ..common.errors import ValidationError
 from ..cmds.counter import Counter
 from ..cmds.deduplicator import Deduplicator
 from ..cmds.differ import Differ
@@ -32,7 +31,6 @@ from ..cmds.ingester import Ingester
 from ..cmds.joiner import Joiner
 from ..cmds.masker import Masker
 from ..cmds.plotter import Plotter
-from ..cmds.query import DataQuery
 from ..cmds.renamer import Renamer
 from ..cmds.repacker import Repacker
 from ..cmds.replacer import Replacer
@@ -52,6 +50,7 @@ from ..cmds.textproc import TextProcessor
 from ..cmds.transformer import Transformer
 from ..cmds.transposer import Transposer
 from ..cmds.validator import Validator
+from ..common.errors import ValidationError
 from .common import enable_verbose
 
 DEFAULT_BATCH_SIZE = 1000
@@ -59,6 +58,72 @@ DEFAULT_BATCH_SIZE = 1000
 logger = logging.getLogger(__name__)
 
 data_app = typer.Typer()
+
+TableNameOpt = Annotated[
+    Optional[str],
+    typer.Option(
+        "--table",
+        "--sheet",
+        help="Table or sheet name for multi-table sources (Excel, SQLite, lakehouse).",
+    ),
+]
+Table2NameOpt = Annotated[
+    Optional[str],
+    typer.Option(
+        "--table2",
+        "--sheet2",
+        help="Table or sheet name for the second file (Excel, SQLite, lakehouse).",
+    ),
+]
+FlattenNestedOpt = Annotated[
+    bool,
+    typer.Option(
+        "--flatten-nested",
+        help="Unfold nested dict / array-of-dict fields into dotted paths (e.g. city.lat).",
+    ),
+]
+MaxNestedDepthOpt = Annotated[
+    Optional[int],
+    typer.Option(
+        "--max-nested-depth",
+        help="With --flatten-nested, maximum nest depth to unfold (engine default 5).",
+    ),
+]
+KeepNestedParentsOpt = Annotated[
+    bool,
+    typer.Option(
+        "--keep-nested-parents/--no-keep-nested-parents",
+        help="With --flatten-nested, keep parent dict/array fields alongside dotted children.",
+    ),
+]
+TrustOpt = Annotated[
+    bool,
+    typer.Option(
+        "--trust",
+        help="Acknowledge pickle deserialization risk when reading pickle sources.",
+    ),
+]
+OnErrorOpt = Annotated[
+    Optional[str],
+    typer.Option(
+        "--on-error",
+        help="Parse-error policy: raise (default), skip, or warn.",
+    ),
+]
+ErrorLogOpt = Annotated[
+    Optional[str],
+    typer.Option(
+        "--error-log",
+        help="Append parse errors as JSONL (use with --on-error skip or warn).",
+    ),
+]
+QuoteCharOpt = Annotated[
+    Optional[str],
+    typer.Option(
+        "--quotechar",
+        help="CSV quote character (iterabledata default '\"' when omitted).",
+    ),
+]
 
 
 @data_app.command()
@@ -69,6 +134,7 @@ def convert(
         Optional[str],
         typer.Option(help="CSV delimiter character (auto-detected when omitted)."),
     ] = None,
+    quotechar: QuoteCharOpt = None,
     compression: Annotated[
         Optional[str],
         typer.Option(help="Output compression codec (e.g. 'brotli', 'snappy', 'gzip')."),
@@ -87,6 +153,7 @@ def convert(
     start_page: Annotated[
         int, typer.Option(help="Page number (0-based) to start from for Excel files.")
     ] = 0,
+    table: TableNameOpt = None,
     tagname: Annotated[
         str, typer.Option(help="XML tag name that contains individual records.")
     ] = None,
@@ -127,9 +194,9 @@ def convert(
         ),
     ] = False,
     engine: Annotated[
-        str,
+        Optional[str],
         typer.Option(help="Conversion engine: 'auto' (default), 'duckdb', or 'python'."),
-    ] = "auto",
+    ] = None,
     recursive: Annotated[
         bool,
         typer.Option(
@@ -142,6 +209,86 @@ def convert(
             help="Target extension for bulk conversion (e.g. 'parquet'). Defaults to --format-out."
         ),
     ] = None,
+    filename_pattern: Annotated[
+        Optional[str],
+        typer.Option(
+            "--filename-pattern",
+            help=(
+                "Bulk output name pattern with {name}, {stem}, {ext} "
+                "(used with --recursive; default replaces the extension via --to-ext)."
+            ),
+        ),
+    ] = None,
+    profile: Annotated[
+        Optional[str],
+        typer.Option(
+            help="Codec performance profile for compressed output: fast, balanced, or max."
+        ),
+    ] = None,
+    level: Annotated[
+        Optional[int],
+        typer.Option(
+            "--level",
+            help=(
+                "Explicit compression level for compressed output (overrides --profile). "
+                "Same codecargs compression_level as iterabledata / undatum repack."
+            ),
+        ),
+    ] = None,
+    native_batch: Annotated[
+        Optional[bool],
+        typer.Option(
+            "--native-batch/--no-native-batch",
+            help=(
+                "Use native columnar batch conversion when both formats support it. "
+                "Default: auto-enable with --low-memory."
+            ),
+        ),
+    ] = None,
+    strict_native: Annotated[
+        bool,
+        typer.Option(
+            "--strict-native",
+            help="Fail if native batch conversion is requested but unsupported.",
+        ),
+    ] = False,
+    columns: Annotated[
+        Optional[str],
+        typer.Option(help="Comma-separated columns to convert (native batch projection)."),
+    ] = None,
+    row_range: Annotated[
+        Optional[str],
+        typer.Option(help="Row range to convert as START:END (native batch)."),
+    ] = None,
+    write_mode: Annotated[
+        Optional[str],
+        typer.Option(
+            help=(
+                "Lakehouse write mode: append, overwrite, error, ignore, or create "
+                "(Delta / Iceberg / DuckLake / Lance)."
+            ),
+        ),
+    ] = None,
+    row_group_size: Annotated[
+        Optional[int],
+        typer.Option(
+            "--row-group-size",
+            help=(
+                "Parquet write row-group size (iterabledata row_group_size; "
+                "defaults to the writer batch size when omitted). Skips DuckDB COPY."
+            ),
+        ),
+    ] = None,
+    trust: TrustOpt = False,
+    on_error: OnErrorOpt = None,
+    error_log: ErrorLogOpt = None,
+    use_totals: Annotated[
+        bool,
+        typer.Option(
+            "--use-totals",
+            help="Use format-reported row totals for convert progress when available.",
+        ),
+    ] = False,
 ):
     """Convert one file (or a directory/glob with --recursive) to another format.
 
@@ -165,6 +312,36 @@ def convert(
         # Bulk-convert with a glob pattern
         undatum convert "data/*.jsonl" ./out --recursive --to-ext csv
 
+        # Custom bulk output names
+        undatum convert ./raw ./out --recursive --to-ext jsonl --filename-pattern "{stem}.converted.jsonl"
+
+        # CSV with a non-default quote character
+        undatum convert data.csv out.jsonl --quotechar "'"
+
+        # Named Excel sheet
+        undatum convert workbook.xlsx out.jsonl --table Sheet2
+
+        # Native batch Parquet with column projection
+        undatum convert data.parquet out.parquet --native-batch --columns id,name
+
+        # Codec profile on compressed output
+        undatum convert data.csv data.csv.zst --profile max
+
+        # Explicit compression level (overrides --profile)
+        undatum convert data.csv data.csv.gz --level 9
+
+        # Lakehouse write mode
+        undatum convert data.parquet lake.delta --write-mode overwrite
+
+        # Parquet row-group size (pair with --batch-size to split large write batches)
+        undatum convert data.csv data.parquet --row-group-size 100000 --engine iterable
+
+        # Progress using format-reported row totals
+        undatum convert data.parquet out.jsonl --use-totals
+
+        # Skip malformed JSONL rows instead of aborting
+        undatum convert messy.jsonl clean.jsonl --on-error skip --error-log errors.jsonl
+
         # Parallel Python-engine convert (CPU-bound transforms / multi-core)
         undatum convert big.csv out.jsonl --engine python --threads 8
     """
@@ -172,12 +349,14 @@ def convert(
         enable_verbose()
     options = {
         "delimiter": delimiter,
+        "quotechar": quotechar,
         "compression": compression,
         "flatten": flatten_data,
         "encoding": encoding,
         "prefix_strip": prefix_strip,
         "start_line": start_line,
         "start_page": start_page,
+        "table": table,
         "tagname": tagname,
         "format_in": format_in,
         "format_out": format_out,
@@ -188,14 +367,26 @@ def convert(
         "progress": progress,
         "low_memory": low_memory,
         "engine": engine,
+        "profile": profile,
+        "level": level,
+        "native_batch": native_batch,
+        "strict_native": strict_native,
+        "columns": columns,
+        "row_range": row_range,
+        "write_mode": write_mode,
+        "row_group_size": row_group_size,
+        "trust": trust,
+        "on_error": on_error,
+        "error_log": error_log,
+        "use_totals": use_totals,
+        "filename_pattern": filename_pattern,
     }
     acmd = Converter(batch_size=batch_size)
     is_glob = any(ch in input_file for ch in "*?[")
     is_dir = os.path.isdir(input_file)
     if (is_dir or is_glob) and not recursive:
         raise ValidationError(
-            "Bulk input detected (directory or glob pattern). "
-            "Use --recursive to bulk-convert.",
+            "Bulk input detected (directory or glob pattern). Use --recursive to bulk-convert.",
             field="input",
         )
     if recursive:
@@ -304,17 +495,33 @@ def uniq(
         str, typer.Option(help="Comma-separated list of field names to extract unique values from.")
     ] = None,
     delimiter: Annotated[str, typer.Option(help="CSV delimiter character.")] = ",",
+    quotechar: QuoteCharOpt = None,
     encoding: Annotated[str, typer.Option(help="File encoding (e.g., 'utf8', 'latin1').")] = None,
     verbose: Annotated[bool, typer.Option(help="Enable verbose logging output.")] = False,
     filetype: Annotated[
         str, typer.Option(help="Override file type detection (e.g., 'csv', 'jsonl', 'xlsx').")
     ] = None,
-    start_page: Annotated[
-        int, typer.Option(help="Sheet index (0-based) for Excel files.")
-    ] = 0,
+    start_page: Annotated[int, typer.Option(help="Sheet index (0-based) for Excel files.")] = 0,
+    table: TableNameOpt = None,
+    trust: TrustOpt = False,
+    on_error: OnErrorOpt = None,
+    error_log: ErrorLogOpt = None,
+    flatten_nested: FlattenNestedOpt = False,
+    max_nested_depth: MaxNestedDepthOpt = None,
+    keep_nested_parents: KeepNestedParentsOpt = True,
     engine: Annotated[
-        str, typer.Option(help="Processing engine: 'auto' (default), 'duckdb', or 'iterable'.")
-    ] = "auto",
+        Optional[str],
+        typer.Option(help="Processing engine: 'auto' (default), 'duckdb', or 'iterable'."),
+    ] = None,
+    filter_expr: Annotated[
+        str, typer.Option("--filter", help="Filter expression to apply before extracting uniques.")
+    ] = None,
+    format_out: Annotated[
+        str,
+        typer.Option(
+            help="Output format: 'csv' (default) or 'json' (also inferred from --output)."
+        ),
+    ] = None,
 ):
     """Extract all unique values from specified field(s).
 
@@ -327,10 +534,20 @@ def uniq(
         "output": output,
         "fields": fields,
         "delimiter": delimiter,
+        "quotechar": quotechar,
         "encoding": encoding,
         "filetype": filetype,
         "start_page": start_page,
+        "table": table,
+        "trust": trust,
+        "on_error": on_error,
+        "error_log": error_log,
+        "flatten_nested": flatten_nested,
+        "max_nested_depth": max_nested_depth,
+        "keep_nested_parents": keep_nested_parents,
         "engine": engine,
+        "filter": filter_expr,
+        "format_out": format_out,
     }
     acmd = Selector()
     acmd.uniq(input_file, options)
@@ -346,6 +563,7 @@ def headers(
         str, typer.Option(help="Field filter (kept for API compatibility, not currently used).")
     ] = None,  # pylint: disable=unused-argument
     delimiter: Annotated[str, typer.Option(help="CSV delimiter character.")] = ",",
+    quotechar: QuoteCharOpt = None,
     encoding: Annotated[str, typer.Option(help="File encoding (e.g., 'utf8', 'latin1').")] = None,
     limit: Annotated[
         int, typer.Option(help="Maximum number of records to scan for field detection.")
@@ -363,6 +581,14 @@ def headers(
         str,
         typer.Option(help="Filter expression (kept for API compatibility, not currently used)."),
     ] = None,  # pylint: disable=unused-argument
+    table: TableNameOpt = None,
+    start_page: Annotated[int, typer.Option(help="Sheet index (0-based) for Excel files.")] = 0,
+    trust: TrustOpt = False,
+    on_error: OnErrorOpt = None,
+    error_log: ErrorLogOpt = None,
+    flatten_nested: FlattenNestedOpt = False,
+    max_nested_depth: MaxNestedDepthOpt = None,
+    keep_nested_parents: KeepNestedParentsOpt = True,
 ):
     """Returns fieldnames of the file. Supports XML, CSV, JSON, BSON.
 
@@ -374,11 +600,20 @@ def headers(
     options = {
         "output": output,
         "delimiter": delimiter,
+        "quotechar": quotechar,
         "encoding": encoding,
         "limit": limit,
         "format_in": format_in,
         "format_out": format_out,
         "zipfile": zipfile,
+        "table": table,
+        "start_page": start_page,
+        "trust": trust,
+        "on_error": on_error,
+        "error_log": error_log,
+        "flatten_nested": flatten_nested,
+        "max_nested_depth": max_nested_depth,
+        "keep_nested_parents": keep_nested_parents,
     }
     acmd = Selector()
     acmd.headers(input_file, options)
@@ -397,9 +632,13 @@ def stats(
         str, typer.Option(help="Override input file format detection (e.g., 'csv', 'jsonl').")
     ] = None,
     format_out: Annotated[
-        str, typer.Option(help="Override output format (e.g., 'json', 'yaml').")
+        str,
+        typer.Option(
+            help="Output format: 'json', 'html', or 'markdown' (also inferred from --output extension)."
+        ),
     ] = None,
     delimiter: Annotated[str, typer.Option(help="CSV delimiter character.")] = None,
+    quotechar: QuoteCharOpt = None,
     verbose: Annotated[bool, typer.Option(help="Enable verbose logging output.")] = False,
     zipfile: Annotated[bool, typer.Option(help="Treat input file as a ZIP archive.")] = False,
     checkdates: Annotated[bool, typer.Option(help="Enable automatic date field detection.")] = True,
@@ -409,11 +648,11 @@ def stats(
         bool, typer.Option(help="Disable progress bar (for non-interactive use).")
     ] = False,
     engine: Annotated[
-        str,
+        Optional[str],
         typer.Option(
             help="Engine to use for statistics computation: 'auto' (detect), 'duckdb' (DuckDB engine), or 'iterable' (row-by-row)."
         ),
-    ] = "auto",
+    ] = None,
     threads: Annotated[
         int,
         typer.Option(
@@ -423,6 +662,14 @@ def stats(
             )
         ),
     ] = None,
+    table: TableNameOpt = None,
+    start_page: Annotated[int, typer.Option(help="Sheet index (0-based) for Excel files.")] = 0,
+    flatten_nested: FlattenNestedOpt = False,
+    max_nested_depth: MaxNestedDepthOpt = None,
+    keep_nested_parents: KeepNestedParentsOpt = True,
+    trust: TrustOpt = False,
+    on_error: OnErrorOpt = None,
+    error_log: ErrorLogOpt = None,
 ):
     """Generate detailed statistics about a dataset.
 
@@ -438,6 +685,7 @@ def stats(
         "format_in": format_in,
         "format_out": format_out,
         "delimiter": delimiter,
+        "quotechar": quotechar,
         "checkdates": checkdates,
         "encoding": encoding,
         "verbose": verbose,
@@ -445,6 +693,14 @@ def stats(
         "no_progress": no_progress,
         "engine": engine,
         "threads": threads,
+        "table": table,
+        "start_page": start_page,
+        "flatten_nested": flatten_nested,
+        "max_nested_depth": max_nested_depth,
+        "keep_nested_parents": keep_nested_parents,
+        "trust": trust,
+        "on_error": on_error,
+        "error_log": error_log,
     }
     acmd = StatProcessor(nodates=not checkdates)
     acmd.stats(input_file, options)
@@ -461,6 +717,7 @@ def flatten(
         str, typer.Option(help="Optional output file path. If not specified, prints to stdout.")
     ] = None,
     delimiter: Annotated[str, typer.Option(help="CSV delimiter character.")] = ",",
+    quotechar: QuoteCharOpt = None,
     encoding: Annotated[str, typer.Option(help="File encoding (e.g., 'utf8', 'latin1').")] = "utf8",
     format_in: Annotated[
         str, typer.Option(help="Override input file format detection (e.g., 'jsonl', 'xml').")
@@ -469,6 +726,11 @@ def flatten(
         str, typer.Option(help="Filter expression to apply before flattening.")
     ] = None,
     verbose: Annotated[bool, typer.Option(help="Enable verbose logging output.")] = False,
+    table: TableNameOpt = None,
+    start_page: Annotated[int, typer.Option(help="Sheet index (0-based) for Excel files.")] = 0,
+    trust: TrustOpt = False,
+    on_error: OnErrorOpt = None,
+    error_log: ErrorLogOpt = None,
 ):
     """Flatten nested data records into one value per row.
 
@@ -478,10 +740,16 @@ def flatten(
         enable_verbose()
     options = {
         "delimiter": delimiter,
+        "quotechar": quotechar,
         "output": output,
         "encoding": encoding,
         "format_in": format_in,
         "filter": filter_expr,
+        "table": table,
+        "start_page": start_page,
+        "trust": trust,
+        "on_error": on_error,
+        "error_log": error_log,
     }
     acmd = TextProcessor()
     acmd.flatten(input_file, options)
@@ -497,17 +765,24 @@ def frequency(
         str, typer.Option(help="Comma-separated list of field names to calculate frequency for.")
     ] = None,
     delimiter: Annotated[str, typer.Option(help="CSV delimiter character.")] = ",",
+    quotechar: QuoteCharOpt = None,
     encoding: Annotated[str, typer.Option(help="File encoding (e.g., 'utf8', 'latin1').")] = None,
     verbose: Annotated[bool, typer.Option(help="Enable verbose logging output.")] = False,
     filetype: Annotated[
         str, typer.Option(help="Override file type detection (e.g., 'csv', 'jsonl', 'xlsx').")
     ] = None,
-    start_page: Annotated[
-        int, typer.Option(help="Sheet index (0-based) for Excel files.")
-    ] = 0,
+    start_page: Annotated[int, typer.Option(help="Sheet index (0-based) for Excel files.")] = 0,
+    table: TableNameOpt = None,
+    trust: TrustOpt = False,
+    on_error: OnErrorOpt = None,
+    error_log: ErrorLogOpt = None,
+    flatten_nested: FlattenNestedOpt = False,
+    max_nested_depth: MaxNestedDepthOpt = None,
+    keep_nested_parents: KeepNestedParentsOpt = True,
     engine: Annotated[
-        str, typer.Option(help="Processing engine: 'auto' (default), 'duckdb', or 'python'.")
-    ] = "auto",
+        Optional[str],
+        typer.Option(help="Processing engine: 'auto' (default), 'duckdb', or 'python'."),
+    ] = None,
     threads: Annotated[
         int,
         typer.Option(
@@ -524,6 +799,16 @@ def frequency(
         str, typer.Option(help="Memory limit for DuckDB (e.g., '4GB', '512MB').")
     ] = None,
     duckdb_temp_dir: Annotated[str, typer.Option(help="Temporary directory for DuckDB.")] = None,
+    filter_expr: Annotated[
+        str,
+        typer.Option("--filter", help="Filter expression to apply before counting frequencies."),
+    ] = None,
+    format_out: Annotated[
+        str,
+        typer.Option(
+            help="Output format: 'csv' (default) or 'json' (also inferred from --output)."
+        ),
+    ] = None,
 ):
     """Calculate frequency distribution for specified fields.
 
@@ -534,16 +819,26 @@ def frequency(
         enable_verbose()
     options = {
         "delimiter": delimiter,
+        "quotechar": quotechar,
         "fields": fields,
         "output": output,
         "encoding": encoding,
         "filetype": filetype,
         "start_page": start_page,
+        "table": table,
+        "trust": trust,
+        "on_error": on_error,
+        "error_log": error_log,
+        "flatten_nested": flatten_nested,
+        "max_nested_depth": max_nested_depth,
+        "keep_nested_parents": keep_nested_parents,
         "engine": engine,
         "threads": threads,
         "duckdb_threads": duckdb_threads,
         "duckdb_memory": duckdb_memory,
         "duckdb_temp_dir": duckdb_temp_dir,
+        "filter": filter_expr,
+        "format_out": format_out,
     }
     acmd = Selector()
     acmd.frequency(input_file, options)
@@ -559,10 +854,12 @@ def select(
         str, typer.Option(help="Comma-separated list of field names to select and reorder.")
     ] = None,
     delimiter: Annotated[str, typer.Option(help="CSV delimiter character.")] = ",",
+    quotechar: QuoteCharOpt = None,
     encoding: Annotated[str, typer.Option(help="File encoding (e.g., 'utf8', 'latin1').")] = None,
     verbose: Annotated[bool, typer.Option(help="Enable verbose logging output.")] = False,
     format_in: Annotated[
-        str, typer.Option(help="Override input file format detection (e.g., 'csv', 'jsonl', 'xlsx').")
+        str,
+        typer.Option(help="Override input file format detection (e.g., 'csv', 'jsonl', 'xlsx')."),
     ] = None,
     format_out: Annotated[
         str, typer.Option(help="Override output format (e.g., 'csv', 'jsonl').")
@@ -571,12 +868,12 @@ def select(
     filter_expr: Annotated[
         str, typer.Option(help="Filter expression to apply (e.g., \"`status` == 'active'\").")
     ] = None,
-    start_page: Annotated[
-        int, typer.Option(help="Sheet index (0-based) for Excel files.")
-    ] = 0,
+    start_page: Annotated[int, typer.Option(help="Sheet index (0-based) for Excel files.")] = 0,
+    table: TableNameOpt = None,
     engine: Annotated[
-        str, typer.Option(help="Processing engine: 'auto' (default), 'duckdb', or 'iterable'.")
-    ] = "auto",
+        Optional[str],
+        typer.Option(help="Processing engine: 'auto' (default), 'duckdb', or 'iterable'."),
+    ] = None,
     duckdb_threads: Annotated[
         int, typer.Option(help="Number of threads for DuckDB engine.")
     ] = None,
@@ -584,6 +881,12 @@ def select(
         str, typer.Option(help="Memory limit for DuckDB (e.g., '4GB', '512MB').")
     ] = None,
     duckdb_temp_dir: Annotated[str, typer.Option(help="Temporary directory for DuckDB.")] = None,
+    trust: TrustOpt = False,
+    on_error: OnErrorOpt = None,
+    error_log: ErrorLogOpt = None,
+    flatten_nested: FlattenNestedOpt = False,
+    max_nested_depth: MaxNestedDepthOpt = None,
+    keep_nested_parents: KeepNestedParentsOpt = True,
 ):
     """Select or reorder columns from file.
 
@@ -593,6 +896,7 @@ def select(
         enable_verbose()
     options = {
         "delimiter": delimiter,
+        "quotechar": quotechar,
         "fields": fields,
         "output": output,
         "encoding": encoding,
@@ -601,10 +905,17 @@ def select(
         "zipfile": zipfile,
         "filter": filter_expr,
         "start_page": start_page,
+        "table": table,
         "engine": engine,
         "duckdb_threads": duckdb_threads,
         "duckdb_memory": duckdb_memory,
         "duckdb_temp_dir": duckdb_temp_dir,
+        "trust": trust,
+        "on_error": on_error,
+        "error_log": error_log,
+        "flatten_nested": flatten_nested,
+        "max_nested_depth": max_nested_depth,
+        "keep_nested_parents": keep_nested_parents,
     }
     acmd = Selector()
     acmd.select(input_file, options)
@@ -626,6 +937,7 @@ def split(
         ),
     ] = None,
     delimiter: Annotated[str, typer.Option(help="CSV delimiter character.")] = ",",
+    quotechar: QuoteCharOpt = None,
     encoding: Annotated[str, typer.Option(help="File encoding (e.g., 'utf8', 'latin1').")] = "utf8",
     verbose: Annotated[bool, typer.Option(help="Enable verbose logging output.")] = False,
     format_in: Annotated[
@@ -641,6 +953,14 @@ def split(
         str, typer.Option(help="Filter expression to apply before splitting.")
     ] = None,
     dirname: Annotated[str, typer.Option(help="Directory path to write output files to.")] = None,
+    table: TableNameOpt = None,
+    start_page: Annotated[int, typer.Option(help="Sheet index (0-based) for Excel files.")] = 0,
+    trust: TrustOpt = False,
+    on_error: OnErrorOpt = None,
+    error_log: ErrorLogOpt = None,
+    flatten_nested: FlattenNestedOpt = False,
+    max_nested_depth: MaxNestedDepthOpt = None,
+    keep_nested_parents: KeepNestedParentsOpt = True,
 ):
     """Split a data file into multiple chunks.
 
@@ -650,6 +970,7 @@ def split(
         enable_verbose()
     options = {
         "delimiter": delimiter,
+        "quotechar": quotechar,
         "fields": fields,
         "output": output,
         "encoding": encoding,
@@ -659,6 +980,14 @@ def split(
         "chunksize": chunksize,
         "filter": filter_expr,
         "dirname": dirname,
+        "table": table,
+        "start_page": start_page,
+        "trust": trust,
+        "on_error": on_error,
+        "error_log": error_log,
+        "flatten_nested": flatten_nested,
+        "max_nested_depth": max_nested_depth,
+        "keep_nested_parents": keep_nested_parents,
     }
     acmd = Selector()
     acmd.split(input_file, options)
@@ -674,6 +1003,7 @@ def validate(
         str, typer.Option(help="Comma-separated list of field names to validate (legacy mode).")
     ] = None,
     delimiter: Annotated[str, typer.Option(help="CSV delimiter character.")] = ",",
+    quotechar: QuoteCharOpt = None,
     encoding: Annotated[str, typer.Option(help="File encoding (e.g., 'utf8', 'latin1').")] = "utf8",
     verbose: Annotated[bool, typer.Option(help="Enable verbose logging output.")] = False,
     format_in: Annotated[
@@ -729,6 +1059,14 @@ def validate(
             )
         ),
     ] = None,
+    table: TableNameOpt = None,
+    start_page: Annotated[int, typer.Option(help="Sheet index (0-based) for Excel files.")] = 0,
+    trust: TrustOpt = False,
+    on_error: OnErrorOpt = None,
+    error_log: ErrorLogOpt = None,
+    flatten_nested: FlattenNestedOpt = False,
+    max_nested_depth: MaxNestedDepthOpt = None,
+    keep_nested_parents: KeepNestedParentsOpt = True,
 ):
     """Validate data against validation rules.
 
@@ -755,6 +1093,7 @@ def validate(
 
     options = {
         "delimiter": delimiter,
+        "quotechar": quotechar,
         "fields": fields,
         "output": output,
         "encoding": encoding,
@@ -771,6 +1110,14 @@ def validate(
         "max_violations": max_violations,
         "progress": progress,
         "threads": threads,
+        "table": table,
+        "start_page": start_page,
+        "trust": trust,
+        "on_error": on_error,
+        "error_log": error_log,
+        "flatten_nested": flatten_nested,
+        "max_nested_depth": max_nested_depth,
+        "keep_nested_parents": keep_nested_parents,
     }
     acmd = Validator()
     acmd.validate(input_file, options)
@@ -786,6 +1133,7 @@ def apply(
         str, typer.Option(help="Comma-separated list of field names (kept for compatibility).")
     ] = None,
     delimiter: Annotated[str, typer.Option(help="CSV delimiter character.")] = ",",
+    quotechar: QuoteCharOpt = None,
     encoding: Annotated[str, typer.Option(help="File encoding (e.g., 'utf8', 'latin1').")] = "utf8",
     verbose: Annotated[bool, typer.Option(help="Enable verbose logging output.")] = False,
     format_in: Annotated[
@@ -795,25 +1143,48 @@ def apply(
     script: Annotated[
         str, typer.Option(help="Path to Python script file containing transformation function.")
     ] = None,
+    plugin: Annotated[
+        str,
+        typer.Option(help="Name of a registered transform plugin to apply instead of a script."),
+    ] = None,
     filter_expr: Annotated[
         str, typer.Option(help="Filter expression to apply before transformation.")
     ] = None,
+    table: TableNameOpt = None,
+    start_page: Annotated[int, typer.Option(help="Sheet index (0-based) for Excel files.")] = 0,
+    trust: TrustOpt = False,
+    on_error: OnErrorOpt = None,
+    error_log: ErrorLogOpt = None,
+    flatten_nested: FlattenNestedOpt = False,
+    max_nested_depth: MaxNestedDepthOpt = None,
+    keep_nested_parents: KeepNestedParentsOpt = True,
 ):
     """Apply a transformation script to each record in the file.
 
-    Executes a Python script that transforms each record.
+    Executes a Python script that transforms each record, or a registered
+    transform plugin when ``--plugin`` is given.
     """
     if verbose:
         enable_verbose()
     options = {
         "delimiter": delimiter,
+        "quotechar": quotechar,
         "fields": fields,
         "output": output,
         "encoding": encoding,
         "format_in": format_in,
         "zipfile": zipfile,
+        "table": table,
+        "start_page": start_page,
+        "trust": trust,
+        "on_error": on_error,
+        "error_log": error_log,
+        "flatten_nested": flatten_nested,
+        "max_nested_depth": max_nested_depth,
+        "keep_nested_parents": keep_nested_parents,
         "filter": filter_expr,
         "script": script,
+        "plugin": plugin,
     }
     acmd = Transformer()
     acmd.script(input_file, options)
@@ -826,6 +1197,7 @@ def scheme(
         str, typer.Option(help="Optional output file path. If not specified, prints to stdout.")
     ] = None,
     delimiter: Annotated[str, typer.Option(help="CSV delimiter character.")] = ",",
+    quotechar: QuoteCharOpt = None,
     encoding: Annotated[str, typer.Option(help="File encoding (e.g., 'utf8', 'latin1').")] = "utf8",
     verbose: Annotated[bool, typer.Option(help="Enable verbose logging output.")] = False,
     format_in: Annotated[
@@ -872,14 +1244,22 @@ def analyze(
     input_file: Annotated[str, typer.Argument(help="Path to input file to analyze.")],
     verbose: Annotated[bool, typer.Option(help="Enable verbose logging output.")] = False,
     engine: Annotated[
-        str, typer.Option(help="Processing engine: 'auto' (default), 'duckdb', or 'iterable'.")
-    ] = "auto",
+        Optional[str],
+        typer.Option(help="Processing engine: 'auto' (default), 'duckdb', or 'iterable'."),
+    ] = None,
     use_pandas: Annotated[
         bool, typer.Option(help="Use pandas for data processing (may use more memory).")
     ] = False,
     outtype: Annotated[
-        str, typer.Option(help="Output format: 'text' (default), 'json', or 'yaml'.")
-    ] = "text",
+        str,
+        typer.Option(help="Output format: 'text' (default), 'json', 'yaml', or 'markdown'."),
+    ] = None,
+    format_out: Annotated[
+        str,
+        typer.Option(
+            help="Alias for --outtype. Also inferred from --output (.json/.yaml/.yml/.md)."
+        ),
+    ] = None,
     output: Annotated[
         str, typer.Option(help="Optional output file path. If not specified, prints to stdout.")
     ] = None,
@@ -906,6 +1286,7 @@ def analyze(
         ),
     ] = None,
     delimiter: Annotated[str, typer.Option(help="CSV delimiter character.")] = None,
+    quotechar: QuoteCharOpt = None,
     encoding: Annotated[str, typer.Option(help="File encoding (e.g., 'utf8', 'latin1').")] = None,
     objects_limit: Annotated[
         int, typer.Option(help="Maximum number of records to scan for schema inference.")
@@ -919,6 +1300,14 @@ def analyze(
     no_stats: Annotated[
         bool, typer.Option(help="Skip uniqueness statistics in field analysis.")
     ] = False,
+    table: TableNameOpt = None,
+    start_page: Annotated[int, typer.Option(help="Sheet index (0-based) for Excel files.")] = 0,
+    trust: TrustOpt = False,
+    on_error: OnErrorOpt = None,
+    error_log: ErrorLogOpt = None,
+    flatten_nested: FlattenNestedOpt = False,
+    max_nested_depth: MaxNestedDepthOpt = None,
+    keep_nested_parents: KeepNestedParentsOpt = True,
 ):
     """Analyzes given data file and returns human readable insights.
 
@@ -939,17 +1328,27 @@ def analyze(
         "engine": engine,
         "use_pandas": use_pandas,
         "outtype": outtype,
+        "format_out": format_out,
         "output": output,
         "autodoc": autodoc,
         "lang": lang,
         "ai_provider": ai_provider,
         "ai_config": ai_config if ai_config else None,
         "delimiter": delimiter,
+        "quotechar": quotechar,
         "encoding": encoding,
         "objects_limit": objects_limit,
         "ignore_errors": ignore_errors,
         "scan": not no_scan,
         "stats": not no_stats,
+        "table": table,
+        "start_page": start_page,
+        "trust": trust,
+        "on_error": on_error,
+        "error_log": error_log,
+        "flatten_nested": flatten_nested,
+        "max_nested_depth": max_nested_depth,
+        "keep_nested_parents": keep_nested_parents,
     }
     acmd = Analyzer()
     acmd.analyze(input_file, options)
@@ -976,6 +1375,14 @@ def _run_doc_command(
     semantic_types: bool,
     pii_detect: bool,
     pii_mask_samples: bool,
+    table: Optional[str] = None,
+    trust: bool = False,
+    on_error: Optional[str] = None,
+    error_log: Optional[str] = None,
+    quotechar: Optional[str] = None,
+    flatten_nested: bool = False,
+    max_nested_depth: Optional[int] = None,
+    keep_nested_parents: bool = True,
 ):
     if verbose:
         enable_verbose()
@@ -992,11 +1399,16 @@ def _run_doc_command(
         "sample_size": sample_size,
         "engine": engine,
         "delimiter": delimiter,
+        "quotechar": quotechar,
         "encoding": encoding,
         "tagname": tagname,
         "start_line": start_line,
         "start_page": start_page,
         "format_in": format_in,
+        "table": table,
+        "trust": trust,
+        "on_error": on_error,
+        "error_log": error_log,
         "autodoc": autodoc,
         "lang": lang,
         "ai_provider": ai_provider,
@@ -1004,6 +1416,9 @@ def _run_doc_command(
         "semantic_types": semantic_types,
         "pii_detect": pii_detect,
         "pii_mask_samples": pii_mask_samples,
+        "flatten_nested": flatten_nested,
+        "max_nested_depth": max_nested_depth,
+        "keep_nested_parents": keep_nested_parents,
     }
     acmd = Documenter()
     acmd.document(input_file, options)
@@ -1024,9 +1439,11 @@ def doc(
     ] = 10,
     verbose: Annotated[bool, typer.Option(help="Enable verbose logging output.")] = False,
     engine: Annotated[
-        str, typer.Option(help="Processing engine: 'auto' (default) or 'duckdb'.")
-    ] = "auto",
+        Optional[str],
+        typer.Option(help="Processing engine: 'auto' (default) or 'duckdb'."),
+    ] = None,
     delimiter: Annotated[str, typer.Option(help="CSV delimiter character.")] = ",",
+    quotechar: QuoteCharOpt = None,
     encoding: Annotated[
         Optional[str], typer.Option(help="File encoding (e.g., 'utf8', 'latin1').")
     ] = None,
@@ -1039,6 +1456,10 @@ def doc(
     start_page: Annotated[
         int, typer.Option(help="Page number (0-based) to start from for Excel files.")
     ] = 0,
+    table: TableNameOpt = None,
+    trust: TrustOpt = False,
+    on_error: OnErrorOpt = None,
+    error_log: ErrorLogOpt = None,
     format_in: Annotated[
         Optional[str],
         typer.Option(help="Override input file format detection (e.g., 'csv', 'jsonl')."),
@@ -1074,6 +1495,9 @@ def doc(
     pii_mask_samples: Annotated[
         bool, typer.Option(help="Redact detected PII values in sample records.")
     ] = False,
+    flatten_nested: FlattenNestedOpt = False,
+    max_nested_depth: MaxNestedDepthOpt = None,
+    keep_nested_parents: KeepNestedParentsOpt = True,
 ):
     """Generate documentation for a dataset."""
     _run_doc_command(
@@ -1097,6 +1521,14 @@ def doc(
         semantic_types=semantic_types,
         pii_detect=pii_detect,
         pii_mask_samples=pii_mask_samples,
+        table=table,
+        trust=trust,
+        on_error=on_error,
+        error_log=error_log,
+        quotechar=quotechar,
+        flatten_nested=flatten_nested,
+        max_nested_depth=max_nested_depth,
+        keep_nested_parents=keep_nested_parents,
     )
 
 
@@ -1115,9 +1547,11 @@ def document(
     ] = 10,
     verbose: Annotated[bool, typer.Option(help="Enable verbose logging output.")] = False,
     engine: Annotated[
-        str, typer.Option(help="Processing engine: 'auto' (default) or 'duckdb'.")
-    ] = "auto",
+        Optional[str],
+        typer.Option(help="Processing engine: 'auto' (default) or 'duckdb'."),
+    ] = None,
     delimiter: Annotated[str, typer.Option(help="CSV delimiter character.")] = ",",
+    quotechar: QuoteCharOpt = None,
     encoding: Annotated[
         Optional[str], typer.Option(help="File encoding (e.g., 'utf8', 'latin1').")
     ] = None,
@@ -1130,6 +1564,10 @@ def document(
     start_page: Annotated[
         int, typer.Option(help="Page number (0-based) to start from for Excel files.")
     ] = 0,
+    table: TableNameOpt = None,
+    trust: TrustOpt = False,
+    on_error: OnErrorOpt = None,
+    error_log: ErrorLogOpt = None,
     format_in: Annotated[
         Optional[str],
         typer.Option(help="Override input file format detection (e.g., 'csv', 'jsonl')."),
@@ -1165,6 +1603,9 @@ def document(
     pii_mask_samples: Annotated[
         bool, typer.Option(help="Redact detected PII values in sample records.")
     ] = False,
+    flatten_nested: FlattenNestedOpt = False,
+    max_nested_depth: MaxNestedDepthOpt = None,
+    keep_nested_parents: KeepNestedParentsOpt = True,
 ):
     """Generate documentation for a dataset (alias for doc)."""
     _run_doc_command(
@@ -1188,6 +1629,14 @@ def document(
         semantic_types=semantic_types,
         pii_detect=pii_detect,
         pii_mask_samples=pii_mask_samples,
+        table=table,
+        trust=trust,
+        on_error=on_error,
+        error_log=error_log,
+        quotechar=quotechar,
+        flatten_nested=flatten_nested,
+        max_nested_depth=max_nested_depth,
+        keep_nested_parents=keep_nested_parents,
     )
 
 
@@ -1230,13 +1679,48 @@ def schema(
         ),
     ] = None,
     engine: Annotated[
-        str, typer.Option(help="Processing engine: 'auto' (default), 'duckdb', or 'iterable'.")
-    ] = "auto",
+        Optional[str],
+        typer.Option(help="Processing engine: 'auto' (default), 'duckdb', or 'iterable'."),
+    ] = None,
+    table: TableNameOpt = None,
+    quotechar: QuoteCharOpt = None,
+    start_page: Annotated[int, typer.Option(help="Sheet index (0-based) for Excel files.")] = 0,
+    flatten_nested: FlattenNestedOpt = False,
+    max_nested_depth: MaxNestedDepthOpt = None,
+    keep_nested_parents: KeepNestedParentsOpt = False,
+    trust: TrustOpt = False,
+    on_error: OnErrorOpt = None,
+    error_log: ErrorLogOpt = None,
+    validate_schema: Annotated[
+        bool,
+        typer.Option(
+            "--validate",
+            help=(
+                "Validate rows against an inferred schema (iterabledata schema.validate). "
+                "Use `undatum validate` for rule packs."
+            ),
+        ),
+    ] = False,
+    strict: Annotated[
+        bool,
+        typer.Option(
+            "--strict",
+            help="With --validate, flag extra fields not present in the inferred schema.",
+        ),
+    ] = False,
+    sample_size: Annotated[
+        Optional[int],
+        typer.Option(
+            "--sample-size",
+            help="With --validate, rows to sample when inferring the schema (engine default 10000).",
+        ),
+    ] = None,
 ):
     """Extract schema from a data file.
 
     Generates a schema definition describing the structure and types of fields in the data.
     Supports multiple output formats including YAML, JSON, Cerberus, JSON Schema, Avro, and Parquet.
+    Use ``--validate`` to check rows against the inferred schema (not rule-pack validation).
     """
     if verbose:
         enable_verbose()
@@ -1257,9 +1741,23 @@ def schema(
         "ai_provider": ai_provider,
         "ai_config": ai_config if ai_config else None,
         "engine": engine,
+        "table": table,
+        "quotechar": quotechar,
+        "start_page": start_page,
+        "flatten_nested": flatten_nested,
+        "max_nested_depth": max_nested_depth,
+        "keep_nested_parents": keep_nested_parents,
+        "trust": trust,
+        "on_error": on_error,
+        "error_log": error_log,
+        "validate": validate_schema,
+        "strict": strict,
+        "sample_size": sample_size,
     }
     acmd = Schemer()
-    acmd.extract_schema(input_file, options)
+    result = acmd.extract_schema(input_file, options)
+    if validate_schema and isinstance(result, dict) and not result.get("valid"):
+        raise typer.Exit(code=1)
 
 
 @data_app.command()
@@ -1310,8 +1808,15 @@ def schema_bulk(
         ),
     ] = None,
     engine: Annotated[
-        str, typer.Option(help="Processing engine: 'auto' (default), 'duckdb', or 'iterable'.")
-    ] = "auto",
+        Optional[str],
+        typer.Option(help="Processing engine: 'auto' (default), 'duckdb', or 'iterable'."),
+    ] = None,
+    table: TableNameOpt = None,
+    quotechar: QuoteCharOpt = None,
+    start_page: Annotated[int, typer.Option(help="Sheet index (0-based) for Excel files.")] = 0,
+    trust: TrustOpt = False,
+    on_error: OnErrorOpt = None,
+    error_log: ErrorLogOpt = None,
 ):
     """Extract schemas from multiple files.
 
@@ -1338,6 +1843,12 @@ def schema_bulk(
         "ai_provider": ai_provider,
         "ai_config": ai_config if ai_config else None,
         "engine": engine,
+        "table": table,
+        "start_page": start_page,
+        "trust": trust,
+        "on_error": on_error,
+        "error_log": error_log,
+        "quotechar": quotechar,
     }
     acmd = Schemer()
     acmd.extract_schema_bulk(input_file, options)
@@ -1403,6 +1914,22 @@ def ingest(
         bool,
         typer.Option(help="Use Appender API for DuckDB (streaming insertion, default: False)."),
     ] = False,
+    source_table: Annotated[
+        Optional[str],
+        typer.Option(
+            "--source-table",
+            "--sheet",
+            help="Source table or sheet name for multi-table files (Excel, SQLite, lakehouse).",
+        ),
+    ] = None,
+    start_page: Annotated[int, typer.Option(help="Sheet index (0-based) for Excel files.")] = 0,
+    trust: TrustOpt = False,
+    on_error: OnErrorOpt = None,
+    error_log: ErrorLogOpt = None,
+    quotechar: QuoteCharOpt = None,
+    flatten_nested: FlattenNestedOpt = False,
+    max_nested_depth: MaxNestedDepthOpt = None,
+    keep_nested_parents: KeepNestedParentsOpt = True,
 ):
     """Ingest data into a database.
 
@@ -1456,6 +1983,15 @@ def ingest(
         "create_table": create_table,
         "upsert_key": upsert_key_parsed,
         "use_appender": use_appender,
+        "table": source_table,
+        "start_page": start_page,
+        "trust": trust,
+        "on_error": on_error,
+        "error_log": error_log,
+        "quotechar": quotechar,
+        "flatten_nested": flatten_nested,
+        "max_nested_depth": max_nested_depth,
+        "keep_nested_parents": keep_nested_parents,
     }
     acmd = Ingester(batch)
     files = glob.glob(input_file.strip("'"))
@@ -1463,62 +1999,24 @@ def ingest(
 
 
 @data_app.command()
-def query(
-    input_file: Annotated[str, typer.Argument(help="Path to input file.")],
-    output: Annotated[
-        str, typer.Option(help="Optional output file path. If not specified, prints to stdout.")
-    ] = None,
-    fields: Annotated[
-        str, typer.Option(help="Comma-separated list of field names (kept for compatibility).")
-    ] = None,
-    delimiter: Annotated[str, typer.Option(help="CSV delimiter character.")] = ",",
-    encoding: Annotated[str, typer.Option(help="File encoding (e.g., 'utf8', 'latin1').")] = None,
-    verbose: Annotated[bool, typer.Option(help="Enable verbose logging output.")] = False,
-    format_in: Annotated[
-        str, typer.Option(help="Override input file format detection (e.g., 'csv', 'jsonl').")
-    ] = None,
-    format_out: Annotated[
-        str, typer.Option(help="Override output format (e.g., 'csv', 'jsonl').")
-    ] = None,
-    zipfile: Annotated[bool, typer.Option(help="Treat input file as a ZIP archive.")] = False,
-    query_expr: Annotated[
-        str, typer.Option(help="MistQL query expression to execute on the data.")
-    ] = None,
-):
-    """Query data using MistQL query language.
-
-    .. note:: Experimental feature. Requires 'mistql' package: pip install mistql
-
-    Executes MistQL queries on the input data and returns the results.
-    """
-    if verbose:
-        enable_verbose()
-    options = {
-        "delimiter": delimiter,
-        "fields": fields,
-        "output": output,
-        "encoding": encoding,
-        "format_in": format_in,
-        "format_out": format_out,
-        "zipfile": zipfile,
-        "query": query_expr,
-    }
-    acmd = DataQuery()
-    acmd.query(input_file, options)
-
-
-@data_app.command()
 def count(
     input_file: Annotated[str, typer.Argument(help="Path to input file.")],
     delimiter: Annotated[str, typer.Option(help="CSV delimiter character.")] = ",",
+    quotechar: QuoteCharOpt = None,
     encoding: Annotated[str, typer.Option(help="File encoding (e.g., 'utf8', 'latin1').")] = None,
     verbose: Annotated[bool, typer.Option(help="Enable verbose logging output.")] = False,
     filetype: Annotated[
         str, typer.Option(help="Override file type detection (e.g., 'csv', 'jsonl').")
     ] = None,
     engine: Annotated[
-        str, typer.Option(help="Processing engine: 'auto' (default), 'duckdb', or 'iterable'.")
-    ] = "auto",
+        Optional[str],
+        typer.Option(help="Processing engine: 'auto' (default), 'duckdb', or 'iterable'."),
+    ] = None,
+    table: TableNameOpt = None,
+    start_page: Annotated[int, typer.Option(help="Sheet index (0-based) for Excel files.")] = 0,
+    trust: TrustOpt = False,
+    on_error: OnErrorOpt = None,
+    error_log: ErrorLogOpt = None,
 ):
     """Count the number of rows in a data file.
 
@@ -1527,7 +2025,18 @@ def count(
     """
     if verbose:
         enable_verbose()
-    options = {"delimiter": delimiter, "encoding": encoding, "filetype": filetype, "engine": engine}
+    options = {
+        "delimiter": delimiter,
+        "quotechar": quotechar,
+        "encoding": encoding,
+        "filetype": filetype,
+        "engine": engine,
+        "table": table,
+        "start_page": start_page,
+        "trust": trust,
+        "on_error": on_error,
+        "error_log": error_log,
+    }
     acmd = Counter()
     acmd.count(input_file, options)
 
@@ -1540,11 +2049,20 @@ def head(
     ] = None,
     n: Annotated[int, typer.Option(help="Number of rows to extract (default: 10).")] = 10,
     delimiter: Annotated[str, typer.Option(help="CSV delimiter character.")] = ",",
+    quotechar: QuoteCharOpt = None,
     encoding: Annotated[str, typer.Option(help="File encoding (e.g., 'utf8', 'latin1').")] = None,
     verbose: Annotated[bool, typer.Option(help="Enable verbose logging output.")] = False,
     format_in: Annotated[
         str, typer.Option(help="Override input file format detection (e.g., 'csv', 'jsonl').")
     ] = None,
+    table: TableNameOpt = None,
+    start_page: Annotated[int, typer.Option(help="Sheet index (0-based) for Excel files.")] = 0,
+    trust: TrustOpt = False,
+    on_error: OnErrorOpt = None,
+    error_log: ErrorLogOpt = None,
+    flatten_nested: FlattenNestedOpt = False,
+    max_nested_depth: MaxNestedDepthOpt = None,
+    keep_nested_parents: KeepNestedParentsOpt = True,
 ):
     """Extract the first N rows from a data file.
 
@@ -1556,8 +2074,17 @@ def head(
         "output": output,
         "n": n,
         "delimiter": delimiter,
+        "quotechar": quotechar,
         "encoding": encoding,
         "filetype": format_in,
+        "table": table,
+        "start_page": start_page,
+        "trust": trust,
+        "on_error": on_error,
+        "error_log": error_log,
+        "flatten_nested": flatten_nested,
+        "max_nested_depth": max_nested_depth,
+        "keep_nested_parents": keep_nested_parents,
     }
     acmd = Head()
     acmd.head(input_file, options)
@@ -1571,11 +2098,20 @@ def tail(
     ] = None,
     n: Annotated[int, typer.Option(help="Number of rows to extract (default: 10).")] = 10,
     delimiter: Annotated[str, typer.Option(help="CSV delimiter character.")] = ",",
+    quotechar: QuoteCharOpt = None,
     encoding: Annotated[str, typer.Option(help="File encoding (e.g., 'utf8', 'latin1').")] = None,
     verbose: Annotated[bool, typer.Option(help="Enable verbose logging output.")] = False,
     format_in: Annotated[
         str, typer.Option(help="Override input file format detection (e.g., 'csv', 'jsonl').")
     ] = None,
+    table: TableNameOpt = None,
+    start_page: Annotated[int, typer.Option(help="Sheet index (0-based) for Excel files.")] = 0,
+    trust: TrustOpt = False,
+    on_error: OnErrorOpt = None,
+    error_log: ErrorLogOpt = None,
+    flatten_nested: FlattenNestedOpt = False,
+    max_nested_depth: MaxNestedDepthOpt = None,
+    keep_nested_parents: KeepNestedParentsOpt = True,
 ):
     """Extract the last N rows from a data file.
 
@@ -1587,8 +2123,17 @@ def tail(
         "output": output,
         "n": n,
         "delimiter": delimiter,
+        "quotechar": quotechar,
         "encoding": encoding,
         "filetype": format_in,
+        "table": table,
+        "start_page": start_page,
+        "trust": trust,
+        "on_error": on_error,
+        "error_log": error_log,
+        "flatten_nested": flatten_nested,
+        "max_nested_depth": max_nested_depth,
+        "keep_nested_parents": keep_nested_parents,
     }
     acmd = Tail()
     acmd.tail(input_file, options)
@@ -1610,6 +2155,7 @@ def mask(
         str, typer.Option(help="Optional salt for hash method (for additional security).")
     ] = None,
     delimiter: Annotated[str, typer.Option(help="CSV delimiter character.")] = ",",
+    quotechar: QuoteCharOpt = None,
     encoding: Annotated[str, typer.Option(help="File encoding (e.g., 'utf8', 'latin1').")] = None,
     verbose: Annotated[bool, typer.Option(help="Enable verbose logging output.")] = False,
     format_in: Annotated[
@@ -1618,6 +2164,14 @@ def mask(
     format_out: Annotated[
         str, typer.Option(help="Override output file format (e.g., 'csv', 'jsonl').")
     ] = None,
+    table: TableNameOpt = None,
+    start_page: Annotated[int, typer.Option(help="Sheet index (0-based) for Excel files.")] = 0,
+    trust: TrustOpt = False,
+    on_error: OnErrorOpt = None,
+    error_log: ErrorLogOpt = None,
+    flatten_nested: FlattenNestedOpt = False,
+    max_nested_depth: MaxNestedDepthOpt = None,
+    keep_nested_parents: KeepNestedParentsOpt = True,
 ):
     """Mask sensitive fields in a data file for anonymization.
 
@@ -1643,9 +2197,18 @@ def mask(
         "method": method,
         "salt": salt,
         "delimiter": delimiter,
+        "quotechar": quotechar,
         "encoding": encoding,
         "format_in": format_in,
         "format_out": format_out,
+        "table": table,
+        "start_page": start_page,
+        "trust": trust,
+        "on_error": on_error,
+        "error_log": error_log,
+        "flatten_nested": flatten_nested,
+        "max_nested_depth": max_nested_depth,
+        "keep_nested_parents": keep_nested_parents,
     }
     acmd = Masker()
     acmd.mask(input_file, output, options)
@@ -1670,11 +2233,20 @@ def enum(
         str, typer.Option(help="Constant value to use when type is 'constant'.")
     ] = None,
     delimiter: Annotated[str, typer.Option(help="CSV delimiter character.")] = ",",
+    quotechar: QuoteCharOpt = None,
     encoding: Annotated[str, typer.Option(help="File encoding (e.g., 'utf8', 'latin1').")] = None,
     verbose: Annotated[bool, typer.Option(help="Enable verbose logging output.")] = False,
     format_in: Annotated[
         str, typer.Option(help="Override input file format detection (e.g., 'csv', 'jsonl').")
     ] = None,
+    table: TableNameOpt = None,
+    start_page: Annotated[int, typer.Option(help="Sheet index (0-based) for Excel files.")] = 0,
+    trust: TrustOpt = False,
+    on_error: OnErrorOpt = None,
+    error_log: ErrorLogOpt = None,
+    flatten_nested: FlattenNestedOpt = False,
+    max_nested_depth: MaxNestedDepthOpt = None,
+    keep_nested_parents: KeepNestedParentsOpt = True,
 ):
     """Add row numbers, UUIDs, or constant values to records.
 
@@ -1689,8 +2261,17 @@ def enum(
         "start": start,
         "value": value,
         "delimiter": delimiter,
+        "quotechar": quotechar,
         "encoding": encoding,
         "filetype": format_in,
+        "table": table,
+        "start_page": start_page,
+        "trust": trust,
+        "on_error": on_error,
+        "error_log": error_log,
+        "flatten_nested": flatten_nested,
+        "max_nested_depth": max_nested_depth,
+        "keep_nested_parents": keep_nested_parents,
     }
     acmd = Enumerator()
     acmd.enum(input_file, options)
@@ -1703,14 +2284,24 @@ def reverse(
         str, typer.Option(help="Optional output file path. If not specified, prints to stdout.")
     ] = None,
     delimiter: Annotated[str, typer.Option(help="CSV delimiter character.")] = ",",
+    quotechar: QuoteCharOpt = None,
     encoding: Annotated[str, typer.Option(help="File encoding (e.g., 'utf8', 'latin1').")] = None,
     verbose: Annotated[bool, typer.Option(help="Enable verbose logging output.")] = False,
     filetype: Annotated[
         str, typer.Option(help="Override file type detection (e.g., 'csv', 'jsonl').")
     ] = None,
     engine: Annotated[
-        str, typer.Option(help="Processing engine: 'auto' (default), 'duckdb', or 'iterable'.")
-    ] = "auto",
+        Optional[str],
+        typer.Option(help="Processing engine: 'auto' (default), 'duckdb', or 'iterable'."),
+    ] = None,
+    table: TableNameOpt = None,
+    start_page: Annotated[int, typer.Option(help="Sheet index (0-based) for Excel files.")] = 0,
+    trust: TrustOpt = False,
+    on_error: OnErrorOpt = None,
+    error_log: ErrorLogOpt = None,
+    flatten_nested: FlattenNestedOpt = False,
+    max_nested_depth: MaxNestedDepthOpt = None,
+    keep_nested_parents: KeepNestedParentsOpt = True,
 ):
     """Reverse the order of rows in a data file.
 
@@ -1721,9 +2312,18 @@ def reverse(
     options = {
         "output": output,
         "delimiter": delimiter,
+        "quotechar": quotechar,
         "encoding": encoding,
         "filetype": filetype,
         "engine": engine,
+        "table": table,
+        "start_page": start_page,
+        "trust": trust,
+        "on_error": on_error,
+        "error_log": error_log,
+        "flatten_nested": flatten_nested,
+        "max_nested_depth": max_nested_depth,
+        "keep_nested_parents": keep_nested_parents,
     }
     acmd = Reverser()
     acmd.reverse(input_file, options)
@@ -1739,11 +2339,20 @@ def table(
         str, typer.Option(help="Comma-separated list of field names to display.")
     ] = None,
     delimiter: Annotated[str, typer.Option(help="CSV delimiter character.")] = ",",
+    quotechar: QuoteCharOpt = None,
     encoding: Annotated[str, typer.Option(help="File encoding (e.g., 'utf8', 'latin1').")] = None,
     verbose: Annotated[bool, typer.Option(help="Enable verbose logging output.")] = False,
     format_in: Annotated[
         str, typer.Option(help="Override input file format detection (e.g., 'csv', 'jsonl').")
     ] = None,
+    table: TableNameOpt = None,
+    start_page: Annotated[int, typer.Option(help="Sheet index (0-based) for Excel files.")] = 0,
+    trust: TrustOpt = False,
+    on_error: OnErrorOpt = None,
+    error_log: ErrorLogOpt = None,
+    flatten_nested: FlattenNestedOpt = False,
+    max_nested_depth: MaxNestedDepthOpt = None,
+    keep_nested_parents: KeepNestedParentsOpt = True,
 ):
     """Display data in a formatted, aligned table for inspection.
 
@@ -1755,8 +2364,17 @@ def table(
         "limit": limit,
         "fields": fields,
         "delimiter": delimiter,
+        "quotechar": quotechar,
         "encoding": encoding,
         "filetype": format_in,
+        "table": table,
+        "start_page": start_page,
+        "trust": trust,
+        "on_error": on_error,
+        "error_log": error_log,
+        "flatten_nested": flatten_nested,
+        "max_nested_depth": max_nested_depth,
+        "keep_nested_parents": keep_nested_parents,
     }
     acmd = TableFormatter()
     acmd.table(input_file, options)
@@ -1773,11 +2391,20 @@ def fixlengths(
         str, typer.Option(help="Value to use for padding (default: empty string).")
     ] = "",
     delimiter: Annotated[str, typer.Option(help="CSV delimiter character.")] = ",",
+    quotechar: QuoteCharOpt = None,
     encoding: Annotated[str, typer.Option(help="File encoding (e.g., 'utf8', 'latin1').")] = None,
     verbose: Annotated[bool, typer.Option(help="Enable verbose logging output.")] = False,
     format_in: Annotated[
         str, typer.Option(help="Override input file format detection (e.g., 'csv', 'jsonl').")
     ] = None,
+    table: TableNameOpt = None,
+    start_page: Annotated[int, typer.Option(help="Sheet index (0-based) for Excel files.")] = 0,
+    trust: TrustOpt = False,
+    on_error: OnErrorOpt = None,
+    error_log: ErrorLogOpt = None,
+    flatten_nested: FlattenNestedOpt = False,
+    max_nested_depth: MaxNestedDepthOpt = None,
+    keep_nested_parents: KeepNestedParentsOpt = True,
 ):
     """Ensure all rows have the same number of fields.
 
@@ -1791,8 +2418,17 @@ def fixlengths(
         "strategy": strategy,
         "value": value,
         "delimiter": delimiter,
+        "quotechar": quotechar,
         "encoding": encoding,
         "filetype": format_in,
+        "table": table,
+        "start_page": start_page,
+        "trust": trust,
+        "on_error": on_error,
+        "error_log": error_log,
+        "flatten_nested": flatten_nested,
+        "max_nested_depth": max_nested_depth,
+        "keep_nested_parents": keep_nested_parents,
     }
     acmd = FixLengths()
     acmd.fixlengths(input_file, options)
@@ -1810,14 +2446,16 @@ def sort(
         str, typer.Option(help="Comma-separated list of field names to sort numerically.")
     ] = None,
     delimiter: Annotated[str, typer.Option(help="CSV delimiter character.")] = ",",
+    quotechar: QuoteCharOpt = None,
     encoding: Annotated[str, typer.Option(help="File encoding (e.g., 'utf8', 'latin1').")] = None,
     verbose: Annotated[bool, typer.Option(help="Enable verbose logging output.")] = False,
     filetype: Annotated[
         str, typer.Option(help="Override file type detection (e.g., 'csv', 'jsonl').")
     ] = None,
     engine: Annotated[
-        str, typer.Option(help="Processing engine: 'auto' (default), 'duckdb', or 'python'.")
-    ] = "auto",
+        Optional[str],
+        typer.Option(help="Processing engine: 'auto' (default), 'duckdb', or 'python'."),
+    ] = None,
     duckdb_threads: Annotated[
         int, typer.Option(help="Number of threads for DuckDB engine.")
     ] = None,
@@ -1829,6 +2467,14 @@ def sort(
         bool,
         typer.Option(help="Force external merge sort (spill sorted runs to disk)."),
     ] = False,
+    table: TableNameOpt = None,
+    start_page: Annotated[int, typer.Option(help="Sheet index (0-based) for Excel files.")] = 0,
+    trust: TrustOpt = False,
+    on_error: OnErrorOpt = None,
+    error_log: ErrorLogOpt = None,
+    flatten_nested: FlattenNestedOpt = False,
+    max_nested_depth: MaxNestedDepthOpt = None,
+    keep_nested_parents: KeepNestedParentsOpt = True,
 ):
     """Sort rows by one or more columns.
 
@@ -1843,6 +2489,7 @@ def sort(
         "desc": desc,
         "numeric": numeric,
         "delimiter": delimiter,
+        "quotechar": quotechar,
         "encoding": encoding,
         "filetype": filetype,
         "engine": engine,
@@ -1851,6 +2498,14 @@ def sort(
         "duckdb_temp_dir": duckdb_temp_dir,
         "low_memory": low_memory,
         "temp_dir": duckdb_temp_dir,
+        "table": table,
+        "start_page": start_page,
+        "trust": trust,
+        "on_error": on_error,
+        "error_log": error_log,
+        "flatten_nested": flatten_nested,
+        "max_nested_depth": max_nested_depth,
+        "keep_nested_parents": keep_nested_parents,
     }
     acmd = Sorter()
     acmd.sort(input_file, options)
@@ -1865,14 +2520,16 @@ def sample(
     n: Annotated[int, typer.Option(help="Number of rows to sample.")] = None,
     percent: Annotated[float, typer.Option(help="Percentage of rows to sample (0-100).")] = None,
     delimiter: Annotated[str, typer.Option(help="CSV delimiter character.")] = ",",
+    quotechar: QuoteCharOpt = None,
     encoding: Annotated[str, typer.Option(help="File encoding (e.g., 'utf8', 'latin1').")] = None,
     verbose: Annotated[bool, typer.Option(help="Enable verbose logging output.")] = False,
     format_in: Annotated[
         str, typer.Option(help="Override input file format detection (e.g., 'csv', 'jsonl').")
     ] = None,
     engine: Annotated[
-        str, typer.Option(help="Processing engine: 'auto' (default), 'duckdb', or 'python'.")
-    ] = "auto",
+        Optional[str],
+        typer.Option(help="Processing engine: 'auto' (default), 'duckdb', or 'python'."),
+    ] = None,
     duckdb_threads: Annotated[
         int, typer.Option(help="Number of threads for DuckDB engine.")
     ] = None,
@@ -1880,6 +2537,14 @@ def sample(
         str, typer.Option(help="Memory limit for DuckDB (e.g., '4GB', '512MB').")
     ] = None,
     duckdb_temp_dir: Annotated[str, typer.Option(help="Temporary directory for DuckDB.")] = None,
+    table: TableNameOpt = None,
+    start_page: Annotated[int, typer.Option(help="Sheet index (0-based) for Excel files.")] = 0,
+    trust: TrustOpt = False,
+    on_error: OnErrorOpt = None,
+    error_log: ErrorLogOpt = None,
+    flatten_nested: FlattenNestedOpt = False,
+    max_nested_depth: MaxNestedDepthOpt = None,
+    keep_nested_parents: KeepNestedParentsOpt = True,
 ):
     """Randomly select rows from a data file.
 
@@ -1892,6 +2557,7 @@ def sample(
         "n": n,
         "percent": percent,
         "delimiter": delimiter,
+        "quotechar": quotechar,
         "encoding": encoding,
         "filetype": format_in,
         "format_in": format_in,  # Support both names
@@ -1899,6 +2565,14 @@ def sample(
         "duckdb_threads": duckdb_threads,
         "duckdb_memory": duckdb_memory,
         "duckdb_temp_dir": duckdb_temp_dir,
+        "table": table,
+        "start_page": start_page,
+        "trust": trust,
+        "on_error": on_error,
+        "error_log": error_log,
+        "flatten_nested": flatten_nested,
+        "max_nested_depth": max_nested_depth,
+        "keep_nested_parents": keep_nested_parents,
     }
     acmd = Sampler()
     acmd.sample(input_file, options)
@@ -1919,14 +2593,16 @@ def search(
     ] = None,
     ignore_case: Annotated[bool, typer.Option(help="Case-insensitive search.")] = False,
     delimiter: Annotated[str, typer.Option(help="CSV delimiter character.")] = ",",
+    quotechar: QuoteCharOpt = None,
     encoding: Annotated[str, typer.Option(help="File encoding (e.g., 'utf8', 'latin1').")] = None,
     verbose: Annotated[bool, typer.Option(help="Enable verbose logging output.")] = False,
     format_in: Annotated[
         str, typer.Option(help="Override input file format detection (e.g., 'csv', 'jsonl').")
     ] = None,
     engine: Annotated[
-        str, typer.Option(help="Processing engine: 'auto' (default), 'duckdb', or 'python'.")
-    ] = "auto",
+        Optional[str],
+        typer.Option(help="Processing engine: 'auto' (default), 'duckdb', or 'python'."),
+    ] = None,
     duckdb_threads: Annotated[
         int, typer.Option(help="Number of threads for DuckDB engine.")
     ] = None,
@@ -1934,6 +2610,14 @@ def search(
         str, typer.Option(help="Memory limit for DuckDB (e.g., '4GB', '512MB').")
     ] = None,
     duckdb_temp_dir: Annotated[str, typer.Option(help="Temporary directory for DuckDB.")] = None,
+    table: TableNameOpt = None,
+    start_page: Annotated[int, typer.Option(help="Sheet index (0-based) for Excel files.")] = 0,
+    trust: TrustOpt = False,
+    on_error: OnErrorOpt = None,
+    error_log: ErrorLogOpt = None,
+    flatten_nested: FlattenNestedOpt = False,
+    max_nested_depth: MaxNestedDepthOpt = None,
+    keep_nested_parents: KeepNestedParentsOpt = True,
 ):
     """Filter rows using regex patterns.
 
@@ -1947,6 +2631,7 @@ def search(
         "fields": fields,
         "ignore_case": ignore_case,
         "delimiter": delimiter,
+        "quotechar": quotechar,
         "encoding": encoding,
         "filetype": format_in,
         "format_in": format_in,  # Support both names
@@ -1954,6 +2639,14 @@ def search(
         "duckdb_threads": duckdb_threads,
         "duckdb_memory": duckdb_memory,
         "duckdb_temp_dir": duckdb_temp_dir,
+        "table": table,
+        "start_page": start_page,
+        "trust": trust,
+        "on_error": on_error,
+        "error_log": error_log,
+        "flatten_nested": flatten_nested,
+        "max_nested_depth": max_nested_depth,
+        "keep_nested_parents": keep_nested_parents,
     }
     acmd = Searcher()
     acmd.search(input_file, options)
@@ -1975,14 +2668,16 @@ def dedup(
         str, typer.Option(help="Which duplicate to keep: 'first' (default) or 'last'.")
     ] = "first",
     delimiter: Annotated[str, typer.Option(help="CSV delimiter character.")] = ",",
+    quotechar: QuoteCharOpt = None,
     encoding: Annotated[str, typer.Option(help="File encoding (e.g., 'utf8', 'latin1').")] = None,
     verbose: Annotated[bool, typer.Option(help="Enable verbose logging output.")] = False,
     filetype: Annotated[
         str, typer.Option(help="Override file type detection (e.g., 'csv', 'jsonl').")
     ] = None,
     engine: Annotated[
-        str, typer.Option(help="Processing engine: 'auto' (default), 'duckdb', or 'python'.")
-    ] = "auto",
+        Optional[str],
+        typer.Option(help="Processing engine: 'auto' (default), 'duckdb', or 'python'."),
+    ] = None,
     duckdb_threads: Annotated[
         int, typer.Option(help="Number of threads for DuckDB engine.")
     ] = None,
@@ -1994,6 +2689,14 @@ def dedup(
         bool,
         typer.Option(help="Force disk-backed exact deduplication (spill keys to SQLite)."),
     ] = False,
+    table: TableNameOpt = None,
+    start_page: Annotated[int, typer.Option(help="Sheet index (0-based) for Excel files.")] = 0,
+    trust: TrustOpt = False,
+    on_error: OnErrorOpt = None,
+    error_log: ErrorLogOpt = None,
+    flatten_nested: FlattenNestedOpt = False,
+    max_nested_depth: MaxNestedDepthOpt = None,
+    keep_nested_parents: KeepNestedParentsOpt = True,
 ):
     """Remove duplicate rows.
 
@@ -2007,6 +2710,7 @@ def dedup(
         "key_fields": key_fields,
         "keep": keep,
         "delimiter": delimiter,
+        "quotechar": quotechar,
         "encoding": encoding,
         "filetype": filetype,
         "engine": engine,
@@ -2015,6 +2719,14 @@ def dedup(
         "duckdb_temp_dir": duckdb_temp_dir,
         "low_memory": low_memory,
         "temp_dir": duckdb_temp_dir,
+        "table": table,
+        "start_page": start_page,
+        "trust": trust,
+        "on_error": on_error,
+        "error_log": error_log,
+        "flatten_nested": flatten_nested,
+        "max_nested_depth": max_nested_depth,
+        "keep_nested_parents": keep_nested_parents,
     }
     acmd = Deduplicator()
     acmd.dedup(input_file, options)
@@ -2037,11 +2749,20 @@ def fill(
         typer.Option(help="Constant value to use for filling (required for 'constant' strategy)."),
     ] = "",
     delimiter: Annotated[str, typer.Option(help="CSV delimiter character.")] = ",",
+    quotechar: QuoteCharOpt = None,
     encoding: Annotated[str, typer.Option(help="File encoding (e.g., 'utf8', 'latin1').")] = None,
     verbose: Annotated[bool, typer.Option(help="Enable verbose logging output.")] = False,
     format_in: Annotated[
         str, typer.Option(help="Override input file format detection (e.g., 'csv', 'jsonl').")
     ] = None,
+    table: TableNameOpt = None,
+    start_page: Annotated[int, typer.Option(help="Sheet index (0-based) for Excel files.")] = 0,
+    trust: TrustOpt = False,
+    on_error: OnErrorOpt = None,
+    error_log: ErrorLogOpt = None,
+    flatten_nested: FlattenNestedOpt = False,
+    max_nested_depth: MaxNestedDepthOpt = None,
+    keep_nested_parents: KeepNestedParentsOpt = True,
 ):
     """Fill empty or null values with specified values or strategies.
 
@@ -2055,8 +2776,17 @@ def fill(
         "strategy": strategy,
         "value": value,
         "delimiter": delimiter,
+        "quotechar": quotechar,
         "encoding": encoding,
         "filetype": format_in,
+        "table": table,
+        "start_page": start_page,
+        "trust": trust,
+        "on_error": on_error,
+        "error_log": error_log,
+        "flatten_nested": flatten_nested,
+        "max_nested_depth": max_nested_depth,
+        "keep_nested_parents": keep_nested_parents,
     }
     acmd = Filler()
     acmd.fill(input_file, options)
@@ -2078,11 +2808,20 @@ def rename(
         str, typer.Option(help="Replacement string for regex pattern (default: empty string).")
     ] = "",
     delimiter: Annotated[str, typer.Option(help="CSV delimiter character.")] = ",",
+    quotechar: QuoteCharOpt = None,
     encoding: Annotated[str, typer.Option(help="File encoding (e.g., 'utf8', 'latin1').")] = None,
     verbose: Annotated[bool, typer.Option(help="Enable verbose logging output.")] = False,
     format_in: Annotated[
         str, typer.Option(help="Override input file format detection (e.g., 'csv', 'jsonl').")
     ] = None,
+    table: TableNameOpt = None,
+    start_page: Annotated[int, typer.Option(help="Sheet index (0-based) for Excel files.")] = 0,
+    trust: TrustOpt = False,
+    on_error: OnErrorOpt = None,
+    error_log: ErrorLogOpt = None,
+    flatten_nested: FlattenNestedOpt = False,
+    max_nested_depth: MaxNestedDepthOpt = None,
+    keep_nested_parents: KeepNestedParentsOpt = True,
 ):
     """Rename fields by exact mapping or regex patterns.
 
@@ -2096,8 +2835,17 @@ def rename(
         "pattern": pattern,
         "replacement": replacement,
         "delimiter": delimiter,
+        "quotechar": quotechar,
         "encoding": encoding,
         "filetype": format_in,
+        "table": table,
+        "start_page": start_page,
+        "trust": trust,
+        "on_error": on_error,
+        "error_log": error_log,
+        "flatten_nested": flatten_nested,
+        "max_nested_depth": max_nested_depth,
+        "keep_nested_parents": keep_nested_parents,
     }
     acmd = Renamer()
     acmd.rename(input_file, options)
@@ -2112,11 +2860,20 @@ def explode(
     field: Annotated[str, typer.Option(help="Field name to split by separator.")] = None,
     separator: Annotated[str, typer.Option(help="Separator character (default: comma).")] = ",",
     delimiter: Annotated[str, typer.Option(help="CSV delimiter character.")] = ",",
+    quotechar: QuoteCharOpt = None,
     encoding: Annotated[str, typer.Option(help="File encoding (e.g., 'utf8', 'latin1').")] = None,
     verbose: Annotated[bool, typer.Option(help="Enable verbose logging output.")] = False,
     format_in: Annotated[
         str, typer.Option(help="Override input file format detection (e.g., 'csv', 'jsonl').")
     ] = None,
+    table: TableNameOpt = None,
+    start_page: Annotated[int, typer.Option(help="Sheet index (0-based) for Excel files.")] = 0,
+    trust: TrustOpt = False,
+    on_error: OnErrorOpt = None,
+    error_log: ErrorLogOpt = None,
+    flatten_nested: FlattenNestedOpt = False,
+    max_nested_depth: MaxNestedDepthOpt = None,
+    keep_nested_parents: KeepNestedParentsOpt = True,
 ):
     """Split a column by separator into multiple rows.
 
@@ -2129,8 +2886,17 @@ def explode(
         "field": field,
         "separator": separator,
         "delimiter": delimiter,
+        "quotechar": quotechar,
         "encoding": encoding,
         "filetype": format_in,
+        "table": table,
+        "start_page": start_page,
+        "trust": trust,
+        "on_error": on_error,
+        "error_log": error_log,
+        "flatten_nested": flatten_nested,
+        "max_nested_depth": max_nested_depth,
+        "keep_nested_parents": keep_nested_parents,
     }
     acmd = Exploder()
     acmd.explode(input_file, options)
@@ -2150,11 +2916,20 @@ def replace(
         bool, typer.Option(help="Replace all occurrences (default: replace first only).")
     ] = False,
     delimiter: Annotated[str, typer.Option(help="CSV delimiter character.")] = ",",
+    quotechar: QuoteCharOpt = None,
     encoding: Annotated[str, typer.Option(help="File encoding (e.g., 'utf8', 'latin1').")] = None,
     verbose: Annotated[bool, typer.Option(help="Enable verbose logging output.")] = False,
     format_in: Annotated[
         str, typer.Option(help="Override input file format detection (e.g., 'csv', 'jsonl').")
     ] = None,
+    table: TableNameOpt = None,
+    start_page: Annotated[int, typer.Option(help="Sheet index (0-based) for Excel files.")] = 0,
+    trust: TrustOpt = False,
+    on_error: OnErrorOpt = None,
+    error_log: ErrorLogOpt = None,
+    flatten_nested: FlattenNestedOpt = False,
+    max_nested_depth: MaxNestedDepthOpt = None,
+    keep_nested_parents: KeepNestedParentsOpt = True,
 ):
     """Perform string replacement in specified fields.
 
@@ -2170,8 +2945,17 @@ def replace(
         "regex": regex,
         "global": global_replace,
         "delimiter": delimiter,
+        "quotechar": quotechar,
         "encoding": encoding,
         "filetype": format_in,
+        "table": table,
+        "start_page": start_page,
+        "trust": trust,
+        "on_error": on_error,
+        "error_log": error_log,
+        "flatten_nested": flatten_nested,
+        "max_nested_depth": max_nested_depth,
+        "keep_nested_parents": keep_nested_parents,
     }
     acmd = Replacer()
     acmd.replace(input_file, options)
@@ -2189,11 +2973,20 @@ def cat(
         str, typer.Option(help="Concatenation mode: 'rows' (default) or 'columns'.")
     ] = "rows",
     delimiter: Annotated[str, typer.Option(help="CSV delimiter character.")] = ",",
+    quotechar: QuoteCharOpt = None,
     encoding: Annotated[str, typer.Option(help="File encoding (e.g., 'utf8', 'latin1').")] = None,
     verbose: Annotated[bool, typer.Option(help="Enable verbose logging output.")] = False,
     format_in: Annotated[
         str, typer.Option(help="Override input file format detection (e.g., 'csv', 'jsonl').")
     ] = None,
+    table: TableNameOpt = None,
+    start_page: Annotated[int, typer.Option(help="Sheet index (0-based) for Excel files.")] = 0,
+    trust: TrustOpt = False,
+    on_error: OnErrorOpt = None,
+    error_log: ErrorLogOpt = None,
+    flatten_nested: FlattenNestedOpt = False,
+    max_nested_depth: MaxNestedDepthOpt = None,
+    keep_nested_parents: KeepNestedParentsOpt = True,
 ):
     """Concatenate files by rows or columns.
 
@@ -2205,8 +2998,17 @@ def cat(
         "output": output,
         "mode": mode,
         "delimiter": delimiter,
+        "quotechar": quotechar,
         "encoding": encoding,
         "filetype": format_in,
+        "table": table,
+        "start_page": start_page,
+        "trust": trust,
+        "on_error": on_error,
+        "error_log": error_log,
+        "flatten_nested": flatten_nested,
+        "max_nested_depth": max_nested_depth,
+        "keep_nested_parents": keep_nested_parents,
     }
     acmd = Cat()
     acmd.cat(input_files, options)
@@ -2226,6 +3028,7 @@ def join(
         str, typer.Option(help="Join type: 'inner' (default), 'left', 'right', or 'full'.")
     ] = "inner",
     delimiter: Annotated[str, typer.Option(help="CSV delimiter character.")] = ",",
+    quotechar: QuoteCharOpt = None,
     encoding: Annotated[str, typer.Option(help="File encoding (e.g., 'utf8', 'latin1').")] = None,
     verbose: Annotated[bool, typer.Option(help="Enable verbose logging output.")] = False,
     filetype1: Annotated[
@@ -2235,8 +3038,9 @@ def join(
         str, typer.Option(help="Override file type detection for second file.")
     ] = None,
     engine: Annotated[
-        str, typer.Option(help="Processing engine: 'auto' (default), 'duckdb', or 'python'.")
-    ] = "auto",
+        Optional[str],
+        typer.Option(help="Processing engine: 'auto' (default), 'duckdb', or 'python'."),
+    ] = None,
     duckdb_threads: Annotated[
         int, typer.Option(help="Number of threads for DuckDB engine.")
     ] = None,
@@ -2245,6 +3049,18 @@ def join(
     ] = None,
     duckdb_temp_dir: Annotated[str, typer.Option(help="Temporary directory for DuckDB.")] = None,
     progress: Annotated[bool, typer.Option(help="Show progress bar.")] = False,
+    table: TableNameOpt = None,
+    start_page: Annotated[int, typer.Option(help="Sheet index (0-based) for the first file.")] = 0,
+    table2: Table2NameOpt = None,
+    start_page2: Annotated[
+        int, typer.Option(help="Sheet index (0-based) for the second file.")
+    ] = 0,
+    trust: TrustOpt = False,
+    on_error: OnErrorOpt = None,
+    error_log: ErrorLogOpt = None,
+    flatten_nested: FlattenNestedOpt = False,
+    max_nested_depth: MaxNestedDepthOpt = None,
+    keep_nested_parents: KeepNestedParentsOpt = True,
 ):
     """Perform relational join between two files.
 
@@ -2258,6 +3074,7 @@ def join(
         "on": on,
         "type": type,
         "delimiter": delimiter,
+        "quotechar": quotechar,
         "encoding": encoding,
         "filetype1": filetype1,
         "filetype2": filetype2,
@@ -2266,6 +3083,16 @@ def join(
         "duckdb_memory": duckdb_memory,
         "duckdb_temp_dir": duckdb_temp_dir,
         "progress": progress,
+        "table": table,
+        "start_page": start_page,
+        "table2": table2,
+        "start_page2": start_page2,
+        "trust": trust,
+        "on_error": on_error,
+        "error_log": error_log,
+        "flatten_nested": flatten_nested,
+        "max_nested_depth": max_nested_depth,
+        "keep_nested_parents": keep_nested_parents,
     }
     acmd = Joiner()
     acmd.join(file1, file2, options)
@@ -2309,11 +3136,24 @@ def diff(
         str, typer.Option(help="(Deprecated) Output format: 'json' or 'unified'.")
     ] = None,
     delimiter: Annotated[str, typer.Option(help="CSV delimiter character.")] = ",",
+    quotechar: QuoteCharOpt = None,
     encoding: Annotated[str, typer.Option(help="File encoding (e.g., 'utf8', 'latin1').")] = None,
     verbose: Annotated[bool, typer.Option(help="Enable verbose logging output.")] = False,
     format_in: Annotated[
         str, typer.Option(help="Override input file format detection (e.g., 'csv', 'jsonl').")
     ] = None,
+    table: TableNameOpt = None,
+    start_page: Annotated[int, typer.Option(help="Sheet index (0-based) for the first file.")] = 0,
+    table2: Table2NameOpt = None,
+    start_page2: Annotated[
+        int, typer.Option(help="Sheet index (0-based) for the second file.")
+    ] = 0,
+    trust: TrustOpt = False,
+    on_error: OnErrorOpt = None,
+    error_log: ErrorLogOpt = None,
+    flatten_nested: FlattenNestedOpt = False,
+    max_nested_depth: MaxNestedDepthOpt = None,
+    keep_nested_parents: KeepNestedParentsOpt = True,
 ):
     """Compare two files and show differences.
 
@@ -2334,8 +3174,19 @@ def diff(
         "max_changed_rows": max_changed_rows,
         "format": format,
         "delimiter": delimiter,
+        "quotechar": quotechar,
         "encoding": encoding,
         "filetype": format_in,
+        "table": table,
+        "start_page": start_page,
+        "table2": table2,
+        "start_page2": start_page2,
+        "trust": trust,
+        "on_error": on_error,
+        "error_log": error_log,
+        "flatten_nested": flatten_nested,
+        "max_nested_depth": max_nested_depth,
+        "keep_nested_parents": keep_nested_parents,
     }
     acmd = Differ()
     acmd.diff(file1, file2, options)
@@ -2352,11 +3203,24 @@ def exclude(
         str, typer.Option(help="Comma-separated list of key field names to exclude on.")
     ] = None,
     delimiter: Annotated[str, typer.Option(help="CSV delimiter character.")] = ",",
+    quotechar: QuoteCharOpt = None,
     encoding: Annotated[str, typer.Option(help="File encoding (e.g., 'utf8', 'latin1').")] = None,
     verbose: Annotated[bool, typer.Option(help="Enable verbose logging output.")] = False,
     format_in: Annotated[
         str, typer.Option(help="Override input file format detection (e.g., 'csv', 'jsonl').")
     ] = None,
+    table: TableNameOpt = None,
+    start_page: Annotated[int, typer.Option(help="Sheet index (0-based) for the input file.")] = 0,
+    table2: Table2NameOpt = None,
+    start_page2: Annotated[
+        int, typer.Option(help="Sheet index (0-based) for the exclusion file.")
+    ] = 0,
+    trust: TrustOpt = False,
+    on_error: OnErrorOpt = None,
+    error_log: ErrorLogOpt = None,
+    flatten_nested: FlattenNestedOpt = False,
+    max_nested_depth: MaxNestedDepthOpt = None,
+    keep_nested_parents: KeepNestedParentsOpt = True,
 ):
     """Remove rows from input file where keys match exclusion file.
 
@@ -2368,8 +3232,19 @@ def exclude(
         "output": output,
         "on": on,
         "delimiter": delimiter,
+        "quotechar": quotechar,
         "encoding": encoding,
         "filetype": format_in,
+        "table": table,
+        "start_page": start_page,
+        "table2": table2,
+        "start_page2": start_page2,
+        "trust": trust,
+        "on_error": on_error,
+        "error_log": error_log,
+        "flatten_nested": flatten_nested,
+        "max_nested_depth": max_nested_depth,
+        "keep_nested_parents": keep_nested_parents,
     }
     acmd = Excluder()
     acmd.exclude(input_file, exclude_file, options)
@@ -2382,11 +3257,20 @@ def transpose(
         str, typer.Option(help="Optional output file path. If not specified, prints to stdout.")
     ] = None,
     delimiter: Annotated[str, typer.Option(help="CSV delimiter character.")] = ",",
+    quotechar: QuoteCharOpt = None,
     encoding: Annotated[str, typer.Option(help="File encoding (e.g., 'utf8', 'latin1').")] = None,
     verbose: Annotated[bool, typer.Option(help="Enable verbose logging output.")] = False,
     format_in: Annotated[
         str, typer.Option(help="Override input file format detection (e.g., 'csv', 'jsonl').")
     ] = None,
+    table: TableNameOpt = None,
+    start_page: Annotated[int, typer.Option(help="Sheet index (0-based) for Excel files.")] = 0,
+    trust: TrustOpt = False,
+    on_error: OnErrorOpt = None,
+    error_log: ErrorLogOpt = None,
+    flatten_nested: FlattenNestedOpt = False,
+    max_nested_depth: MaxNestedDepthOpt = None,
+    keep_nested_parents: KeepNestedParentsOpt = True,
 ):
     """Swap rows and columns.
 
@@ -2397,8 +3281,17 @@ def transpose(
     options = {
         "output": output,
         "delimiter": delimiter,
+        "quotechar": quotechar,
         "encoding": encoding,
         "filetype": format_in,
+        "table": table,
+        "start_page": start_page,
+        "trust": trust,
+        "on_error": on_error,
+        "error_log": error_log,
+        "flatten_nested": flatten_nested,
+        "max_nested_depth": max_nested_depth,
+        "keep_nested_parents": keep_nested_parents,
     }
     acmd = Transposer()
     acmd.transpose(input_file, options)
@@ -2412,13 +3305,28 @@ def sniff(
     ] = None,
     format: Annotated[
         str, typer.Option(help="Output format: 'text' (default), 'json', or 'yaml'.")
-    ] = "text",
+    ] = None,
+    format_out: Annotated[
+        str,
+        typer.Option(
+            help="Alias for --format. Also inferred when --output ends in .json/.yaml/.yml."
+        ),
+    ] = None,
     delimiter: Annotated[str, typer.Option(help="CSV delimiter character.")] = ",",
+    quotechar: QuoteCharOpt = None,
     encoding: Annotated[str, typer.Option(help="File encoding (e.g., 'utf8', 'latin1').")] = None,
     verbose: Annotated[bool, typer.Option(help="Enable verbose logging output.")] = False,
     format_in: Annotated[
         str, typer.Option(help="Override input file format detection (e.g., 'csv', 'jsonl').")
     ] = None,
+    table: TableNameOpt = None,
+    start_page: Annotated[int, typer.Option(help="Sheet index (0-based) for Excel files.")] = 0,
+    trust: TrustOpt = False,
+    on_error: OnErrorOpt = None,
+    error_log: ErrorLogOpt = None,
+    flatten_nested: FlattenNestedOpt = False,
+    max_nested_depth: MaxNestedDepthOpt = None,
+    keep_nested_parents: KeepNestedParentsOpt = True,
 ):
     """Detect file properties (delimiter, encoding, types, record count).
 
@@ -2429,9 +3337,19 @@ def sniff(
     options = {
         "output": output,
         "format": format,
+        "format_out": format_out,
         "delimiter": delimiter,
+        "quotechar": quotechar,
         "encoding": encoding,
         "filetype": format_in,
+        "table": table,
+        "start_page": start_page,
+        "trust": trust,
+        "on_error": on_error,
+        "error_log": error_log,
+        "flatten_nested": flatten_nested,
+        "max_nested_depth": max_nested_depth,
+        "keep_nested_parents": keep_nested_parents,
     }
     acmd = Sniffer()
     acmd.sniff(input_file, options)
@@ -2449,14 +3367,16 @@ def slice(
         str, typer.Option(help="Comma-separated list of specific indices to extract.")
     ] = None,
     delimiter: Annotated[str, typer.Option(help="CSV delimiter character.")] = ",",
+    quotechar: QuoteCharOpt = None,
     encoding: Annotated[str, typer.Option(help="File encoding (e.g., 'utf8', 'latin1').")] = None,
     verbose: Annotated[bool, typer.Option(help="Enable verbose logging output.")] = False,
     filetype: Annotated[
         str, typer.Option(help="Override file type detection (e.g., 'csv', 'jsonl').")
     ] = None,
     engine: Annotated[
-        str, typer.Option(help="Processing engine: 'auto' (default), 'duckdb', or 'python'.")
-    ] = "auto",
+        Optional[str],
+        typer.Option(help="Processing engine: 'auto' (default), 'duckdb', or 'python'."),
+    ] = None,
     duckdb_threads: Annotated[
         int, typer.Option(help="Number of threads for DuckDB engine.")
     ] = None,
@@ -2464,6 +3384,14 @@ def slice(
         str, typer.Option(help="Memory limit for DuckDB (e.g., '4GB', '512MB').")
     ] = None,
     duckdb_temp_dir: Annotated[str, typer.Option(help="Temporary directory for DuckDB.")] = None,
+    table: TableNameOpt = None,
+    start_page: Annotated[int, typer.Option(help="Sheet index (0-based) for Excel files.")] = 0,
+    trust: TrustOpt = False,
+    on_error: OnErrorOpt = None,
+    error_log: ErrorLogOpt = None,
+    flatten_nested: FlattenNestedOpt = False,
+    max_nested_depth: MaxNestedDepthOpt = None,
+    keep_nested_parents: KeepNestedParentsOpt = True,
 ):
     """Extract specific rows by range or index list.
 
@@ -2478,12 +3406,21 @@ def slice(
         "end": end,
         "indices": indices,
         "delimiter": delimiter,
+        "quotechar": quotechar,
         "encoding": encoding,
         "filetype": filetype,
         "engine": engine,
         "duckdb_threads": duckdb_threads,
         "duckdb_memory": duckdb_memory,
         "duckdb_temp_dir": duckdb_temp_dir,
+        "table": table,
+        "start_page": start_page,
+        "trust": trust,
+        "on_error": on_error,
+        "error_log": error_log,
+        "flatten_nested": flatten_nested,
+        "max_nested_depth": max_nested_depth,
+        "keep_nested_parents": keep_nested_parents,
     }
     acmd = Slicer()
     acmd.slice(input_file, options)
@@ -2517,7 +3454,32 @@ def plot(
     height: Annotated[float, typer.Option(help="Figure height in inches (default: 6).")] = 6,
     dpi: Annotated[int, typer.Option(help="Resolution for raster formats (default: 100).")] = 100,
     color: Annotated[str, typer.Option(help="Color scheme name (matplotlib colormap).")] = None,
+    style: Annotated[
+        str, typer.Option(help="Matplotlib style name (e.g. 'ggplot', 'seaborn-v0_8').")
+    ] = None,
+    filter_expr: Annotated[
+        str, typer.Option("--filter", help="Filter expression applied before plotting.")
+    ] = None,
+    aggregate: Annotated[
+        str,
+        typer.Option(help="Aggregation for bar charts: count (default), sum, mean, or none."),
+    ] = "count",
+    value_field: Annotated[
+        str, typer.Option(help="Numeric field to sum/mean when --aggregate is sum or mean.")
+    ] = None,
+    top_n: Annotated[
+        int, typer.Option(help="Keep the top N aggregated groups for bar charts.")
+    ] = None,
     verbose: Annotated[bool, typer.Option(help="Enable verbose logging output.")] = False,
+    table: TableNameOpt = None,
+    quotechar: QuoteCharOpt = None,
+    start_page: Annotated[int, typer.Option(help="Sheet index (0-based) for Excel files.")] = 0,
+    trust: TrustOpt = False,
+    on_error: OnErrorOpt = None,
+    error_log: ErrorLogOpt = None,
+    flatten_nested: FlattenNestedOpt = False,
+    max_nested_depth: MaxNestedDepthOpt = None,
+    keep_nested_parents: KeepNestedParentsOpt = True,
 ):
     """Generate data visualizations from data files.
 
@@ -2536,6 +3498,9 @@ def plot(
 
         # Auto-detect plot type
         undatum plot data.csv --field age --output age_plot.png
+
+        # Filter then plot a bar chart of the top categories
+        undatum plot data.csv --field city --type bar --filter "`status` == 'active'" --top-n 10
     """
     if verbose:
         enable_verbose()
@@ -2555,6 +3520,20 @@ def plot(
             height=height,
             dpi=dpi,
             color=color,
+            style=style,
+            filter=filter_expr,
+            aggregate=aggregate,
+            value_field=value_field,
+            top_n=top_n,
+            table=table,
+            quotechar=quotechar,
+            start_page=start_page,
+            trust=trust,
+            on_error=on_error,
+            error_log=error_log,
+            flatten_nested=flatten_nested,
+            max_nested_depth=max_nested_depth,
+            keep_nested_parents=keep_nested_parents,
         )
     except ImportError as e:
         logger.error(f"Plotting requires matplotlib: {e}")
@@ -2576,6 +3555,7 @@ def fmt(
         str, typer.Option(help="Optional output file path. If not specified, prints to stdout.")
     ] = None,
     delimiter: Annotated[str, typer.Option(help="CSV delimiter character (default: comma).")] = ",",
+    quotechar: QuoteCharOpt = None,
     quote: Annotated[
         str,
         typer.Option(help="Quote style: 'minimal' (default), 'always', 'none', or 'nonnumeric'."),
@@ -2591,6 +3571,14 @@ def fmt(
     format_in: Annotated[
         str, typer.Option(help="Override input file format detection (e.g., 'csv', 'jsonl').")
     ] = None,
+    table: TableNameOpt = None,
+    start_page: Annotated[int, typer.Option(help="Sheet index (0-based) for Excel files.")] = 0,
+    trust: TrustOpt = False,
+    on_error: OnErrorOpt = None,
+    error_log: ErrorLogOpt = None,
+    flatten_nested: FlattenNestedOpt = False,
+    max_nested_depth: MaxNestedDepthOpt = None,
+    keep_nested_parents: KeepNestedParentsOpt = True,
 ):
     """Reformat CSV data with specific formatting options.
 
@@ -2601,11 +3589,20 @@ def fmt(
     options = {
         "output": output,
         "delimiter": delimiter,
+        "quotechar": quotechar,
         "quote": quote,
         "escape": escape,
         "line_ending": line_ending,
         "encoding": encoding,
         "filetype": format_in,
+        "table": table,
+        "start_page": start_page,
+        "trust": trust,
+        "on_error": on_error,
+        "error_log": error_log,
+        "flatten_nested": flatten_nested,
+        "max_nested_depth": max_nested_depth,
+        "keep_nested_parents": keep_nested_parents,
     }
     acmd = Formatter()
     acmd.fmt(input_file, options)

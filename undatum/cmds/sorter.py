@@ -4,7 +4,12 @@ import logging
 import sys
 import uuid
 
-from ..common.command_utils import ITERABLE_OPTIONS_KEYS, get_iterable_options  # noqa: F401
+from ..common.command_utils import (
+    ITERABLE_OPTIONS_KEYS,  # noqa: F401
+    force_iterable_if_table,
+    get_iterable_options,
+    iter_command_rows,
+)
 from ..common.duckdb_config import create_duckdb_connection, get_duckdb_config_from_options
 from ..common.engine_selector import detect_engine
 from ..common.errors import (
@@ -102,6 +107,7 @@ class Sorter:
         numeric_set = {f.strip() for f in numeric_fields.split(",")} if numeric_fields else set()
 
         detected_engine = detect_engine(fromfile, engine, filetype, operation="sort")
+        detected_engine = force_iterable_if_table(options, detected_engine)
 
         # Initialize items for output handling
         items = []
@@ -181,10 +187,13 @@ class Sorter:
 
             iterable = open_iterable(fromfile, mode="r", iterableargs=iterableargs)
             try:
+                records = iter_command_rows(iterable, options)
                 if low_memory:
-                    logging.info("sort: using external merge sort (--low-memory, run_size=%s)", run_size)
+                    logging.info(
+                        "sort: using external merge sort (--low-memory, run_size=%s)", run_size
+                    )
                     sorted_iter = external_merge_sort(
-                        iterable,
+                        records,
                         key_fn,
                         reverse=reverse,
                         run_size=run_size,
@@ -194,7 +203,7 @@ class Sorter:
                     return
 
                 buffered = []
-                for item in iterable:
+                for item in records:
                     buffered.append(item)
                     if len(buffered) > EXTERNAL_SORT_THRESHOLD:
                         logging.info(
@@ -202,7 +211,7 @@ class Sorter:
                             EXTERNAL_SORT_THRESHOLD,
                         )
 
-                        def _record_stream(first=buffered, rest=iterable):
+                        def _record_stream(first=buffered, rest=records):
                             yield from first
                             yield from rest
 
@@ -264,7 +273,9 @@ def _write_sorted_stream(sorted_iter, to_file):
         for item in sorted_iter:
             item = _normalize_for_json(item)
             if writer is None:
-                fieldnames = list(item.keys()) if to_type == "csv" and isinstance(item, dict) else None
+                fieldnames = (
+                    list(item.keys()) if to_type == "csv" and isinstance(item, dict) else None
+                )
                 writer = DataWriter(out, filetype=to_type, fieldnames=fieldnames)
             writer.write_items([item])
             count += 1

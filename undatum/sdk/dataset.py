@@ -9,16 +9,19 @@ from iterable.helpers.detect import open_iterable
 
 from ..cmds.converter import Converter
 from ..cmds.deduplicator import Deduplicator
+from ..cmds.enumerator import Enumerator
+from ..cmds.exploder import Exploder
 from ..cmds.filler import Filler
 from ..cmds.joiner import Joiner
 from ..cmds.masker import Masker
+from ..cmds.renamer import Renamer
+from ..cmds.reverser import Reverser
 from ..cmds.sampler import Sampler
 from ..cmds.searcher import Searcher
 from ..cmds.selector import Selector
 from ..cmds.sorter import Sorter
 from ..cmds.statistics import StatProcessor
-from ..common.path_utils import is_s3_uri
-from ..common.s3_iterable import open_iterable_with_s3
+from .results import QueryResult, StatsResult
 
 logger = logging.getLogger(__name__)
 
@@ -36,9 +39,6 @@ class Dataset:
         >>> stats = ds.stats()
         >>> ds.write("output.parquet")
     """
-
-    # Options understood by iterabledata's open_iterable
-    _ITERABLE_OPTIONS_KEYS = ("tagname", "delimiter", "encoding", "start_line", "page")
 
     def __init__(
         self,
@@ -64,7 +64,7 @@ class Dataset:
 
         Args:
             path: File path or S3 URI (s3://bucket/path)
-            **options: Additional options (encoding, delimiter, format_in, etc.)
+            **options: Additional options (encoding, delimiter, format_in, table, etc.)
 
         Returns:
             Dataset instance
@@ -72,16 +72,20 @@ class Dataset:
         Example:
             >>> ds = Dataset.read("data.csv")
             >>> ds = Dataset.read("s3://bucket/data.jsonl", encoding="utf8")
+            >>> ds = Dataset.read("workbook.xlsx", table="Sheet2")
+            >>> ds = Dataset.read("nested.jsonl", flatten_nested=True)
         """
         return cls(source=path, data=None, options=options)
 
-    def _iterable_args(self) -> dict:
-        """Extract iterable-specific options from stored read options."""
-        return {
-            k: v
-            for k, v in self._options.items()
-            if k in self._ITERABLE_OPTIONS_KEYS and v is not None
-        }
+    def _iterable_args(self, options: Optional[dict] = None) -> dict:
+        """Extract iterable-specific options from stored or merged read options."""
+        from ..common.command_utils import get_iterable_options
+
+        return get_iterable_options(options if options is not None else self._options)
+
+    def _cmd_options(self, **options) -> dict:
+        """Merge stored read options with per-call command options."""
+        return {**self._options, **options}
 
     def write(self, path: str, **options) -> None:
         """Write dataset to a file or S3 URI.
@@ -119,9 +123,51 @@ class Dataset:
         elif self._source:
             # Convert from source file
             converter = Converter()
-            converter.convert(self._source, path, options)
+            converter.convert(self._source, path, {**self._options, **options})
         else:
             raise ValueError("No data source available for writing")
+
+    @classmethod
+    def convert_many(
+        cls,
+        source: str,
+        dest: str,
+        *,
+        to_ext: Optional[str] = None,
+        filename_pattern: Optional[str] = None,
+        **options,
+    ):
+        """Bulk-convert a directory or glob of files.
+
+        Thin passthrough to ``Converter.bulk_convert`` (iterabledata
+        ``bulk_convert``). Same as ``undatum convert --recursive``.
+        ``to_ext`` is required unless ``format_out`` is set.
+
+        Args:
+            source: Directory path or glob pattern.
+            dest: Output directory.
+            to_ext: Target extension (e.g. ``"jsonl"``).
+            filename_pattern: Output name pattern with ``{name}``, ``{stem}``,
+                and ``{ext}``.
+            **options: Same conversion options as :meth:`write` (encoding,
+                quotechar, profile, level, etc.).
+
+        Returns:
+            iterabledata ``BulkConversionResult``.
+
+        Example:
+            >>> Dataset.convert_many("./raw", "./out", to_ext="jsonl")
+            >>> Dataset.convert_many(
+            ...     "./raw",
+            ...     "./out",
+            ...     to_ext="jsonl",
+            ...     filename_pattern="{stem}.converted.jsonl",
+            ... )
+        """
+        opts = dict(options)
+        if filename_pattern:
+            opts["filename_pattern"] = filename_pattern
+        return Converter().bulk_convert(source, dest, opts, to_ext=to_ext)
 
     def fill(
         self,
@@ -152,9 +198,15 @@ class Dataset:
         filler = Filler()
         output_path = self._get_temp_output()
 
-        filler_opts = {"fields": ",".join(fields), "value": value, "strategy": strategy, **options}
+        filler_opts = self._cmd_options(
+            fields=",".join(fields),
+            value=value,
+            strategy=strategy,
+            output=output_path,
+            **options,
+        )
 
-        filler.fill(self._get_input_path(), output_path, filler_opts)
+        filler.fill(self._get_input_path(), filler_opts)
         return Dataset(source=output_path)
 
     def dedup(self, keys: Optional[list[str]] = None, keep: str = "first", **options) -> "Dataset":
@@ -176,9 +228,14 @@ class Dataset:
         deduplicator = Deduplicator()
         output_path = self._get_temp_output()
 
-        dedup_opts = {"key_fields": ",".join(keys) if keys else None, "keep": keep, **options}
+        dedup_opts = self._cmd_options(
+            key_fields=",".join(keys) if keys else None,
+            keep=keep,
+            output=output_path,
+            **options,
+        )
 
-        deduplicator.dedup(self._get_input_path(), output_path, dedup_opts)
+        deduplicator.dedup(self._get_input_path(), dedup_opts)
         return Dataset(source=output_path)
 
     def sort(
@@ -206,9 +263,11 @@ class Dataset:
         sorter = Sorter()
         output_path = self._get_temp_output()
 
-        sort_opts = {"by": ",".join(by), "desc": desc, "numeric": numeric, **options}
+        sort_opts = self._cmd_options(
+            by=",".join(by), desc=desc, numeric=numeric, output=output_path, **options
+        )
 
-        sorter.sort(self._get_input_path(), output_path, sort_opts)
+        sorter.sort(self._get_input_path(), sort_opts)
         return Dataset(source=output_path)
 
     def filter(
@@ -237,14 +296,15 @@ class Dataset:
         searcher = Searcher()
         output_path = self._get_temp_output()
 
-        search_opts = {
-            "pattern": pattern,
-            "fields": ",".join(fields) if fields else None,
-            "query": query,
+        search_opts = self._cmd_options(
+            pattern=pattern,
+            fields=",".join(fields) if fields else None,
+            query=query,
+            output=output_path,
             **options,
-        }
+        )
 
-        searcher.search(self._get_input_path(), output_path, search_opts)
+        searcher.search(self._get_input_path(), search_opts)
         return Dataset(source=output_path)
 
     def select(
@@ -268,14 +328,15 @@ class Dataset:
             fields = [fields]
 
         selector = Selector()
-        output_path = options.get("output") or self._get_temp_output()
+        opts = dict(options)
+        output_path = opts.pop("output", None) or self._get_temp_output()
 
-        select_opts = {
-            "fields": ",".join(fields),
-            "filter": filter_expr,
-            "output": output_path,
-            **options,
-        }
+        select_opts = self._cmd_options(
+            fields=",".join(fields),
+            filter=filter_expr,
+            output=output_path,
+            **opts,
+        )
 
         selector.select(self._get_input_path(), select_opts)
         return Dataset(source=output_path)
@@ -311,9 +372,19 @@ class Dataset:
 
         other_path = other._get_input_path() if isinstance(other, Dataset) else other
 
-        join_opts = {"keys": ",".join(keys), "join_type": join_type, **options}
+        join_opts = self._cmd_options(
+            on=",".join(keys), type=join_type, output=output_path, **options
+        )
+        if isinstance(other, Dataset):
+            right_table = other._options.get("table") or other._options.get("sheet")
+            if right_table and "table2" not in options:
+                join_opts["table2"] = right_table
+            if other._options.get("start_page") is not None and "start_page2" not in options:
+                join_opts["start_page2"] = other._options.get("start_page")
+            if other._options.get("trust"):
+                join_opts["trust"] = True
 
-        joiner.join(self._get_input_path(), other_path, output_path, join_opts)
+        joiner.join(self._get_input_path(), other_path, join_opts)
         return Dataset(source=output_path)
 
     def sample(
@@ -336,9 +407,9 @@ class Dataset:
         sampler = Sampler()
         output_path = self._get_temp_output()
 
-        sample_opts = {"n": n, "percent": percent, **options}
+        sample_opts = self._cmd_options(n=n, percent=percent, output=output_path, **options)
 
-        sampler.sample(self._get_input_path(), output_path, sample_opts)
+        sampler.sample(self._get_input_path(), sample_opts)
         return Dataset(source=output_path)
 
     def mask(
@@ -369,16 +440,105 @@ class Dataset:
         masker = Masker()
         output_path = self._get_temp_output()
 
-        mask_opts = {"fields": ",".join(fields), "method": method, "salt": salt, **options}
+        mask_opts = self._cmd_options(fields=",".join(fields), method=method, salt=salt, **options)
 
         masker.mask(self._get_input_path(), output_path, mask_opts)
+        return Dataset(source=output_path)
+
+    def rename(
+        self,
+        mapping: Optional[dict[str, str]] = None,
+        pattern: Optional[str] = None,
+        replacement: str = "",
+        **options,
+    ) -> "Dataset":
+        """Rename fields by exact mapping or regex.
+
+        Args:
+            mapping: Dict of ``old_name`` to ``new_name``
+            pattern: Regex pattern to match field names
+            replacement: Replacement string for ``pattern``
+            **options: Additional options
+
+        Returns:
+            New Dataset instance with renamed fields
+        """
+        if mapping is None and not pattern:
+            raise ValueError("rename requires mapping= or pattern=")
+        map_opt = None
+        if mapping:
+            map_opt = ",".join(f"{old}:{new}" for old, new in mapping.items())
+        output_path = self._get_temp_output()
+        rename_opts = self._cmd_options(
+            map=map_opt, pattern=pattern, replacement=replacement, output=output_path, **options
+        )
+        Renamer().rename(self._get_input_path(), rename_opts)
+        return Dataset(source=output_path)
+
+    def explode(self, field: str, separator: str = ",", **options) -> "Dataset":
+        """Split a field by separator into multiple rows.
+
+        Args:
+            field: Field name to explode
+            separator: Separator character (default: comma)
+            **options: Additional options
+
+        Returns:
+            New Dataset instance with exploded rows
+        """
+        output_path = self._get_temp_output()
+        explode_opts = self._cmd_options(
+            field=field, separator=separator, output=output_path, **options
+        )
+        Exploder().explode(self._get_input_path(), explode_opts)
+        return Dataset(source=output_path)
+
+    def enum(
+        self,
+        field: str = "row_id",
+        enum_type: str = "number",
+        start: int = 1,
+        value: Optional[Any] = None,
+        **options,
+    ) -> "Dataset":
+        """Add row numbers, UUIDs, or a constant field.
+
+        Args:
+            field: Field name for generated values (default: ``row_id``)
+            enum_type: ``number``, ``uuid``, or ``constant``
+            start: Starting number for numeric enumeration
+            value: Constant value when ``enum_type`` is ``constant``
+            **options: Additional options
+
+        Returns:
+            New Dataset instance with the extra field
+        """
+        output_path = self._get_temp_output()
+        enum_opts = self._cmd_options(
+            field=field, type=enum_type, start=start, value=value, output=output_path, **options
+        )
+        Enumerator().enum(self._get_input_path(), enum_opts)
+        return Dataset(source=output_path)
+
+    def reverse(self, **options) -> "Dataset":
+        """Reverse row order.
+
+        Args:
+            **options: Additional options
+
+        Returns:
+            New Dataset instance with reversed rows
+        """
+        output_path = self._get_temp_output()
+        reverse_opts = self._cmd_options(output=output_path, **options)
+        Reverser().reverse(self._get_input_path(), reverse_opts)
         return Dataset(source=output_path)
 
     def stats(self, **options) -> dict[str, Any]:
         """Compute statistics for the dataset.
 
         Args:
-            **options: Additional options (checkdates, engine, etc.)
+            **options: Additional options (checkdates, engine, flatten_nested, etc.)
 
         Returns:
             Dictionary with the dataset profile: 'count', 'num_fields',
@@ -387,13 +547,14 @@ class Dataset:
 
         Example:
             >>> stats = ds.stats()
+            >>> stats = ds.stats(flatten_nested=True)
             >>> stats['count']
             1000
         """
         processor = StatProcessor()
-        stats_opts = {**self._options, "quiet": True, "progress": False, **options}
+        stats_opts = self._cmd_options(quiet=True, progress=False, **options)
         profile = processor.stats(self._get_input_path(), stats_opts)
-        return profile or {}
+        return StatsResult(profile or {})
 
     def package(
         self,
@@ -418,7 +579,7 @@ class Dataset:
         """
         from ..cmds.packager import Packager
 
-        pack_opts = {**self._options, "quiet": True, **options}
+        pack_opts = self._cmd_options(quiet=True, **options)
         if output:
             pack_opts["output"] = output
         if package_dir:
@@ -454,7 +615,8 @@ class Dataset:
         """
         from itertools import islice
 
-        return list(islice(iter(self), n))
+        extra = options or None
+        return QueryResult(islice(self._iter_records(extra), n))
 
     def tail(self, n: int = 10, **options) -> list[dict]:
         """Get last N rows from dataset.
@@ -471,7 +633,8 @@ class Dataset:
         """
         from collections import deque
 
-        return list(deque(iter(self), maxlen=n))
+        extra = options or None
+        return QueryResult(deque(self._iter_records(extra), maxlen=n))
 
     def to_pandas(self, chunksize: Optional[int] = None) -> Any:
         """Convert the dataset to a pandas DataFrame.
@@ -608,15 +771,24 @@ class Dataset:
 
     def __iter__(self) -> Iterator[dict]:
         """Iterate over dataset records."""
+        yield from self._iter_records()
+
+    def _iter_records(self, extra: Optional[dict] = None) -> Iterator[dict]:
+        """Iterate records, optionally unfolding nested fields."""
+        from ..common.command_utils import iter_command_rows
+
+        options = self._cmd_options(**extra) if extra else self._options
         if self._data:
-            yield from self._data
+            yield from iter_command_rows(self._data, options)
         elif self._source:
-            iterableargs = self._iterable_args()
-            if is_s3_uri(self._source):
-                with open_iterable_with_s3(self._source, mode="r", iterableargs=iterableargs) as it:
-                    yield from it
-            else:
-                with open_iterable(self._source, mode="r", iterableargs=iterableargs) as it:
-                    yield from it
+            from ..common.s3_iterable import open_path
+
+            iterableargs = self._iterable_args(options)
+            iterable = open_path(self._source, mode="r", iterableargs=iterableargs)
+            try:
+                yield from iter_command_rows(iterable, options)
+            finally:
+                if hasattr(iterable, "close"):
+                    iterable.close()
         else:
             raise ValueError("No data source available")

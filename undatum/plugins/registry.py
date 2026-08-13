@@ -1,7 +1,7 @@
 """Plugin registry for managing plugins."""
 
 import logging
-from typing import Optional
+from typing import Any, Optional
 
 from .base import CommandPlugin, ConnectorPlugin, Plugin, TransformPlugin
 
@@ -79,6 +79,49 @@ class PluginRegistry:
             List of transform plugin instances
         """
         return self._transform_plugins.copy()
+
+    def find_transform(self, name: str) -> Optional[TransformPlugin]:
+        """Find a transform plugin by name.
+
+        Args:
+            name: Transform plugin name
+
+        Returns:
+            Transform plugin or None
+        """
+        for transform in self._transform_plugins:
+            if transform.name == name:
+                return transform
+        plugin = self._plugins.get(name)
+        if isinstance(plugin, TransformPlugin):
+            return plugin
+        return None
+
+    def apply_transforms(
+        self, record: dict[str, Any], names: Optional[list[str]] = None, **kwargs
+    ) -> dict[str, Any]:
+        """Apply registered transform plugins to a record.
+
+        Args:
+            record: Input record
+            names: Optional list of transform names. If omitted, all transforms run.
+            **kwargs: Passed to each transform
+
+        Returns:
+            Transformed record
+        """
+        plugins = self._transform_plugins
+        if names is not None:
+            plugins = []
+            for name in names:
+                found = self.find_transform(name)
+                if found is None:
+                    raise ValueError(f"Transform plugin '{name}' is not registered")
+                plugins.append(found)
+        result = record
+        for plugin in plugins:
+            result = plugin.transform(result, **kwargs)
+        return result
 
     def find_connector(self, uri: str) -> Optional[ConnectorPlugin]:
         """Find connector plugin that can handle URI.

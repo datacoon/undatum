@@ -5,9 +5,13 @@ import json
 import logging
 from io import StringIO
 
-from ..common.command_utils import ITERABLE_OPTIONS_KEYS, get_iterable_options  # noqa: F401
+from ..common.command_utils import (
+    ITERABLE_OPTIONS_KEYS,  # noqa: F401
+    get_side_iterable_options,
+    iter_command_rows,
+)
 from ..common.s3_iterable import open_path as open_iterable
-from ..utils import get_option, normalize_for_json
+from ..utils import field_values, get_option, normalize_for_json
 
 DETAIL_LIMIT = 100
 
@@ -27,9 +31,11 @@ def _get_key_value(item, key_fields, ignore_case):
                 (k, _normalize_key_value(v, ignore_case)) for k, v in item.items() if v is not None
             )
         )
-    else:
-        # Use specified key fields
-        return tuple(_normalize_key_value(item.get(field), ignore_case) for field in key_fields)
+    values = []
+    for field in key_fields:
+        found = field_values(item, field)
+        values.append(_normalize_key_value(found[0] if found else None, ignore_case))
+    return tuple(values)
 
 
 def _coerce_numeric(value):
@@ -257,16 +263,17 @@ class Differ:
         if key_fields:
             key_field_list = [f.strip() for f in key_fields.split(",")]
 
-        iterableargs = get_iterable_options(options)
+        iterableargs1 = get_side_iterable_options(options, 1)
+        iterableargs2 = get_side_iterable_options(options, 2)
 
         # Load file1 into dictionary by key
-        iterable1 = open_iterable(file1, mode="r", iterableargs=iterableargs)
+        iterable1 = open_iterable(file1, mode="r", iterableargs=iterableargs1)
         file1_items = {}
         file1_rows = []
 
         try:
             count1 = 0
-            for item in iterable1:
+            for item in iter_command_rows(iterable1, options):
                 count1 += 1
                 if isinstance(item, dict):
                     file1_rows.append(item)
@@ -277,13 +284,13 @@ class Differ:
             iterable1.close()
 
         # Load file2 into dictionary by key
-        iterable2 = open_iterable(file2, mode="r", iterableargs=iterableargs)
+        iterable2 = open_iterable(file2, mode="r", iterableargs=iterableargs2)
         file2_items = {}
         file2_rows = []
 
         try:
             count2 = 0
-            for item in iterable2:
+            for item in iter_command_rows(iterable2, options):
                 count2 += 1
                 if isinstance(item, dict):
                     file2_rows.append(item)

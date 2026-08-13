@@ -23,6 +23,9 @@ class DatabaseLoader:
         mode: str = "append",
         create_table: bool = False,
         upsert_key: Optional[str] = None,
+        source_table: Optional[str] = None,
+        start_page: int = 0,
+        trust: bool = False,
         **options,
     ):
         """Load data from file to database table.
@@ -34,6 +37,9 @@ class DatabaseLoader:
             mode: Load mode ('append', 'replace', 'upsert')
             create_table: Auto-create table from schema
             upsert_key: Key field(s) for upsert mode (comma-separated)
+            source_table: Source table or sheet name for multi-table files
+            start_page: 0-based Excel sheet index when ``source_table`` is omitted
+            trust: Acknowledge pickle deserialization risk
             **options: Additional options passed to ingester
         """
         # Parse database URI to determine type
@@ -64,6 +70,9 @@ class DatabaseLoader:
             "mode": mode,
             "create_table": create_table,
             "upsert_key": upsert_key,
+            "table": source_table,
+            "start_page": start_page,
+            "trust": trust,
             **options,
         }
 

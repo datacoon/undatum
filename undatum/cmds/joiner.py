@@ -3,7 +3,12 @@
 import logging
 import sys
 
-from ..common.command_utils import ITERABLE_OPTIONS_KEYS, get_iterable_options  # noqa: F401
+from ..common.command_utils import (
+    ITERABLE_OPTIONS_KEYS,  # noqa: F401
+    force_iterable_if_table,
+    get_side_iterable_options,
+    iter_command_rows,
+)
 from ..common.duckdb_config import create_duckdb_connection, get_duckdb_config_from_options
 from ..common.engine_selector import detect_engine
 from ..common.errors import (
@@ -17,7 +22,7 @@ from ..common.iterable import DataWriter
 from ..common.path_utils import validate_file_path
 from ..common.progress import wrap_iterable
 from ..common.s3_iterable import open_path as open_iterable
-from ..utils import get_file_type, get_option, normalize_for_json
+from ..utils import field_values, get_file_type, get_option, normalize_for_json
 
 
 def _get_key_value(item, key_fields):
@@ -27,14 +32,15 @@ def _get_key_value(item, key_fields):
         if isinstance(item, dict) and item:
             return list(item.values())[0]
         return None
-    else:
-        # Use specified key fields
-        if isinstance(item, dict):
-            if len(key_fields) == 1:
-                return item.get(key_fields[0])
-            else:
-                return tuple(item.get(field) for field in key_fields)
-        return None
+    if isinstance(item, dict):
+        values = []
+        for field in key_fields:
+            found = field_values(item, field)
+            values.append(found[0] if found else None)
+        if len(values) == 1:
+            return values[0]
+        return tuple(values)
+    return None
 
 
 class Joiner:
@@ -87,6 +93,7 @@ class Joiner:
             if (detected_engine1 == "duckdb" and detected_engine2 == "duckdb")
             else "iterable"
         )
+        detected_engine = force_iterable_if_table(options, detected_engine)
 
         if detected_engine == "duckdb":
             try:
@@ -187,18 +194,22 @@ class Joiner:
                 detected_engine = "iterable"
 
         # Hash-based join implementation
-        iterableargs = get_iterable_options(options)
+        iterableargs1 = get_side_iterable_options(options, 1)
+        iterableargs2 = get_side_iterable_options(options, 2)
 
         show_progress = get_option(options, "progress") or False
 
         # Build hash index from file2 (right side)
-        iterable2 = open_iterable(file2, mode="r", iterableargs=iterableargs)
+        iterable2 = open_iterable(file2, mode="r", iterableargs=iterableargs2)
         file2_index = {}
 
         try:
             count2 = 0
             for item in wrap_iterable(
-                iterable2, desc="Indexing right side", unit="rows", show_progress=show_progress
+                iter_command_rows(iterable2, options),
+                desc="Indexing right side",
+                unit="rows",
+                show_progress=show_progress,
             ):
                 count2 += 1
                 if isinstance(item, dict):
@@ -213,14 +224,17 @@ class Joiner:
         logging.debug("join: indexed %d records from %s", len(file2_index), file2)
 
         # Process file1 and join
-        iterable1 = open_iterable(file1, mode="r", iterableargs=iterableargs)
+        iterable1 = open_iterable(file1, mode="r", iterableargs=iterableargs1)
         items = []
 
         try:
             count1 = 0
             matched_keys = set()
             for item1 in wrap_iterable(
-                iterable1, desc="Joining", unit="rows", show_progress=show_progress
+                iter_command_rows(iterable1, options),
+                desc="Joining",
+                unit="rows",
+                show_progress=show_progress,
             ):
                 count1 += 1
                 if isinstance(item1, dict):

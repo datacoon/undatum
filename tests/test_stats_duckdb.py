@@ -246,3 +246,50 @@ class TestStatsDuckDBEdgeCases:
         processor.stats(str(jsonl_file), options)
         captured = capsys.readouterr()
         assert "Dataset Profile" in captured.out
+
+    def test_stats_single_column_csv(self, tmp_path, capsys):
+        """Test stats with a single-column CSV."""
+        csv_file = tmp_path / "one.csv"
+        csv_file.write_text("name\nAlice\nBob\n")
+        processor = StatProcessor()
+        processor.stats(str(csv_file), {"format_in": "csv", "engine": "duckdb"})
+        captured = capsys.readouterr()
+        assert "Dataset Profile" in captured.out
+
+    def test_stats_gzip_csv(self, tmp_path, capsys):
+        """Test stats with gzip-compressed CSV."""
+        import gzip
+
+        gz_file = tmp_path / "sample.csv.gz"
+        with gzip.open(gz_file, "wt", encoding="utf8") as handle:
+            handle.write("name,age\nAlice,30\nBob,25\n")
+        processor = StatProcessor()
+        processor.stats(str(gz_file), {"format_in": "csv", "engine": "duckdb", "no_progress": True})
+        captured = capsys.readouterr()
+        assert "Dataset Profile" in captured.out
+
+    def test_stats_html_report(self, tmp_path):
+        csv_file = tmp_path / "sample.csv"
+        csv_file.write_text("name,age\nAlice,30\nBob,25\n")
+        out = tmp_path / "profile.html"
+        StatProcessor().stats(
+            str(csv_file),
+            {"format_in": "csv", "engine": "duckdb", "format_out": "html", "output": str(out)},
+        )
+        text = out.read_text(encoding="utf8")
+        assert "<h1>Dataset Profile</h1>" in text
+        assert "<table>" in text
+        assert "name" in text
+
+    def test_stats_markdown_from_extension(self, tmp_path):
+        csv_file = tmp_path / "sample.csv"
+        csv_file.write_text("name,age\nAlice,30\nBob,25\n")
+        out = tmp_path / "profile.md"
+        StatProcessor().stats(
+            str(csv_file),
+            {"format_in": "csv", "engine": "duckdb", "output": str(out)},
+        )
+        text = out.read_text(encoding="utf8")
+        assert text.startswith("# Dataset Profile")
+        assert "| Field |" in text
+        assert "name" in text

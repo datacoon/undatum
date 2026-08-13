@@ -109,20 +109,41 @@ def query_sql(path: str, query: str, limit: int = 1000, **options: Any) -> dict[
             pass
 
 
-def frequency(path: str, field: str, limit: int = 20) -> dict[str, Any]:
-    """Compute the value-frequency distribution for a single top-level field."""
+def frequency(
+    path: str,
+    field: str,
+    limit: int = 20,
+    table: str | None = None,
+    flatten_nested: bool = False,
+    **options: Any,
+) -> dict[str, Any]:
+    """Compute the value-frequency distribution for a single field.
+
+    After ``flatten_nested=True``, dotted names such as ``capital_city.lat`` are
+    top-level keys.
+    """
     from collections import Counter
 
-    from iterable.helpers.detect import open_iterable
+    from ..common.command_utils import get_iterable_options, iter_command_rows
+    from ..common.s3_iterable import open_path
+    from ..utils import field_values
 
     try:
         counter: Counter = Counter()
         total = 0
-        with open_iterable(path, mode="r") as source:
-            for row in source:
+        opts = {"table": table, "flatten_nested": flatten_nested, **options}
+        iterableargs = get_iterable_options(opts)
+        source = open_path(path, mode="r", iterableargs=iterableargs)
+        try:
+            for row in iter_command_rows(source, opts):
                 total += 1
                 if isinstance(row, dict):
-                    counter[str(row.get(field))] += 1
+                    found = field_values(row, field)
+                    value = found[0] if found else None
+                    counter[str(value)] += 1
+        finally:
+            if hasattr(source, "close"):
+                source.close()
         top = counter.most_common(limit if limit else None)
         return tool_success(
             {
@@ -143,6 +164,9 @@ def deduplicate(
     keys: list[str] | None = None,
     keep: str = "first",
     confirm: bool = False,
+    table: str | None = None,
+    flatten_nested: bool = False,
+    **options: Any,
 ) -> dict[str, Any]:
     """Remove duplicate rows and write the result. Writes require confirm=True."""
     if not confirm:
@@ -157,6 +181,9 @@ def deduplicate(
             "key_fields": ",".join(keys) if keys else None,
             "keep": keep,
             "output": output_path,
+            "table": table,
+            "flatten_nested": flatten_nested,
+            **options,
         }
         Deduplicator().dedup(input_path, options)
         return tool_success({"output_path": output_path, "keys": keys, "keep": keep})
@@ -172,6 +199,9 @@ def mask_fields(
     method: str = "redact",
     salt: str | None = None,
     confirm: bool = False,
+    table: str | None = None,
+    flatten_nested: bool = False,
+    **options: Any,
 ) -> dict[str, Any]:
     """Mask sensitive fields and write the result. Writes require confirm=True."""
     if not confirm:
@@ -183,7 +213,14 @@ def mask_fields(
         from ..cmds.masker import Masker
 
         field_list = [fields] if isinstance(fields, str) else list(fields)
-        options = {"fields": ",".join(field_list), "method": method, "salt": salt}
+        options = {
+            "fields": ",".join(field_list),
+            "method": method,
+            "salt": salt,
+            "table": table,
+            "flatten_nested": flatten_nested,
+            **options,
+        }
         Masker().mask(input_path, output_path, options)
         return tool_success({"output_path": output_path, "method": method})
     except Exception as exc:
@@ -197,6 +234,9 @@ def sample_data(
     n: int | None = None,
     percent: float | None = None,
     confirm: bool = False,
+    table: str | None = None,
+    flatten_nested: bool = False,
+    **options: Any,
 ) -> dict[str, Any]:
     """Write a random sample of rows. Writes require confirm=True."""
     if not confirm:
@@ -209,7 +249,14 @@ def sample_data(
     try:
         from ..cmds.sampler import Sampler
 
-        options = {"n": n, "percent": percent, "output": output_path}
+        options = {
+            "n": n,
+            "percent": percent,
+            "output": output_path,
+            "table": table,
+            "flatten_nested": flatten_nested,
+            **options,
+        }
         Sampler().sample(input_path, options)
         return tool_success({"output_path": output_path, "n": n, "percent": percent})
     except Exception as exc:

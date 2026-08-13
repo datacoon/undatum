@@ -1,0 +1,11 @@
+## 1. Implementation
+- [x] 1.1 Review existing `doc` and `analyze` flows for metadata sourcing
+- [x] 1.2 Add deterministic metadata extraction (title, coverage, language)
+- [x] 1.3 Add structured AI metadata prompt and parsing with fallback behavior
+- [x] 1.4 Add EU Data Theme classification mapping and output shape
+- [x] 1.5 Integrate Metacrafter for semantic types and PII detection (optional)
+- [x] 1.6 Add optional PII masking for samples
+- [x] 1.7 Update JSON/YAML/Markdown/Text renderers for new fields
+- [x] 1.8 Add CLI flags and configuration for optional features
+- [x] 1.9 Add tests for new metadata, PII outputs, and fallbacks
+- [x] 1.10 Update user documentation and examples

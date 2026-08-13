@@ -6,7 +6,6 @@ from pathlib import Path
 import pytest
 
 from undatum.cmds.converter import Converter
-from undatum.cmds.query import DataQuery
 from undatum.cmds.selector import Selector
 from undatum.cmds.statistics import StatProcessor
 from undatum.cmds.textproc import TextProcessor
@@ -29,32 +28,6 @@ def sample_jsonl_file(test_data_dir):
 def sample_csv_file(test_data_dir):
     """Return path to sample CSV file."""
     return str(test_data_dir / "2cols6rows.csv")
-
-
-class TestQueryCommand:
-    """Test query command with external library."""
-
-    def test_query_basic(self, sample_jsonl_file, tmp_path):
-        """Test basic query functionality."""
-        query = DataQuery()
-        output_file = str(tmp_path / "output.jsonl")
-
-        options = {"format_in": "jsonl", "output": output_file, "query": None}
-
-        query.query(sample_jsonl_file, options)
-
-        # Verify output file was created
-        assert os.path.exists(output_file)
-        assert os.path.getsize(output_file) > 0
-
-    def test_query_with_filter(self, sample_jsonl_file):
-        """Test query with filter expression."""
-        query = DataQuery()
-
-        options = {"format_in": "jsonl", "query": "true"}  # Simple filter that passes all
-
-        # Should not raise exception
-        query.query(sample_jsonl_file, options)
 
 
 class TestSelectorCommand:
@@ -237,7 +210,6 @@ class TestResourceManagement:
         """Test that all commands properly close iterable resources."""
         # Test each command that uses iterables
         commands = [
-            (DataQuery(), {"format_in": "jsonl", "output": str(tmp_path / "q.jsonl")}),
             (
                 Selector(),
                 {
@@ -252,9 +224,7 @@ class TestResourceManagement:
         ]
 
         for cmd, options in commands:
-            if isinstance(cmd, DataQuery):
-                cmd.query(sample_jsonl_file, options)
-            elif isinstance(cmd, Selector):
+            if isinstance(cmd, Selector):
                 cmd.headers(sample_jsonl_file, options)
             elif isinstance(cmd, StatProcessor):
                 cmd.stats(sample_jsonl_file, options)

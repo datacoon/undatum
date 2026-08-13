@@ -6,7 +6,7 @@ import time
 import duckdb
 from tqdm import tqdm
 
-from ...common.command_utils import get_iterable_options
+from ...common.command_utils import get_iterable_options, iter_command_rows
 from ...common.s3_iterable import open_iterable_with_s3
 from .base import (
     DEFAULT_BATCH_SIZE,
@@ -276,7 +276,12 @@ class Ingester:
             batch = []
 
             # Enhanced progress bar with throughput
-            with tqdm(it_in, total=totals, desc=f"Ingesting to {dbtype}", unit="rows") as pbar:
+            with tqdm(
+                iter_command_rows(it_in, options),
+                total=totals,
+                desc=f"Ingesting to {dbtype}",
+                unit="rows",
+            ) as pbar:
                 for row in pbar:
                     n += 1
                     if skip is not None and skip > 0:

@@ -6,6 +6,17 @@ import pytest
 def pytest_configure(config):
     """Register custom markers."""
     config.addinivalue_line("markers", "benchmark: marks tests as benchmarks")
+    config.addinivalue_line(
+        "markers", "use_cli_config: allow reading undatum.yaml / env CLI defaults"
+    )
+
+
+@pytest.fixture(autouse=True)
+def _isolate_cli_defaults(request, monkeypatch):
+    """Keep developer/user config files from leaking into tests."""
+    if request.node.get_closest_marker("use_cli_config"):
+        return
+    monkeypatch.setattr("undatum.common.app_config.get_cli_defaults", lambda: {})
 
 
 try:

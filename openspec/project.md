@@ -60,7 +60,6 @@
 - **chardet** - Encoding detection
 - **qddate** - Date field detection
 - **validators** - Common validation rules
-- **mistql** - Query language support (used for filtering and querying)
 - **tabulate** - Table formatting
 - **tqdm** - Progress bars
 
@@ -240,7 +239,8 @@ make test                 # Via Makefile
 
 **Configuration:**
 - **Config files**: `undatum.yaml` in project root or `~/.undatum/config.yaml` for global settings
-- **Environment variables**: Provider-specific API keys and base URLs
+- **CLI defaults**: optional `defaults:` mapping (`engine`, `threads`, `progress`, `encoding`, `delimiter`, `format_out`)
+- **Environment variables**: Provider-specific API keys and base URLs; `UNDATUM_ENGINE`, `UNDATUM_THREADS`, `UNDATUM_PROGRESS`, `UNDATUM_ENCODING`, `UNDATUM_DELIMITER`, `UNDATUM_FORMAT_OUT`
 - **CLI arguments**: Highest precedence for configuration
 
 **Data Sources:**

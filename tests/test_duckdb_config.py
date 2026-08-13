@@ -77,11 +77,19 @@ class TestCreateDuckdbConnection:
 
     def test_create_duckdb_connection_with_memory(self):
         """Test creating connection with memory limit."""
-        # DuckDB expects memory limit in format like '512MB' not bytes
-        # The current implementation sets bytes, which may not work
-        # So we'll skip testing memory limit setting as it depends on DuckDB version
-        # Just test that connection is created successfully
-        conn = create_duckdb_connection()
+        conn = create_duckdb_connection(memory="1GB")
+        assert conn is not None
+        limit = conn.execute("SELECT current_setting('memory_limit')").fetchone()[0]
+        # 1GB parsed as 1024**3 bytes; DuckDB may report GiB or byte form.
+        assert limit is not None
+        conn.close()
+
+        conn = create_duckdb_connection(memory="512MB")
+        assert conn is not None
+        conn.close()
+
+        # Bare byte counts must get a unit suffix for DuckDB.
+        conn = create_duckdb_connection(memory="1048576")
         assert conn is not None
         conn.close()
 

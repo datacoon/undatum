@@ -39,6 +39,27 @@ def test_package_create_generates_descriptor(csv_file, tmp_path):
     assert output_file.exists()
 
 
+def test_package_create_flatten_nested(tmp_path):
+    src = tmp_path / "nested.jsonl"
+    src.write_text(
+        '{"name": "TJK", "capital_city": {"lat": 38.56, "lon": 68.77}}\n',
+        encoding="utf8",
+    )
+    output_file = tmp_path / "datapackage.json"
+    result = Packager().create(
+        [str(src)],
+        options={
+            "output": str(output_file),
+            "flatten_nested": True,
+            "engine": "iterable",
+            "quiet": True,
+        },
+    )
+    names = [field["name"] for field in result["package"]["resources"][0]["schema"]["fields"]]
+    assert "capital_city.lat" in names
+    assert "capital_city.lon" in names
+
+
 def test_package_create_directory_output(csv_file, tmp_path):
     package_dir = tmp_path / "package"
 

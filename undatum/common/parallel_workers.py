@@ -197,14 +197,14 @@ def frequency_chunk(
     """
     chunk, fields, filter_expr = payload
     from undatum.common.filter import match_filter
-    from undatum.utils import get_dict_value
+    from undatum.utils import field_values
 
     valuedict: dict[str, int] = {}
     for record in chunk:
         if filter_expr is not None and not match_filter(record, filter_expr):
             continue
         try:
-            allvals = [get_dict_value(record, field.split(".")) for field in fields]
+            allvals = [field_values(record, field) for field in fields]
             for n1, _ in enumerate(allvals[0]):
                 k = "\t".join(str(allvals[n2][n1]) for n2, _ in enumerate(allvals))
                 valuedict[k] = valuedict.get(k, 0) + 1

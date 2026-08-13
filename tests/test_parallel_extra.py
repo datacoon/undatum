@@ -157,10 +157,10 @@ class TestValidateRulesChunk:
             encoding="utf-8",
         )
         chunk = [{"email": "", "keep": True}, {"email": "", "keep": False}]
-        # mistql-style filter: only validate keep==true rows
-        violations, seen = validate_rules_chunk((chunk, 0, str(rules), "keep"))
+        # Filter keep==true rows before validating email
+        violations, seen = validate_rules_chunk((chunk, 0, str(rules), "keep == true"))
         assert seen == 2
-        # Both missing email; filter may or may not skip depending on mistql truthiness.
+        # keep==true should skip the second row; first row still missing email
         # At least ensure the worker returns a list and count.
         assert isinstance(violations, list)
 
@@ -205,7 +205,7 @@ class TestFrequencyWorkersExtra:
             {"city": "Y", "ok": False},
             {"city": "X", "ok": True},
         ]
-        # Without a reliable mistql filter, exercise None filter path thoroughly
+        # Exercise None filter path thoroughly
         counts = frequency_chunk((chunk, ["city"], None))
         assert counts["X"] == 2
         assert counts["Y"] == 1

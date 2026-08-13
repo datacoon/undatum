@@ -3,9 +3,14 @@
 import json
 import logging
 
-from iterable.helpers.detect import detect_file_type, open_iterable
+from iterable.helpers.detect import detect_file_type
 
-from ..common.command_utils import ITERABLE_OPTIONS_KEYS, get_iterable_options  # noqa: F401
+from ..common.command_utils import (
+    ITERABLE_OPTIONS_KEYS,  # noqa: F401
+    get_iterable_options,
+    iter_command_rows,
+)
+from ..common.s3_iterable import open_path as open_iterable
 from ..utils import get_option
 
 
@@ -20,7 +25,6 @@ class Sniffer:
         if options is None:
             options = {}
         logging.debug("Sniffing %s", fromfile)
-        format_type = get_option(options, "format") or "text"
 
         # Detect file type and encoding
         ftype = detect_file_type(fromfile)
@@ -46,7 +50,7 @@ class Sniffer:
 
         try:
             count = 0
-            for item in iterable:
+            for item in iter_command_rows(iterable, options):
                 if isinstance(item, dict):
                     sample_items.append(item)
                     count += 1
@@ -102,6 +106,18 @@ class Sniffer:
         }
 
         # Format output
+        format_type = (
+            get_option(options, "format_out") or get_option(options, "format") or ""
+        ).lower()
+        to_file = get_option(options, "output")
+        if not format_type:
+            if to_file and str(to_file).lower().endswith(".json"):
+                format_type = "json"
+            elif to_file and str(to_file).lower().endswith((".yaml", ".yml")):
+                format_type = "yaml"
+            else:
+                format_type = "text"
+
         if format_type == "json":
             output_text = json.dumps(result, indent=2, default=str)
         elif format_type == "yaml":
@@ -128,7 +144,6 @@ class Sniffer:
                     lines.append(f"    Examples: {', '.join(info['examples'][:3])}")
             output_text = "\n".join(lines)
 
-        to_file = get_option(options, "output")
         if to_file:
             out = open(to_file, "w", encoding="utf8")
             out.write(output_text)

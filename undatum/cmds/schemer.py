@@ -68,6 +68,7 @@ class TableSchema(BaseModel):
 
 MAX_SAMPLE_SIZE = 200
 DELIMITED_FILES = ["csv", "tsv"]
+ANALYZER_SCHEMA_FORMATS = {"xlsx", "xls", "xml", "docx"}
 
 
 def table_from_objects(
@@ -120,12 +121,78 @@ def table_from_objects(
     return table
 
 
+def _schema_from_analyzer(
+    filename: str, filetype: str, objects_limit: int, table: TableSchema
+) -> TableSchema:
+    """Build a TableSchema using analyzer-style processing for Excel/XML/DOCX."""
+    from .analyzer import analyze
+
+    report = analyze(filename, filetype=filetype, objects_limit=objects_limit)
+    if not report.tables:
+        table.success = False
+        table.error = f"No tables found in {filename}"
+        return table
+    src = report.tables[0]
+    table.id = src.id or os.path.basename(filename)
+    table.num_records = src.num_records
+    table.num_cols = src.num_cols
+    table.is_flat = src.is_flat
+    table.fields = [
+        FieldSchema(name=field.name, ftype=field.ftype, is_array=field.is_array)
+        for field in (src.fields or [])
+    ]
+    table.key = get_schema_key([field.name for field in table.fields])
+    table.success = True
+    return table
+
+
+def _schema_columns_from_iterable(filename: str, objects_limit: int, options: dict | None = None):
+    """Sample records via the iterable path and decompose with DuckDB."""
+    from ..common.command_utils import (
+        get_iterable_options,
+        iter_projected_rows,
+        nested_keep_parents,
+        nested_max_depth,
+    )
+    from ..common.s3_iterable import open_path as open_iterable
+
+    options = options or {}
+    flatten_nested = bool(options.get("flatten_nested"))
+    iterableargs = get_iterable_options(options)
+    objects = []
+    iterable = open_iterable(filename, mode="r", iterableargs=iterableargs)
+    try:
+        for item in iter_projected_rows(
+            iterable,
+            flatten_nested,
+            keep_parents=nested_keep_parents(options, False),
+            max_depth=nested_max_depth(options),
+        ):
+            objects.append(item)
+            if len(objects) >= objects_limit:
+                break
+    finally:
+        if hasattr(iterable, "close"):
+            iterable.close()
+    if not objects:
+        return []
+    sampled = table_from_objects(
+        objects,
+        id=os.path.basename(filename),
+        objects_limit=objects_limit,
+        filetype="jsonl",
+        use_pandas=flatten_nested,
+    )
+    return [[field.name, field.ftype, field.is_array] for field in sampled.fields]
+
+
 def build_schema(
     filename: str,
     objects_limit: int = 100000,
     engine: str = "auto",
     filetype: str = None,
     compression: str = None,
+    options: dict = None,
 ):
     """Build schema from file by analyzing sample of objects.
 
@@ -135,10 +202,17 @@ def build_schema(
         engine: Processing engine ('auto', 'duckdb', or 'iterable')
         filetype: Override file type detection
         compression: Override compression detection
+        options: Optional command options (table, flatten_nested, start_page).
 
     Returns:
         TableSchema object with schema information
     """
+    options = options or {}
+    if options.get("engine"):
+        engine = options["engine"]
+    flatten_nested = bool(options.get("flatten_nested"))
+    if flatten_nested:
+        engine = "iterable"
     table = TableSchema(id=os.path.basename(filename))
 
     # Validate file exists and is readable
@@ -187,6 +261,10 @@ def build_schema(
             if compression is None:
                 compression = "raw"
 
+        has_table = bool(options.get("table") or options.get("sheet") or options.get("start_page"))
+        if filetype in ANALYZER_SCHEMA_FORMATS and not has_table and not flatten_nested:
+            return _schema_from_analyzer(filename, filetype, objects_limit, table)
+
         # Determine engine
         if engine == "auto":
             if filetype in DUCKABLE_FILE_TYPES and compression in DUCKABLE_CODECS:
@@ -214,13 +292,13 @@ def build_schema(
             table.num_records = -1
 
         # Getting structure
-        if engine == "duckdb":
+        if flatten_nested:
+            columns_raw = _schema_columns_from_iterable(filename, objects_limit, options)
+        elif engine == "duckdb":
             columns_raw = duckdb_decompose(
                 filename, filetype=filetype, path="*", limit=objects_limit
             )
         else:
-            # For iterable engine, we'd need to implement iterable-based schema extraction
-            # For now, fall back to DuckDB if possible, otherwise raise error
             logging.warning(
                 f"Schema extraction with iterable engine not yet fully implemented for {filetype} files. Falling back to DuckDB."
             )
@@ -567,6 +645,100 @@ def _write_schema_output(table, options, output_stream):
                         print(f"  {line.strip()}", file=output_stream)
 
 
+_SCHEMA_VALIDATE_SAMPLE = 20
+
+
+def validate_inferred_schema(filename: str, options: dict | None = None) -> dict:
+    """Validate rows against a schema inferred from the same source.
+
+    Uses ``iterable.ops.schema.infer`` / ``validate``. Does not replace
+    ``undatum validate`` rule packs.
+
+    Args:
+        filename: Path to the data file.
+        options: Command options (table, flatten_nested, strict, trust).
+
+    Returns:
+        Report with ``valid``, ``stats``, and a capped ``invalid_sample``.
+    """
+    from iterable.ops import schema as schema_ops
+
+    from ..common.command_utils import (
+        apply_table_selection,
+        get_iterable_options,
+        iter_projected_rows,
+        nested_keep_parents,
+        nested_max_depth,
+    )
+    from ..common.s3_iterable import open_path as open_iterable
+
+    options = options or {}
+    flatten_nested = bool(options.get("flatten_nested"))
+    iterableargs = apply_table_selection(filename, get_iterable_options(options))
+
+    def _rows():
+        source = open_iterable(filename, mode="r", iterableargs=iterableargs)
+        try:
+            yield from iter_projected_rows(
+                source,
+                flatten_nested,
+                keep_parents=nested_keep_parents(options, False),
+                max_depth=nested_max_depth(options),
+            )
+        finally:
+            if hasattr(source, "close"):
+                source.close()
+
+    inferred_kwargs = {"flatten_nested": False, "detect_constraints": False}
+    sample_size = options.get("sample_size")
+    if sample_size is not None:
+        inferred_kwargs["sample_size"] = int(sample_size)
+    inferred = schema_ops.infer(_rows(), **inferred_kwargs)
+    raw = schema_ops.validate(_rows(), inferred, strict=bool(options.get("strict")))
+    sample = []
+    for row, errors in raw["invalid_rows"][:_SCHEMA_VALIDATE_SAMPLE]:
+        sample.append({"row": row, "errors": errors})
+    stats = raw["stats"]
+    return {
+        "valid": stats.get("invalid", 0) == 0,
+        "stats": stats,
+        "invalid_sample": sample,
+    }
+
+
+def _write_schema_validation(report: dict, options: dict, output_stream) -> None:
+    """Write a schema-validation report as JSON or text."""
+    outtype = (options.get("outtype") or "").lower()
+    fmt = (options.get("format") or "").lower()
+    as_json = outtype == "json" or fmt == "json"
+    if as_json:
+        output_stream.write(json.dumps(report, indent=2, ensure_ascii=False, default=str))
+        output_stream.write("\n")
+        return
+    stats = report.get("stats") or {}
+    print("=" * 70, file=output_stream)
+    print("SCHEMA VALIDATION", file=output_stream)
+    print("=" * 70, file=output_stream)
+    print(
+        f"Valid: {stats.get('valid', 0)}  "
+        f"Invalid: {stats.get('invalid', 0)}  "
+        f"Total: {stats.get('total', 0)}",
+        file=output_stream,
+    )
+    errors_by_field = stats.get("errors_by_field") or {}
+    if errors_by_field:
+        print(file=output_stream)
+        print("Errors by field:", file=output_stream)
+        for field, count in errors_by_field.items():
+            print(f"  {field}: {count}", file=output_stream)
+    sample = report.get("invalid_sample") or []
+    if sample:
+        print(file=output_stream)
+        print(f"Invalid sample (up to {_SCHEMA_VALIDATE_SAMPLE}):", file=output_stream)
+        for item in sample:
+            print(f"  {item.get('errors')}", file=output_stream)
+
+
 class Schemer:
     """Schema generation handler."""
 
@@ -579,8 +751,18 @@ class Schemer:
 
     def extract_schema(self, fromfile, options):
         """Extract schema from file and output in specified format."""
+        if options.get("validate"):
+            report = validate_inferred_schema(fromfile, options)
+            output_file = options.get("output")
+            if output_file:
+                with open(output_file, "w", encoding="utf8") as output_stream:
+                    _write_schema_validation(report, options, output_stream)
+            else:
+                _write_schema_validation(report, options, sys.stdout)
+            return report
+
         engine = options.get("engine", "auto")
-        table = build_schema(fromfile, engine=engine)
+        table = build_schema(fromfile, engine=engine, options=options)
 
         # Apply AI documentation if requested
         if options.get("autodoc"):
@@ -651,7 +833,7 @@ class Schemer:
         engine = options.get("engine", "auto")
         for filename in tqdm.tqdm(files):
             try:
-                table = build_schema(filename, engine=engine)
+                table = build_schema(filename, engine=engine, options=options)
                 fbase = os.path.basename(filename)
                 table.id = table.key
 

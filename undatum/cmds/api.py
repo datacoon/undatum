@@ -9,6 +9,7 @@ import logging
 import os
 import re
 import sys
+import tempfile
 import uuid
 from typing import Any, Optional
 
@@ -19,7 +20,7 @@ from starlette.requests import Request
 
 from .. import __version__
 from ..common.errors import FileNotFoundError, PermissionError, find_similar_files
-from ..common.path_utils import validate_file_path
+from ..common.path_utils import is_s3_uri, is_uri, validate_file_path
 from ..common.schema_utils import duckdb_decompose
 from ..constants import DUCKABLE_FILE_TYPES
 from ..utils import get_option
@@ -36,6 +37,7 @@ RESERVED_QUERY_PARAMS = {
     "order_dir",
     "sort",
     "include_total",
+    "api_key",
 }
 OPERATOR_MAP = {
     "eq": "=",
@@ -95,6 +97,13 @@ def _unique_resource_name(base: str, used: set[str]) -> str:
 def _detect_format(path: str, override: str | None) -> str | None:
     if override:
         return override.lower()
+    if is_s3_uri(path):
+        ext = os.path.splitext(path.split("?")[0])[1].lstrip(".").lower()
+        if ext == "ndjson":
+            return "jsonl"
+        if ext in {"csv", "json", "jsonl", "parquet"}:
+            return ext
+        return None
     detected = detect_file_type(path)
     if detected.get("success"):
         return detected.get("datatype").id()
@@ -194,9 +203,7 @@ def _create_row_model(resource_name: str, fields: list[dict[str, Any]]) -> type[
     return create_model(_model_name(resource_name, "Row"), **field_defs)  # type: ignore[call-overload]
 
 
-def _create_list_response_model(
-    resource_name: str, row_model: type[BaseModel]
-) -> type[BaseModel]:
+def _create_list_response_model(resource_name: str, row_model: type[BaseModel]) -> type[BaseModel]:
     return create_model(
         _model_name(resource_name, "ListResponse"),
         data=(list[row_model], Field(description="Matching records")),  # type: ignore[valid-type]
@@ -252,6 +259,133 @@ def _build_filter_openapi_extra(
     return {"parameters": parameters}
 
 
+API_CONFIG_JSON_SCHEMA: dict[str, Any] = {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "undatum Data API config",
+    "type": "object",
+    "required": ["resources"],
+    "properties": {
+        "resources": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+                "type": "object",
+                "required": ["name", "path", "format"],
+                "properties": {
+                    "name": {"type": "string", "minLength": 1},
+                    "path": {"type": "string", "minLength": 1},
+                    "format": {
+                        "type": "string",
+                        "enum": ["csv", "json", "jsonl", "parquet"],
+                    },
+                    "read_only": {"type": "boolean"},
+                    "primary_key": {
+                        "oneOf": [
+                            {"type": "string"},
+                            {"type": "array", "items": {"type": "string"}},
+                        ]
+                    },
+                    "fields": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "required": ["name"],
+                            "properties": {
+                                "name": {"type": "string"},
+                                "type": {"type": "string"},
+                            },
+                        },
+                    },
+                    "pagination": {
+                        "type": "object",
+                        "properties": {
+                            "default_limit": {"type": "integer", "minimum": 1},
+                            "max_limit": {"type": "integer", "minimum": 1},
+                        },
+                    },
+                    "query": {
+                        "type": "object",
+                        "properties": {
+                            "allowed_ops": {
+                                "type": "array",
+                                "items": {"type": "string"},
+                            },
+                            "allowed_order_by": {
+                                "type": "array",
+                                "items": {"type": "string"},
+                            },
+                        },
+                    },
+                },
+            },
+        }
+    },
+}
+
+
+def validate_api_config_schema(config: Any) -> None:
+    """Validate an API config against the embedded JSON Schema subset.
+
+    Raises:
+        ValueError: If the config does not match the required shape.
+    """
+    if not isinstance(config, dict):
+        raise ValueError("API config must be a JSON/YAML object.")
+    resources = config.get("resources")
+    if not isinstance(resources, list) or not resources:
+        raise ValueError("API config must define a non-empty 'resources' array.")
+    allowed_formats = {"csv", "json", "jsonl", "parquet"}
+    for idx, resource in enumerate(resources, start=1):
+        label = f"Resource {idx}"
+        if not isinstance(resource, dict):
+            raise ValueError(f"{label} must be an object.")
+        name = resource.get("name") or f"resource_{idx}"
+        label = f"Resource '{name}'"
+        path = resource.get("path")
+        fmt = resource.get("format")
+        if not isinstance(path, str) or not path.strip():
+            raise ValueError(f"{label} missing path.")
+        if not isinstance(fmt, str) or fmt.lower() not in allowed_formats:
+            raise ValueError(
+                f"{label} has unsupported format '{fmt}'. Use csv, json, jsonl, or parquet."
+            )
+        fields = resource.get("fields")
+        if fields is not None:
+            if not isinstance(fields, list):
+                raise ValueError(f"{label} fields must be an array.")
+            for field in fields:
+                if not isinstance(field, dict) or not field.get("name"):
+                    raise ValueError(f"{label} field entries must be objects with a name.")
+        pagination = resource.get("pagination")
+        if pagination is not None and not isinstance(pagination, dict):
+            raise ValueError(f"{label} pagination must be an object.")
+        query = resource.get("query")
+        if query is not None and not isinstance(query, dict):
+            raise ValueError(f"{label} query must be an object.")
+
+
+def _materialize_resource_path(path: str, temp_files: list[str]) -> str:
+    """Return a local path DuckDB can read, downloading s3:// URIs as needed."""
+    if is_s3_uri(path):
+        from ..formats.s3 import get_s3_client, parse_s3_uri
+
+        bucket, key = parse_s3_uri(path)
+        suffix = os.path.splitext(key)[1] or ".tmp"
+        temp_fd, temp_path = tempfile.mkstemp(suffix=suffix)
+        os.close(temp_fd)
+        try:
+            client = get_s3_client()
+            logger.info("Downloading %s for Data API", path)
+            client.download_file(bucket, key, temp_path)
+        except Exception:
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
+            raise
+        temp_files.append(temp_path)
+        return temp_path
+    return path
+
+
 def load_api_config(path: str) -> dict[str, Any]:
     """Load API config from YAML or JSON."""
     with open(path, encoding="utf8") as handle:
@@ -274,16 +408,19 @@ def dump_api_config(
     return yaml.safe_dump(config, sort_keys=False, allow_unicode=False)
 
 
-def _validate_resources_config(config: dict[str, Any]) -> None:
+def _validate_resources_config(config: dict[str, Any], temp_files: list[str] | None = None) -> None:
+    validate_api_config_schema(config)
     resources = config.get("resources") or []
-    if not resources:
-        raise ValueError("API config must define at least one resource.")
+    if temp_files is None:
+        temp_files = []
     for idx, resource in enumerate(resources, start=1):
         name = resource.get("name") or f"resource_{idx}"
         path = resource.get("path")
         fmt = resource.get("format")
         if not path or not fmt:
             raise ValueError(f"Resource {name} missing path or format.")
+        if is_uri(path) and not is_s3_uri(path):
+            raise ValueError(f"Resource {name} path '{path}' is not a local file or s3:// URI.")
         try:
             validate_file_path(path, check_read=True)
         except FileNotFoundError as exc:
@@ -291,24 +428,59 @@ def _validate_resources_config(config: dict[str, Any]) -> None:
             raise FileNotFoundError(path, suggestions) from exc
         except PermissionError as exc:
             raise PermissionError(path, operation="read") from exc
+        resource["path"] = _materialize_resource_path(path, temp_files)
 
 
-def _build_api_app(config: dict[str, Any]):
+def _build_api_app(
+    config: dict[str, Any],
+    *,
+    api_key: str | None = None,
+    cors_origins: list[str] | None = None,
+):
     try:
         from fastapi import FastAPI, HTTPException, Query
+        from fastapi.middleware.cors import CORSMiddleware
+        from starlette.middleware.base import BaseHTTPMiddleware
+        from starlette.responses import JSONResponse
     except Exception as exc:
         raise ImportError(
             'Data API requires fastapi. Install with `pip install "undatum[api]"`.'
         ) from exc
     import duckdb
 
-    _validate_resources_config(config)
+    temp_files: list[str] = []
+    _validate_resources_config(config, temp_files)
 
     app = FastAPI(
         title="undatum Data API",
         description="Read-only HTTP API over file-backed datasets (CSV, JSON/JSONL, Parquet).",
         version=__version__,
     )
+    app.state.temp_files = temp_files
+
+    if cors_origins:
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=cors_origins,
+            allow_credentials=True,
+            allow_methods=["GET", "OPTIONS"],
+            allow_headers=["*"],
+        )
+
+    if api_key:
+        expected = api_key
+
+        class APIKeyMiddleware(BaseHTTPMiddleware):
+            async def dispatch(self, request: Request, call_next):
+                path = request.url.path
+                if path in {"/docs", "/redoc", "/openapi.json"} or path.startswith("/docs"):
+                    return await call_next(request)
+                provided = request.headers.get("x-api-key") or request.query_params.get("api_key")
+                if provided != expected:
+                    return JSONResponse({"detail": "Unauthorized"}, status_code=401)
+                return await call_next(request)
+
+        app.add_middleware(APIKeyMiddleware)
     conn = duckdb.connect(database=":memory:")
     resource_index: dict[str, dict[str, Any]] = {}
     resource_summaries: list[dict[str, Any]] = []
@@ -499,9 +671,7 @@ def _build_api_app(config: dict[str, Any]):
                 order_by: str | None = Query(
                     default=None, description="Comma-separated fields to sort by."
                 ),
-                order_dir: str = Query(
-                    default="asc", description="Sort direction: asc or desc."
-                ),
+                order_dir: str = Query(default="asc", description="Sort direction: asc or desc."),
                 sort: str | None = Query(
                     default=None,
                     description="Sort alias: field name, or prefix with - for descending.",
@@ -610,15 +780,27 @@ class DataApi:
             except PermissionError as exc:
                 raise PermissionError(path, operation="read") from exc
 
-            abs_path = os.path.abspath(path)
+            if is_uri(path):
+                abs_path = path
+            else:
+                abs_path = os.path.abspath(path)
             filetype = _detect_format(abs_path, format_in)
             if not filetype:
                 from ..common.errors import FormatError
 
                 supported = ["csv", "json", "jsonl", "parquet"]
                 raise FormatError(abs_path, "unknown", supported)
-            fields = _infer_fields(abs_path, filetype)
-            primary_candidates = _infer_primary_key_candidates(abs_path, filetype)
+            infer_temps: list[str] = []
+            infer_path = abs_path
+            if is_s3_uri(abs_path):
+                infer_path = _materialize_resource_path(abs_path, infer_temps)
+            try:
+                fields = _infer_fields(infer_path, filetype)
+                primary_candidates = _infer_primary_key_candidates(infer_path, filetype)
+            finally:
+                for tmp in infer_temps:
+                    if os.path.exists(tmp):
+                        os.remove(tmp)
             base_name = _normalize_resource_name(abs_path, idx)
             resource_name = _unique_resource_name(base_name, used_names)
             if resource_name != base_name:
@@ -651,6 +833,7 @@ class DataApi:
             resources.append(resource)
 
         config = {"resources": resources}
+        validate_api_config_schema(config)
         payload = dump_api_config(config, output=output, config_format=config_format)
         if output:
             with open(output, "w", encoding="utf8") as handle:
@@ -679,8 +862,11 @@ class DataApi:
 
         host = get_option(options, "host") or "127.0.0.1"
         port = int(get_option(options, "port") or 8000)
+        api_key = get_option(options, "api_key") or os.environ.get("UNDATUM_API_KEY")
+        cors_raw = get_option(options, "cors_origins")
+        cors_origins = _split_csv(cors_raw) if cors_raw else []
 
-        app = _build_api_app(config)
+        app = _build_api_app(config, api_key=api_key, cors_origins=cors_origins or None)
         resource_summaries = getattr(app.state, "resource_summaries", [])
         _print_startup_banner(host, port, resource_summaries)
         uvicorn.run(app, host=host, port=port, log_level="info", access_log=True)

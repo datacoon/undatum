@@ -3,7 +3,11 @@
 import logging
 import sys
 
-from ..common.command_utils import ITERABLE_OPTIONS_KEYS, get_iterable_options  # noqa: F401
+from ..common.command_utils import (  # noqa: F401
+    ITERABLE_OPTIONS_KEYS,
+    get_iterable_options,
+    iter_command_rows,
+)
 from ..common.errors import FileNotFoundError, FormatError, PermissionError, find_similar_files
 from ..common.iterable import DataWriter
 from ..common.path_utils import validate_file_path
@@ -40,7 +44,7 @@ class Head:
         try:
             count = 0
             items = []
-            for item in iterable:
+            for item in iter_command_rows(iterable, options):
                 if count >= n:
                     break
                 items.append(item)

@@ -9,7 +9,13 @@ import typer
 from ..cmds.pipeline import PipelineRunner
 from ..cmds.pipeline_templates import TemplateManager
 from ..common.errors import UndatumError, ValidationError
-from ..common.pipeline_parser import PipelineParseError, parse_pipeline, validate_pipeline
+from ..common.pipeline_parser import (
+    PipelineParseError,
+    parse_pipeline,
+    render_pipeline_markdown,
+    render_pipeline_mermaid,
+    validate_pipeline,
+)
 from .common import enable_verbose
 
 logger = logging.getLogger(__name__)
@@ -126,6 +132,55 @@ def pipeline_validate(
 
             traceback.print_exc()
         sys.exit(1)
+
+
+@pipeline_app.command(name="doc")
+def pipeline_doc(
+    pipeline_file: Annotated[
+        str, typer.Argument(help="Path to pipeline specification file (YAML or JSON).")
+    ],
+    output: Annotated[
+        Optional[str],
+        typer.Option(help="Write documentation to this path instead of stdout."),
+    ] = None,
+    format: Annotated[
+        str,
+        typer.Option(help="Output format: 'markdown' (default) or 'mermaid'."),
+    ] = "markdown",
+    verbose: Annotated[bool, typer.Option(help="Enable verbose logging output.")] = False,
+):
+    """Generate Mermaid documentation for a pipeline specification.
+
+    Examples:
+        undatum pipeline doc pipeline.yml
+        undatum pipeline doc pipeline.yml --format mermaid --output flow.mmd
+    """
+    if verbose:
+        enable_verbose()
+
+    fmt = (format or "markdown").lower().strip()
+    if output:
+        lower = str(output).lower()
+        if fmt == "markdown" and lower.endswith((".mmd", ".mermaid")):
+            fmt = "mermaid"
+
+    try:
+        spec = parse_pipeline(pipeline_file)
+    except PipelineParseError as e:
+        raise ValidationError(str(e)) from e
+
+    if fmt == "mermaid":
+        text = render_pipeline_mermaid(spec)
+    elif fmt in {"markdown", "md"}:
+        text = render_pipeline_markdown(spec, source=pipeline_file)
+    else:
+        raise ValidationError("Unsupported pipeline doc format. Use 'markdown' or 'mermaid'.")
+
+    if output:
+        with open(output, "w", encoding="utf-8") as handle:
+            handle.write(text)
+    else:
+        typer.echo(text, nl=False)
 
 
 @templates_app.command(name="list")

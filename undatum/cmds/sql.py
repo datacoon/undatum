@@ -105,6 +105,56 @@ class SqlExecutor:
         finally:
             conn.close()
 
+    def fetch(self, query: str, files: list, options: dict = None, max_rows: int = 500):
+        """Execute SQL and return a bounded list of row dicts (no stdout).
+
+        Args:
+            query: SQL query text. Single-file queries can reference ``data``.
+            files: Input file paths registered as views.
+            options: DuckDB settings (same keys as ``query``).
+            max_rows: Maximum rows to materialize.
+
+        Returns:
+            Tuple of ``(column_names, records, truncated)``.
+
+        Raises:
+            ValidationError: If the query, files, or ``max_rows`` are invalid.
+            FileNotFoundError: If an input file does not exist.
+            UndatumError: If query execution fails.
+        """
+        if options is None:
+            options = {}
+        if not query or not query.strip():
+            raise ValidationError("sql requires a non-empty query", field="query")
+        if not files:
+            raise ValidationError("sql requires at least one input file", field="files")
+        if max_rows < 1:
+            raise ValidationError("max_rows must be at least 1", field="limit")
+
+        for filepath in files:
+            try:
+                validate_file_path(filepath, check_read=True)
+            except FileNotFoundError as e:
+                suggestions = find_similar_files(filepath)
+                raise FileNotFoundError(filepath, suggestions) from e
+
+        duckdb_config = get_duckdb_config_from_options(options)
+        conn = create_duckdb_connection(**duckdb_config)
+        try:
+            self._register_views(conn, files)
+            try:
+                result = conn.execute(query)
+            except Exception as e:
+                raise UndatumError(f"SQL query failed: {e}") from e
+            description = result.description or []
+            columns = [d[0] for d in description]
+            raw = result.fetchmany(int(max_rows) + 1)
+            truncated = len(raw) > max_rows
+            records = [normalize_for_json(dict(zip(columns, row))) for row in raw[:max_rows]]
+            return columns, records, truncated
+        finally:
+            conn.close()
+
     @staticmethod
     def _register_views(conn, files: list) -> dict:
         """Register each input file as a DuckDB view.

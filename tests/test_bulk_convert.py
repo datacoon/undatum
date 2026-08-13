@@ -28,6 +28,28 @@ class TestSingleConvert:
         Converter().convert(str(src), str(dst), {"progress": False})
         assert dst.exists() and dst.stat().st_size > 0
 
+    def test_parquet_row_group_size(self, tmp_path):
+        pytest.importorskip("pyarrow")
+        import pyarrow.parquet as pq
+
+        src = tmp_path / "in.jsonl"
+        src.write_text("".join(f'{{"id": {i}}}\n' for i in range(40)), encoding="utf8")
+        dst = tmp_path / "out.parquet"
+        Converter().convert(
+            str(src),
+            str(dst),
+            {
+                "row_group_size": 20,
+                "batch_size": 10,
+                "progress": False,
+                "engine": "iterable",
+                "native_batch": False,
+            },
+        )
+        meta = pq.ParquetFile(str(dst)).metadata
+        assert meta.num_rows == 40
+        assert meta.num_row_groups == 2
+
     def test_jsonl_to_csv_roundtrip(self, tmp_path):
         src = tmp_path / "in.jsonl"
         dst = tmp_path / "out.csv"
@@ -47,6 +69,24 @@ class TestSingleConvert:
         assert dst.exists() and dst.stat().st_size > 0
         content = gzip.decompress(dst.read_bytes()).decode("utf-8")
         assert "1,2" in content and "3,4" in content
+
+    def test_csv_to_gz_with_level(self, tmp_path):
+        import gzip
+
+        src = tmp_path / "in.csv"
+        dst = tmp_path / "out.csv.gz"
+        _write_csv(src)
+        Converter().convert(str(src), str(dst), {"progress": False, "level": 1})
+        content = gzip.decompress(dst.read_bytes()).decode("utf-8")
+        assert "1,2" in content and "3,4" in content
+
+    def test_csv_quotechar_roundtrip(self, tmp_path):
+        src = tmp_path / "in.csv"
+        dst = tmp_path / "out.jsonl"
+        src.write_text("name,city\n'Alice','Dushanbe'\n", encoding="utf-8")
+        Converter().convert(str(src), str(dst), {"progress": False, "quotechar": "'"})
+        rows = [json.loads(line) for line in dst.read_text().splitlines() if line.strip()]
+        assert rows == [{"name": "Alice", "city": "Dushanbe"}]
 
     def test_jsonl_to_compressed_output(self, tmp_path):
         import gzip
@@ -129,6 +169,20 @@ class TestBulkConvert:
         Converter().bulk_convert(str(raw / "*.csv"), str(out), {"progress": False}, to_ext="jsonl")
         assert (out / "one.jsonl").exists()
 
+    def test_bulk_filename_pattern(self, tmp_path):
+        raw = tmp_path / "raw"
+        out = tmp_path / "out"
+        raw.mkdir()
+        _write_csv(raw / "one.csv")
+        Converter().bulk_convert(
+            str(raw),
+            str(out),
+            {"progress": False, "filename_pattern": "{stem}.converted.jsonl"},
+            to_ext="jsonl",
+        )
+        assert (out / "one.converted.jsonl").exists()
+        assert not (out / "one.jsonl").exists()
+
     def test_bulk_requires_target_ext(self, tmp_path):
         from undatum.common.errors import ValidationError
 
@@ -155,6 +209,11 @@ class TestBuildConvertKwargs:
         assert kwargs["iterableargs"]["page"] == 2
         assert "start_page" not in kwargs["iterableargs"]
 
+    def test_quotechar_maps_to_iterableargs(self):
+        kwargs = Converter()._build_convert_kwargs({"quotechar": "'"}, limit=100)
+        assert kwargs["iterableargs"]["quotechar"] == "'"
+        assert kwargs["toiterableargs"]["quotechar"] == "'"
+
     def test_scan_limit_and_batch_size(self):
         kwargs = Converter()._build_convert_kwargs(
             {"scan_limit": 250, "batch_size": 1000, "atomic": True},
@@ -163,6 +222,92 @@ class TestBuildConvertKwargs:
         assert kwargs["scan_limit"] == 250
         assert kwargs["batch_size"] == 1000
         assert kwargs["atomic"] is True
+
+    def test_profile_maps_to_codecargs(self):
+        kwargs = Converter()._build_convert_kwargs({"profile": "max"}, limit=100)
+        assert kwargs["codecargs"] == {"profile": "max"}
+
+    def test_level_maps_to_codecargs(self):
+        kwargs = Converter()._build_convert_kwargs({"level": 9}, limit=100)
+        assert kwargs["codecargs"] == {"compression_level": 9}
+
+    def test_profile_and_level_codecargs(self):
+        kwargs = Converter()._build_convert_kwargs({"profile": "fast", "level": 3}, limit=100)
+        assert kwargs["codecargs"] == {"profile": "fast", "compression_level": 3}
+
+    def test_invalid_profile_raises(self):
+        from undatum.common.errors import ValidationError
+
+        with pytest.raises(ValidationError, match="profile"):
+            Converter()._build_convert_kwargs({"profile": "turbo"}, limit=100)
+
+    def test_columns_and_row_range_selection(self):
+        kwargs = Converter()._build_convert_kwargs(
+            {"columns": "id, name", "row_range": "0:1000", "native_batch": False},
+            limit=100,
+        )
+        assert kwargs["selection"]["columns"] == ["id", "name"]
+        assert kwargs["selection"]["row_range"] == (0, 1000)
+        assert kwargs["use_native_batch"] is False
+
+    def test_native_batch_true_and_false(self):
+        on = Converter()._build_convert_kwargs({"native_batch": True}, limit=100)
+        off = Converter()._build_convert_kwargs({"native_batch": False}, limit=100)
+        assert on["use_native_batch"] is True
+        assert off["use_native_batch"] is False
+
+    def test_native_batch_forwards_batch_size_into_selection(self):
+        kwargs = Converter()._build_convert_kwargs(
+            {"native_batch": True, "batch_size": 1024, "columns": "id"},
+            limit=100,
+        )
+        assert kwargs["use_native_batch"] is True
+        assert kwargs["batch_size"] == 1024
+        assert kwargs["selection"]["batch_size"] == 1024
+        assert kwargs["selection"]["columns"] == ["id"]
+
+    def test_non_native_omits_selection_batch_size(self):
+        kwargs = Converter()._build_convert_kwargs(
+            {"native_batch": False, "batch_size": 1024}, limit=100
+        )
+        assert kwargs["use_native_batch"] is False
+        assert "selection" not in kwargs
+
+    def test_native_batch_auto_with_selection(self):
+        kwargs = Converter()._build_convert_kwargs({"columns": "id"}, limit=100)
+        assert kwargs["use_native_batch"] is True
+
+    def test_invalid_row_range_raises(self):
+        from undatum.common.errors import ValidationError
+
+        with pytest.raises(ValidationError, match="row_range"):
+            Converter()._build_convert_kwargs({"row_range": "1000"}, limit=100)
+
+    def test_write_mode_mapped_to_toiterableargs(self):
+        kwargs = Converter()._build_convert_kwargs({"write_mode": "overwrite"}, limit=100)
+        assert kwargs["toiterableargs"]["write_mode"] == "overwrite"
+
+    def test_row_group_size_mapped_to_toiterableargs(self):
+        kwargs = Converter()._build_convert_kwargs({"row_group_size": 1024}, limit=100)
+        assert kwargs["toiterableargs"]["row_group_size"] == 1024
+        omitted = Converter()._build_convert_kwargs({}, limit=100)
+        assert "row_group_size" not in omitted["toiterableargs"]
+
+    def test_invalid_row_group_size_raises(self):
+        from undatum.common.errors import ValidationError
+
+        with pytest.raises(ValidationError, match="row_group_size"):
+            Converter()._build_convert_kwargs({"row_group_size": 0}, limit=100)
+
+    def test_use_totals_mapped(self):
+        kwargs = Converter()._build_convert_kwargs({"use_totals": True}, limit=100)
+        assert kwargs["use_totals"] is True
+
+    def test_invalid_write_mode_raises(self):
+        from undatum.common.errors import ValidationError
+
+        with pytest.raises(ValidationError, match="write_mode"):
+            Converter()._build_convert_kwargs({"write_mode": "merge"}, limit=100)
 
 
 class TestGetIterableOptions:

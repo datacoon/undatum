@@ -1,4 +1,4 @@
-.PHONY: help install install-dev test lint format type-check docs clean build
+.PHONY: help install install-dev test lint format type-check docs man clean build
 
 help: ## Show this help message
 	@echo "Available targets:"
@@ -29,6 +29,9 @@ format-check: ## Check code formatting without making changes
 
 type-check: ## Run type checker
 	mypy undatum/
+
+man: ## Generate man/undatum.1 from the CLI
+	python scripts/generate_manpage.py
 
 docs: ## Build documentation
 	cd docs && make html

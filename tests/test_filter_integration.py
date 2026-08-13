@@ -193,3 +193,66 @@ class TestSelectorFilter:
 
         # Should not raise exception
         selector.select(sample_jsonl_file, options)
+
+
+class TestDuckDBFilterPushdown:
+    """DuckDB frequency/uniq should honor filters via SQL when translatable."""
+
+    def test_frequency_duckdb_with_filter(self, sample_jsonl_file, tmp_path):
+        import csv
+
+        pytest.importorskip("duckdb")
+        output_file = str(tmp_path / "freq_duckdb.csv")
+        Selector().frequency(
+            sample_jsonl_file,
+            {
+                "format_in": "jsonl",
+                "fields": "city",
+                "filter": "age >= 30",
+                "output": output_file,
+                "engine": "duckdb",
+            },
+        )
+        rows = list(csv.reader(open(output_file, encoding="utf8")))
+        body = {row[0]: int(row[1]) for row in rows[1:]}
+        assert body == {"New York": 1, "Paris": 1}
+
+    def test_uniq_duckdb_with_filter(self, sample_jsonl_file, tmp_path):
+        import csv
+
+        pytest.importorskip("duckdb")
+        output_file = str(tmp_path / "uniq_duckdb.csv")
+        Selector().uniq(
+            sample_jsonl_file,
+            {
+                "format_in": "jsonl",
+                "fields": "city",
+                "filter": "age >= 30",
+                "output": output_file,
+                "engine": "duckdb",
+            },
+        )
+        rows = list(csv.reader(open(output_file, encoding="utf8")))
+        values = {row[0] for row in rows[1:]}
+        assert values == {"New York", "Paris"}
+
+    def test_frequency_untranslatable_filter_falls_back(self, sample_jsonl_file, tmp_path, caplog):
+        """IN/LIKE/match cannot be pushed to SQL; iterable engine still applies the filter."""
+        import csv
+
+        output_file = str(tmp_path / "freq_fallback.csv")
+        with caplog.at_level("INFO"):
+            Selector().frequency(
+                sample_jsonl_file,
+                {
+                    "format_in": "jsonl",
+                    "fields": "city",
+                    "filter": 'match "New.*" city',
+                    "output": output_file,
+                    "engine": "duckdb",
+                },
+            )
+        assert "falling back to iterable" in caplog.text
+        rows = list(csv.reader(open(output_file, encoding="utf8")))
+        body = {row[0]: int(row[1]) for row in rows[1:]}
+        assert body == {"New York": 1}

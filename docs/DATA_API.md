@@ -1,0 +1,53 @@
+# Data API security and operations
+
+The file-backed Data API (`undatum api serve` / `undatum api run`) is **read-only**.
+It is intended for local exploration and trusted networks. Harden it before exposing
+it beyond localhost.
+
+## Built-in API key (optional)
+
+Start the server with a key:
+
+```bash
+undatum api serve --config api.yml --api-key "$UNDATUM_API_KEY"
+# or
+export UNDATUM_API_KEY=replace-me
+undatum api run data.csv
+```
+
+Clients must send the key as `X-API-Key` (or `?api_key=`). Requests without a matching
+key receive HTTP 401. `/docs`, `/redoc`, and `/openapi.json` stay open so operators can
+inspect the schema.
+
+This is a shared-secret check, not a full identity system. Do not treat it as a
+replacement for SSO or per-user authorization.
+
+## Reverse proxy (recommended for production)
+
+Put the API behind nginx, Caddy, or a cloud load balancer and terminate TLS there:
+
+- Bind undatum to `127.0.0.1` (the default).
+- Require authentication at the proxy (basic auth, OIDC, mTLS).
+- Rate-limit and log access at the proxy.
+- Use the built-in `--api-key` only as defense in depth, or omit it if the proxy
+  already authenticates every request.
+
+## CORS
+
+Browser apps need an explicit origin list:
+
+```bash
+undatum api serve --config api.yml --cors-origins https://app.example.com
+```
+
+Leave `--cors-origins` unset for CLI/server-to-server use.
+
+## S3-backed resources
+
+Resource `path` values may be `s3://bucket/key` URIs. The server downloads the object
+to a temporary file at startup using the standard AWS credential chain
+(`AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY`, `AWS_PROFILE`, `AWS_REGION`, or
+`~/.aws/credentials`). Install `undatum[s3]` (or `undatum[cloud]`) first.
+
+Config files are validated against an embedded JSON Schema (required `resources[]`
+with `name`, `path`, and `format` in `csv` / `json` / `jsonl` / `parquet`).

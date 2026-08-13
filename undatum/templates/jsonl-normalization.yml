@@ -1,0 +1,39 @@
+# Template: JSONL Normalization
+# Description: Normalize JSONL records by converting format, filling missing values, and validating
+# Variables:
+#   input_file: Path to input JSONL file (required)
+#   output_file: Path to output file (required)
+#   fields_to_fill: Comma-separated list of fields to fill - default: name,status
+#   fill_value: Value to use for filling - default: ""
+#   dedup_keys: Comma-separated list of keys for deduplication - default: id
+
+variables:
+  input_file: ${input_file}
+  output_file: ${output_file}
+  fields_to_fill: ${fields_to_fill:-name,status}
+  fill_value: ${fill_value:-}
+  dedup_keys: ${dedup_keys:-id}
+
+steps:
+  - name: convert_to_jsonl
+    command: convert
+    args:
+      input: ${input_file}
+      output: /tmp/normalized.jsonl
+      format_out: jsonl
+
+  - name: fill_missing_values
+    command: fill
+    args:
+      input: /tmp/normalized.jsonl
+      output: /tmp/normalized_filled.jsonl
+      fields: ${fields_to_fill}
+      value: ${fill_value}
+
+  - name: remove_duplicates
+    command: dedup
+    args:
+      input: /tmp/normalized_filled.jsonl
+      output: ${output_file}
+      keys: ${dedup_keys}
+      keep: first

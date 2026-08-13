@@ -3,7 +3,11 @@
 import logging
 import sys
 
-from ..common.command_utils import ITERABLE_OPTIONS_KEYS, get_iterable_options  # noqa: F401
+from ..common.command_utils import (
+    ITERABLE_OPTIONS_KEYS,  # noqa: F401
+    get_iterable_options,
+    iter_command_rows,
+)
 from ..common.errors import FormatError
 from ..common.iterable import DataWriter
 from ..common.s3_iterable import open_path as open_iterable
@@ -41,7 +45,7 @@ class Filler:
             # For backward fill, need to process in reverse
             if strategy == "backward":
                 all_items = []
-                for item in iterable:
+                for item in iter_command_rows(iterable, options):
                     if isinstance(item, dict):
                         all_items.append(item)
                 iterable.close()
@@ -70,7 +74,7 @@ class Filler:
                     count += 1
             else:
                 # Forward fill or constant fill
-                for item in iterable:
+                for item in iter_command_rows(iterable, options):
                     if isinstance(item, dict):
                         item_copy = item.copy()
                         if field_list:

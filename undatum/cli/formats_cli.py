@@ -27,6 +27,15 @@ def _bool_mark(value: Optional[bool]) -> str:
     return "?"
 
 
+def _cap_value(value) -> str:
+    """Render a capability cell: booleans as yes/no, other values as text."""
+    if isinstance(value, bool) or value is None:
+        return _bool_mark(value)
+    if isinstance(value, (list, tuple)):
+        return ", ".join(str(item) for item in value) if value else ""
+    return str(value)
+
+
 # Capability columns shown (in order) when ``--capabilities`` is passed to list.
 _CAPABILITY_COLUMNS = [
     ("bulk_read", "Bulk R"),
@@ -35,6 +44,8 @@ _CAPABILITY_COLUMNS = [
     ("totals", "Totals"),
     ("tables", "Tables"),
     ("nested", "Nested"),
+    ("native_bulk_read", "NatR"),
+    ("native_bulk_write", "NatW"),
 ]
 
 
@@ -66,7 +77,8 @@ def formats_list(
         # List only writable formats
         undatum formats list --writable
 
-        # Show the full capability matrix (bulk, streaming, totals, tables, nested)
+        # Show the full capability matrix (bulk, streaming, totals, tables, nested,
+        # maturity, native bulk)
         undatum formats list --capabilities
 
         # Machine-readable output (includes the capabilities dict)
@@ -95,6 +107,8 @@ def formats_list(
                 "writable": is_writable,
                 "text": bool(desc.get("text")),
                 "extra": desc.get("extra"),
+                "maturity": desc.get("maturity")
+                or (desc.get("capabilities") or {}).get("maturity"),
                 "description": desc.get("description") or "",
                 "capabilities": desc.get("capabilities") or {},
             }
@@ -109,6 +123,7 @@ def formats_list(
     table.add_column("Read")
     table.add_column("Write")
     table.add_column("Text")
+    table.add_column("Maturity")
     if capabilities:
         for _key, label in _CAPABILITY_COLUMNS:
             table.add_column(label)
@@ -116,7 +131,14 @@ def formats_list(
         table.add_column("Extra")
         table.add_column("Description")
     for row in rows:
-        cells = [row["id"], "yes", _bool_mark(row["writable"]), _bool_mark(row["text"])]
+        maturity = row.get("maturity") or (row.get("capabilities") or {}).get("maturity") or ""
+        cells = [
+            row["id"],
+            "yes",
+            _bool_mark(row["writable"]),
+            _bool_mark(row["text"]),
+            str(maturity),
+        ]
         if capabilities:
             caps = row["capabilities"]
             cells.extend(_bool_mark(caps.get(key)) for key, _label in _CAPABILITY_COLUMNS)
@@ -165,10 +187,35 @@ def describe(
         console.print(f"[dim]Aliases:[/dim] {', '.join(aliases)}")
     console.print(f"[dim]Writable:[/dim] {_bool_mark(desc.get('writable'))}")
     console.print(f"[dim]Text format:[/dim] {_bool_mark(desc.get('text'))}")
+    console.print(f"[dim]Flat/tabular:[/dim] {_bool_mark(desc.get('flat'))}")
+    if desc.get("maturity"):
+        console.print(f"[dim]Maturity:[/dim] {desc['maturity']}")
     if desc.get("extra"):
         console.print(f"[dim]Optional extra:[/dim] {desc['extra']}")
     if desc.get("doc_url"):
         console.print(f"[dim]Docs:[/dim] {desc['doc_url']}")
+    if desc.get("read_memory"):
+        console.print(f"[dim]Read memory:[/dim] {desc['read_memory']}")
+    if desc.get("write_memory"):
+        console.print(f"[dim]Write memory:[/dim] {desc['write_memory']}")
+    if desc.get("native_bulk_read") is not None or desc.get("native_bulk_write") is not None:
+        console.print(f"[dim]Native bulk read:[/dim] {_bool_mark(desc.get('native_bulk_read'))}")
+        console.print(f"[dim]Native bulk write:[/dim] {_bool_mark(desc.get('native_bulk_write'))}")
+    selection = desc.get("selection") or []
+    if selection:
+        console.print(f"[dim]Selection:[/dim] {', '.join(str(item) for item in selection)}")
+    codecs = desc.get("codec_support") or []
+    if codecs:
+        console.print(f"[dim]Codecs:[/dim] {', '.join(str(item) for item in codecs)}")
+    constraints = desc.get("source_constraints") or []
+    if constraints:
+        console.print(
+            f"[dim]Source constraints:[/dim] {', '.join(str(item) for item in constraints)}"
+        )
+    example_args = desc.get("example_args") or {}
+    if example_args:
+        rendered = ", ".join(f"{key}={value}" for key, value in example_args.items())
+        console.print(f"[dim]Example args:[/dim] {rendered}")
 
     limitations = desc.get("limitations") or []
     if limitations:
@@ -182,7 +229,7 @@ def describe(
         table.add_column("Capability")
         table.add_column("Value")
         for key in sorted(caps):
-            table.add_row(key, _bool_mark(caps[key]))
+            table.add_row(key, _cap_value(caps[key]))
         console.print(table)
 
 
@@ -214,3 +261,51 @@ def export(
         console.print(f"[green]Catalog written to {output}[/green]")
     else:
         console.print_json(payload)
+
+
+@formats_app.command()
+def tables(
+    source: Annotated[
+        str, typer.Argument(help="File, directory, or URI to list tables/sheets from.")
+    ],
+    as_json: Annotated[bool, typer.Option("--json", help="Output as JSON.")] = False,
+    verbose: Annotated[bool, typer.Option(help="Enable verbose logging output.")] = False,
+):
+    """List named tables or sheets in a multi-table source.
+
+    Works for Excel workbooks, SQLite/DuckDB files, and lakehouse directories.
+    Use the printed name with ``undatum convert --table`` / ``--sheet``.
+
+    Examples:
+        undatum formats tables workbook.xlsx
+        undatum formats tables data.sqlite --json
+    """
+    if verbose:
+        enable_verbose()
+
+    from ..common.command_utils import list_source_tables
+    from ..common.path_utils import is_s3_uri
+
+    if "://" not in source and not is_s3_uri(source):
+        from pathlib import Path
+
+        if not Path(source).exists():
+            console.print(f"[red]File not found: {source}[/red]")
+            raise typer.Exit(code=1)
+
+    names = list_source_tables(source)
+    if names is None:
+        console.print("[red]This source does not expose named tables or sheets.[/red]")
+        raise typer.Exit(code=1)
+
+    if as_json:
+        console.print_json(json.dumps({"source": source, "tables": names}))
+        return
+
+    table = Table(show_header=True, header_style="bold", title=str(source))
+    table.add_column("#")
+    table.add_column("Table")
+    for index, name in enumerate(names):
+        table.add_row(str(index), name)
+    console.print(table)
+    console.print(f"\n[bold]{len(names)}[/bold] tables")

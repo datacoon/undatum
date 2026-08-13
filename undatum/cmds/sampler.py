@@ -4,7 +4,12 @@ import logging
 import random
 import sys
 
-from ..common.command_utils import ITERABLE_OPTIONS_KEYS, get_iterable_options  # noqa: F401
+from ..common.command_utils import (
+    ITERABLE_OPTIONS_KEYS,  # noqa: F401
+    force_iterable_if_table,
+    get_iterable_options,
+    iter_command_rows,
+)
 from ..common.duckdb_config import create_duckdb_connection, get_duckdb_config_from_options
 from ..common.engine_selector import detect_engine
 from ..common.errors import FileNotFoundError, FormatError, PermissionError, find_similar_files
@@ -55,6 +60,7 @@ class Sampler:
             return
 
         detected_engine = detect_engine(fromfile, engine, filetype, operation="sample")
+        detected_engine = force_iterable_if_table(options, detected_engine)
         items = []
 
         if detected_engine == "duckdb":
@@ -121,7 +127,7 @@ class Sampler:
             count = 0
 
             try:
-                for item in iterable:
+                for item in iter_command_rows(iterable, options):
                     count += 1
                     if len(reservoir) < sample_size:
                         # Fill reservoir

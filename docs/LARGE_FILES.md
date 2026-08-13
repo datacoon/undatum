@@ -12,6 +12,9 @@ undatum convert huge.jsonl.zst huge.parquet --low-memory
 # Force smaller iterabledata write batches even when DuckDB is unavailable
 undatum convert data.xml data.parquet --low-memory --engine python --batch-size 5000
 
+# Parquet row-group size (iterable path; DuckDB COPY ignores this flag)
+undatum convert data.csv data.parquet --row-group-size 100000 --batch-size 50000 --engine iterable
+
 # Multiprocessing for CPU-bound Python-engine convert (GitHub #18 / P1.8)
 # Uses process-pool chunk batches; preserves row order; omit --threads for sequential
 undatum convert big.csv out.jsonl --engine python --threads 8
@@ -43,7 +46,8 @@ undatum dedup data.jsonl --key-fields id --low-memory --output unique.jsonl
   immediately with `--low-memory`.
 - Temp files use the system temp directory unless `--duckdb-temp-dir` / temp options are set.
 - iterabledata 1.0.17+ keeps Parquet/Arrow writes in bounded batches (`row_group_size` / flush
-  batches) and exposes codec profiles `fast` / `balanced` / `max`; `undatum repack` defaults
+  batches) and exposes codec profiles `fast` / `balanced` / `max`; `undatum convert --row-group-size`
+  forwards the Parquet flush threshold (skips DuckDB COPY); `undatum repack` defaults
   to maximum container or format-native compression.
 
 See also: [Quickstarts](QUICKSTART.md), [Format support](FORMAT_SUPPORT.md), issue-oriented

@@ -14,7 +14,7 @@ except ImportError:
     YAML_AVAILABLE = False
     yaml = None
 
-from ..utils import get_dict_value
+from ..utils import field_values as lookup_field_values
 from ..validate import VALIDATION_RULEMAP
 
 logger = logging.getLogger(__name__)
@@ -24,6 +24,9 @@ class ValidationRuleError(Exception):
     """Error parsing or evaluating validation rules."""
 
     pass
+
+
+DATA_TYPES = ("string", "number", "integer", "float", "boolean", "date")
 
 
 class ValidationRule:
@@ -37,7 +40,18 @@ class ValidationRule:
         """
         self.rule_def = rule_def
         self.field = rule_def.get("field")
-        self.rule_type = rule_def.get("type", "field")
+        # 'type' historically doubles as the rule discriminator ('field'/'cross-field')
+        # and, in documented rule files, as the expected data type (e.g. 'string').
+        raw_type = rule_def.get("type", "field")
+        if raw_type in ("field", "cross-field"):
+            self.rule_type = raw_type
+            self.data_type = rule_def.get("data_type")
+        elif raw_type in DATA_TYPES:
+            self.rule_type = "field"
+            self.data_type = raw_type
+        else:
+            self.rule_type = raw_type
+            self.data_type = None
         self.severity = rule_def.get("severity", "error")
         self.name = rule_def.get("name", "")
         self.description = rule_def.get("description", "")
@@ -72,9 +86,7 @@ class ValidationRule:
         if not self.field:
             raise ValidationRuleError("Field-level rule must specify 'field'")
 
-        # Get field value (support nested fields)
-        field_parts = self.field.split(".")
-        values = get_dict_value(record, field_parts)
+        values = lookup_field_values(record, self.field)
         value = values[0] if len(values) > 0 else None
 
         # Check required
@@ -87,7 +99,7 @@ class ValidationRule:
             return True, None
 
         # Type validation
-        expected_type = self.rule_def.get("type")
+        expected_type = self.data_type
         if expected_type:
             type_valid, type_msg = self._validate_type(value, expected_type)
             if not type_valid:
@@ -179,11 +191,10 @@ class ValidationRule:
             raise ValidationRuleError("Cross-field rule must specify 'fields'")
 
         # Get field values
-        field_values = {}
+        resolved_values = {}
         for field in fields:
-            field_parts = field.split(".")
-            values = get_dict_value(record, field_parts)
-            field_values[field] = values[0] if len(values) > 0 else None
+            values = lookup_field_values(record, field)
+            resolved_values[field] = values[0] if len(values) > 0 else None
 
         # Evaluate condition (simple expression evaluation)
         try:
@@ -194,7 +205,7 @@ class ValidationRule:
             for field in fields:
                 # Create safe variable name (replace dots with underscores)
                 safe_var = field.replace(".", "_").replace("-", "_")
-                safe_vars[safe_var] = field_values[field]
+                safe_vars[safe_var] = resolved_values[field]
                 # Replace field references in condition
                 eval_expr = eval_expr.replace(field, safe_var)
 
