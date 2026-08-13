@@ -47,6 +47,15 @@ UNDATUM_TOOL_DEFINITIONS: list[dict[str, Any]] = [
                 "path": {"type": "string"},
                 "field": {"type": "string"},
                 "limit": {"type": "integer", "default": 20},
+                "table": {
+                    "type": "string",
+                    "description": "Table or sheet name for multi-table sources",
+                },
+                "flatten_nested": {
+                    "type": "boolean",
+                    "default": False,
+                    "description": "Unfold nested dict / array-of-dict fields onto dotted paths",
+                },
             },
             "required": ["path", "field"],
         },
@@ -66,6 +75,15 @@ UNDATUM_TOOL_DEFINITIONS: list[dict[str, Any]] = [
                 },
                 "keep": {"type": "string", "default": "first", "enum": ["first", "last"]},
                 "confirm": {"type": "boolean", "default": False},
+                "table": {
+                    "type": "string",
+                    "description": "Table or sheet name for multi-table sources",
+                },
+                "flatten_nested": {
+                    "type": "boolean",
+                    "default": False,
+                    "description": "Unfold nested dict / array-of-dict fields onto dotted paths",
+                },
             },
             "required": ["input_path", "output_path"],
         },
@@ -86,6 +104,15 @@ UNDATUM_TOOL_DEFINITIONS: list[dict[str, Any]] = [
                 },
                 "salt": {"type": "string"},
                 "confirm": {"type": "boolean", "default": False},
+                "table": {
+                    "type": "string",
+                    "description": "Table or sheet name for multi-table sources",
+                },
+                "flatten_nested": {
+                    "type": "boolean",
+                    "default": False,
+                    "description": "Unfold nested dict / array-of-dict fields onto dotted paths",
+                },
             },
             "required": ["input_path", "output_path", "fields"],
         },
@@ -101,6 +128,15 @@ UNDATUM_TOOL_DEFINITIONS: list[dict[str, Any]] = [
                 "n": {"type": "integer", "description": "Number of rows"},
                 "percent": {"type": "number", "description": "Percentage of rows (0-100)"},
                 "confirm": {"type": "boolean", "default": False},
+                "table": {
+                    "type": "string",
+                    "description": "Table or sheet name for multi-table sources",
+                },
+                "flatten_nested": {
+                    "type": "boolean",
+                    "default": False,
+                    "description": "Unfold nested dict / array-of-dict fields onto dotted paths",
+                },
             },
             "required": ["input_path", "output_path"],
         },

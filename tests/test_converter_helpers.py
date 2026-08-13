@@ -3,6 +3,7 @@
 import xml.etree.ElementTree as etree
 
 import pandas as pd
+import pytest
 
 from undatum.cmds.converter import (
     _is_flat,
@@ -41,6 +42,32 @@ class TestGetIterableOptions:
         """Test start_page is mapped to page."""
         result = get_iterable_options({"start_page": 2})
         assert result == {"page": 2}
+
+    def test_get_iterable_options_sheet_maps_to_table(self):
+        result = get_iterable_options({"sheet": "Sheet2"})
+        assert result == {"table": "Sheet2"}
+
+    def test_get_iterable_options_trust(self):
+        result = get_iterable_options({"trust": True})
+        assert result == {"trust": True}
+
+    def test_get_iterable_options_on_error(self):
+        result = get_iterable_options({"on_error": "SKIP"})
+        assert result == {"on_error": "skip"}
+
+    def test_get_iterable_options_error_log(self):
+        result = get_iterable_options({"error_log": "errors.jsonl"})
+        assert result == {"error_log": "errors.jsonl"}
+
+    def test_get_iterable_options_quotechar(self):
+        result = get_iterable_options({"quotechar": "'"})
+        assert result == {"quotechar": "'"}
+
+    def test_get_iterable_options_invalid_quotechar(self):
+        from undatum.common.errors import ValidationError
+
+        with pytest.raises(ValidationError, match="quotechar"):
+            get_iterable_options({"quotechar": "''"})
 
     def test_get_iterable_options_empty(self):
         """Test extracting from empty options."""

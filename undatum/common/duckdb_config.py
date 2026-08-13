@@ -77,7 +77,9 @@ def create_duckdb_connection(
         try:
             memory_bytes = parse_memory_size(memory)
             if memory_bytes > 0:
-                conn.execute(f"SET memory_limit='{memory_bytes}'")
+                # DuckDB requires a unit suffix; bare integers raise:
+                # "Unknown unit for memory: ''"
+                conn.execute(f"SET memory_limit='{memory_bytes}B'")
                 logging.debug(f"DuckDB memory limit set to {memory_bytes} bytes ({memory})")
         except ValueError as e:
             logging.warning(f"Invalid memory size format: {memory}, error: {e}")
@@ -108,12 +110,16 @@ def get_duckdb_config_from_options(options: dict) -> dict:
     Returns:
         Dictionary with DuckDB configuration (threads, memory, temp_dir)
     """
+    from ..utils import get_option
+
     config = {}
-    if options.get("duckdb_threads") is not None:
-        config["threads"] = options["duckdb_threads"]
-    elif options.get("threads") is not None:
+    duckdb_threads = get_option(options, "duckdb_threads")
+    threads = get_option(options, "threads")
+    if duckdb_threads is not None:
+        config["threads"] = duckdb_threads
+    elif threads is not None:
         # Fall back to the generic --threads option when no DuckDB-specific value is given
-        config["threads"] = options["threads"]
+        config["threads"] = threads
     if "duckdb_memory" in options:
         config["memory"] = options["duckdb_memory"]
     if "duckdb_temp_dir" in options:

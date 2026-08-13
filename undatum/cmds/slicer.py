@@ -3,7 +3,12 @@
 import logging
 import sys
 
-from ..common.command_utils import ITERABLE_OPTIONS_KEYS, get_iterable_options  # noqa: F401
+from ..common.command_utils import (
+    ITERABLE_OPTIONS_KEYS,  # noqa: F401
+    force_iterable_if_table,
+    get_iterable_options,
+    iter_command_rows,
+)  # noqa: F401
 from ..common.duckdb_config import create_duckdb_connection, get_duckdb_config_from_options
 from ..common.engine_selector import detect_engine
 from ..common.errors import FormatError, ValidationError
@@ -47,6 +52,7 @@ class Slicer:
             )
 
         detected_engine = detect_engine(fromfile, engine, filetype, operation="slice")
+        detected_engine = force_iterable_if_table(options, detected_engine)
 
         if detected_engine == "duckdb" and mode == "range":
             # Use DuckDB for efficient range slicing
@@ -139,7 +145,7 @@ class Slicer:
 
         try:
             count = 0
-            for item in iterable:
+            for item in iter_command_rows(iterable, options):
                 include = False
 
                 if mode == "indices":

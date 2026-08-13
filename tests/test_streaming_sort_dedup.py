@@ -77,3 +77,27 @@ def test_dedup_low_memory(tmp_path):
     text = out.read_text(encoding="utf-8")
     assert text.count('"id": 1') + text.count('"id":1') == 1
     assert "2" in text
+
+
+def test_dedup_duckdb_file_output_has_no_rn_column(tmp_path):
+    """The DuckDB COPY path must not leak the internal row-number column."""
+    import json
+
+    src = tmp_path / "in.jsonl"
+    out = tmp_path / "out.jsonl"
+    src.write_text(
+        '{"id": 1, "v": "a"}\n{"id": 1, "v": "b"}\n{"id": 2, "v": "c"}\n',
+        encoding="utf-8",
+    )
+    Deduplicator().dedup(
+        str(src),
+        {"key_fields": "id", "keep": "first", "output": str(out), "engine": "duckdb"},
+    )
+    rows = [
+        json.loads(line)
+        for line in out.read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
+    assert len(rows) == 2
+    for row in rows:
+        assert set(row.keys()) == {"id", "v"}

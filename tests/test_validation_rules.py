@@ -111,6 +111,30 @@ class TestValidationRule:
         with pytest.raises(ValidationRuleError, match="Unknown rule type"):
             rule.evaluate({}, 0)
 
+    def test_type_key_as_data_type(self):
+        """Documented rule-file format uses 'type' for the expected data type."""
+        rule = ValidationRule({"field": "name", "type": "string"})
+        assert rule.rule_type == "field"
+        assert rule.data_type == "string"
+
+        is_valid, _ = rule.evaluate({"name": "John"}, 0)
+        assert is_valid is True
+
+        is_valid, msg = rule.evaluate({"name": 123}, 0)
+        assert is_valid is False
+        assert "string" in msg
+
+    def test_type_number_with_range(self):
+        """'type: number' with min/max mirrors the README rule-file example."""
+        rule = ValidationRule({"field": "age", "type": "number", "min": 0, "max": 120})
+        assert rule.rule_type == "field"
+
+        is_valid, _ = rule.evaluate({"age": 30}, 0)
+        assert is_valid is True
+
+        is_valid, _ = rule.evaluate({"age": 150}, 0)
+        assert is_valid is False
+
     def test_evaluate_field_rule_no_field(self):
         """Test evaluating field rule without field specified."""
         rule_def = {"type": "field"}

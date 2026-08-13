@@ -78,48 +78,19 @@ Create OpenSpec change proposals for ecosystem expansion:
   - Define plugin API for commands, IO connectors, transforms
   - Support plugin discovery and registration
 
-- [ ] 4.2 Create `add-cloud-connectors` proposal
-  - Add GCS connector (gs://bucket/path)
-  - Add Azure connector (az://container/path)
-  - Enhance existing S3 support
-
-- [ ] 4.3 Create `add-streaming-connectors` proposal
-  - Add Kafka integration (kafka://topic/raw)
-  - Implement batch semantics for streaming
-  - Support log processing and event sampling
-
-- [ ] 4.4 Create `add-synthetic-data` proposal
-  - Implement `synth` or `generate` command
-  - Learn schema and distributions from real data
-  - Generate realistic synthetic datasets
-
-- [ ] 4.5 Create `add-tui-interface` proposal
-  - Design interactive TUI (undatum tui)
-  - Implement data preview, schema inspection
-  - Add interactive stats/search capabilities
-
-- [ ] 4.6 Create `add-web-ui` proposal (longer term)
-  - Design simple web UI architecture
-  - Implement data upload/exploration
-  - Add visual pipeline builder
-
-- [ ] 4.7 Create `add-advanced-quality-monitoring` proposal
-  - Implement data drift detection
-  - Add quality trend tracking
-  - Support quality dashboards
-
-- [ ] 4.8 Create `add-pipeline-autodoc` proposal
-  - Implement `pipeline doc` command
-  - Generate step-by-step explanations
-  - Create Mermaid diagrams for pipeline flow
-
-- [ ] 4.9 Create `improve-cli-ergonomics` proposal
-  - Add shell completions (undatum completion install)
-  - Enhance --help with examples
-  - Improve error messages with actionable suggestions
+- [ ] 4.2 Create `add-cloud-connectors` proposal — deferred (Phase 3, out of finish-unfinished wave)
+- [ ] 4.3 Create `add-streaming-connectors` proposal — deferred
+- [ ] 4.4 Create `add-synthetic-data` proposal — deferred
+- [x] 4.5 Create `add-tui-interface` proposal — implemented and archived (`undatum tui`)
+- [x] 4.6 Create `add-web-ui` proposal — implemented and archived (`undatum web`); visual DAG / plotly / Data API embed remain follow-on
+- [ ] 4.7 Create `add-advanced-quality-monitoring` proposal — deferred
+- [x] 4.8 Create `add-pipeline-autodoc` proposal — `pipeline doc` ships Mermaid/Markdown diagrams; LLM autodoc remains deferred
+- [x] 4.9 Create `improve-cli-ergonomics` proposal — `--version`, `--install-completion`, and `undatum(1)` man page ship; TUI/web extras are optional
 
 ## 5. Coordination & Tracking
-- [ ] 5.1 Track progress of Phase 1 proposals
-- [ ] 5.2 Coordinate dependencies between proposals
-- [ ] 5.3 Update roadmap document as proposals are completed
-- [ ] 5.4 Review and prioritize Phase 2/3 proposals based on Phase 1 learnings
+- [x] 5.1 Track progress of Phase 1 proposals
+- [x] 5.2 Coordinate dependencies between proposals
+- [x] 5.3 Update roadmap document as proposals are completed
+- [x] 5.4 Review and prioritize Phase 2/3 proposals based on Phase 1 learnings
+  - Phase 3 child proposals remain deferred until demand is clear
+

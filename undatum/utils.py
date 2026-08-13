@@ -93,7 +93,12 @@ def get_file_type(filename: str) -> Optional[str]:
 
 
 def get_option(options: dict[str, Any], name: str) -> Any:
-    """Get option value from options dict or default options.
+    """Get option value from options dict, config defaults, or built-in defaults.
+
+    Explicit ``None`` in ``options`` means "not set on the CLI" and falls through
+    to ``undatum.yaml`` / environment defaults. Built-in ``DEFAULT_OPTIONS``
+    apply only when the key is absent, so commands that pass ``delimiter=None``
+    keep CSV auto-detection unless a config default is set.
 
     Args:
         options: Dictionary of user-provided options.
@@ -102,9 +107,14 @@ def get_option(options: dict[str, Any], name: str) -> Any:
     Returns:
         Option value if found, None otherwise.
     """
-    if name in options:
+    if name in options and options[name] is not None:
         return options[name]
-    if name in DEFAULT_OPTIONS:
+    from .common.app_config import get_cli_defaults
+
+    cli_defaults = get_cli_defaults()
+    if name in cli_defaults and cli_defaults[name] is not None:
+        return cli_defaults[name]
+    if name not in options and name in DEFAULT_OPTIONS:
         return DEFAULT_OPTIONS[name]
     return None
 
@@ -141,6 +151,19 @@ def get_dict_value(
                 if keys[0] in r:
                     out.extend(get_dict_value(r[keys[0]], keys[1:]))
     return out
+
+
+def field_values(record: Any, field: str) -> list[Any]:
+    """Return values for a field, preferring a literal key then a dotted path.
+
+    After ``flatten_nested``, dotted names like ``city.lat`` are top-level keys.
+    Without flattening, the same name is walked as nested ``city`` → ``lat``.
+    """
+    if not isinstance(record, dict) or not field:
+        return []
+    if field in record:
+        return [record[field]]
+    return get_dict_value(record, field.split("."))
 
 
 def select_fields(record: dict[str, Any], fields: list[list[str]]) -> dict[str, Any]:

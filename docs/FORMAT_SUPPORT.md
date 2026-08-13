@@ -15,8 +15,15 @@ what your install actually exposes.
 # Human-readable catalog
 undatum formats list
 
-# Capability matrix (read / write / streaming / …)
+# Capability matrix (read / write / streaming / maturity / native bulk)
 undatum formats list --capabilities
+
+# Named tables or sheets
+undatum formats tables workbook.xlsx
+
+# One format: memory model, selection pushdown, codecs, native bulk, example args
+undatum formats describe parquet
+undatum formats describe xml
 
 # Machine-readable
 undatum formats list --capabilities --json
@@ -31,7 +38,7 @@ undatum formats list --capabilities --json
 | JSON (array/object) | yes | yes | limited | Prefer JSONL for large files |
 | Parquet | yes | yes | batched | Requires `pyarrow` (default dependency); codec profiles `fast`/`balanced`/`max` |
 | Arrow / Feather | yes | yes | batched | Native batch convert path in iterabledata 1.0.17+ |
-| Excel XLSX / XLS | yes | limited | sheet-based | Use `--start-page` for sheet index |
+| Excel XLSX / XLS | yes | limited | sheet-based | `--table` / `--sheet` for a named sheet; `--start-page` for a 0-based index |
 | XML | yes | limited | yes | Use `--tagname` for record elements |
 | BSON | yes | yes | yes | |
 | AVRO | yes | yes | batched | Writable since iterabledata 1.0.14 (lazy schema inference) |
@@ -52,7 +59,7 @@ Parquet/ORC/AVRO with format-native compression (see README `repack` section).
 |--------|----------|-------|
 | Tabular text | `csv`, `tsv`, `jsonl`/`ndjson`, `annotatedcsv`, `csvw`, `fwf`, `ssv` | Core CLI path |
 | Columnar / analytics | `parquet`, `orc`, `avro`, `arrow`, `geoparquet`, `zarr`, `vortex`, `ddb` | Many need optional deps |
-| Lakehouse / warehouse | `delta`, `iceberg`, `lance`, `hudi` (RO), `ducklake`, `paimon`, `paimon_row`, `paimon_mosaic` | Delta/Iceberg writable in iterabledata 1.0.18+; install via `pip install "iterabledata[lakehouse]"` (and related extras) |
+| Lakehouse / warehouse | `delta`, `iceberg`, `lance`, `hudi` (RO), `ducklake`, `paimon`, `paimon_row`, `paimon_mosaic` | Delta/Iceberg writable in iterabledata 1.0.18+; install via `pip install "undatum[lakehouse]"` (or `iterabledata[lakehouse]`) |
 | Geospatial | `geojson`, `geojsonseq`, `gml`, `gpx`, `shp`, `gpkg`, `kml`, `fgdb`/`gdb`, `mif`, `asc`, `e00`, `las`, `bag`, `czml` | Open-data GIS pack largely experimental (1.0.18) |
 | Scientific / geophysical | `h5`, `nc`, `mat`, `segy`, `grib2`, `mseed`, `cif`, `pdb`, `xyz`, `edi` | Often read-only; extras such as `mat`, `geophysical`, `lidar` |
 | Business / legacy | `mdb`/`accdb`, `lotus123` (`123`/`wk1`), `xlsb` | Access needs `iterabledata[access]` |
@@ -68,8 +75,9 @@ Parquet/ORC/AVRO with format-native compression (see README `repack` section).
    conversion *target*. undatum fails fast with writable-format suggestions when you pick a
    read-only output. Hudi remains read-only pending Python SDK write support.
 2. **Extras.** Some connectors need optional installs (`undatum[cloud]`, `undatum[api]`,
-   `undatum[extract]`, database drivers, or iterabledata extras such as `lakehouse`,
-   `geospatial`, `lidar`, `mat`, `geophysical`, `access`, `fst`, `paimon`, `ducklake`).
+   `undatum[extract]`, database drivers, or undatum extras that forward iterabledata packs:
+   `undatum[lakehouse]`, `undatum[gis]`, `undatum[scientific]`, `undatum[access]`,
+   `undatum[compression]`). You can still install iterabledata extras directly if you prefer.
 3. **Large files.** Prefer `--low-memory` on `convert` / `sort` / `dedup`, and Parquet or
    JSONL over in-memory JSON arrays. Parquet/Arrow writers buffer bounded batches
    (iterabledata 1.0.17+).
@@ -77,8 +85,10 @@ Parquet/ORC/AVRO with format-native compression (see README `repack` section).
    undatum still declares `requires-python >= 3.9`; use Python 3.10+ to pull the latest
    iterabledata catalog from PyPI.
 5. **Security / error policy** (iterabledata 1.0.16+): XML parsers disable external entities;
-   pickle reads warn unless `trust=True`; some formats raise `FormatParseError` on malformed
-   input instead of returning an empty dataset.
+   pickle reads warn unless `trust=True` (`undatum convert --trust`, and the same flag on
+   other read commands); malformed rows raise `FormatParseError` unless you pass
+   `--on-error skip` or `--on-error warn`. Pair with `--error-log errors.jsonl` to keep a JSONL
+   record of skipped rows.
 
 For the authoritative list, always trust `undatum formats list --capabilities` for your
 installed version. Upstream release notes:

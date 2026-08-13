@@ -4,7 +4,11 @@ import csv
 import logging
 import sys
 
-from ..common.command_utils import ITERABLE_OPTIONS_KEYS, get_iterable_options  # noqa: F401
+from ..common.command_utils import (
+    ITERABLE_OPTIONS_KEYS,  # noqa: F401
+    get_iterable_options,
+    iter_command_rows,
+)  # noqa: F401
 from ..common.errors import FormatError
 from ..common.iterable import DataWriter
 from ..common.s3_iterable import open_path as open_iterable
@@ -60,7 +64,7 @@ class Formatter:
 
         try:
             count = 0
-            for item in iterable:
+            for item in iter_command_rows(iterable, options):
                 items.append(item)
                 count += 1
                 if count % 10000 == 0:

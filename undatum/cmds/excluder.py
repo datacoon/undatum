@@ -3,11 +3,15 @@
 import logging
 import sys
 
-from ..common.command_utils import ITERABLE_OPTIONS_KEYS, get_iterable_options  # noqa: F401
+from ..common.command_utils import (
+    ITERABLE_OPTIONS_KEYS,  # noqa: F401
+    get_side_iterable_options,
+    iter_command_rows,
+)
 from ..common.errors import FormatError, ValidationError
 from ..common.iterable import DataWriter
 from ..common.s3_iterable import open_path as open_iterable
-from ..utils import get_file_type, get_option, normalize_for_json
+from ..utils import field_values, get_file_type, get_option, normalize_for_json
 
 
 def _get_key_value(item, key_fields):
@@ -15,9 +19,11 @@ def _get_key_value(item, key_fields):
     if not key_fields:
         # Use all fields as key
         return tuple(sorted((k, v) for k, v in item.items() if v is not None))
-    else:
-        # Use specified key fields
-        return tuple(item.get(field) for field in key_fields)
+    values = []
+    for field in key_fields:
+        found = field_values(item, field)
+        values.append(found[0] if found else None)
+    return tuple(values)
 
 
 class Excluder:
@@ -39,13 +45,14 @@ class Excluder:
         key_field_list = [f.strip() for f in on_fields.split(",")]
 
         # Build exclusion set from exclude_file
-        iterableargs = get_iterable_options(options)
-        exclude_iterable = open_iterable(exclude_file, mode="r", iterableargs=iterableargs)
+        iterableargs1 = get_side_iterable_options(options, 1)
+        iterableargs2 = get_side_iterable_options(options, 2)
+        exclude_iterable = open_iterable(exclude_file, mode="r", iterableargs=iterableargs2)
         exclude_keys = set()
 
         try:
             count_exclude = 0
-            for item in exclude_iterable:
+            for item in iter_command_rows(exclude_iterable, options):
                 count_exclude += 1
                 if isinstance(item, dict):
                     key = _get_key_value(item, key_field_list)
@@ -56,13 +63,13 @@ class Excluder:
         logging.debug("exclude: loaded %d exclusion keys", len(exclude_keys))
 
         # Filter fromfile
-        iterable = open_iterable(fromfile, mode="r", iterableargs=iterableargs)
+        iterable = open_iterable(fromfile, mode="r", iterableargs=iterableargs1)
         items = []
 
         try:
             count = 0
             excluded = 0
-            for item in iterable:
+            for item in iter_command_rows(iterable, options):
                 count += 1
                 if isinstance(item, dict):
                     key = _get_key_value(item, key_field_list)

@@ -1,64 +1,38 @@
 # Proposal Status Summary
 
-**Last updated:** 2026-06-11
+**Last updated:** 2026-08-13
 
 > This file is a point-in-time snapshot. For live status, run `openspec list`.
 
-## Archived (complete, moved to `archive/`)
+## Archived (complete)
 
-| Change | Archived |
-|--------|----------|
-| add-data-api | 2026-06-11 |
-| add-dataset-doc-command | 2026-06-11 |
-| add-diff-command | 2026-06-11 |
-| add-extract-command | 2026-06-11 |
-| add-schema-format-exports | 2026-06-11 |
-| consolidate-schema-commands | 2026-06-11 |
-| improve-command-error-handling | 2026-06-11 |
-| improve-select-command | 2026-06-11 |
+Many previously active changes were archived on 2026-08-12 after implementation
+and/or verification, including P0/P1 user-needs work, Data API hardening, S3,
+plugins, doc metadata, stats JSON, schema Excel/XML/DOCX, SDK result objects,
+distribution binaries, community process docs, plot filtering/aggregation,
+dictquery removal (DuckDB WHERE on frequency/uniq), stats DuckDB/progress tests,
+and database ingestion leftovers (Docker/benchmarks deferred).
 
-## Active — implemented, remaining tasks are mostly tests/docs
+On 2026-08-13:
 
-These changes have working code in the repository; open checkboxes are primarily
-integration tests, benchmarks, and documentation polish.
+- `add-tui-interface` — `undatum tui` (extra `tui`, Textual); specs in `openspec/specs/tui/`
+- `add-web-ui` — `undatum web` (extra `web`, FastAPI + Jinja2 + HTMX); specs in `openspec/specs/web-ui/`
+- `remove-mistql-support` — removed `undatum query` and the `mistql` dependency; `--filter` is comparison/boolean only
 
-- add-phase1-data-commands (51/52)
-- add-phase2-data-commands (78/79)
-- add-phase3-data-commands (71/72)
-- migrate-to-iterabledata (29/31) — deprecated `IterableData`/`DataWriter` removal deferred
-- add-frictionless-package-command (7/8)
-- add-examples-command (21/25)
-- add-plot-command (18/23)
-- add-db-query-load (17/20)
-- add-rich-validation-rules (16/19)
-- add-pipeline-templates (14/18)
-- add-pipeline-command (11/14)
-- add-python-sdk (10/15)
-- enhance-stats-profiling (12/16)
-- improve-schema-command (10/14)
-- add-mask-command (6/12)
-- improve-duckdb-operations (13/22)
-- remove-dictquery-dependency (50/64)
-- optimize-stats-command-duckdb (50/98)
-- add-duckdb-ingestion (35/62)
-- add-mysql-sqlite-ingestion (60/89)
-- add-postgresql-ingestion (43/65)
-- improve-database-ingestion-phase1 (27/39)
-- improve-stats-command (8/18)
-- add-plugin-system (16/24) — connector/transform integration pending
+## Active — remaining
 
-## Active — partially implemented (integration incomplete)
+- `add-undatum-improvement-roadmap` — remaining Phase 3 child proposals (cloud
+  beyond S3, Kafka, synth, drift, LLM pipeline autodoc) explicitly deferred.
+  Visual pipeline DAG, inline plot images, and Data API embed from the web UI
+  remain follow-on (not in the archived web UI change).
 
-- add-s3-connector (7/16) — core connector done; rollout to all commands pending
-- add-parallel-processing (3/16) — infrastructure modules exist; command integration pending
+## Maintainer follow-up (not code)
 
-## Active — not started
-
-- add-doc-metadata-fields (0/10)
-- improve-doc-markdown-metadata (0/3)
-
-## Meta
-
-- add-undatum-improvement-roadmap (16/28) — Phase 3 child proposals (cloud connectors,
-  streaming, synthetic data, TUI/web UI, quality monitoring, pipeline autodoc,
-  CLI ergonomics) not yet created.
+- GitHub Discussions: https://github.com/datacoon/undatum/discussions
+- structured-text-tools listing: https://github.com/dbohdan/structured-text-tools/pull/139
+- CLI defaults: `defaults:` in `undatum.yaml` / `~/.undatum/config.yaml`; `undatum config show`
+- Man page: `man/undatum.1` (`make man`); installed to `share/man/man1`
+- `pipeline doc` emits Mermaid/Markdown diagrams; LLM pipeline autodoc remains deferred
+- `pipeline run` executes live CLI commands in-process (`convert` positionals, `$step` outputs)
+- Snyk bot PRs were closed; Dependabot handles security bumps
+- Issue #18 (multiprocessing) closed: `--threads` ships on convert/validate/stats/frequency

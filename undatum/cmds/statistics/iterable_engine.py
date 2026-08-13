@@ -6,7 +6,12 @@ import time
 from tqdm import tqdm
 
 from ...common.chunked_io import chunked_reader
-from ...common.command_utils import get_iterable_options
+from ...common.command_utils import (
+    get_iterable_options,
+    iter_projected_rows,
+    nested_keep_parents,
+    nested_max_depth,
+)
 from ...common.parallel import parallel_process_chunks
 from ...common.parallel_workers import merge_stats_partials, stats_accumulate_chunk
 from ...common.s3_iterable import open_iterable_with_s3
@@ -26,6 +31,13 @@ class IterableStatsMixin:
         iterableargs = get_iterable_options(options)
         iterable_context = open_iterable_with_s3(fromfile, mode="r", iterableargs=iterableargs)
         iterable = iterable_context.__enter__()
+        flatten_nested = bool(get_option(options, "flatten_nested"))
+        records = iter_projected_rows(
+            iterable,
+            flatten_nested,
+            keep_parents=nested_keep_parents(options, True),
+            max_depth=nested_max_depth(options),
+        )
         dictshare = get_option(options, "dictshare")
 
         if dictshare and dictshare.isdigit():
@@ -45,7 +57,7 @@ class IterableStatsMixin:
         if "no_progress" in options and options["no_progress"]:
             show_progress = False
 
-        threads = options.get("threads")
+        threads = get_option(options, "threads")
         use_parallel = bool(threads) and int(threads) > 1
         nodates = self.qd is None
 
@@ -56,9 +68,9 @@ class IterableStatsMixin:
             if use_parallel:
                 batch_size = int(options.get("batch_size") or 5000)
                 records = (
-                    tqdm(iterable, desc="Analyzing statistics", unit="rows")
+                    tqdm(records, desc="Analyzing statistics", unit="rows")
                     if show_progress
-                    else iterable
+                    else records
                 )
 
                 def _payloads():
@@ -76,7 +88,7 @@ class IterableStatsMixin:
                 )
                 fielddata, fieldtypes, count = merge_stats_partials(partials)
             elif show_progress:
-                iterable_wrapped = tqdm(iterable, desc="Analyzing statistics", unit="rows")
+                iterable_wrapped = tqdm(records, desc="Analyzing statistics", unit="rows")
                 with iterable_wrapped as pbar:
                     for item in pbar:
                         count += 1
@@ -84,12 +96,10 @@ class IterableStatsMixin:
                             logging.debug(f"Processing {count} records of {fromfile}")
                             elapsed = time.time() - start_time
                             if elapsed > 0:
-                                pbar.set_postfix(
-                                    {"throughput": f"{count / elapsed:.0f} rows/s"}
-                                )
+                                pbar.set_postfix({"throughput": f"{count / elapsed:.0f} rows/s"})
                         self._accumulate_stats_item(item, fielddata, fieldtypes)
             else:
-                for item in iterable:
+                for item in records:
                     count += 1
                     if count % 1000 == 0:
                         logging.debug(f"Processing {count} records of {fromfile}")

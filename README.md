@@ -2,7 +2,7 @@
 
 > A powerful command-line tool for data processing and analysis
 
-**Version:** 1.6.0
+**Version:** 1.7.0
 
 **undatum** (pronounced *un-da-tum*) is a modern CLI tool designed to make working with large datasets as simple and efficient as possible. It provides a unified interface for converting, analyzing, validating, and transforming data across multiple formats.
 
@@ -11,30 +11,32 @@
 - **140+ formats via iterabledata**: CSV, JSON, JSON Lines, BSON, XML, XLS/XLSX, Parquet, AVRO, ORC, plus geospatial, lakehouse (Delta/Iceberg/Lance/DuckLake/Paimon), scientific, RDF, log, config, graph, and feed formats. Run `undatum formats list` to see every supported format and its read/write capabilities.
 - **Compression support**: GZ, XZ, BZ2, ZIP, ZSTD, LZ4, 7Z, Brotli, Snappy, LZO
 - **Multi-cloud I/O**: Read and write `s3://`, `gs://`/`gcs://`, and `az://`/`abfs://`/`abfss://` URIs natively via iterabledata (`pip install "undatum[cloud]"`)
-- **Database sources**: Read from PostgreSQL, MySQL/MariaDB, SQLite, MS SQL Server, ClickHouse, MongoDB, and Elasticsearch/OpenSearch (`undatum db query`)
+- **Database sources**: Read from PostgreSQL, MySQL/MariaDB, SQLite, MS SQL Server, ClickHouse, MongoDB, and Elasticsearch/OpenSearch (`undatum db query`, `undatum db dump`)
+- **Optional TUI and web UI**: Explore a bounded sample in the terminal (`undatum tui`) or a local browser (`undatum web`); not a spreadsheet and not the Data API
 - **Low memory footprint**: Streams data for efficient processing of large files
 - **Automatic detection**: Encoding, delimiters (comma, semicolon, tab, pipe), and file types
 - **Frictionless Data Packaging**: Create, extend, and validate `datapackage.json` descriptors with schema inference, coverage metadata, and optional AI autodoc (`undatum package`)
 - **Data validation**: Built-in rules for emails, URLs, and custom validators
 - **Advanced statistics**: Field analysis, frequency calculations, and date detection
-- **Flexible filtering**: Query and filter data using expressions
+- **Flexible filtering**: Comparison `--filter` expressions on `select` / `frequency` / `uniq` / `plot` (and others); DuckDB SQL for `LIKE`, `IN`, joins (`undatum sql`)
 - **Bulk conversion**: Convert whole directories or glob patterns in parallel (`undatum convert --recursive`)
 - **Schema generation**: Automatic schema detection and generation
 - **Database ingestion**: Ingest data to MongoDB, PostgreSQL, DuckDB, MySQL, SQLite, and Elasticsearch with retry logic and error handling
 - **Ad-hoc SQL on files**: Run DuckDB SQL over CSV, JSONL, Parquet, and other formats (`undatum sql`)
 - **AI-powered tooling**: Dataset documentation, natural-language filtering, conversion planning, and transform suggestions via iterabledata's AI stack with many LLM providers (OpenAI, Anthropic, Gemini, Azure, OpenRouter, Ollama, LM Studio, Perplexity) — see `undatum ai`
 - **Agent tools & MCP server**: Expose undatum operations to LLM agents as JSON tools (`undatum.tools`), LangChain `StructuredTool`s, or a Model Context Protocol stdio server (`undatum mcp serve`)
-- **Format catalog**: Inspect formats and capabilities programmatically (`undatum formats list|describe|export`, including a full capability matrix via `undatum formats list --capabilities`)
+- **Format catalog**: Inspect formats and capabilities (`undatum formats list|describe|export|tables`, including maturity and native-bulk columns via `undatum formats list --capabilities`)
 - **DataFrame & typed-row interop**: Convert datasets to pandas/Polars/Dask or iterate rows as dataclasses/Pydantic models from the `Dataset` SDK
 - **Optional Data API**: Serve file-backed datasets over HTTP (FastAPI + DuckDB) with interactive OpenAPI docs, static schema export, and filtering/pagination
 
 ## Documentation
 
 - [`docs/QUICKSTART.md`](docs/QUICKSTART.md) — task-oriented first success paths
+- [`docs/SCENARIOS.md`](docs/SCENARIOS.md) — usage scenarios by role: pick your goal, get verified commands
 - [`docs/FORMAT_SUPPORT.md`](docs/FORMAT_SUPPORT.md) — honest format capability matrix
 - [`docs/POSITIONING.md`](docs/POSITIONING.md) — undatum vs miller / DuckDB / csvkit
 - [`docs/LARGE_FILES.md`](docs/LARGE_FILES.md) — multi-GB convert/sort/dedup guidance
-- [`CHANGELOG.md`](CHANGELOG.md) for version history (current release: **1.6.0**)
+- [`CHANGELOG.md`](CHANGELOG.md) for version history (current release: **1.7.0**)
 - `WORKFLOW_GUIDE.md` for contributor workflow and OpenSpec usage
 - `openspec/` for change proposals, specs, and implementation summaries
 - `examples/doc/` for dataset documentation output samples
@@ -72,42 +74,59 @@ uv tool install undatum
 
 A Homebrew formula for undatum itself is tracked separately; `pipx`/`uv` are the supported macOS install methods today.
 
-Optional extras:
+Release tags also publish **PyInstaller single-file binaries** (Linux, macOS, Windows) as GitHub Actions artifacts. These are ops-oriented; `pipx`/`uv` remain the supported install paths for most users.
+
+A man page ships with the package (`man undatum` after install, or `make man` to regenerate `man/undatum.1`).
+
+### Optional extras
+
+Some features require optional dependencies, installed as extras. This is the canonical list; feature sections elsewhere in the docs link back here.
+
+| Extra | Enables |
+|-------|---------|
+| `api` | Data API server (`undatum api`, FastAPI + uvicorn + httpx) |
+| `extract` | Document extraction (`undatum extract`, PDF/DOC/DOCX tables and text) |
+| `plot` | Plotting (`undatum plot`, matplotlib) |
+| `tui` | Interactive terminal UI (`undatum tui`, Textual) |
+| `web` | Local web UI (`undatum web`, FastAPI + Jinja2) |
+| `mcp` | MCP server for AI agents (`undatum mcp serve`) |
+| `langchain` | LangChain agent tools |
+| `polars`, `dask` | DataFrame interop from the `Dataset` SDK |
+| `s3` | S3 cloud storage support (boto3) |
+| `cloud` | Multi-cloud storage via fsspec (S3 + GCS + Azure) |
+| `postgres`, `mysql`, `mssql`, `clickhouse` | Database connectors |
+| `frictionless` | Full Frictionless Data Package validation |
+| `lakehouse` | Delta / Iceberg / Lance / DuckLake / Hudi via iterabledata |
+| `gis` | Geospatial and LiDAR formats |
+| `scientific` | MATLAB, geophysical, and HDF5 formats |
+| `access` | Microsoft Access (`.mdb` / `.accdb`) |
+| `compression` | Extra codecs (snappy, brotli, lzo) |
 
 ```bash
-# Data API (FastAPI + uvicorn + httpx)
 pip install "undatum[api]"
-
-# Document extraction (PDF/DOC/DOCX tables and text)
 pip install "undatum[extract]"
-
-# Plotting (matplotlib)
 pip install "undatum[plot]"
-
-# MCP server for AI agents (Model Context Protocol)
+pip install "undatum[tui]"
+pip install "undatum[web]"
 pip install "undatum[mcp]"
-
-# LangChain agent tools
 pip install "undatum[langchain]"
-
-# DataFrame interop (Polars / Dask)
 pip install "undatum[polars]"
 pip install "undatum[dask]"
-
-# S3 cloud storage support (boto3)
 pip install "undatum[s3]"
-
-# Multi-cloud storage via fsspec (S3 + GCS + Azure)
 pip install "undatum[cloud]"
-
-# Database connectors
 pip install "undatum[postgres]"
 pip install "undatum[mysql]"
 pip install "undatum[mssql]"
 pip install "undatum[clickhouse]"
-
-# Frictionless Data Package validation
 pip install "undatum[frictionless]"
+pip install "undatum[lakehouse]"
+pip install "undatum[gis]"
+pip install "undatum[scientific]"
+pip install "undatum[access]"
+pip install "undatum[compression]"
+
+# Combine extras in one install
+pip install "undatum[extract,api]"
 ```
 
 After installation both `undatum` and the shorter `data` command are available:
@@ -163,6 +182,7 @@ undatum ai doc data.csv
 
 # Bulk-convert a directory to Parquet
 undatum convert ./raw ./processed --recursive --to-ext parquet
+undatum convert ./raw ./out --recursive --to-ext jsonl --filename-pattern "{stem}.converted.jsonl"
 
 # Print version
 undatum --version
@@ -221,13 +241,17 @@ undatum tail data.csv
 
 # Display formatted table
 undatum table data.csv --limit 20
+
+# Explore a sample in the terminal or a local browser (optional extras)
+# pip install "undatum[tui]" && undatum tui data.csv
+# pip install "undatum[web]" && undatum web data.csv
 ```
 
 ## Commands
 
 All commands are available as `undatum <command>` or via the shorter `data` alias (`data convert ...` is identical to `undatum convert ...`).
 
-**Top-level data commands:** `convert`, `extract`, `analyze`, `doc`, `stats` (`profile`), `validate`, `schema`, `schema_bulk`, `sql`, `select`, `search`, `query`, `mask`, `plot`, `ingest`, and the transform/inspection commands documented below.
+**Top-level data commands:** `convert`, `extract`, `analyze`, `doc`, `stats` (`profile`), `validate`, `schema`, `schema_bulk`, `sql`, `select`, `search`, `mask`, `plot`, `ingest`, `tui`, `web`, and the transform/inspection commands documented below.
 
 **Command groups:**
 
@@ -235,7 +259,7 @@ All commands are available as `undatum <command>` or via the shorter `data` alia
 |-------|-------------|
 | `ai` | `doc`, `filter`, `plan`, `suggest` |
 | `api` | `discover`, `serve`, `run`, `openapi` |
-| `db` | `query`, `load` |
+| `db` | `query`, `load`, `dump` |
 | `package` | `create`, `add-resource`, `validate` |
 | `pipeline` | `run`, `validate`, `templates list`, `templates init` |
 | `formats` | `list`, `describe`, `export` |
@@ -261,6 +285,12 @@ undatum analyze data.jsonl --autodoc --ai-provider openai --ai-model gpt-4o-mini
 
 # Output to file
 undatum analyze data.jsonl --output report.yaml --autodoc
+
+# Named Excel sheet
+undatum analyze workbook.xlsx --table Sheet2
+
+# Nested JSONL: unfold dict fields onto dotted paths
+undatum analyze nested.jsonl --flatten-nested
 ```
 
 **Output includes:**
@@ -274,8 +304,10 @@ undatum analyze data.jsonl --output report.yaml --autodoc
 
 **Read options** (auto-detected when omitted):
 - `--delimiter` — CSV/TSV separator (comma, semicolon, tab, or pipe)
+- `--quotechar` — CSV quote character
 - `--encoding` — file encoding
 - `--engine` — `auto` (default) or `duckdb` for accelerated tabular analysis
+- `--table` / `--sheet` — named Excel sheet or multi-table source
 
 **AI Provider Options:**
 - `--ai-provider`: Provider id (`openai`, `anthropic`, `gemini`, `azure`, `openrouter`, `ollama`, `lmstudio`, `perplexity`)
@@ -352,7 +384,21 @@ AI provider can be configured via:
      api_key: ${OPENAI_API_KEY}  # Can reference env vars
      model: gpt-4o-mini
      timeout: 30
+   defaults:
+     engine: duckdb
+     threads: 4
+     progress: true
+     encoding: utf8
+     # delimiter: ";"   # omit to keep CSV auto-detection
+     # quotechar: "'"   # omit to keep iterabledata default '"'
+     format_out: json
    ```
+
+   Inspect the resolved values with `undatum config show`. Environment variables
+   `UNDATUM_ENGINE`, `UNDATUM_THREADS`, `UNDATUM_PROGRESS`, `UNDATUM_ENCODING`,
+   `UNDATUM_DELIMITER`, `UNDATUM_QUOTECHAR`, and `UNDATUM_FORMAT_OUT` are the
+   lowest-precedence source.
+   Explicit CLI flags always win.
 
 3. **CLI arguments** (highest precedence):
    ```bash
@@ -369,6 +415,7 @@ undatum doc data.jsonl
 
 # JSON documentation with samples
 undatum doc data.jsonl --format json --sample-size 5 --output report.json
+undatum doc nested.jsonl --flatten-nested --format json
 
 # With AI-powered descriptions
 undatum doc data.csv --autodoc --ai-provider openai --ai-model gpt-4o-mini
@@ -402,7 +449,8 @@ undatum doc data.csv --pii-detect --pii-mask-samples --format json
 AI-assisted workflows backed by iterabledata's `iterable.ai` stack. Subcommands: `doc`, `filter`, `plan`, and `suggest`. Supports OpenAI, Anthropic, Gemini, Azure OpenAI, OpenRouter, Ollama, LM Studio, and Perplexity — configure via `undatum.yaml`, environment variables, or CLI flags (see [AI Provider Options](#analyze) under `analyze`).
 
 ```bash
-# Block-based dataset documentation (markdown default)
+# Block-based dataset documentation (markdown default). Default blocks:
+# general, schema, quality, examples, statistics, agent_skill, codebook
 undatum ai doc data.csv
 
 # JSON output with selected blocks; schema enrichment maps LLM field names
@@ -411,10 +459,27 @@ undatum ai doc data.csv --format json --blocks general,schema,quality
 
 # Natural-language filter translation (use --apply to stream matching rows)
 undatum ai filter data.csv "active users in New York" --apply
+undatum ai filter workbook.xlsx "city is Dushanbe" --table Sheet2 --apply
+undatum ai filter "age > 30" data.csv --sample-size 500
+undatum ai filter "name == 'Alice'" quoted.csv --quotechar "'"
+undatum ai filter "lat > 40" nested.jsonl --flatten-nested --apply
+undatum ai filter "lat > 40" nested.jsonl --flatten-nested --max-nested-depth 2 --no-keep-nested-parents
 
 # Conversion planning and transform suggestions
 undatum ai plan data.csv --to parquet
 undatum ai suggest data.csv "normalize phone numbers"
+undatum ai suggest data.csv "normalize phone numbers" --sample-size 20
+
+# Apply a suggested transform spec (JSONL; --yes skips the confirm prompt)
+undatum ai suggest data.csv "rename id to user_id" --apply --yes --output out.jsonl
+
+# Document a named Excel sheet; cache and mask PII samples
+undatum ai doc workbook.xlsx --tables Sheet2 --cache --pii-mask-samples
+undatum ai doc data.csv --context '{"title": "City register"}'
+undatum ai doc data.csv --progress
+undatum ai doc data.csv --sample-size 20 --no-detect-constraints --no-statistics
+undatum ai doc data.csv --temperature 0.2 --max-tokens 2048
+undatum ai doc data.csv --job-id run-42 --progress
 ```
 
 For block-based documentation with schema enrichment, prefer `ai doc` over legacy `analyze --autodoc` / `schema --autodoc` workflows.
@@ -426,6 +491,8 @@ Generates, extends, and validates Frictionless Data Package descriptors (`datapa
 ```bash
 # Create datapackage.json for a single file
 undatum package create data.csv --output datapackage.json
+undatum package create workbook.xlsx --table Sheet2 --output datapackage.json
+undatum package create nested.jsonl --flatten-nested --output datapackage.json
 
 # Create a package directory with data file copies
 undatum package create data.csv --package-dir out/package
@@ -504,6 +571,9 @@ undatum api discover data.csv other.parquet --output api.yml
 # Serve from a config file
 undatum api serve --config api.yml --host 127.0.0.1 --port 8000
 
+# Optional API key (or UNDATUM_API_KEY) and CORS for browser clients
+undatum api serve --config api.yml --api-key "$UNDATUM_API_KEY" --cors-origins https://app.example.com
+
 # Export OpenAPI schema to a file
 undatum api openapi --config api.yml --output openapi.json
 undatum api openapi --config api.yml --output openapi.yaml --format yaml
@@ -530,6 +600,8 @@ On startup, the server prints a banner with the base URL, resource endpoints, an
 ```
 
 The `total` field is included only when `include_total=true` is passed (may be slower on large files).
+
+See [Data API security](docs/DATA_API.md) for API keys, CORS, reverse-proxy guidance, and `s3://` resource paths.
 
 **Query parameters:**
 
@@ -625,6 +697,7 @@ undatum convert s3://my-bucket/data.csv output.jsonl
 
 # Bulk-convert a directory of CSVs to Parquet
 undatum convert ./raw ./processed --recursive --to-ext parquet
+undatum convert ./raw ./out --recursive --to-ext jsonl --filename-pattern "{stem}.converted.jsonl"
 
 # Convert local to S3
 undatum convert input.csv s3://my-bucket/output.parquet
@@ -637,8 +710,18 @@ undatum convert s3://bucket/input.jsonl s3://bucket/output.parquet
 
 **Key options:**
 - `--format-in` / `--format-out` — override format detection
-- `--delimiter`, `--encoding`, `--tagname` — passed through to the reader (delimiter auto-detected for CSV when omitted)
-- `--recursive` / `--to-ext` — bulk-convert directories or globs
+- `--table` / `--sheet` — named table or Excel sheet (keep `--start-page` for a 0-based index)
+- `--native-batch` / `--columns` / `--row-range` — native columnar batch convert (auto with `--low-memory` when both formats support it); `--batch-size` also sizes native scanner chunks
+- `--profile fast|balanced|max` — codec performance profile for compressed output
+- `--level N` — explicit compression level for compressed output (overrides `--profile`; skips DuckDB COPY)
+- `--write-mode append|overwrite|error|ignore|create` — lakehouse write mode (Delta / Iceberg / DuckLake / Lance)
+- `--row-group-size N` — Parquet write row-group size (skips DuckDB COPY; pair with `--batch-size` if you need groups smaller than convert's write batches)
+- `--use-totals` — use format-reported row totals for progress when available
+- `--trust` — acknowledge pickle deserialization risk
+- `--on-error raise|skip|warn` — parse-error policy for malformed rows (default: raise)
+- `--error-log PATH` — append skipped/warned parse errors as JSONL
+- `--delimiter`, `--quotechar`, `--encoding`, `--tagname` — passed through to the reader (delimiter auto-detected for CSV when omitted)
+- `--recursive` / `--to-ext` / `--filename-pattern` — bulk-convert directories or globs (`{name}`, `{stem}`, `{ext}` in the output name)
 - `--flatten` — flatten nested records to a flat schema
 - `--atomic` — write to a temp file and rename on success (local paths only)
 - `--threads`, `--batch-size`, `--progress` — throughput and feedback controls (`--threads` enables process-pool chunk parallelism for single-file Python-engine convert; also used as concurrent workers for `--recursive` bulk convert)
@@ -684,8 +767,12 @@ undatum formats list --writable
 # Read-only inputs (e.g. ARFF, Hudi, GPX, HDF5, TAR)
 undatum formats list --read-only
 
-# Capability matrix (bulk read/write, streaming, totals, tables, nested)
+# Capability matrix (bulk, streaming, tables, nested, maturity, native bulk)
 undatum formats list --capabilities
+
+# List sheets/tables in a workbook or SQLite/lakehouse source
+undatum formats tables workbook.xlsx
+undatum formats tables data.sqlite --json
 
 # Single-format details (aliases, optional extras, limitations)
 undatum formats describe parquet
@@ -721,7 +808,7 @@ undatum formats export --output formats.json
 | Logs / feeds | `log`, `gelf`, `cef`, `rss`, `kafka` |
 | Graph / RDF | `graphml`, `gexf`, `jsonld`, `nt`, `ttl`, `trig`, `hdt` |
 
-See [`docs/FORMAT_SUPPORT.md`](docs/FORMAT_SUPPORT.md) for extras (`iterabledata[lakehouse]`, GIS/scientific packs) and version notes.
+See [`docs/FORMAT_SUPPORT.md`](docs/FORMAT_SUPPORT.md) for extras (`undatum[lakehouse]`, `undatum[gis]`, `undatum[scientific]`) and version notes.
 
 **Limitations:**
 
@@ -743,6 +830,9 @@ undatum count data.jsonl
 
 # Use DuckDB engine for faster counting
 undatum count data.parquet --engine duckdb
+
+# Named Excel sheet
+undatum count workbook.xlsx --table Sheet2
 ```
 
 ### `head`
@@ -758,6 +848,12 @@ undatum head data.jsonl --n 20
 
 # Save to file
 undatum head data.csv --n 5 output.csv
+
+# Named Excel sheet
+undatum head workbook.xlsx --table Sheet2 --n 5
+
+# Nested JSONL: unfold dict fields onto dotted paths
+undatum head nested.jsonl --flatten-nested --n 5
 ```
 
 ### `tail`
@@ -773,6 +869,12 @@ undatum tail data.jsonl --n 50
 
 # Save to file
 undatum tail data.csv --n 20 output.csv
+
+# Named Excel sheet
+undatum tail workbook.xlsx --table Sheet2 --n 5
+
+# Nested JSONL: unfold dict fields onto dotted paths
+undatum tail nested.jsonl --flatten-nested --n 5
 ```
 
 ### `enum`
@@ -791,6 +893,7 @@ undatum enum data.csv --field status --type constant --value "active" output.csv
 
 # Custom starting number
 undatum enum data.jsonl --field sequence --start 100 output.jsonl
+undatum enum workbook.xlsx --table Sheet2 --field row_id out.jsonl
 ```
 
 ### `reverse`
@@ -803,6 +906,7 @@ undatum reverse data.csv output.csv
 
 # Reverse JSONL file
 undatum reverse data.jsonl output.jsonl
+undatum reverse workbook.xlsx --table Sheet2 out.jsonl
 ```
 
 ### `table`
@@ -818,7 +922,50 @@ undatum table data.jsonl --limit 50
 
 # Display only specific fields
 undatum table data.csv --fields name,email,status
+undatum table workbook.xlsx --table Sheet2
+undatum table nested.jsonl --flatten-nested
 ```
+
+### `tui`
+
+Interactive terminal UI for exploring a **sample** of a dataset (not the whole file).
+Requires `pip install "undatum[tui]"` and a real TTY.
+
+```bash
+pip install "undatum[tui]"
+undatum tui data.csv
+undatum tui data.parquet --limit 500
+undatum tui workbook.xlsx --table Sheet2
+undatum tui nested.jsonl --flatten-nested
+```
+
+Keys: `q` quit, `?` help, `o` open, `s` profile, `f` frequency on the selected
+column, `/` filter the sample, `e` export the current view, `w` convert/save as
+(full file, `--low-memory`), `v` validate the sample, `m` mask preview, `p`
+export pipeline YAML, `:` command palette, `ctrl+s` SQL (default `LIMIT 500` on
+the `data` view), `Tab` cycle panes. From the file picker, `u` opens a local
+path or `s3://` URI. The status line shows the equivalent CLI command. Recent
+files are stored as paths only in `~/.undatum/tui-history.json`. Use `table` /
+`profile` / `sql` when you are not on an interactive terminal.
+
+### `web`
+
+Local browser UI for the same sampled session as `tui` (not a public Data API).
+Requires `pip install "undatum[web]"`. Binds to `127.0.0.1:8765` by default.
+
+```bash
+pip install "undatum[web]"
+undatum web data.csv
+undatum web data.parquet --limit 500 --no-open
+undatum web workbook.xlsx --table Sheet2
+undatum web nested.jsonl --flatten-nested --no-open
+```
+
+Open a path or `s3://` URI, or upload a file (streamed to a temp directory).
+The page shows a bounded sample, equivalent CLI lines, profile, frequency,
+filter, SQL (default `LIMIT 500`), export, convert `--low-memory`, validate,
+mask, and pipeline YAML export. Use `undatum api serve` for a read-only machine
+API.
 
 ### `fixlengths`
 
@@ -842,6 +989,8 @@ Extracts field names from data files. Works with CSV, JSON Lines, BSON, and XML 
 ```bash
 undatum headers data.jsonl
 undatum headers data.csv --limit 50000
+undatum headers data.csv --format-out json --output fields.json
+undatum headers workbook.xlsx --table Sheet2
 ```
 
 ### `stats` / `profile`
@@ -860,6 +1009,21 @@ undatum stats data.csv --checkdates
 
 # Using DuckDB engine
 undatum stats data.parquet --engine duckdb
+
+# Machine-readable JSON (also used when --output ends in .json)
+undatum stats data.csv --format-out json --output stats.json
+
+# HTML or Markdown profiling report (also inferred from --output extension)
+undatum stats data.csv --format-out html --output profile.html
+undatum stats data.csv --output profile.md
+
+# Nested JSONL: unfold dict fields onto dotted paths
+undatum stats nested.jsonl --flatten-nested --format-out json
+undatum stats nested.jsonl --flatten-nested --max-nested-depth 2
+undatum stats nested.jsonl --flatten-nested --no-keep-nested-parents
+
+# Named Excel sheet
+undatum stats workbook.xlsx --table Sheet2
 ```
 
 **Statistics include:**
@@ -948,6 +1112,9 @@ Calculates frequency distribution for specified fields.
 ```bash
 undatum frequency --fields category data.jsonl
 undatum frequency --fields status,region data.csv
+undatum frequency --fields city --format-out json --output freq.json data.csv
+undatum frequency --fields city workbook.xlsx --table Sheet2
+undatum frequency --fields capital_city.lat nested.jsonl --flatten-nested
 ```
 
 ### `uniq`
@@ -960,6 +1127,9 @@ undatum uniq --fields category data.jsonl
 
 # Multiple fields (unique combinations)
 undatum uniq --fields status,region data.jsonl
+undatum uniq --fields city --format-out json --output cities.json data.csv
+undatum uniq --fields city workbook.xlsx --table Sheet2
+undatum uniq --fields capital_city.lat nested.jsonl --flatten-nested
 ```
 
 ### `sort`
@@ -978,6 +1148,8 @@ undatum sort data.csv --by date --desc output.csv
 
 # Numeric sort
 undatum sort data.csv --by price --numeric output.csv
+undatum sort workbook.xlsx --table Sheet2 --by city out.jsonl
+undatum sort nested.jsonl --by capital_city.lat --flatten-nested --numeric capital_city.lat
 ```
 
 ### `sample`
@@ -1047,6 +1219,7 @@ undatum rename data.csv --map "old_name:new_name,old2:new2" output.csv
 
 # Rename using regex
 undatum rename data.jsonl --pattern "^prefix_" --replacement "" output.jsonl
+undatum rename workbook.xlsx --table Sheet2 --map "city:city_name" out.jsonl
 ```
 
 ### `explode`
@@ -1104,6 +1277,8 @@ undatum join data1.csv data2.csv --on id --type right output.csv
 
 # Full outer join (keep all rows from both files)
 undatum join data1.jsonl data2.jsonl --on id --type full output.jsonl
+undatum join workbook.xlsx other.xlsx --table Sheet2 --table2 Cities --on city out.jsonl
+undatum join left.jsonl right.jsonl --on capital_city.lat --flatten-nested out.jsonl
 ```
 
 ### `diff`
@@ -1113,6 +1288,8 @@ Compares two files and shows differences (added, removed, and changed rows).
 ```bash
 # Compare files by key
 undatum diff file1.csv file2.csv --key id
+undatum diff workbook.xlsx other.xlsx --table Sheet2 --table2 Cities --key city
+undatum diff nested1.jsonl nested2.jsonl --key name --flatten-nested
 
 # Ignore order and show summary only (good for CI)
 undatum diff file1.parquet file2.parquet --ignore-order --summary-only
@@ -1142,6 +1319,8 @@ undatum exclude data.csv blacklist.csv --on email output.csv
 
 # Exclude with multiple key fields
 undatum exclude data.jsonl exclude.jsonl --on id,email output.jsonl
+undatum exclude workbook.xlsx skip.csv --table Sheet2 --on city out.jsonl
+undatum exclude nested.jsonl skip.jsonl --on capital_city.lat --flatten-nested out.jsonl
 ```
 
 ### `transpose`
@@ -1169,6 +1348,7 @@ undatum sniff data.jsonl --format json
 
 # Output as YAML
 undatum sniff data.csv --format yaml
+undatum sniff nested.jsonl --flatten-nested --format json
 ```
 
 ### `slice`
@@ -1210,6 +1390,8 @@ undatum select --fields name,email,status data.jsonl
 undatum select --fields name,email --filter "`status` == 'active'" data.jsonl
 undatum select --fields user.name,user.email --engine duckdb data.jsonl
 undatum select --fields name,email --engine duckdb --output subset.csv data.jsonl
+undatum select --fields name --table Sheet2 workbook.xlsx
+undatum select --fields name,capital_city.lat --flatten-nested nested.jsonl
 ```
 
 ### `split`
@@ -1222,6 +1404,8 @@ undatum split --chunksize 10000 data.jsonl
 
 # Split by field value
 undatum split --fields category data.jsonl
+undatum split workbook.xlsx --table Sheet2 --fields city --dirname out/
+undatum split nested.jsonl --fields capital_city.lat --flatten-nested --dirname out/
 ```
 
 ### `validate`
@@ -1235,6 +1419,8 @@ Use YAML/JSON rule files for comprehensive, reusable validation:
 ```bash
 # Validate with rule file
 undatum validate data.csv --rules validation-rules.yml
+undatum validate workbook.xlsx --table Sheet2 --rules validation-rules.yml
+undatum validate nested.jsonl --rules rules.yml --flatten-nested
 
 # Filter by severity
 undatum validate data.jsonl --rules rules.yml --severity error
@@ -1374,6 +1560,19 @@ undatum schema data.jsonl --format cerberus
 # Save to file
 undatum schema data.jsonl --output schema.yaml
 
+# Nested JSONL: unfold dict fields onto dotted paths
+undatum schema nested.jsonl --flatten-nested --format jsonschema
+undatum schema nested.jsonl --flatten-nested --max-nested-depth 2
+undatum schema nested.jsonl --flatten-nested --keep-nested-parents
+
+# Named Excel sheet
+undatum schema workbook.xlsx --table Sheet2
+
+# Validate rows against the inferred schema (not rule-pack validation)
+undatum schema data.jsonl --validate --outtype json
+undatum schema data.jsonl --validate --strict
+undatum schema data.jsonl --validate --sample-size 500
+
 # Generate schema with AI-powered field documentation
 undatum schema data.jsonl --autodoc --output schema.yaml
 ```
@@ -1440,15 +1639,7 @@ undatum sql "SELECT * FROM orders JOIN users USING (user_id)" orders.csv users.p
 undatum sql "SELECT * FROM data WHERE amount > 100" sales.jsonl --output big.parquet --format parquet
 ```
 
-Output formats: `jsonl` (default), `csv`, `parquet` (requires `--output`). DuckDB resources can be tuned with `--duckdb-threads` and `--duckdb-memory`.
-
-### `query`
-
-Query data using MistQL query language (experimental). For SQL-based querying prefer the `sql` command.
-
-```bash
-undatum query data.jsonl "SELECT * WHERE status = 'active'"
-```
+Output formats: `jsonl` (default), `csv`, `parquet` (requires `--output`). DuckDB resources can be tuned with `--duckdb-threads` and `--duckdb-memory`. This is the ad-hoc query command for files; `undatum db query` runs SQL against a database URI.
 
 ### `flatten`
 
@@ -1473,6 +1664,8 @@ Ingests data from files into databases. Supports MongoDB, PostgreSQL, DuckDB, My
 ```bash
 # Ingest to MongoDB
 undatum ingest data.jsonl mongodb://localhost:27017 mydb mycollection
+undatum ingest workbook.xlsx mongodb://localhost:27017 mydb cities --source-table Sheet2
+undatum ingest nested.jsonl sqlite:///cities.db cities --dbtype sqlite --create-table --flatten-nested
 
 # Ingest to PostgreSQL (append mode)
 undatum ingest data.csv postgresql://user:pass@localhost:5432/mydb mytable --dbtype postgresql
@@ -1646,7 +1839,7 @@ Ingestion Summary:
 
 ### `db query` / `db load`
 
-Database query and load commands for working with databases as first-class data sources and sinks.
+Database query, load, and dump commands for working with databases as first-class data sources and sinks. See also [`db dump`](#db-dump) below.
 
 #### `db query`
 
@@ -1721,6 +1914,9 @@ undatum db load data.jsonl --db postgresql://user:pass@host/db --table orders --
 
 # Auto-create table from schema
 undatum db load data.parquet --db sqlite:///db.db --table new_table --create-table
+undatum db load workbook.xlsx --db sqlite:///db.db --table cities --source-table Sheet2 --create-table
+undatum db load quoted.csv --db sqlite:///db.db --table people --create-table --quotechar "'"
+undatum db load nested.jsonl --db sqlite:///db.db --table cities --create-table --flatten-nested
 ```
 
 **Supported Databases:**
@@ -1753,6 +1949,31 @@ Use `ingest` for:
 - **MySQL**: `mysql://user:password@host:port/database`
 - **SQLite**: `sqlite:///path/to/db.db` or `sqlite:///:memory:`
 
+#### `db dump`
+
+Dump a database table or query result to a file. Results are streamed in batches for efficient memory usage; prefer Parquet for large dumps.
+
+```bash
+# Dump a whole table to Parquet
+undatum db dump --db sqlite:///data.db --table users --output users.parquet
+
+# Dump a query result to CSV
+undatum db dump --db postgresql://user:pass@host/db --query "SELECT * FROM events" \
+  --output events.csv --to csv
+
+# Tune streaming batch size
+undatum db dump --db mysql://user:pass@host:3306/mydb --table orders \
+  --output orders.jsonl --to jsonl --batch-size 50000
+```
+
+**Options:**
+- `--db` (required) - Database connection URI (same schemes as `db query`)
+- `--output` (required) - Output file path
+- `--table` - Table name to dump (alternative to `--query`)
+- `--query` - SQL query to dump (alternative to `--table`)
+- `--to` - Output format: `parquet` (default), `csv`, or `jsonl`
+- `--batch-size` - Batch size for streaming results (default: 10000)
+
 ### `plot`
 
 Generate data visualizations from data files. Supports histograms, bar charts, scatter plots, and line plots for quick data exploration.
@@ -1780,6 +2001,16 @@ undatum plot data.csv --field age,income,score --type histogram --output distrib
 undatum plot data.csv --field age --title "Age Distribution" \
   --xlabel "Age (years)" --ylabel "Frequency" \
   --width 12 --height 8 --dpi 150 --output age_plot.png
+
+# Filter before plotting, keep the top categories
+undatum plot data.csv --field city --type bar --filter '`status` == "active"' \
+  --top-n 10 --output cities.png
+
+# Bar chart of summed amounts by category
+undatum plot data.csv --field city --type bar --aggregate sum --value-field amount \
+  --output totals.png
+undatum plot workbook.xlsx --table Sheet2 --field city --type bar --output cities.png
+undatum plot nested.jsonl --field capital_city.lat --flatten-nested --type histogram --output lats.png
 ```
 
 **Plot Types:**
@@ -1813,6 +2044,11 @@ undatum plot data.csv --field age --title "Age Distribution" \
 - `--height`: Figure height in inches (default: 6)
 - `--dpi`: Resolution for raster formats (default: 100)
 - `--color`: Color scheme name (matplotlib colormap)
+- `--style`: Matplotlib style name (e.g. `ggplot`)
+- `--filter`: Filter expression applied before plotting
+- `--aggregate`: Bar-chart aggregation (`count`, `sum`, `mean`, or `none`)
+- `--value-field`: Numeric field to sum/mean when `--aggregate` is `sum` or `mean`
+- `--top-n`: Keep the top N aggregated groups for bar charts
 
 **Requirements:**
 - Install the plot extra: `pip install "undatum[plot]"` (includes matplotlib)
@@ -1901,7 +2137,12 @@ undatum plugins list
 
 # Show plugin information
 undatum plugins info my-plugin
+
+# Validate loaded plugins
+undatum plugins validate
 ```
+
+Connector plugins are consulted for non-`s3://` URIs in the I/O path. Transform plugins can be applied with `undatum apply data.jsonl --plugin my-transform`. Examples live in `examples/plugins/`.
 
 **Plugin Types:**
 - **Command plugins**: Add custom CLI commands
@@ -1955,10 +2196,14 @@ undatum formats list --writable
 # Read-only inputs
 undatum formats list --read-only
 
-# Full capability matrix (bulk read/write, streaming, totals, tables, nested)
+# Full capability matrix (bulk, streaming, totals, tables, nested, maturity, native bulk)
 undatum formats list --capabilities
 
-# Single format (aliases, optional pip extra, limitations)
+# Named tables/sheets in a workbook or database
+undatum formats tables workbook.xlsx
+undatum formats tables data.sqlite --json
+
+# Single format (aliases, extra, memory, selection, codecs)
 undatum formats describe parquet
 undatum formats describe geojson --json
 
@@ -1973,6 +2218,9 @@ Run and validate multi-step YAML/JSON workflows. Each step invokes an undatum co
 ```bash
 # Validate before running
 undatum pipeline validate my-pipeline.yml
+
+# Document the step graph as Markdown + Mermaid
+undatum pipeline doc my-pipeline.yml --output pipeline.md
 
 # Execute with variable overrides
 undatum pipeline run my-pipeline.yml --var input=data.csv --var output=out/
@@ -2056,15 +2304,27 @@ from undatum import Dataset
 
 # Read data
 ds = Dataset.read("data.jsonl")
+ds = Dataset.read("workbook.xlsx", table="Sheet2")
+ds = Dataset.read("nested.jsonl", flatten_nested=True)
 
 # Chain transformations
 ds = ds.fill("age", value=0).dedup(keys=["user_id"]).sort("name")
 
-# Compute statistics
+# Compute statistics (unfold nested dict fields onto dotted paths)
 stats = ds.stats()
+stats = Dataset.read("nested.jsonl").stats(flatten_nested=True)
 
 # Write output
 ds.write("output.parquet")
+
+# Bulk-convert a directory or glob (same as convert --recursive)
+Dataset.convert_many("./raw", "./out", to_ext="jsonl")
+Dataset.convert_many(
+    "./raw",
+    "./out",
+    to_ext="jsonl",
+    filename_pattern="{stem}.converted.jsonl",
+)
 ```
 
 ### Transform Methods
@@ -2215,6 +2475,7 @@ from undatum.tools import schemas
 # Call a tool directly (returns {"ok": ..., "data"/"error": ...})
 result = tools.detect_format("data.csv")
 freq = tools.frequency("data.csv", "country")
+freq = tools.frequency("nested.jsonl", "capital_city.lat", flatten_nested=True)
 
 # Dispatch by name (handy for agent runtimes)
 schemas.call_tool("query_sql", {"path": "data.parquet", "query": "SELECT * FROM data LIMIT 5"})
@@ -2225,7 +2486,8 @@ anthropic_tools = schemas.to_anthropic_tools()
 ```
 
 Write tools (`deduplicate`, `mask_fields`, `sample_data`) require `confirm=True`
-to prevent accidental writes.
+to prevent accidental writes. Pass `flatten_nested=True` to unfold nested fields
+onto dotted paths (same as `--flatten-nested` on the CLI).
 
 ### LangChain
 
@@ -2271,7 +2533,8 @@ undatum pipeline run pipeline.yml --var input_bucket=my-bucket --var output_dir=
 
 ### Pipeline Specification Format
 
-Pipeline files define a series of steps, each executing an undatum command:
+Pipeline files define a series of steps, each executing an undatum command.
+`tui` and `web` are interactive sessions and are not valid pipeline steps.
 
 ```yaml
 variables:
@@ -2532,26 +2795,37 @@ undatum uniq --fields country --format-in jsonl data.jsonl.xz
 
 ### Filtering Data
 
-Filter rows with MistQL expressions on commands that support `--filter` (`select`, `frequency`, and others). With the DuckDB engine, comparison and boolean filters are pushed to SQL when possible for faster execution.
+Filter rows with comparison expressions on commands that support `--filter` (`select`, `frequency`, `uniq`, `plot`, `validate`, `split`, and others). The same expression is pushed to DuckDB `WHERE` when possible, or evaluated in-process on the iterable path. For `LIKE`, `IN`, joins, and aggregations, use `undatum sql`.
 
 ```bash
 # Filter by field value
-undatum select --fields name,email --filter "`status` == 'active'" data.jsonl
+undatum select --fields name,email --filter '`status` == "active"' data.jsonl
 
-# Complex filters
-undatum frequency --fields category --filter "`price` > 100 and `status` == 'active'" data.jsonl
+# Complex filters (AND/OR and &&/|| are both accepted)
+undatum frequency --fields category --filter '`price` > 100 && `status` == "active"' data.jsonl
 
 # DuckDB-accelerated select with SQL pushdown
-undatum select --fields name,email --filter "`status` == 'active'" --engine duckdb data.jsonl
+undatum select --fields name,email --filter '`status` == "active"' --engine duckdb data.jsonl
+
+# Unique values after a filter
+undatum uniq --fields city --filter 'age >= 30' --engine duckdb data.jsonl
 
 # Natural-language filter (translates to an expression; use --apply to run)
 undatum ai filter data.csv "customers in California with orders over 1000" --apply
 ```
 
-**Filter syntax (MistQL):**
-- Field names: `` `fieldname` `` or dot notation `` `user.name` ``
-- String values: `'value'`
-- Operators: `==`, `!=`, `>`, `<`, `>=`, `<=`, `and`, `or`, `in`
+**Filter syntax:**
+- Field names: `` `fieldname` `` (backticks optional for simple names)
+- Strings: `"value"` or `'value'`
+- Comparisons: `==`, `!=`, `>`, `<`, `>=`, `<=`
+- Booleans: `AND` / `OR` or `&&` / `||` (both work)
+
+**DuckDB pushdown:** comparisons, `AND`/`OR`/`&&`/`||`, parentheses, and simple identifiers are translated to `WHERE`. The following are not supported on `--filter` (use `undatum sql` instead):
+- `IN` lists and SQL `LIKE`
+- Nested dotted fields (`user.name`)
+- Regex / `match`
+
+**Migrating from older filters:** `AND`/`OR` and `&&`/`||` both work. Prefer double-quoted strings. There is no `IN` operator; write `status == "active" || status == "pending"`. The experimental MistQL `undatum query` command is gone; use [`sql`](#sql) or `select --filter`.
 
 For ad-hoc SQL over files, use [`sql`](#sql) or [`db query`](#db-query--db-load) against a database URI.
 
@@ -2589,7 +2863,7 @@ undatum supports **140+ formats** through iterabledata (exact catalog depends on
 | **JSON** | `.json` | Array or object documents |
 | **Parquet / ORC / Avro** | `.parquet`, `.orc`, `.avro` | Columnar and binary row formats; Avro is writable (iterabledata 1.0.14+) |
 | **Arrow / Feather** | `.arrow`, `.feather` | Bounded batch I/O; native batch convert path available |
-| **Excel** | `.xls`, `.xlsx`, `.xlsb`, `.ods` | Sheet selection via `--start-page` on convert |
+| **Excel** | `.xls`, `.xlsx`, `.xlsb`, `.ods` | Named sheet via `--table` / `--sheet`; `--start-page` for a 0-based index |
 | **BSON** | `.bson` | Binary JSON (MongoDB) |
 | **DuckDB / SQLite** | `.ddb`, `.duckdb`, `.sqlite`, `.db` | Table name defaults from output filename when omitted |
 
@@ -2598,7 +2872,7 @@ undatum supports **140+ formats** through iterabledata (exact catalog depends on
 - **XML** — convert with `--tagname` to specify the record element (XXE-hardened parsers in iterabledata 1.0.16+)
 - **YAML / TOML / INI** — config and metadata formats (`yml`, `toml`, `ini`)
 - **Geospatial** — `geojson`, `geojsonseq`, `geoparquet`, `fgb`, `gpx`, `shp`, `gpkg`, `kml`, FileGDB (`fgdb`), MapInfo MIF, LAS, …
-- **Lakehouse** — Delta and Iceberg support bounded writes (1.0.18+); also Lance, DuckLake, Paimon; Hudi remains read-only. Install with `pip install "iterabledata[lakehouse]"` (and related extras)
+- **Lakehouse** — Delta and Iceberg support bounded writes (1.0.18+); also Lance, DuckLake, Paimon; Hudi remains read-only. Install with `pip install "undatum[lakehouse]"`
 - **Scientific / statistical** — `h5`, `nc`, `mat`, `segy`, `grib2`, `sas`, `sav`, `dta`, and others (many read-only)
 - **Containers** — ZIP; read-only TAR multi-member archives (`tar` / `.tgz`); WebDataset
 - **Graph / RDF** — `graphml`, `gexf`, `jsonld`, `nt`, `ttl`, `trig`, `hdt`, …

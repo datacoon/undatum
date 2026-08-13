@@ -6,7 +6,11 @@ from runpy import run_path
 
 import orjson
 
-from ..common.command_utils import ITERABLE_OPTIONS_KEYS, get_iterable_options  # noqa: F401
+from ..common.command_utils import (
+    ITERABLE_OPTIONS_KEYS,  # noqa: F401
+    get_iterable_options,
+    iter_command_rows,
+)
 
 # from xmlr import xmliter
 from ..common.errors import FileNotFoundError, PermissionError, ValidationError, find_similar_files
@@ -38,28 +42,39 @@ class Transformer:
         except PermissionError as e:
             raise PermissionError(fromfile, operation="read") from e
 
-        # Validate script file exists
         script_path = options.get("script")
-        if not script_path:
-            raise ValidationError("Script file path is required", field="script")
+        plugin_name = options.get("plugin")
+        if not script_path and not plugin_name:
+            raise ValidationError("Script file path or --plugin is required", field="script")
 
-        try:
-            validate_file_path(script_path, check_read=True)
-        except FileNotFoundError as e:
-            suggestions = find_similar_files(script_path)
-            raise FileNotFoundError(script_path, suggestions) from e
-        except PermissionError as e:
-            raise PermissionError(script_path, operation="read") from e
+        if plugin_name:
+            from ..cli.plugins_cli import plugin_manager
 
-        try:
-            script = run_path(script_path)
-        except Exception as e:
-            raise ValidationError(f"Failed to load script: {e}", field="script") from e
+            transform = plugin_manager.get_registry().find_transform(plugin_name)
+            if transform is None:
+                raise ValidationError(
+                    f"Transform plugin '{plugin_name}' is not registered",
+                    field="plugin",
+                )
+            __process_func = transform.transform
+        else:
+            try:
+                validate_file_path(script_path, check_read=True)
+            except FileNotFoundError as e:
+                suggestions = find_similar_files(script_path)
+                raise FileNotFoundError(script_path, suggestions) from e
+            except PermissionError as e:
+                raise PermissionError(script_path, operation="read") from e
 
-        if "process" not in script:
-            raise ValidationError("Script must define a 'process' function", field="script")
+            try:
+                script = run_path(script_path)
+            except Exception as e:
+                raise ValidationError(f"Failed to load script: {e}", field="script") from e
 
-        __process_func = script["process"]
+            if "process" not in script:
+                raise ValidationError("Script must define a 'process' function", field="script")
+
+            __process_func = script["process"]
 
         iterableargs = get_iterable_options(options)
 
@@ -70,7 +85,7 @@ class Transformer:
         read_iterable = open_iterable(fromfile, mode="r", iterableargs=iterableargs)
         try:
             n = 0
-            for item in read_iterable:
+            for item in iter_command_rows(read_iterable, options):
                 if limit and n > limit:
                     break
                 item = __process_func(item)
@@ -101,7 +116,7 @@ class Transformer:
 
                 n = 0
                 batch = []
-                for r in read_iterable:
+                for r in iter_command_rows(read_iterable, options):
                     n += 1
                     if n % 10000 == 0:
                         logging.info(f"apply script: processing {n} records of {fromfile}")

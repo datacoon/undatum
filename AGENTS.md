@@ -24,7 +24,7 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 **undatum** is a Python command-line tool for data processing and analysis. It provides a unified interface for converting, analyzing, validating, and transforming data across multiple formats with a focus on low memory footprint through streaming.
 
 - **Repository**: https://github.com/datacoon/undatum
-- **Version**: 1.6.0
+- **Version**: 1.7.0
 - **License**: MIT
 - **Author**: Ivan Begtin <ivan@begtin.tech>
 - **Python requirement**: >= 3.9
@@ -55,7 +55,7 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 | Compression | `lz4`, `py7zr`, `pyzstd` |
 | Excel | `openpyxl`, `xlrd`, `xlwt` |
 | Validation | `validators`, `pydantic` |
-| Query/filter | `mistql` |
+| Query/filter | DuckDB SQL (`undatum sql`); comparison `--filter` expressions |
 | AI providers | `requests` (OpenAI, OpenRouter, Ollama, LM Studio, Perplexity) |
 | Testing | `pytest`, `pytest-cov`, `pytest-benchmark` |
 | Linting/formatting | `black`, `ruff`, `pylint`, `mypy` |

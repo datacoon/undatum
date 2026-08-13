@@ -3,7 +3,11 @@
 import logging
 import sys
 
-from ..common.command_utils import ITERABLE_OPTIONS_KEYS, get_iterable_options  # noqa: F401
+from ..common.command_utils import (
+    ITERABLE_OPTIONS_KEYS,  # noqa: F401
+    get_iterable_options,
+    iter_command_rows,
+)  # noqa: F401
 from ..common.errors import FileNotFoundError, FormatError, PermissionError, find_similar_files
 from ..common.iterable import DataWriter
 from ..common.path_utils import validate_file_path
@@ -50,7 +54,7 @@ class Cat:
                 iterable = open_iterable(fromfile, mode="r", iterableargs=iterableargs)
                 try:
                     first = True
-                    for item in iterable:
+                    for item in iter_command_rows(iterable, options):
                         if isinstance(item, dict):
                             all_items.append(item)
                             if first:
@@ -71,7 +75,7 @@ class Cat:
                 file_items = []
                 iterable = open_iterable(fromfile, mode="r", iterableargs=iterableargs)
                 try:
-                    for item in iterable:
+                    for item in iter_command_rows(iterable, options):
                         if isinstance(item, dict):
                             file_items.append(item)
                 finally:

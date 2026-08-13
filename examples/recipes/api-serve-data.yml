@@ -13,8 +13,8 @@ variables:
     description: Input data file(s) to expose via API (CSV, JSONL, or Parquet)
     required: true
   config:
-    description: Output path for API config file (optional, for discover command)
-    default: ""
+    description: Output path for API config file (used with discover + serve flow)
+    default: "api-config.yml"
   host:
     description: "Host to bind the API server (default: 127.0.0.1)"
     default: "127.0.0.1"
@@ -23,21 +23,26 @@ variables:
     default: "8000"
 
 commands:
-  - description: Discover and generate API config from data files
-    command: undatum api discover ${input} ${config:+--output ${config}}
-  - description: Serve data as HTTP API (from config file)
-    command: undatum api serve --config ${config} --host ${host} --port ${port}
-  - description: Discover and serve in one command (alternative)
+  - description: Discover and serve in one command (recommended)
     command: undatum api run ${input} --host ${host} --port ${port}
+  - description: Discover and generate API config from data files
+    command: undatum api discover ${input} --output ${config}
+  - description: Serve data as HTTP API from a config file
+    command: undatum api serve --config ${config} --host ${host} --port ${port}
+  - description: Export OpenAPI schema without starting the server
+    command: undatum api openapi --config ${config} --output openapi.json
 
 example: |
-  # Option 1: Discover config first, then serve
+  # Recommended: discover and serve in one command
+  undatum api run data-20130920T1245.jsonl --host 127.0.0.1 --port 8000
+
+  # Two-step flow: discover config, then serve
   undatum api discover data-20130920T1245.jsonl --output api-config.yml
   undatum api serve --config api-config.yml --host 127.0.0.1 --port 8000
-  
-  # Option 2: Discover and serve in one command
-  undatum api run data-20130920T1245.jsonl --host 127.0.0.1 --port 8000
-  
+
+  # Export OpenAPI schema
+  undatum api openapi --config api-config.yml --output openapi.json
+
   # Then access the API:
   # - List endpoint: http://127.0.0.1:8000/data_20130920t1245
   # - Filter: http://127.0.0.1:8000/data_20130920t1245?field__eq=value

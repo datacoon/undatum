@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>undatum web{% if session %} · {{ session.source }}{% endif %}</title>
+  <link rel="stylesheet" href="/static/web.css">
+  <script src="/static/htmx.min.js" defer></script>
+</head>
+<body hx-boost="true" hx-indicator="#busy">
+  <header>
+    <h1>undatum web</h1>
+    <p class="lede">Local sample explorer — not the whole file, not a spreadsheet, not the Data API.</p>
+  </header>
+
+  <p id="busy" class="banner notice htmx-indicator" aria-live="polite">Running…</p>
+  {% if error %}<p class="banner error" role="alert">{{ error }}</p>{% endif %}
+  {% if notice %}<p class="banner notice">{{ notice }}</p>{% endif %}
+
+  <div class="layout">
+    <aside>
+      <section>
+        <h2>Open</h2>
+        <form method="post" action="/open">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <label>Path or s3:// URI
+            <input type="text" name="path" placeholder="data.csv" required>
+          </label>
+          <button type="submit">Open</button>
+        </form>
+        <form method="post" action="/upload" enctype="multipart/form-data" hx-boost="false">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <label>Upload (streamed to temp; prefer a path for large files)
+            <input type="file" name="file" required>
+          </label>
+          <button type="submit">Upload</button>
+        </form>
+        {% if recent %}
+        <h3>Recent</h3>
+        <ul class="recent">
+          {% for item in recent %}
+          <li>
+            <form method="post" action="/open">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+              <input type="hidden" name="path" value="{{ item }}">
+              <button type="submit" class="linkish">{{ item }}</button>
+            </form>
+          </li>
+          {% endfor %}
+        </ul>
+        {% endif %}
+      </section>
+
+      {% if session %}
+      <section>
+        <h2>Fields</h2>
+        <ul class="fields">
+          {% for name in session.headers %}
+          <li><code>{{ name }}</code> {{ session.field_types.get(name, "") }}</li>
+          {% endfor %}
+        </ul>
+      </section>
+
+      <section>
+        <h2>Filter sample</h2>
+        <form method="post" action="/filter">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <label>Expression (empty clears)
+            <input type="text" name="expr" value="{{ session.filter_expr or '' }}" placeholder='name == "Alice"'>
+          </label>
+          <button type="submit">Apply</button>
+        </form>
+      </section>
+
+      <section>
+        <h2>Explore</h2>
+        <form method="post" action="/profile">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <button type="submit">Profile (full file)</button>
+        </form>
+        <form method="post" action="/frequency">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <label>Frequency field
+            <select name="field">
+              {% for name in session.headers %}
+              <option value="{{ name }}">{{ name }}</option>
+              {% endfor %}
+            </select>
+          </label>
+          <button type="submit">Frequency</button>
+        </form>
+        <form method="post" action="/sql">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <label>SQL (view: data)
+            <textarea name="query" rows="4">{{ default_sql }}</textarea>
+          </label>
+          <button type="submit">Run SQL</button>
+        </form>
+      </section>
+
+      <section>
+        <h2>Write</h2>
+        <form method="post" action="/export">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <label>Export current view
+            <input type="text" name="path" placeholder="extract.jsonl" required>
+          </label>
+          <button type="submit">Export sample</button>
+        </form>
+        <form method="post" action="/convert">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <label>Convert / save as (full file, --low-memory)
+            <input type="text" name="path" placeholder="out.parquet" required>
+          </label>
+          <button type="submit">Convert</button>
+        </form>
+        <form method="post" action="/validate">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <label>Rules file (empty = completeness)
+            <input type="text" name="rules" placeholder="rules.yaml">
+          </label>
+          <button type="submit">Validate sample</button>
+        </form>
+        <form method="post" action="/mask">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <label>Mask fields
+            <input type="text" name="fields" placeholder="email,phone" required>
+          </label>
+          <label>Output path (empty = preview)
+            <input type="text" name="output" placeholder="masked.jsonl">
+          </label>
+          <button type="submit">Mask</button>
+        </form>
+        <form method="post" action="/pipeline">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <label>Pipeline YAML
+            <input type="text" name="path" value="pipeline.yml">
+          </label>
+          <button type="submit">Export pipeline</button>
+        </form>
+      </section>
+      {% endif %}
+    </aside>
+
+    <main>
+      {% if session %}
+      <p class="status" id="status">
+        {{ session.source }} · {{ session.format_name or "unknown" }} ·
+        {{ session.encoding or "auto" }} ·
+        sample {{ grid|length }}/{{ session.sample_rows|length }}
+        {% if session.filter_expr %} · filter: {{ session.filter_expr }}{% endif %}
+        {% if session.truncated %} · first {{ session.sample_limit }} (not full file)
+        {% else %} · full file fits in sample{% endif %}
+      </p>
+      <p class="cli" id="cli"><code id="last-cli">$ {{ session.last_cli or "" }}</code>
+        <button type="button" class="linkish" data-copy="#last-cli">Copy</button></p>
+      <div class="table-wrap">
+        <table id="grid">
+          <thead>
+            <tr>
+              {% for name in session.headers %}
+              <th>{{ name }}</th>
+              {% endfor %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in grid %}
+            <tr>
+              {% for cell in row %}
+              <td>{{ cell }}</td>
+              {% endfor %}
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <p>Open a local path, an <code>s3://</code> URI, or upload a file. The table shows a sample of at most {{ sample_limit }} rows.</p>
+      {% endif %}
+
+      {% if result %}
+      <section class="result">
+        <h2>{{ result.title }}</h2>
+        <p class="cli"><code id="result-cli">$ {{ result.cli }}</code>
+          <button type="button" class="linkish" data-copy="#result-cli">Copy</button></p>
+        <div class="table-wrap">
+          <table id="result-table">
+            <thead>
+              <tr>
+                {% for name in result.headers %}
+                <th>{{ name }}</th>
+                {% endfor %}
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in result.rows %}
+              <tr>
+                {% for cell in row %}
+                <td>{{ cell }}</td>
+                {% endfor %}
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </section>
+      {% endif %}
+
+      {% if actions %}
+      <section>
+        <h2>Equivalent CLI</h2>
+        <ul class="actions" id="actions">
+          {% for action in actions %}
+          <li><strong>{{ action.title }}</strong> — <code>{{ action.cli }}</code></li>
+          {% endfor %}
+        </ul>
+      </section>
+      {% endif %}
+    </main>
+  </div>
+  <script>
+    document.addEventListener("click", function (event) {
+      var button = event.target.closest("[data-copy]");
+      if (!button) return;
+      var target = document.querySelector(button.getAttribute("data-copy"));
+      if (!target || !navigator.clipboard) return;
+      navigator.clipboard.writeText(target.textContent.replace(/^\$\s*/, "").trim());
+    });
+  </script>
+</body>
+</html>

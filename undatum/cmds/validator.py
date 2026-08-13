@@ -11,6 +11,7 @@ import bson
 import orjson
 
 from ..common.chunked_io import chunked_reader
+from ..common.command_utils import get_iterable_options, iter_command_rows
 from ..common.errors import (
     FileNotFoundError,
     FormatError,
@@ -24,7 +25,7 @@ from ..common.path_utils import validate_file_path
 from ..common.progress import wrap_iterable
 from ..common.s3_iterable import open_iterable_with_s3
 from ..common.validation_rules import ValidationRuleError, parse_validation_rules
-from ..utils import get_dict_value, get_file_type, get_option
+from ..utils import field_values, get_file_type, get_option
 from ..validate import VALIDATION_RULEMAP
 
 
@@ -81,7 +82,7 @@ class Validator:
         from ..common.path_utils import is_s3_uri
         from ..common.s3_iterable import open_path as open_iterable
 
-        iterableargs = {}
+        iterableargs = get_iterable_options(options)
         if is_s3_uri(fromfile):
             iterable_context = open_iterable_with_s3(fromfile, mode="r", iterableargs=iterableargs)
             it_in = iterable_context.__enter__()
@@ -92,12 +93,15 @@ class Validator:
 
         show_progress = get_option(options, "progress") or False
         filter_expr = options.get("filter")
-        threads = options.get("threads")
+        threads = get_option(options, "threads")
         use_parallel = bool(threads) and int(threads) > 1 and not use_context
 
         try:
             records = wrap_iterable(
-                it_in, desc="Validating", unit="rows", show_progress=show_progress
+                iter_command_rows(it_in, options),
+                desc="Validating",
+                unit="rows",
+                show_progress=show_progress,
             )
             if use_parallel:
                 chunk_size = int(options.get("batch_size") or 1000)
@@ -189,17 +193,21 @@ class Validator:
 
         elif f_type == "jsonl":
             n = 0
-            for line in infile:
+
+            def _jsonl_records():
+                for line in infile:
+                    yield orjson.loads(line)
+
+            for r in iter_command_rows(_jsonl_records(), options):
                 n += 1
                 if n % 10000 == 0:
                     logging.info("uniq: processing %d records of %s", n, fromfile)
-                r = orjson.loads(line)
                 filter_expr = options.get("filter")
                 if filter_expr is not None:
                     if not match_filter(r, filter_expr):
                         continue
                 stats["total"] += 1
-                values = get_dict_value(r, fields[0].split("."))
+                values = field_values(r, fields[0])
                 if len(values) > 0:
                     res = val_func(values[0])
                     if not res:
@@ -209,9 +217,8 @@ class Validator:
                     stats["novalue"] += 1
 
         elif f_type == "bson":
-            bson_iter = bson.decode_file_iter(infile)
             n = 0
-            for r in bson_iter:
+            for r in iter_command_rows(bson.decode_file_iter(infile), options):
                 n += 1
                 if n % 1000 == 0:
                     logging.info("uniq: processing %d records of %s", n, fromfile)
@@ -220,7 +227,7 @@ class Validator:
                     if not match_filter(r, filter_expr):
                         continue
                 stats["total"] += 1
-                values = get_dict_value(r, fields[0].split("."))
+                values = field_values(r, fields[0])
                 if len(values) > 0:
                     res = val_func(values[0])
                     if not res:

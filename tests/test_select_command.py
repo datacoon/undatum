@@ -102,8 +102,10 @@ def test_select_large_batch(sample_csv_file, tmp_path):
 def test_select_nested_fields_uses_iterable(sample_jsonl_file, tmp_path):
     nested_file = tmp_path / "nested.jsonl"
     nested_file.write_text(
-        json.dumps({"user": {"name": "Alice", "city": "NYC"}, "age": 30}) + "\n"
-        + json.dumps({"user": {"name": "Bob", "city": "LA"}, "age": 25}) + "\n"
+        json.dumps({"user": {"name": "Alice", "city": "NYC"}, "age": 30})
+        + "\n"
+        + json.dumps({"user": {"name": "Bob", "city": "LA"}, "age": 25})
+        + "\n"
     )
 
     output_file = tmp_path / "nested_select.jsonl"
@@ -164,3 +166,42 @@ def test_dataset_select_sdk(sample_csv_file, tmp_path):
         {"name": "Alice", "city": "New York"},
         {"name": "Bob", "city": "London"},
     ]
+
+
+def test_headers_json_output(sample_csv_file, tmp_path):
+    output_file = tmp_path / "fields.json"
+    Selector().headers(
+        sample_csv_file,
+        {"format_out": "json", "output": str(output_file), "limit": 100},
+    )
+    payload = json.loads(output_file.read_text(encoding="utf8"))
+    assert set(payload["fields"]) == {"name", "age", "city"}
+
+
+def test_frequency_json_output(sample_csv_file, tmp_path):
+    output_file = tmp_path / "freq.json"
+    Selector().frequency(
+        sample_csv_file,
+        {
+            "fields": "city",
+            "format_out": "json",
+            "output": str(output_file),
+            "engine": "iterable",
+        },
+    )
+    payload = json.loads(output_file.read_text(encoding="utf8"))
+    assert isinstance(payload, list)
+    assert payload
+    assert "city" in payload[0] and "count" in payload[0]
+
+
+def test_uniq_json_from_extension(sample_csv_file, tmp_path):
+    output_file = tmp_path / "cities.json"
+    Selector().uniq(
+        sample_csv_file,
+        {"fields": "city", "output": str(output_file), "engine": "iterable"},
+    )
+    payload = json.loads(output_file.read_text(encoding="utf8"))
+    assert isinstance(payload, list)
+    cities = {row["city"] for row in payload}
+    assert cities == {"New York", "London"}

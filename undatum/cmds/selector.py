@@ -1,6 +1,7 @@
 """Data selection and filtering module."""
 
 import csv
+import json
 import logging
 import os
 import sys
@@ -10,11 +11,13 @@ import bson
 import orjson
 
 from ..common.command_utils import (
-    ITERABLE_OPTIONS_KEYS,
+    ITERABLE_OPTIONS_KEYS,  # noqa: F401
     duckdb_read_expr,
+    force_iterable_if_table,
     get_iterable_options,
+    iter_command_rows,
     quote_sql_identifier,
-)  # noqa: F401
+)
 from ..common.duckdb_config import create_duckdb_connection, get_duckdb_config_from_options
 from ..common.engine_selector import detect_engine
 from ..common.errors import (
@@ -31,6 +34,7 @@ from ..common.s3_iterable import open_path as open_iterable
 from ..utils import (
     detect_encoding,
     dict_generator,
+    field_values,
     get_dict_value,
     get_file_type,
     get_option,
@@ -123,8 +127,19 @@ def _duckdb_copy_select(conn, query: str, to_file: str, to_type: str) -> bool:
     return False
 
 
+def _engine_for_filter(detected_engine: str, filter_expr, command: str):
+    """Keep DuckDB when the filter translates to SQL; otherwise fall back to iterable."""
+    filter_sql = None
+    if detected_engine == "duckdb" and filter_expr:
+        filter_sql = translate_filter_to_sql(filter_expr)
+        if filter_sql is None:
+            logging.info("%s: filter not translatable to SQL, falling back to iterable", command)
+            return "iterable", None
+    return detected_engine, filter_sql
+
+
 def get_iterable_fields_uniq(
-    iterable, fields, dolog=False, dq_instance=None
+    iterable, fields, dolog=False, dq_instance=None, filter_expr=None
 ):  # pylint: disable=unused-argument
     """Returns all uniq values of the fields of iterable dictionary."""
     # dq_instance parameter kept for backward compatibility (no longer used)
@@ -134,10 +149,13 @@ def get_iterable_fields_uniq(
         n += 1
         if dolog and n % 1000 == 0:
             logging.debug("uniq: processing %d records", n)
+        if filter_expr is not None:
+            if not match_filter(row, filter_expr):
+                continue
         try:
             allvals = []
             for field in fields:
-                allvals.append(get_dict_value(row, field.split(".")))
+                allvals.append(field_values(row, field))
 
             for n1, _ in enumerate(allvals[0]):
                 k = []
@@ -151,7 +169,13 @@ def get_iterable_fields_uniq(
 
 
 def get_duckdb_fields_uniq(
-    filename, fields, filetype=None, duckdb_config=None, dolog=False, dq_instance=None
+    filename,
+    fields,
+    filetype=None,
+    duckdb_config=None,
+    dolog=False,
+    dq_instance=None,
+    filter_sql=None,
 ):  # pylint: disable=unused-argument
     """Returns all uniq values of the fields of the filename using DuckDB."""
     # dq_instance parameter kept for backward compatibility (no longer used)
@@ -172,8 +196,10 @@ def get_duckdb_fields_uniq(
         conn.close()
         raise ValueError(f"Unsupported file type for DuckDB: {source_type}")
 
-    fieldstext = ",".join(fields)
+    fieldstext = ",".join(quote_sql_identifier(field) for field in fields)
     query = f"SELECT DISTINCT {fieldstext} FROM {read_expr}"
+    if filter_sql:
+        query = f"{query} WHERE {filter_sql}"
     if dolog:
         logging.info(query)
 
@@ -241,7 +267,7 @@ def get_iterable_fields_freq(
         try:
             allvals = []
             for field in fields:
-                allvals.append(get_dict_value(r, field.split(".")))
+                allvals.append(field_values(r, field))
 
             for n1, _ in enumerate(allvals[0]):
                 k = []
@@ -261,7 +287,13 @@ def get_iterable_fields_freq(
 
 
 def get_duckdb_fields_freq(
-    filename, fields, filetype=None, duckdb_config=None, dolog=False, dq_instance=None
+    filename,
+    fields,
+    filetype=None,
+    duckdb_config=None,
+    dolog=False,
+    dq_instance=None,
+    filter_sql=None,
 ):  # pylint: disable=unused-argument
     """Returns frequencies for the fields of the filename using DuckDB."""
     # dq_instance parameter kept for backward compatibility (no longer used)
@@ -282,10 +314,11 @@ def get_duckdb_fields_freq(
         conn.close()
         raise ValueError(f"Unsupported file type for DuckDB: {source_type}")
 
-    fieldstext = ",".join(fields)
-    query = (
-        f"SELECT {fieldstext}, count(*) as c FROM {read_expr} GROUP BY {fieldstext} ORDER BY c DESC"
-    )
+    fieldstext = ",".join(quote_sql_identifier(field) for field in fields)
+    query = f"SELECT {fieldstext}, count(*) as c FROM {read_expr}"
+    if filter_sql:
+        query = f"{query} WHERE {filter_sql}"
+    query = f"{query} GROUP BY {fieldstext} ORDER BY c DESC"
     if dolog:
         logging.info(query)
 
@@ -314,23 +347,32 @@ class Selector:
         filetype = get_option(options, "filetype")
         to_file = get_option(options, "output")
         engine = get_option(options, "engine")
+        format_out = (get_option(options, "format_out") or "").lower()
         if to_file:
-            to_type = get_file_type(to_file)
+            to_type = format_out or get_file_type(to_file)
             if not to_type:
                 raise FormatError(to_file, to_file.rsplit(".", 1)[-1])
             out = open(to_file, "w", encoding="utf8")
         else:
-            to_type = "csv"
+            to_type = format_out or "csv"
             out = sys.stdout
         fields = options["fields"].split(",")
+        filter_expr = get_option(options, "filter")
         detected_engine = detect_engine(fromfile, engine, filetype, operation="uniq")
+        detected_engine = force_iterable_if_table(options, detected_engine)
+        detected_engine, filter_sql = _engine_for_filter(detected_engine, filter_expr, "uniq")
         uniqval = None
         output_type = "iterable"
         if detected_engine == "duckdb":
             try:
                 duckdb_config = get_duckdb_config_from_options(options)
                 uniqval = get_duckdb_fields_uniq(
-                    fromfile, fields, filetype=filetype, duckdb_config=duckdb_config, dolog=True
+                    fromfile,
+                    fields,
+                    filetype=filetype,
+                    duckdb_config=duckdb_config,
+                    dolog=True,
+                    filter_sql=filter_sql,
                 )
                 output_type = "duckdb"
             except Exception as e:
@@ -342,7 +384,12 @@ class Selector:
             iterable = open_iterable(fromfile, mode="r", iterableargs=iterableargs)
             try:
                 logging.info("uniq: looking for fields: {}".format(options["fields"]))
-                uniqval = get_iterable_fields_uniq(iterable, fields, dolog=True)
+                uniqval = get_iterable_fields_uniq(
+                    iter_command_rows(iterable, options),
+                    fields,
+                    dolog=True,
+                    filter_expr=filter_expr,
+                )
             finally:
                 iterable.close()
         elif uniqval is None:
@@ -364,10 +411,13 @@ class Selector:
         try:
             keys_set = set()  # Use set for O(1) lookup instead of O(n) list operations
             n = 0
-            for item in iterable:
+            for item in iter_command_rows(iterable, options):
                 if limit and n > limit:
                     break
                 n += 1
+                if options.get("flatten_nested") and isinstance(item, dict):
+                    keys_set.update(item.keys())
+                    continue
                 dk = dict_generator(item)
                 for i in dk:
                     k = ".".join(i[:-1])
@@ -376,6 +426,18 @@ class Selector:
             iterable.close()
         keys = list(keys_set)  # Convert to list for backward compatibility
         output = get_option(options, "output")
+        format_out = (get_option(options, "format_out") or "").lower()
+        if not format_out and output and str(output).lower().endswith(".json"):
+            format_out = "json"
+        if format_out == "json":
+            payload = json.dumps({"fields": sorted(keys)}, ensure_ascii=False, indent=2)
+            if output:
+                with open(output, "w", encoding=get_option(options, "encoding") or "utf8") as f:
+                    f.write(payload)
+                    f.write("\n")
+            else:
+                print(payload)
+            return
         if output:
             with open(output, "w", encoding=get_option(options, "encoding")) as f:
                 f.write("\n".join(keys))
@@ -392,16 +454,20 @@ class Selector:
         filetype = get_option(options, "filetype")
         to_file = get_option(options, "output")
         engine = get_option(options, "engine")
+        format_out = (get_option(options, "format_out") or "").lower()
         if to_file:
-            to_type = get_file_type(to_file)
+            to_type = format_out or get_file_type(to_file)
             if not to_type:
                 raise FormatError(to_file, to_file.rsplit(".", 1)[-1])
             out = open(to_file, "w", encoding="utf8")
         else:
-            to_type = "csv"
+            to_type = format_out or "csv"
             out = sys.stdout
         fields = options["fields"].split(",")
+        filter_expr = get_option(options, "filter")
         detected_engine = detect_engine(fromfile, engine, filetype, operation="frequency")
+        detected_engine = force_iterable_if_table(options, detected_engine)
+        detected_engine, filter_sql = _engine_for_filter(detected_engine, filter_expr, "frequency")
         items = []
         output_type = "iterable"
         if detected_engine == "duckdb":
@@ -413,6 +479,7 @@ class Selector:
                     filetype=filetype,
                     duckdb_config=duckdb_config,
                     dolog=True,
+                    filter_sql=filter_sql,
                 )
                 output_type = "duckdb"
             except Exception as e:
@@ -424,11 +491,11 @@ class Selector:
             try:
                 if iterable is not None:
                     items = get_iterable_fields_freq(
-                        iterable,
+                        iter_command_rows(iterable, options),
                         fields,
                         dolog=True,
                         filter_expr=options.get("filter"),
-                        threads=options.get("threads"),
+                        threads=get_option(options, "threads"),
                     )
                 else:
                     logging.info("File type not supported")
@@ -485,6 +552,7 @@ class Selector:
 
         filter_expr = get_option(options, "filter")
         detected_engine = detect_engine(fromfile, engine, filetype, operation="select")
+        detected_engine = force_iterable_if_table(options, detected_engine)
         filter_sql = None
 
         if _has_nested_fields(fields):
@@ -496,6 +564,7 @@ class Selector:
                 logging.info("select: filter not translatable to SQL, falling back to iterable")
                 detected_engine = "iterable"
 
+        flatten_nested = bool(options.get("flatten_nested"))
         n = 0
         batch = []
         if detected_engine == "duckdb":
@@ -529,12 +598,15 @@ class Selector:
         if detected_engine == "iterable":
             iterable = open_iterable(fromfile, mode="r", iterableargs=iterableargs)
             try:
-                for r in iterable:
+                for r in iter_command_rows(iterable, options):
                     n += 1
                     if filter_expr is not None:
                         if not match_filter(r, filter_expr):
                             continue
-                    r_selected = select_fields(r, fields_list)
+                    if flatten_nested:
+                        r_selected = {field: r[field] for field in fields if field in r}
+                    else:
+                        r_selected = select_fields(r, fields_list)
                     batch.append(r_selected)
                     if len(batch) >= SELECT_BATCH_SIZE:
                         output.write_batch(batch)
@@ -547,18 +619,117 @@ class Selector:
         output.close()
 
     def split_new(self, fromfile, options=None):
-        """Splits the given file with data into chunks based on chunk size or field value."""
+        """Splits via iterabledata (named tables and non-CSV/JSONL formats)."""
+        return self._split_iterable(fromfile, options)
+
+    def _sanitize_split_key(self, value) -> str:
+        text = "None" if value is None else str(value)
+        for char in ("\\", "/", "?", "<", ">", "\n"):
+            text = text.replace(char, "-")
+        return text or "None"
+
+    def _split_chunk_path(self, fromfile, options, chunknum: int) -> str:
+        prefix = get_option(options, "output") or fromfile
+        stem = prefix.rsplit(".", 1)[0]
+        filename = f"{os.path.basename(stem)}_{chunknum}.jsonl"
+        dirname = get_option(options, "dirname")
+        if dirname:
+            os.makedirs(dirname, exist_ok=True)
+            return os.path.join(dirname, filename)
+        return f"{stem}_{chunknum}.jsonl"
+
+    def _split_iterable(self, fromfile, options=None):
+        """Split using iterabledata so --table / Excel / lakehouse sources work."""
         if options is None:
             options = {}
         iterableargs = get_iterable_options(options)
-        open_iterable(fromfile, mode="r", iterableargs=iterableargs)
-        get_option(options, "output")
+        fields = options["fields"].split(",") if options.get("fields") else None
+        chunksize = get_option(options, "chunksize") or 10000
+        filter_expr = options.get("filter")
+        dirname = get_option(options, "dirname")
+
+        iterable = open_iterable(fromfile, mode="r", iterableargs=iterableargs)
+        n = 0
+        try:
+            if fields:
+                valuedict = {}
+                try:
+                    for item in iter_command_rows(iterable, options):
+                        n += 1
+                        if not isinstance(item, dict):
+                            continue
+                        if filter_expr is not None and not match_filter(item, filter_expr):
+                            continue
+                        found = field_values(item, fields[0])
+                        if not found:
+                            continue
+                        key = found[0]
+                        if key is None:
+                            continue
+                        filename = f"{self._sanitize_split_key(key)}.jsonl"
+                        if dirname:
+                            os.makedirs(dirname, exist_ok=True)
+                            filename = os.path.join(dirname, filename)
+                        handle = valuedict.get(filename)
+                        if handle is None:
+                            handle = open(filename, "wb")
+                            valuedict[filename] = handle
+                        handle.write(
+                            orjson.dumps(normalize_for_json(item), option=orjson.OPT_APPEND_NEWLINE)
+                        )
+                finally:
+                    for handle in valuedict.values():
+                        handle.close()
+            else:
+                batch = []
+                chunknum = 1
+                for item in iter_command_rows(iterable, options):
+                    n += 1
+                    if isinstance(item, dict) and filter_expr is not None:
+                        if not match_filter(item, filter_expr):
+                            continue
+                    batch.append(item)
+                    if len(batch) >= chunksize:
+                        path = self._split_chunk_path(fromfile, options, chunknum)
+                        with open(path, "wb") as out:
+                            for row in batch:
+                                out.write(
+                                    orjson.dumps(
+                                        normalize_for_json(row),
+                                        option=orjson.OPT_APPEND_NEWLINE,
+                                    )
+                                )
+                        chunknum += 1
+                        batch = []
+                if batch:
+                    path = self._split_chunk_path(fromfile, options, chunknum)
+                    with open(path, "wb") as out:
+                        for row in batch:
+                            out.write(
+                                orjson.dumps(
+                                    normalize_for_json(row), option=orjson.OPT_APPEND_NEWLINE
+                                )
+                            )
+        finally:
+            iterable.close()
+        logging.debug("split: %s records processed", n)
 
     def split(self, fromfile, options=None):
         """Splits the given file with data into chunks based on chunk size or field value."""
         if options is None:
             options = {}
-        f_type = get_file_type(fromfile) if options["format_in"] is None else options["format_in"]
+        f_type = (
+            get_file_type(fromfile)
+            if options.get("format_in") is None
+            else options.get("format_in")
+        )
+        if (
+            options.get("table")
+            or options.get("sheet")
+            or options.get("flatten_nested")
+            or (f_type and f_type not in ("csv", "tsv", "jsonl", "json", "bson"))
+        ):
+            return self._split_iterable(fromfile, options)
         if options["zipfile"]:
             z = zipfile.ZipFile(fromfile, mode="r")
             fnames = z.namelist()

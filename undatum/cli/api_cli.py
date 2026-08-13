@@ -42,10 +42,24 @@ def api_serve(
     config: Annotated[str, typer.Option(help="Path to API config file.")],
     host: Annotated[str, typer.Option(help="Host to bind (default: 127.0.0.1).")] = "127.0.0.1",
     port: Annotated[int, typer.Option(help="Port to bind (default: 8000).")] = 8000,
+    api_key: Annotated[
+        Optional[str],
+        typer.Option(
+            "--api-key",
+            help="Optional API key. Also read from UNDATUM_API_KEY. Clients send X-API-Key.",
+        ),
+    ] = None,
+    cors_origins: Annotated[
+        Optional[str],
+        typer.Option(
+            "--cors-origins",
+            help="Comma-separated CORS origins for browser clients (e.g. https://app.example.com).",
+        ),
+    ] = None,
 ):
     """Serve API using a config file."""
     require_api_dependencies()
-    options = {"host": host, "port": port}
+    options = {"host": host, "port": port, "api_key": api_key, "cors_origins": cors_origins}
     DataApi().serve(config, options)
 
 
@@ -62,6 +76,20 @@ def api_run(
     ] = None,
     host: Annotated[str, typer.Option(help="Host to bind (default: 127.0.0.1).")] = "127.0.0.1",
     port: Annotated[int, typer.Option(help="Port to bind (default: 8000).")] = 8000,
+    api_key: Annotated[
+        Optional[str],
+        typer.Option(
+            "--api-key",
+            help="Optional API key. Also read from UNDATUM_API_KEY. Clients send X-API-Key.",
+        ),
+    ] = None,
+    cors_origins: Annotated[
+        Optional[str],
+        typer.Option(
+            "--cors-origins",
+            help="Comma-separated CORS origins for browser clients (e.g. https://app.example.com).",
+        ),
+    ] = None,
 ):
     """Discover resources from files and serve immediately."""
     require_api_dependencies()
@@ -72,6 +100,8 @@ def api_run(
         "allowed_ops": allowed_ops,
         "host": host,
         "port": port,
+        "api_key": api_key,
+        "cors_origins": cors_origins,
     }
     DataApi().run(input_files, options)
 

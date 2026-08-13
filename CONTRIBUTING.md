@@ -185,8 +185,8 @@ Feel free to open an issue for questions or reach out to the maintainers.
 
 ## Community
 
-- Prefer **GitHub Discussions** (when enabled) for Q&A and ideas; use Issues for bugs and
-  actionable feature requests.
+- Prefer **GitHub Discussions** for Q&A and ideas; use Issues for bugs and
+  actionable feature requests. See `docs/COMMUNITY.md`.
 - Look for the `good first issue` label when getting started.
 - External contributors are welcome — undatum has persistent usage but historically few PRs;
   small focused patches (tests, docs, install fixes) are especially helpful.

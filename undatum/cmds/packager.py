@@ -112,7 +112,9 @@ def _download_to_temp(url: str) -> str:
     return temp_path
 
 
-def _guess_format_mediatype(file_path: str, file_type: Optional[str]) -> tuple[Optional[str], Optional[str]]:
+def _guess_format_mediatype(
+    file_path: str, file_type: Optional[str]
+) -> tuple[Optional[str], Optional[str]]:
     if file_type and file_type in FORMAT_MEDIATYPE:
         return FORMAT_MEDIATYPE[file_type]
     ext = os.path.splitext(file_path.rsplit("?", 1)[0])[-1].lower().lstrip(".")
@@ -284,6 +286,9 @@ def _analyze_options(options: dict[str, Any]) -> dict[str, Any]:
         "encoding": get_option(options, "encoding"),
         "delimiter": get_option(options, "delimiter"),
         "engine": get_option(options, "engine") or "auto",
+        "table_name": get_option(options, "table") or get_option(options, "sheet"),
+        "start_page": get_option(options, "start_page") or 0,
+        "trust": bool(get_option(options, "trust")),
     }
 
 
@@ -350,6 +355,10 @@ class Packager:
                     delimiter=analyze_opts["delimiter"],
                     engine=analyze_opts["engine"],
                     autodoc=False,
+                    table_name=analyze_opts["table_name"],
+                    start_page=analyze_opts["start_page"],
+                    trust=analyze_opts["trust"],
+                    options=options,
                 )
                 analyzed_reports.append(report)
                 report.filename = input_path
@@ -363,9 +372,7 @@ class Packager:
                 else:
                     resource_path = _resource_path(input_path, output_file, package_dir)
 
-                resources.extend(
-                    _resources_from_report(report, input_path, resource_path)
-                )
+                resources.extend(_resources_from_report(report, input_path, resource_path))
         finally:
             for temp_path in temp_files:
                 try:
@@ -386,7 +393,9 @@ class Packager:
             primary_report.filename = input_files[0]
         return resources, primary_report
 
-    def create(self, input_files: list[str], options: Optional[dict[str, Any]] = None) -> dict[str, Any]:
+    def create(
+        self, input_files: list[str], options: Optional[dict[str, Any]] = None
+    ) -> dict[str, Any]:
         """Generate a Frictionless Data Package descriptor.
 
         Args:
@@ -530,11 +539,7 @@ class Packager:
         }
         new_inputs = []
         for input_path in input_files:
-            candidate = (
-                os.path.basename(input_path)
-                if not _is_url(input_path)
-                else input_path
-            )
+            candidate = os.path.basename(input_path) if not _is_url(input_path) else input_path
             if candidate in existing_paths:
                 logger.warning("package: skipping duplicate resource path %s", candidate)
                 continue

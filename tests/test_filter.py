@@ -29,7 +29,7 @@ class TestMatchFilter:
     def test_match_filter_simple_field_access(self):
         """Test simple field access."""
         record = {"age": 30}
-        # mistql can access fields - this should return the truthy value
+        # Bare identifier is truthy when the field is present and non-empty
         result = match_filter(record, "age")
         assert isinstance(result, bool)
 
@@ -71,7 +71,7 @@ class TestTranslateFilterToSql:
 
     def test_translate_and_expression(self):
         sql = translate_filter_to_sql("age >= 30 AND status == 'active'")
-        assert sql == "TRY_CAST(\"age\" AS DOUBLE) >= 30 AND \"status\" = 'active'"
+        assert sql == 'TRY_CAST("age" AS DOUBLE) >= 30 AND "status" = \'active\''
 
     def test_translate_or_expression(self):
         sql = translate_filter_to_sql("age < 18 OR age > 65")
@@ -89,3 +89,38 @@ class TestTranslateFilterToSql:
         assert translate_filter_to_sql("name in ['a', 'b']") is None
         assert translate_filter_to_sql("user.name == 'x'") is None
         assert translate_filter_to_sql("name like '%foo%'") is None
+        assert translate_filter_to_sql('match "Al.*" name') is None
+
+    def test_translate_ampersand_logical_ops(self):
+        sql = translate_filter_to_sql('age >= 30 && status == "active"')
+        assert sql == 'TRY_CAST("age" AS DOUBLE) >= 30 AND "status" = \'active\''
+
+    def test_translate_double_quoted_string(self):
+        assert translate_filter_to_sql('status == "active"') == "\"status\" = 'active'"
+
+
+class TestMatchFilterExpressions:
+    """Test comparison/boolean expressions used by commands."""
+
+    def test_comparison_and_boolean(self):
+        record = {"age": 30, "status": "active"}
+        assert match_filter(record, "age >= 30") is True
+        assert match_filter(record, "age < 18") is False
+        assert match_filter(record, "age >= 30 AND status == 'active'") is True
+        assert match_filter(record, 'age >= 30 && status == "active"') is True
+        assert match_filter(record, "age < 18 OR status == 'active'") is True
+
+    def test_in_workaround_with_or(self):
+        record = {"status": "active"}
+        assert match_filter(record, 'status == "active" || status == "pending"') is True
+        assert match_filter(record, 'status == "inactive" || status == "pending"') is False
+
+    def test_string_age_coerced_for_numeric_compare(self):
+        record = {"age": "30"}
+        assert match_filter(record, "age >= 18") is True
+        assert match_filter(record, "age < 18") is False
+
+    def test_unsupported_match_raises(self):
+        record = {"name": "Alice"}
+        with pytest.raises(ValueError, match="undatum sql"):
+            match_filter(record, 'match "Al.*" name')

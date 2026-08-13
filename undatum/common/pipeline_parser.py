@@ -179,13 +179,13 @@ def parse_pipeline(file_path: str) -> PipelineSpec:
     # Validate each step
     for i, step in enumerate(steps):
         if not isinstance(step, dict):
-            raise PipelineParseError(f"Step {i+1} must be a dictionary/object")
+            raise PipelineParseError(f"Step {i + 1} must be a dictionary/object")
 
         if "command" not in step:
-            raise PipelineParseError(f"Step {i+1} must contain 'command' key")
+            raise PipelineParseError(f"Step {i + 1} must contain 'command' key")
 
         if "name" not in step:
-            raise PipelineParseError(f"Step {i+1} must contain 'name' key")
+            raise PipelineParseError(f"Step {i + 1} must contain 'name' key")
 
     # Extract variables (optional)
     variables = data.get("variables", {})
@@ -193,6 +193,79 @@ def parse_pipeline(file_path: str) -> PipelineSpec:
         raise PipelineParseError("'variables' must be a dictionary/object")
 
     return PipelineSpec(steps, variables)
+
+
+# Fallback when the Typer app cannot be imported (keeps validation usable in isolation).
+_FALLBACK_PIPELINE_COMMANDS = {
+    "analyze",
+    "apply",
+    "cat",
+    "convert",
+    "count",
+    "dedup",
+    "diff",
+    "doc",
+    "document",
+    "enum",
+    "exclude",
+    "explode",
+    "extract",
+    "fill",
+    "fixlengths",
+    "flatten",
+    "fmt",
+    "frequency",
+    "head",
+    "headers",
+    "ingest",
+    "join",
+    "mask",
+    "package",
+    "plot",
+    "profile",
+    "rename",
+    "repack",
+    "replace",
+    "reverse",
+    "sample",
+    "schema",
+    "schema-bulk",
+    "scheme",
+    "search",
+    "select",
+    "slice",
+    "sniff",
+    "sort",
+    "split",
+    "sql",
+    "stats",
+    "table",
+    "tail",
+    "transpose",
+    "uniq",
+    "validate",
+}
+
+# Interactive / session commands are not valid pipeline steps.
+_PIPELINE_EXCLUDED_COMMANDS = {"tui", "web"}
+
+
+def known_pipeline_commands() -> set[str]:
+    """Return command names allowed as pipeline steps.
+
+    Prefers the live Typer app so new commands are accepted automatically.
+    """
+    names = set(_FALLBACK_PIPELINE_COMMANDS)
+    try:
+        from ..core import app
+
+        for cmd in getattr(app, "registered_commands", []) or []:
+            name = cmd.name or (cmd.callback.__name__ if getattr(cmd, "callback", None) else None)
+            if name and name not in _PIPELINE_EXCLUDED_COMMANDS:
+                names.add(name)
+    except Exception:
+        logger.debug("Could not load CLI command list for pipeline validation", exc_info=True)
+    return names
 
 
 def validate_pipeline(spec: PipelineSpec) -> list[str]:
@@ -205,54 +278,10 @@ def validate_pipeline(spec: PipelineSpec) -> list[str]:
         List of validation error messages (empty if valid)
     """
     errors = []
-
-    # Valid command names (all existing undatum commands)
-    valid_commands = {
-        "convert",
-        "analyze",
-        "doc",
-        "package",
-        "extract",
-        "count",
-        "head",
-        "tail",
-        "enum",
-        "reverse",
-        "table",
-        "fixlengths",
-        "headers",
-        "stats",
-        "frequency",
-        "uniq",
-        "sort",
-        "sample",
-        "search",
-        "dedup",
-        "fill",
-        "rename",
-        "explode",
-        "replace",
-        "cat",
-        "join",
-        "diff",
-        "exclude",
-        "transpose",
-        "sniff",
-        "slice",
-        "fmt",
-        "select",
-        "split",
-        "validate",
-        "schema",
-        "query",
-        "flatten",
-        "apply",
-        "ingest",
-        "mask",
-    }
+    valid_commands = known_pipeline_commands()
 
     for i, step in enumerate(spec.steps):
-        step_name = step.get("name", f"step_{i+1}")
+        step_name = step.get("name", f"step_{i + 1}")
         command = step.get("command")
 
         if not command:
@@ -269,3 +298,52 @@ def validate_pipeline(spec: PipelineSpec) -> list[str]:
             errors.append(f"Step '{step_name}': 'args' must be a dictionary/object")
 
     return errors
+
+
+def _mermaid_node_id(name: str, index: int) -> str:
+    cleaned = re.sub(r"[^A-Za-z0-9_]", "_", name or "")
+    if not cleaned or cleaned[0].isdigit():
+        cleaned = f"s{index}_{cleaned}"
+    return cleaned
+
+
+def render_pipeline_mermaid(spec: PipelineSpec) -> str:
+    """Render a pipeline as a Mermaid flowchart.
+
+    Args:
+        spec: Parsed pipeline specification.
+
+    Returns:
+        Mermaid ``flowchart LR`` source.
+    """
+    lines = ["flowchart LR"]
+    node_ids = []
+    used = set()
+    for index, step in enumerate(spec.steps):
+        name = str(step.get("name") or f"step_{index + 1}")
+        command = str(step.get("command") or "")
+        node_id = _mermaid_node_id(name, index)
+        if node_id in used:
+            node_id = f"{node_id}_{index}"
+        used.add(node_id)
+        label = f"{name}<br/>{command}" if command else name
+        label = label.replace('"', "'")
+        lines.append(f'  {node_id}["{label}"]')
+        node_ids.append(node_id)
+    for left, right in zip(node_ids, node_ids[1:]):
+        lines.append(f"  {left} --> {right}")
+    return "\n".join(lines) + "\n"
+
+
+def render_pipeline_markdown(spec: PipelineSpec, source: Optional[str] = None) -> str:
+    """Render a pipeline as Markdown with an embedded Mermaid diagram."""
+    title = Path(source).stem if source else "pipeline"
+    parts = [f"# {title}", "", "```mermaid", render_pipeline_mermaid(spec).rstrip(), "```", ""]
+    parts.append("## Steps")
+    parts.append("")
+    for index, step in enumerate(spec.steps, 1):
+        name = step.get("name") or f"step_{index}"
+        command = step.get("command") or ""
+        parts.append(f"{index}. **{name}** (`{command}`)")
+    parts.append("")
+    return "\n".join(parts)

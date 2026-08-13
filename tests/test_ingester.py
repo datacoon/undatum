@@ -337,6 +337,36 @@ class TestIngester:
         assert mock_processor.ingest.call_count == 2
 
     @patch("undatum.cmds.ingester.core.MongoIngester")
+    def test_ingest_flatten_nested(self, mock_mongo_ingester_class, tmp_path):
+        mock_processor = MagicMock()
+        mock_mongo_ingester_class.return_value = mock_processor
+        mock_processor.client.server_info.return_value = {"version": "5.0"}
+        src = tmp_path / "nested.jsonl"
+        src.write_text(
+            '{"name": "TJK", "capital_city": {"lat": 38.56, "lon": 68.77}}\n',
+            encoding="utf8",
+        )
+        Ingester(batch_size=10).ingest_single(
+            str(src),
+            "mongodb://localhost:27017",
+            "testdb",
+            "testcoll",
+            {
+                "dbtype": "mongodb",
+                "flatten_nested": True,
+                "drop": False,
+                "skip": None,
+                "totals": False,
+            },
+        )
+        rows = []
+        for call in mock_processor.ingest.call_args_list:
+            rows.extend(call[0][0])
+        assert rows
+        assert rows[0]["capital_city.lat"] == 38.56
+        assert rows[0]["name"] == "TJK"
+
+    @patch("undatum.cmds.ingester.core.MongoIngester")
     def test_ingest_single_mongodb_with_drop(self, mock_mongo_ingester_class, sample_jsonl_file):
         """Test MongoDB ingestion with drop option."""
         mock_processor = MagicMock()
@@ -1293,6 +1323,24 @@ class TestSQLiteIngester:
         assert result[0] == 1
 
         ingester.close()
+
+    def test_sqlite_ingester_file_database(self, tmp_path):
+        """Test SQLite ingestion against a real file database URI."""
+        import sqlite3
+
+        from undatum.cmds.ingester import SQLiteIngester
+
+        db_path = tmp_path / "people.db"
+        ingester = SQLiteIngester(f"sqlite:///{db_path}", "people", create_table=True)
+        ingester.ingest([{"id": 1, "name": "Alice"}, {"id": 2, "name": "Bob"}])
+        ingester.close()
+
+        conn = sqlite3.connect(str(db_path))
+        try:
+            rows = conn.execute("SELECT id, name FROM people ORDER BY id").fetchall()
+        finally:
+            conn.close()
+        assert rows == [(1, "Alice"), (2, "Bob")]
 
 
 @pytest.mark.skipif(not MYSQL_AVAILABLE, reason="pymysql not available")

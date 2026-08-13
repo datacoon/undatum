@@ -27,19 +27,47 @@ from openpyxl import load_workbook
 from pydantic import BaseModel
 
 from ..ai import AIService, get_ai_service, get_description, get_fields_info
-from ..common.command_utils import duckdb_read_csv_expr, resolve_csv_delimiter
+from ..common.command_utils import (
+    duckdb_read_csv_expr,
+    get_iterable_options,
+    iter_command_rows,
+    resolve_csv_delimiter,
+)
 from ..common.engine_selector import is_format_supported_by_duckdb
+from ..common.errors import ValidationError
 from ..common.s3_iterable import open_iterable_with_s3
 from ..common.schema_utils import duckdb_decompose
 from ..constants import TEXT_DATA_TYPES
 from ..formats.docx import analyze_docx
-from ..utils import detect_encoding, get_dict_value
+from ..utils import detect_encoding, get_dict_value, get_option
 
 logger = logging.getLogger(__name__)
 
 OBJECTS_ANALYZE_LIMIT = 10000
 
 TABULAR_ITERABLE_TYPES = ["csv", "tsv", "json", "jsonl"]
+
+
+def _selected_sheet_names(
+    sheetnames: list[str], table_name: Optional[str] = None, start_page: int = 0
+) -> list[str]:
+    """Restrict Excel sheets to a named table or 0-based page index."""
+    if table_name:
+        if table_name not in sheetnames:
+            raise ValidationError(
+                f"Unknown table or sheet {table_name!r}.",
+                field="table",
+                suggestions=list(sheetnames),
+            )
+        return [table_name]
+    if start_page:
+        if start_page < 0 or start_page >= len(sheetnames):
+            raise ValidationError(
+                f"Sheet index {start_page} is out of range (0-{len(sheetnames) - 1}).",
+                field="start_page",
+            )
+        return [sheetnames[start_page]]
+    return list(sheetnames)
 
 
 DUCKDB_TYPES = ["VARCHAR", "DATE", "JSON", "BIGINT", "DOUBLE", "BOOLEAN"]
@@ -306,21 +334,41 @@ def _analyze_iterable_file(
     lang: str,
     ai_service: Optional[AIService],
     stats: bool,
+    table_name: Optional[str] = None,
+    start_page: int = 0,
+    trust: bool = False,
+    options: Optional[dict] = None,
 ) -> TableSchema:
     """Analyze a tabular file using the iterabledata row-by-row engine."""
-    iterableargs = {}
-    if encoding:
-        iterableargs["encoding"] = encoding
-    csv_delimiter = resolve_csv_delimiter(
-        iterableargs, filename=filename, filetype=filetype
-    )
+    opts = {
+        "encoding": encoding,
+        "delimiter": delimiter,
+        "trust": trust,
+    }
+    if table_name:
+        opts["table"] = table_name
+    if start_page:
+        opts["start_page"] = start_page
+    if options:
+        for key in (
+            "quotechar",
+            "on_error",
+            "error_log",
+            "flatten_nested",
+            "max_nested_depth",
+            "keep_nested_parents",
+        ):
+            if options.get(key) is not None:
+                opts[key] = options[key]
+    iterableargs = get_iterable_options(opts)
+    csv_delimiter = resolve_csv_delimiter(iterableargs, filename=filename, filetype=filetype)
     if csv_delimiter:
         iterableargs["delimiter"] = csv_delimiter
 
     objects = []
     total_records = 0
     with open_iterable_with_s3(filename, mode="r", iterableargs=iterableargs) as iterable:
-        for item in iterable:
+        for item in iter_command_rows(iterable, opts):
             total_records += 1
             if len(objects) < objects_limit:
                 if isinstance(item, dict):
@@ -359,6 +407,10 @@ def analyze(
     lang: str = "English",
     ai_provider: Optional[str] = None,
     ai_config: Optional[dict] = None,
+    table_name: Optional[str] = None,
+    start_page: int = 0,
+    trust: bool = False,
+    options: Optional[dict] = None,
 ):
     """Analyzes any type of data file and provides meaningful insights.
 
@@ -369,7 +421,12 @@ def analyze(
         scan: When False, return file metadata only (no table structure scan).
         stats: When True, include uniqueness stats from DuckDB summarize.
         engine: Processing engine ('auto', 'duckdb', or 'iterable').
+        table_name: Named table or Excel sheet to analyze.
+        start_page: 0-based Excel sheet index when ``table_name`` is omitted.
+        trust: Acknowledge pickle deserialization risk.
+        options: Extra reader options (flatten_nested, quotechar, on_error, ...).
     """
+    options = options or {}
     fileext = filename.rsplit(".", 1)[-1].lower()
     filesize = os.path.getsize(filename)
 
@@ -409,11 +466,10 @@ def analyze(
         else:
             report.metadata["encoding"] = encoding
     if scan:
-        use_duckdb = (
-            engine in ("auto", "duckdb")
-            and is_format_supported_by_duckdb(filetype, compression)
+        use_duckdb = engine in ("auto", "duckdb") and is_format_supported_by_duckdb(
+            filetype, compression
         )
-        if engine == "iterable":
+        if engine == "iterable" or table_name or options.get("flatten_nested"):
             use_duckdb = False
 
         duckdb_failed = False
@@ -510,6 +566,10 @@ def analyze(
                         lang=lang,
                         ai_service=ai_service,
                         stats=stats,
+                        table_name=table_name,
+                        start_page=start_page,
+                        trust=trust,
+                        options=options,
                     )
                     report.tables = [table]
                     report.total_records = table.num_records
@@ -536,14 +596,14 @@ def analyze(
                 elif filetype == "xlsx":
                     wb = load_workbook(filename, read_only=True, data_only=True)
                     total = 0
-                    for sheetname in wb.sheetnames:
+                    for sheetname in _selected_sheet_names(
+                        list(wb.sheetnames), table_name, start_page
+                    ):
                         sheet = wb[sheetname]
                         objects = []
                         max_num = min(objects_limit, sheet.max_row or 0)
                         for row in sheet.iter_rows(max_row=max_num, values_only=True):
-                            objects.append(
-                                [str(cell) if cell is not None else "" for cell in row]
-                            )
+                            objects.append([str(cell) if cell is not None else "" for cell in row])
                         table = table_from_objects(
                             objects,
                             table_id=sheetname,
@@ -562,7 +622,9 @@ def analyze(
                 elif filetype == "xls":
                     wb = xlrd.open_workbook(filename)
                     total = 0
-                    for sheetname in wb.sheet_names():
+                    for sheetname in _selected_sheet_names(
+                        list(wb.sheet_names()), table_name, start_page
+                    ):
                         sheet = wb.sheet_by_name(sheetname)
                         objects = []
                         max_num = objects_limit if objects_limit < sheet.nrows else sheet.nrows
@@ -667,6 +729,26 @@ def analyze(
                         codec.close()
                     elif fileobj is not None:
                         fileobj.close()
+                elif table_name:
+                    table = _analyze_iterable_file(
+                        filename,
+                        filetype=filetype,
+                        objects_limit=objects_limit,
+                        encoding=encoding,
+                        delimiter=delimiter,
+                        use_pandas=use_pandas,
+                        autodoc=autodoc,
+                        lang=lang,
+                        ai_service=ai_service,
+                        stats=stats,
+                        table_name=table_name,
+                        start_page=start_page,
+                        trust=trust,
+                        options=options,
+                    )
+                    report.tables = [table]
+                    report.total_records = table.num_records
+                    report.total_tables = 1
 
     if autodoc and report.total_tables > 0:
         for table in report.tables:
@@ -698,6 +780,108 @@ def _format_number(num):
     return f"{num:,}"
 
 
+def _resolve_analyze_outtype(options: dict) -> str:
+    """Resolve analyze output format from flags, config, or the output path."""
+    value = (get_option(options, "format_out") or get_option(options, "outtype") or "").lower()
+    value = value.strip()
+    if value:
+        return value
+    output = get_option(options, "output")
+    if output:
+        lower = str(output).lower()
+        if lower.endswith(".json"):
+            return "json"
+        if lower.endswith((".yaml", ".yml")):
+            return "yaml"
+        if lower.endswith((".md", ".markdown")):
+            return "markdown"
+    return "text"
+
+
+def _md_cell(value) -> str:
+    text = "-" if value is None else str(value)
+    return text.replace("|", "\\|").replace("\n", " ")
+
+
+def _md_table(headers: list[str], rows: list[list]) -> str:
+    lines = [
+        "| " + " | ".join(headers) + " |",
+        "| " + " | ".join("---" for _ in headers) + " |",
+    ]
+    for row in rows:
+        lines.append("| " + " | ".join(_md_cell(cell) for cell in row) + " |")
+    return "\n".join(lines)
+
+
+def _analysis_markdown(report, options) -> str:
+    """Render an analysis report as Markdown."""
+    parts = [
+        "# Analysis report",
+        "",
+        "## File information",
+        "",
+        _md_table(
+            ["Attribute", "Value"],
+            [
+                ["Filename", report.filename],
+                ["File size", _format_file_size(report.file_size)],
+                ["File type", report.file_type or "N/A"],
+                ["Compression", report.compression or "None"],
+                ["Total tables", _format_number(report.total_tables)],
+                ["Total records", _format_number(report.total_records)],
+                *[[k.replace("_", " ").title(), v] for k, v in (report.metadata or {}).items()],
+            ],
+        ),
+        "",
+    ]
+    if not report.tables:
+        return "\n".join(parts).rstrip() + "\n"
+
+    show_stats = options.get("stats", True) and any(
+        f.unique_count is not None for t in report.tables for f in (t.fields or [])
+    )
+    headers = ["Field Name", "Type", "Is Array"]
+    if show_stats:
+        headers.extend(["Unique", "Total", "Unique %"])
+    headers.append("Description")
+
+    parts.append("## Table structures")
+    parts.append("")
+    for rtable in report.tables:
+        title = rtable.id or "table"
+        parts.append(f"### {title}")
+        parts.append("")
+        parts.append(
+            f"Records: {_format_number(rtable.num_records)} · "
+            f"Columns: {_format_number(rtable.num_cols)} · "
+            f"Structure: {'Flat' if rtable.is_flat else 'Nested'}"
+        )
+        parts.append("")
+        rows = []
+        for field in rtable.fields or []:
+            row = [field.name, field.ftype, "Yes" if field.is_array else "No"]
+            if show_stats:
+                row.extend(
+                    [
+                        _format_number(field.unique_count),
+                        _format_number(field.total_count),
+                        (
+                            f"{field.uniqueness_pct:.2f}%"
+                            if field.uniqueness_pct is not None
+                            else "N/A"
+                        ),
+                    ]
+                )
+            row.append(field.description or "-")
+            rows.append(row)
+        parts.append(_md_table(headers, rows))
+        parts.append("")
+        if rtable.description:
+            parts.append(rtable.description.strip())
+            parts.append("")
+    return "\n".join(parts).rstrip() + "\n"
+
+
 def _write_analysis_output(report, options, output_stream):
     """Write analysis report to output stream in the specified format."""
     from tabulate import tabulate
@@ -710,7 +894,7 @@ def _write_analysis_output(report, options, output_stream):
         yaml_output = yaml.dump(report.model_dump(), Dumper=yaml.Dumper)
         output_stream.write(yaml_output)
     elif options["outtype"] == "markdown":
-        raise NotImplementedError("Markdown output not implemented")
+        output_stream.write(_analysis_markdown(report, options))
     else:
         # Text output format
         # Print header
@@ -769,7 +953,11 @@ def _write_analysis_output(report, options, output_stream):
                             [
                                 _format_number(field.unique_count),
                                 _format_number(field.total_count),
-                                f"{field.uniqueness_pct:.2f}%" if field.uniqueness_pct is not None else "N/A",
+                                (
+                                    f"{field.uniqueness_pct:.2f}%"
+                                    if field.uniqueness_pct is not None
+                                    else "N/A"
+                                ),
                             ]
                         )
                     row.append(desc)
@@ -817,14 +1005,21 @@ class Analyzer:
             objects_limit=options.get("objects_limit", OBJECTS_ANALYZE_LIMIT),
             scan=options.get("scan", True),
             stats=options.get("stats", True),
-            engine=options["engine"],
-            use_pandas=options["use_pandas"],
+            engine=get_option(options, "engine") or "auto",
+            use_pandas=options.get("use_pandas") or False,
             ignore_errors=options.get("ignore_errors", True),
-            autodoc=options["autodoc"],
-            lang=options["lang"],
+            autodoc=options.get("autodoc") or False,
+            lang=options.get("lang") or "English",
             ai_provider=options.get("ai_provider"),
             ai_config=options.get("ai_config"),
+            table_name=options.get("table"),
+            start_page=options.get("start_page") or 0,
+            trust=bool(options.get("trust")),
+            options=options,
         )
+
+        options = dict(options)
+        options["outtype"] = _resolve_analyze_outtype(options)
 
         # Determine output destination
         output_file = options.get("output")

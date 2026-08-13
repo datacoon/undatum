@@ -21,7 +21,8 @@ class TestOpenIterableWithS3:
         with open_iterable_with_s3("/local/path/file.jsonl", mode="r") as result:
             assert result == mock_iterable
 
-        mock_is_s3_uri.assert_called_once_with("/local/path/file.jsonl")
+        mock_is_s3_uri.assert_called_with("/local/path/file.jsonl")
+        assert mock_is_s3_uri.call_count >= 1
         mock_open_iterable.assert_called_once_with(
             "/local/path/file.jsonl", mode="r", iterableargs={}
         )

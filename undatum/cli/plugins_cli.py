@@ -1,7 +1,7 @@
 """CLI commands for plugin management."""
 
 import sys
-from typing import Annotated
+from typing import Annotated, Optional
 
 import typer
 from rich.table import Table
@@ -109,5 +109,74 @@ def info(
             console.print(f"[yellow]Could not list commands: {e}[/yellow]")
     if isinstance(plugin, ConnectorPlugin):
         console.print("\n[bold]Type:[/bold] Connector Plugin")
+        console.print(f"[bold]Connector:[/bold] {plugin.name}")
     if isinstance(plugin, TransformPlugin):
         console.print("\n[bold]Type:[/bold] Transform Plugin")
+        console.print(f"[bold]Transform:[/bold] {plugin.name}")
+
+
+@plugins_app.command()
+def validate(
+    name: Annotated[
+        Optional[str],
+        typer.Argument(help="Plugin name to validate. Omit to validate all loaded plugins."),
+    ] = None,
+    verbose: Annotated[bool, typer.Option(help="Enable verbose logging output.")] = False,
+):
+    """Validate plugin structure, type, and basic callability.
+
+    Checks that each plugin implements the expected interface for its type
+    (command, connector, or transform).
+    """
+    if verbose:
+        enable_verbose()
+
+    registry = plugin_manager.get_registry()
+    if name:
+        plugins = [registry.get_plugin(name)]
+        if plugins[0] is None:
+            console.print(f"[red]Plugin '{name}' not found[/red]")
+            sys.exit(1)
+    else:
+        plugins = registry.list_plugins()
+        if not plugins:
+            console.print("[yellow]No plugins installed[/yellow]")
+            return
+
+    errors = 0
+    for plugin in plugins:
+        problems = _validate_plugin(plugin)
+        if problems:
+            errors += 1
+            console.print(f"[red]{plugin.name}[/red]: {'; '.join(problems)}")
+        else:
+            console.print(f"[green]{plugin.name}[/green]: ok ({plugin.version})")
+
+    if errors:
+        sys.exit(1)
+
+
+def _validate_plugin(plugin) -> list[str]:
+    """Return a list of validation problems for a plugin instance."""
+    problems: list[str] = []
+    if not getattr(plugin, "name", None):
+        problems.append("missing name")
+    if isinstance(plugin, CommandPlugin):
+        if not callable(getattr(plugin, "register_commands", None)):
+            problems.append("CommandPlugin must implement register_commands")
+    if isinstance(plugin, ConnectorPlugin):
+        if not callable(getattr(plugin, "can_handle", None)):
+            problems.append("ConnectorPlugin must implement can_handle")
+        if not callable(getattr(plugin, "open", None)):
+            problems.append("ConnectorPlugin must implement open")
+    if isinstance(plugin, TransformPlugin):
+        if not callable(getattr(plugin, "transform", None)):
+            problems.append("TransformPlugin must implement transform")
+        else:
+            try:
+                result = plugin.transform({})
+                if not isinstance(result, dict):
+                    problems.append("transform() must return a dict")
+            except Exception as exc:
+                problems.append(f"transform() failed on empty record: {exc}")
+    return problems

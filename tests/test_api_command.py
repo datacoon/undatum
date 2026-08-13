@@ -236,3 +236,62 @@ def test_api_export_openapi(sample_csv, tmp_path):
     assert "/data" in schema["paths"]
     loaded = json.loads(output_path.read_text(encoding="utf8"))
     assert loaded["paths"]["/data"]["get"]["responses"]["200"]
+
+
+def test_validate_api_config_schema_rejects_empty():
+    from undatum.cmds.api import validate_api_config_schema
+
+    with pytest.raises(ValueError, match="resources"):
+        validate_api_config_schema({})
+    with pytest.raises(ValueError, match="format"):
+        validate_api_config_schema(
+            {"resources": [{"name": "x", "path": "a.csv", "format": "xlsx"}]}
+        )
+
+
+def test_api_key_auth(sample_csv):
+    _skip_without_api()
+    from fastapi.testclient import TestClient
+
+    from undatum.cmds.api import _build_api_app
+
+    app = _build_api_app(_sample_config(sample_csv), api_key="secret")
+    client = TestClient(app)
+    assert client.get("/data").status_code == 401
+    assert client.get("/data", headers={"X-API-Key": "secret"}).status_code == 200
+    assert client.get("/docs").status_code == 200
+
+
+def test_api_cors(sample_csv):
+    _skip_without_api()
+    from fastapi.testclient import TestClient
+
+    from undatum.cmds.api import _build_api_app
+
+    app = _build_api_app(_sample_config(sample_csv), cors_origins=["https://app.example.com"])
+    client = TestClient(app)
+    response = client.options(
+        "/data",
+        headers={
+            "Origin": "https://app.example.com",
+            "Access-Control-Request-Method": "GET",
+        },
+    )
+    assert response.headers.get("access-control-allow-origin") == "https://app.example.com"
+
+
+def test_api_s3_resource_path_materialized(sample_csv):
+    from unittest.mock import MagicMock, patch
+
+    from undatum.cmds.api import _materialize_resource_path
+
+    temps = []
+    mock_client = MagicMock()
+    mock_client.download_file.side_effect = lambda bucket, key, dest: __import__("shutil").copy(
+        str(sample_csv), dest
+    )
+    with patch("undatum.formats.s3.get_s3_client", return_value=mock_client):
+        local = _materialize_resource_path("s3://bucket/data.csv", temps)
+    assert temps and local == temps[0]
+    assert open(local, encoding="utf8").read().startswith("id,name")
+    mock_client.download_file.assert_called_once()

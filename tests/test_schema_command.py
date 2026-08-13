@@ -1,6 +1,7 @@
 """Tests for schema command improvements."""
 
 import json
+from pathlib import Path
 
 import pytest
 import yaml
@@ -498,3 +499,96 @@ class TestSchemeCommandDeprecation:
 
         # Both should have the same fields
         assert set(scheme_data.keys()) == set(schema_data.keys())
+
+
+def test_build_schema_xml():
+    xml_file = str(Path(__file__).parent / "fixtures" / "books.xml")
+    table = build_schema(xml_file, filetype="xml")
+    assert table.success is True
+    assert table.num_cols >= 1
+    assert table.fields
+
+
+class TestSchemaValidate:
+    def test_consistent_jsonl_is_valid(self, tmp_path):
+        from undatum.cmds.schemer import validate_inferred_schema
+
+        src = tmp_path / "ok.jsonl"
+        src.write_text(
+            '{"id": 1, "name": "Alice"}\n{"id": 2, "name": "Bob"}\n',
+            encoding="utf8",
+        )
+        report = validate_inferred_schema(str(src), {})
+        assert report["valid"] is True
+        assert report["stats"]["invalid"] == 0
+
+    def test_validate_passes_sample_size(self, tmp_path):
+        from unittest.mock import patch
+
+        from undatum.cmds.schemer import validate_inferred_schema
+
+        src = tmp_path / "ok.jsonl"
+        src.write_text('{"id": 1}\n{"id": 2}\n', encoding="utf8")
+        with patch("iterable.ops.schema.infer") as mock_infer:
+            with patch("iterable.ops.schema.validate") as mock_validate:
+                mock_infer.return_value = {"fields": {"id": {"type": "integer"}}}
+                mock_validate.return_value = {
+                    "stats": {"invalid": 0, "valid": 2, "total": 2},
+                    "invalid_rows": [],
+                }
+                validate_inferred_schema(str(src), {"sample_size": 50})
+                assert mock_infer.call_args[1]["sample_size"] == 50
+
+    def test_validate_omits_sample_size_when_unset(self, tmp_path):
+        from unittest.mock import patch
+
+        from undatum.cmds.schemer import validate_inferred_schema
+
+        src = tmp_path / "ok.jsonl"
+        src.write_text('{"id": 1}\n{"id": 2}\n', encoding="utf8")
+        with patch("iterable.ops.schema.infer") as mock_infer:
+            with patch("iterable.ops.schema.validate") as mock_validate:
+                mock_infer.return_value = {"fields": {"id": {"type": "integer"}}}
+                mock_validate.return_value = {
+                    "stats": {"invalid": 0, "valid": 2, "total": 2},
+                    "invalid_rows": [],
+                }
+                validate_inferred_schema(str(src), {})
+                assert "sample_size" not in mock_infer.call_args[1]
+
+    def test_type_mismatch_is_invalid(self, tmp_path):
+        from undatum.cmds.schemer import validate_inferred_schema
+
+        src = tmp_path / "mismatch.jsonl"
+        src.write_text(
+            '{"id": 1, "name": "Alice"}\n{"id": "two", "name": "Bob"}\n',
+            encoding="utf8",
+        )
+        report = validate_inferred_schema(str(src), {})
+        assert report["valid"] is False
+        assert report["stats"]["invalid"] >= 1
+        assert report["invalid_sample"]
+
+    def test_cli_validate_json(self, tmp_path):
+        from typer.testing import CliRunner
+
+        from undatum.core import app
+
+        src = tmp_path / "ok.jsonl"
+        src.write_text('{"id": 1}\n{"id": 2}\n', encoding="utf8")
+        result = CliRunner().invoke(app, ["schema", str(src), "--validate", "--outtype", "json"])
+        assert result.exit_code == 0, result.stdout
+        data = json.loads(result.stdout)
+        assert data["valid"] is True
+
+    def test_cli_validate_exits_one_when_invalid(self, tmp_path):
+        from typer.testing import CliRunner
+
+        from undatum.core import app
+
+        src = tmp_path / "bad.jsonl"
+        src.write_text('{"id": 1}\n{"id": "two"}\n', encoding="utf8")
+        result = CliRunner().invoke(app, ["schema", str(src), "--validate", "--outtype", "json"])
+        assert result.exit_code == 1
+        data = json.loads(result.stdout)
+        assert data["valid"] is False

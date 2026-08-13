@@ -7,7 +7,6 @@ elasticsearch
 iterabledata
 jsonlines>=4.0.0
 lz4>=4.3.2
-mistql>=0.4.11
 numpy>=1.22.2
 openpyxl>=3.1.2
 orjson>=3.9.8

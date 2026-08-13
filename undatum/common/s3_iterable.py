@@ -8,7 +8,7 @@ from typing import Any, Optional
 
 from iterable.helpers.detect import open_iterable
 
-from ..common.command_utils import apply_iterable_csv_delimiter
+from ..common.command_utils import apply_iterable_csv_delimiter, apply_table_selection
 from ..common.path_utils import is_s3_uri
 from ..formats.s3 import get_s3_client, parse_s3_uri
 
@@ -99,6 +99,8 @@ def open_iterable_with_s3(
     """
     if iterableargs is None:
         iterableargs = {}
+    if mode in ("r", "rb"):
+        iterableargs = apply_table_selection(path, iterableargs)
 
     # Database connection URIs (postgres, mysql, mssql, clickhouse, mongo, es)
     # are read via iterabledata's DB drivers. Only for read modes.
@@ -121,6 +123,26 @@ def open_iterable_with_s3(
             _configure_iterable(iterable, path, iterableargs)
             yield iterable
         return
+
+    if not is_s3_uri(path):
+        connector = _find_plugin_connector(path)
+        if connector is not None:
+            if mode == "w":
+                raise NotImplementedError(
+                    "Write mode not supported for connector plugin URIs via iterable wrapper"
+                )
+            temp_file = _download_via_connector(connector, path)
+            try:
+                with open_iterable(temp_file, mode=mode, iterableargs=iterableargs) as iterable:
+                    _configure_iterable(iterable, temp_file, iterableargs)
+                    yield iterable
+            finally:
+                if temp_file and os.path.exists(temp_file):
+                    try:
+                        os.remove(temp_file)
+                    except OSError:
+                        logging.warning(f"Failed to remove temporary file: {temp_file}")
+            return
 
     if is_s3_uri(path):
         if mode == "w":
@@ -215,6 +237,8 @@ def open_path(
     """
     if iterableargs is None:
         iterableargs = {}
+    if mode in ("r", "rb"):
+        iterableargs = apply_table_selection(path, iterableargs)
 
     # Database connection URIs are read via iterabledata's DB drivers.
     if mode in ("r", "rb"):

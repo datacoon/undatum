@@ -17,13 +17,62 @@ import logging
 from typing import Annotated, Optional
 
 import typer
+from rich.console import Console
 
 from ..ai.config import get_ai_config
 from .common import console, enable_verbose
 
 logger = logging.getLogger(__name__)
 
+_stderr_console = Console(stderr=True)
+
+
+def _ai_doc_progress_callback(event) -> None:
+    """Print iterabledata documentation stages to stderr."""
+    stage = event.stage.value if hasattr(event.stage, "value") else str(event.stage)
+    detail = f" {event.detail}" if event.detail else ""
+    _stderr_console.print(f"[dim]{stage} {event.progress}%{detail}[/dim]")
+
+
 ai_app = typer.Typer(help="AI-assisted documentation, filtering, planning, and suggestions.")
+
+
+def _source_iterableargs(
+    table: Optional[str] = None,
+    start_page: int = 0,
+    trust: bool = False,
+    on_error: Optional[str] = None,
+    error_log: Optional[str] = None,
+    quotechar: Optional[str] = None,
+) -> dict:
+    from ..common.command_utils import get_iterable_options
+
+    options: dict = {}
+    if table:
+        options["table"] = table
+    if start_page:
+        options["start_page"] = start_page
+    if trust:
+        options["trust"] = True
+    if on_error:
+        options["on_error"] = on_error
+    if error_log:
+        options["error_log"] = error_log
+    if quotechar:
+        options["quotechar"] = quotechar
+    return get_iterable_options(options)
+
+
+# iterabledata DEFAULT_BLOCKS plus codebook (not in the engine default set).
+DEFAULT_DOC_BLOCKS = [
+    "general",
+    "schema",
+    "quality",
+    "examples",
+    "statistics",
+    "agent_skill",
+    "codebook",
+]
 
 
 def _resolve_ai(
@@ -74,9 +123,97 @@ def doc(
     pii_detect: Annotated[
         bool, typer.Option(help="Detect PII fields (requires metacrafter).")
     ] = False,
+    pii_mask_samples: Annotated[
+        bool,
+        typer.Option(
+            "--pii-mask-samples",
+            help="Mask detected PII in sample rows sent to the LLM.",
+        ),
+    ] = False,
     semantic_types: Annotated[
         bool, typer.Option(help="Detect semantic types (requires metacrafter).")
     ] = False,
+    tables: Annotated[
+        Optional[str],
+        typer.Option(
+            "--tables",
+            help="Comma-separated table/sheet names for multi-table sources.",
+        ),
+    ] = None,
+    cache: Annotated[
+        bool,
+        typer.Option("--cache", help="Cache generated documentation by content hash."),
+    ] = False,
+    include_field_descriptions: Annotated[
+        bool,
+        typer.Option(
+            "--include-field-descriptions",
+            help="Generate per-field descriptions (non-block generate path).",
+        ),
+    ] = False,
+    validate_output: Annotated[
+        bool,
+        typer.Option(
+            "--validate-output",
+            help="Validate JSON documentation against Pydantic models.",
+        ),
+    ] = False,
+    context: Annotated[
+        Optional[str],
+        typer.Option(
+            "--context",
+            help='JSON object of extra prompt context, e.g. \'{"title": "Sales"}\'.',
+        ),
+    ] = None,
+    progress: Annotated[
+        bool,
+        typer.Option(
+            "--progress",
+            help="Print documentation generation stages to stderr.",
+        ),
+    ] = False,
+    sample_size: Annotated[
+        Optional[int],
+        typer.Option(
+            "--sample-size",
+            help="Override sample row count for documentation (engine default if omitted).",
+        ),
+    ] = None,
+    detect_constraints: Annotated[
+        bool,
+        typer.Option(
+            "--detect-constraints/--no-detect-constraints",
+            help="Detect min/max/length/enum constraints during schema inference (block path).",
+        ),
+    ] = True,
+    include_statistics: Annotated[
+        bool,
+        typer.Option(
+            "--statistics/--no-statistics",
+            help="Compute statistics used by statistics/quality/codebook blocks.",
+        ),
+    ] = True,
+    temperature: Annotated[
+        Optional[float],
+        typer.Option(
+            "--temperature",
+            help="LLM sampling temperature (engine default if omitted).",
+        ),
+    ] = None,
+    max_tokens: Annotated[
+        Optional[int],
+        typer.Option(
+            "--max-tokens",
+            help="Maximum tokens per LLM documentation block (engine default if omitted).",
+        ),
+    ] = None,
+    job_id: Annotated[
+        Optional[str],
+        typer.Option(
+            "--job-id",
+            help="Stable job identifier for documentation progress and JSON results.",
+        ),
+    ] = None,
     provider: Annotated[str, typer.Option(help="LLM provider override.")] = None,
     model: Annotated[str, typer.Option(help="Model name override.")] = None,
     api_key: Annotated[str, typer.Option(help="API key override.")] = None,
@@ -93,16 +230,53 @@ def doc(
         undatum ai doc data.csv
         undatum ai doc data.parquet --format json --blocks general,schema,quality
         undatum ai doc data.csv --provider anthropic --model claude-3-5-sonnet-latest
+        undatum ai doc workbook.xlsx --tables Sheet2 --pii-mask-samples --cache
+        undatum ai doc data.csv --progress
+        undatum ai doc data.csv --sample-size 20 --no-detect-constraints
+        undatum ai doc data.csv --temperature 0.2 --max-tokens 2048
+        undatum ai doc data.csv --job-id run-42 --progress
+
+    Default blocks: general, schema, quality, examples, statistics, agent_skill, codebook.
     """
     if verbose:
         enable_verbose()
 
     from iterable.ai import doc as ai_doc
 
-    from ..ai.doc_enrichment import enrich_blocks_result, prepare_doc_source, restore_source_filename
+    from ..ai.doc_enrichment import (
+        enrich_blocks_result,
+        prepare_doc_source,
+        restore_source_filename,
+    )
 
     resolved = _resolve_ai(provider, model, api_key, base_url)
-    block_list = [b.strip() for b in blocks.split(",") if b.strip()] if blocks else None
+    block_list = (
+        [b.strip() for b in blocks.split(",") if b.strip()] if blocks else list(DEFAULT_DOC_BLOCKS)
+    )
+    table_list = [part.strip() for part in tables.split(",") if part.strip()] if tables else None
+    context_obj = None
+    if context:
+        from ..common.errors import ValidationError
+
+        try:
+            parsed = json.loads(context)
+        except json.JSONDecodeError as exc:
+            raise ValidationError(
+                f"Could not parse --context as JSON: {exc}",
+                field="context",
+            ) from exc
+        if not isinstance(parsed, dict):
+            raise ValidationError("--context must be a JSON object.", field="context")
+        context_obj = parsed
+
+    progress_cb = _ai_doc_progress_callback if progress else None
+    llm_overrides = {}
+    if temperature is not None:
+        llm_overrides["temperature"] = temperature
+    if max_tokens is not None:
+        llm_overrides["max_tokens"] = max_tokens
+    if job_id is not None:
+        llm_overrides["job_id"] = job_id
 
     doc_path, cleanup, field_hints, field_names = prepare_doc_source(filename)
     try:
@@ -117,6 +291,13 @@ def doc(
                 language=language,
                 pii_detect=pii_detect,
                 semantic_types=semantic_types,
+                tables=table_list,
+                context=context_obj,
+                progress=progress_cb,
+                sample_size=sample_size,
+                detect_constraints=detect_constraints,
+                include_statistics=include_statistics,
+                **llm_overrides,
             )
             restore_source_filename(result, filename, doc_path)
             enrich_blocks_result(
@@ -128,18 +309,29 @@ def doc(
             if output_format != "json":
                 result = result["full_document_markdown"]
         else:
-            result = ai_doc.generate(
-                doc_path,
-                provider=resolved["provider"],
-                model=resolved["model"],
-                api_key=resolved["api_key"],
-                base_url=resolved["base_url"],
-                format=output_format,
-                language=language,
-                pii_detect=pii_detect,
-                semantic_types=semantic_types,
-                blocks=block_list,
-            )
+            generate_kwargs = {
+                "provider": resolved["provider"],
+                "model": resolved["model"],
+                "api_key": resolved["api_key"],
+                "base_url": resolved["base_url"],
+                "format": output_format,
+                "language": language,
+                "pii_detect": pii_detect,
+                "semantic_types": semantic_types,
+                "pii_mask_samples": pii_mask_samples,
+                "cache": cache,
+                "blocks": block_list,
+                "tables": table_list,
+                "include_field_descriptions": include_field_descriptions,
+                "validate_output": validate_output,
+                "context": context_obj,
+                "progress": progress_cb,
+                "include_statistics": include_statistics,
+            }
+            if sample_size is not None:
+                generate_kwargs["sample_size"] = sample_size
+            generate_kwargs.update(llm_overrides)
+            result = ai_doc.generate(doc_path, **generate_kwargs)
     finally:
         cleanup()
 
@@ -173,6 +365,71 @@ def ai_filter(
     api_key: Annotated[str, typer.Option(help="API key override.")] = None,
     base_url: Annotated[str, typer.Option(help="Base URL override (local providers).")] = None,
     verbose: Annotated[bool, typer.Option(help="Enable verbose logging output.")] = False,
+    table: Annotated[
+        Optional[str],
+        typer.Option(
+            "--table",
+            "--sheet",
+            help="Table or sheet name for multi-table sources (Excel, SQLite, lakehouse).",
+        ),
+    ] = None,
+    start_page: Annotated[int, typer.Option(help="Sheet index (0-based) for Excel files.")] = 0,
+    trust: Annotated[
+        bool,
+        typer.Option(
+            "--trust",
+            help="Acknowledge pickle deserialization risk when reading pickle sources.",
+        ),
+    ] = False,
+    on_error: Annotated[
+        Optional[str],
+        typer.Option(
+            "--on-error",
+            help="Parse-error policy: raise (default), skip, or warn.",
+        ),
+    ] = None,
+    error_log: Annotated[
+        Optional[str],
+        typer.Option(
+            "--error-log",
+            help="Append parse errors as JSONL (use with --on-error skip or warn).",
+        ),
+    ] = None,
+    quotechar: Annotated[
+        Optional[str],
+        typer.Option(
+            "--quotechar",
+            help="CSV quote character (iterabledata default '\"' when omitted).",
+        ),
+    ] = None,
+    sample_size: Annotated[
+        Optional[int],
+        typer.Option(
+            "--sample-size",
+            help="Rows to sample when inferring schema context for a file (engine default 10000).",
+        ),
+    ] = None,
+    flatten_nested: Annotated[
+        bool,
+        typer.Option(
+            "--flatten-nested",
+            help="Unfold nested dict / array-of-dict fields into dotted paths for schema context and --apply.",
+        ),
+    ] = False,
+    max_nested_depth: Annotated[
+        Optional[int],
+        typer.Option(
+            "--max-nested-depth",
+            help="With --flatten-nested, maximum nest depth to unfold (engine default 5).",
+        ),
+    ] = None,
+    keep_nested_parents: Annotated[
+        bool,
+        typer.Option(
+            "--keep-nested-parents/--no-keep-nested-parents",
+            help="With --flatten-nested, keep parent dict/array fields alongside dotted children.",
+        ),
+    ] = True,
 ):
     """Translate natural language (or simple DSL) into a filter expression.
 
@@ -184,6 +441,9 @@ def ai_filter(
         undatum ai filter "status == 'active'"
         undatum ai filter "rows where amount over 1000" data.csv --provider openai
         undatum ai filter "age > 30" data.csv --apply --output adults.jsonl
+        undatum ai filter "age > 30" data.csv --sample-size 500
+        undatum ai filter "lat > 40" nested.jsonl --flatten-nested --apply
+        undatum ai filter "lat > 40" nested.jsonl --flatten-nested --max-nested-depth 2 --no-keep-nested-parents
     """
     if verbose:
         enable_verbose()
@@ -195,7 +455,28 @@ def ai_filter(
         try:
             from iterable.ops import schema as schema_ops
 
-            schema = schema_ops.infer(filename, detect_constraints=False)
+            from ..common.s3_iterable import open_path
+
+            iterableargs = _source_iterableargs(
+                table, start_page, trust, on_error, error_log, quotechar
+            )
+            infer_kwargs = {"detect_constraints": False}
+            if sample_size is not None:
+                infer_kwargs["sample_size"] = sample_size
+            if flatten_nested:
+                infer_kwargs["flatten_nested"] = True
+                infer_kwargs["keep_nested_parents"] = keep_nested_parents
+                if max_nested_depth is not None:
+                    infer_kwargs["max_nested_depth"] = max_nested_depth
+            if iterableargs:
+                source = open_path(filename, mode="r", iterableargs=iterableargs)
+                try:
+                    schema = schema_ops.infer(source, **infer_kwargs)
+                finally:
+                    if hasattr(source, "close"):
+                        source.close()
+            else:
+                schema = schema_ops.infer(filename, **infer_kwargs)
         except Exception as e:  # noqa: BLE001
             logger.debug("Schema inference failed for %s: %s", filename, e)
 
@@ -225,10 +506,26 @@ def ai_filter(
         import sys
 
         sink = out_file or sys.stdout
-        source = open_path(filename, mode="r")
+        source = open_path(
+            filename,
+            mode="r",
+            iterableargs=_source_iterableargs(
+                table, start_page, trust, on_error, error_log, quotechar
+            ),
+        )
         try:
             count = 0
-            for row in ai_flt.apply_ast(source, ast):
+            rows = source
+            if flatten_nested:
+                from ..common.command_utils import iter_projected_rows
+
+                rows = iter_projected_rows(
+                    source,
+                    True,
+                    keep_parents=keep_nested_parents,
+                    max_depth=max_nested_depth,
+                )
+            for row in ai_flt.apply_ast(rows, ast):
                 sink.write(json.dumps(row, ensure_ascii=False, default=str) + "\n")
                 count += 1
         finally:
@@ -287,12 +584,72 @@ def suggest(
     model: Annotated[str, typer.Option(help="Model name override.")] = None,
     api_key: Annotated[str, typer.Option(help="API key override.")] = None,
     base_url: Annotated[str, typer.Option(help="Base URL override (local providers).")] = None,
+    apply: Annotated[
+        bool,
+        typer.Option("--apply", help="Apply the suggested spec and write transformed rows."),
+    ] = False,
+    output: Annotated[
+        str, typer.Option(help="Output file for --apply (JSONL; default stdout).")
+    ] = None,
+    yes: Annotated[
+        bool,
+        typer.Option("--yes", "-y", help="Do not prompt before applying the transform."),
+    ] = False,
+    sample_size: Annotated[
+        Optional[int],
+        typer.Option(
+            "--sample-size",
+            help="Override sample row count sent to the suggestion engine (default 5).",
+        ),
+    ] = None,
     verbose: Annotated[bool, typer.Option(help="Enable verbose logging output.")] = False,
+    table: Annotated[
+        Optional[str],
+        typer.Option(
+            "--table",
+            "--sheet",
+            help="Table or sheet name for multi-table sources (Excel, SQLite, lakehouse).",
+        ),
+    ] = None,
+    start_page: Annotated[int, typer.Option(help="Sheet index (0-based) for Excel files.")] = 0,
+    trust: Annotated[
+        bool,
+        typer.Option(
+            "--trust",
+            help="Acknowledge pickle deserialization risk when reading pickle sources.",
+        ),
+    ] = False,
+    on_error: Annotated[
+        Optional[str],
+        typer.Option(
+            "--on-error",
+            help="Parse-error policy: raise (default), skip, or warn.",
+        ),
+    ] = None,
+    error_log: Annotated[
+        Optional[str],
+        typer.Option(
+            "--error-log",
+            help="Append parse errors as JSONL (use with --on-error skip or warn).",
+        ),
+    ] = None,
+    quotechar: Annotated[
+        Optional[str],
+        typer.Option(
+            "--quotechar",
+            help="CSV quote character (iterabledata default '\"' when omitted).",
+        ),
+    ] = None,
 ):
-    """Suggest a declarative transform spec for a dataset and goal (no changes applied).
+    """Suggest a declarative transform spec for a dataset and goal.
+
+    With ``--apply``, runs ``iterable.ops.transform.apply_spec`` and writes JSONL.
+    Prompts for confirmation unless ``--yes`` is passed.
 
     Examples:
         undatum ai suggest data.csv "drop empty columns and rename id to user_id"
+        undatum ai suggest data.csv "rename id to user_id" --apply --yes --output out.jsonl
+        undatum ai suggest data.csv "normalize phone numbers" --sample-size 20
     """
     if verbose:
         enable_verbose()
@@ -300,12 +657,63 @@ def suggest(
     from iterable.ai import suggest as ai_suggest
 
     resolved = _resolve_ai(provider, model, api_key, base_url)
-    result = ai_suggest.suggest_transform(
-        filename,
-        goal,
-        provider=resolved["provider"],
-        model=resolved["model"],
-        api_key=resolved["api_key"],
-        base_url=resolved["base_url"],
-    )
-    console.print_json(json.dumps(result, default=str))
+    iterableargs = _source_iterableargs(table, start_page, trust, on_error, error_log, quotechar)
+    suggest_source = filename
+    opened = None
+    if iterableargs:
+        from ..common.s3_iterable import open_path
+
+        opened = open_path(filename, mode="r", iterableargs=iterableargs)
+        suggest_source = opened
+    try:
+        result = ai_suggest.suggest_transform(
+            suggest_source,
+            goal,
+            provider=resolved["provider"],
+            model=resolved["model"],
+            api_key=resolved["api_key"],
+            base_url=resolved["base_url"],
+            **({"sample_size": sample_size} if sample_size is not None else {}),
+        )
+    finally:
+        if opened is not None and hasattr(opened, "close"):
+            opened.close()
+    if not apply:
+        console.print_json(json.dumps(result, default=str))
+        return
+
+    if not yes:
+        target = output or "stdout"
+        if not typer.confirm(f"Apply transform spec and write to {target}?"):
+            raise typer.Exit()
+
+    from iterable.ops.transform import apply_spec
+
+    from ..common.s3_iterable import open_path
+
+    out_file = open(output, "w", encoding="utf-8") if output else None
+    try:
+        import sys
+
+        sink = out_file or sys.stdout
+        source = open_path(
+            filename,
+            mode="r",
+            iterableargs=_source_iterableargs(
+                table, start_page, trust, on_error, error_log, quotechar
+            ),
+        )
+        try:
+            count = 0
+            for row in apply_spec(source, result):
+                sink.write(json.dumps(row, ensure_ascii=False, default=str) + "\n")
+                count += 1
+        finally:
+            if hasattr(source, "close"):
+                source.close()
+        logger.info("Applied transform spec to %d rows", count)
+        if output:
+            console.print(f"[green]Wrote {count} rows to {output}[/green]")
+    finally:
+        if out_file:
+            out_file.close()

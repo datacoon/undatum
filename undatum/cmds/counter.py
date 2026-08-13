@@ -6,6 +6,7 @@ import duckdb
 
 from ..common.command_utils import (  # noqa: F401
     ITERABLE_OPTIONS_KEYS,
+    force_iterable_if_table,
     get_iterable_options,
     run_with_duckdb_fallback,
 )
@@ -42,6 +43,7 @@ class Counter:
         engine = get_option(options, "engine") or "auto"
 
         detected_engine = detect_engine(fromfile, engine, filetype, operation="count")
+        detected_engine = force_iterable_if_table(options, detected_engine)
 
         def _count_duckdb():
             return duckdb.sql(f"SELECT COUNT(*) FROM '{fromfile}'").fetchone()[0]

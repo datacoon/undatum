@@ -131,3 +131,16 @@ class TestSqlExecutor:
     def test_invalid_sql_raises(self, csv_file):
         with pytest.raises(UndatumError):
             SqlExecutor().query("SELECT bad syntax FROM", [csv_file])
+
+    def test_fetch_returns_bounded_rows(self, csv_file):
+        columns, records, truncated = SqlExecutor().fetch(
+            "SELECT city FROM data ORDER BY city", [csv_file], max_rows=2
+        )
+        assert "city" in columns
+        assert len(records) == 2
+        assert truncated is True
+        columns, records, truncated = SqlExecutor().fetch(
+            "SELECT COUNT(*) AS n FROM data", [csv_file], max_rows=10
+        )
+        assert records[0]["n"] == 3
+        assert truncated is False

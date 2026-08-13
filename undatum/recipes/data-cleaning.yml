@@ -17,12 +17,18 @@ variables:
   key_fields:
     description: Comma-separated fields to use for deduplication
     default: "id"
+  fill_fields:
+    description: "Comma-separated fields to fill when empty (default: all fields)"
+    default: ""
+  fill_value:
+    description: Constant value used to fill empty or null values
+    default: "0"
 
 commands:
-  - description: Remove duplicates
-    command: undatum uniq ${input} temp_dedup.jsonl --fields ${key_fields}
-  - description: Fill missing values
-    command: undatum fill temp_dedup.jsonl ${output} --method zero
+  - description: Remove duplicate rows by key fields
+    command: undatum dedup ${input} --key-fields ${key_fields} --output temp_dedup.jsonl
+  - description: Fill missing values with a constant
+    command: undatum fill temp_dedup.jsonl --strategy constant --value ${fill_value} ${fill_fields:+--fields ${fill_fields}} --output ${output}
   - description: Clean up temporary file
     command: rm temp_dedup.jsonl
 
@@ -30,4 +36,6 @@ example: |
   undatum examples run data-cleaning \
     --var input=data.jsonl \
     --var output=cleaned.jsonl \
-    --var key_fields=id,email
+    --var key_fields=id,email \
+    --var fill_fields=age \
+    --var fill_value=0

@@ -109,9 +109,9 @@ def _register_tools(mcp: Any) -> None:
         return _call("query_sql", {"path": path, "query": query, "limit": limit})
 
     @mcp.tool()
-    def frequency(path: str, field: str, limit: int = 20) -> str:
+    def frequency(path: str, field: str, limit: int = 20, table: str | None = None) -> str:
         """Compute the value-frequency distribution for a top-level field."""
-        return _call("frequency", {"path": path, "field": field, "limit": limit})
+        return _call("frequency", {"path": path, "field": field, "limit": limit, "table": table})
 
     @mcp.tool()
     def deduplicate(
@@ -120,6 +120,7 @@ def _register_tools(mcp: Any) -> None:
         keys: list[str] | None = None,
         keep: str = "first",
         confirm: bool = False,
+        table: str | None = None,
     ) -> str:
         """Remove duplicate rows and write the result. Writes require confirm=True."""
         return _call(
@@ -130,6 +131,7 @@ def _register_tools(mcp: Any) -> None:
                 "keys": keys,
                 "keep": keep,
                 "confirm": confirm,
+                "table": table,
             },
         )
 
@@ -141,6 +143,7 @@ def _register_tools(mcp: Any) -> None:
         method: str = "redact",
         salt: str | None = None,
         confirm: bool = False,
+        table: str | None = None,
     ) -> str:
         """Mask sensitive fields and write the result. Writes require confirm=True."""
         return _call(
@@ -152,6 +155,7 @@ def _register_tools(mcp: Any) -> None:
                 "method": method,
                 "salt": salt,
                 "confirm": confirm,
+                "table": table,
             },
         )
 
@@ -162,6 +166,7 @@ def _register_tools(mcp: Any) -> None:
         n: int | None = None,
         percent: float | None = None,
         confirm: bool = False,
+        table: str | None = None,
     ) -> str:
         """Write a random sample of rows. Writes require confirm=True."""
         return _call(
@@ -172,6 +177,7 @@ def _register_tools(mcp: Any) -> None:
                 "n": n,
                 "percent": percent,
                 "confirm": confirm,
+                "table": table,
             },
         )
 

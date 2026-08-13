@@ -1,5 +1,6 @@
 """Tests for statistics command."""
 
+import json
 import os
 import tempfile
 from unittest.mock import MagicMock, patch
@@ -160,3 +161,19 @@ class TestStatProcessor:
                     pass  # May raise, but tests the fallback path
         finally:
             os.unlink(temp_path)
+
+
+def test_stats_json_output(tmp_path):
+    csv_path = tmp_path / "sample.csv"
+    csv_path.write_text("name,age\nAlice,30\nBob,25\n", encoding="utf8")
+    output_path = tmp_path / "stats.json"
+
+    profile = StatProcessor().stats(
+        str(csv_path),
+        {"engine": "iterable", "format_out": "json", "output": str(output_path), "quiet": True},
+    )
+    assert output_path.exists()
+    data = json.loads(output_path.read_text(encoding="utf8"))
+    assert data["count"] == 2
+    assert data["num_fields"] >= 1
+    assert profile["count"] == 2

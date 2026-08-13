@@ -3,7 +3,12 @@
 import logging
 import sys
 
-from ..common.command_utils import ITERABLE_OPTIONS_KEYS, get_iterable_options  # noqa: F401
+from ..common.command_utils import (
+    ITERABLE_OPTIONS_KEYS,  # noqa: F401
+    force_iterable_if_table,
+    get_iterable_options,
+    iter_command_rows,
+)  # noqa: F401
 from ..common.disk_dedup import DiskDeduplicator
 from ..common.duckdb_config import create_duckdb_connection, get_duckdb_config_from_options
 from ..common.engine_selector import detect_engine
@@ -61,6 +66,7 @@ class Deduplicator:
             key_field_list = [f.strip() for f in key_fields.split(",")]
 
         detected_engine = detect_engine(fromfile, engine, filetype, operation="dedup")
+        detected_engine = force_iterable_if_table(options, detected_engine)
         items = []  # Initialize items list
         count = 0  # Initialize count
 
@@ -94,7 +100,7 @@ class Deduplicator:
                         order_clause = ", ".join([f"{field} ASC" for field in key_field_list])
 
                     query = f"""
-                        SELECT * FROM (
+                        SELECT * EXCLUDE (rn) FROM (
                             SELECT *, ROW_NUMBER() OVER (PARTITION BY {partition_by} ORDER BY {order_clause}) as rn
                             FROM {read_expr}
                         ) WHERE rn = 1
@@ -126,8 +132,6 @@ class Deduplicator:
                 column_names = relation.columns
                 rows = relation.fetchall()
                 items = [dict(zip(column_names, row)) for row in rows]
-                if key_field_list:
-                    items = [{k: v for k, v in item.items() if k != "rn"} for item in items]
                 conn.close()
                 count = len(items)
                 logging.info(f"dedup: completed using DuckDB, {len(items)} unique records")
@@ -143,14 +147,19 @@ class Deduplicator:
             try:
                 if low_memory:
                     items = list(
-                        _disk_dedup_stream(iterable, key_field_list, keep, temp_dir)
+                        _disk_dedup_stream(
+                            iter_command_rows(iterable, options),
+                            key_field_list,
+                            keep,
+                            temp_dir,
+                        )
                     )
                     count = len(items)
                 else:
                     seen = {}
                     count = 0
                     use_disk = False
-                    for item in iterable:
+                    for item in iter_command_rows(iterable, options):
                         count += 1
                         if isinstance(item, dict):
                             key = _get_key_value(item, key_field_list)
@@ -170,9 +179,7 @@ class Deduplicator:
                             )
                             # Re-process from scratch on disk for exactness
                             iterable.close()
-                            iterable = open_iterable(
-                                fromfile, mode="r", iterableargs=iterableargs
-                            )
+                            iterable = open_iterable(fromfile, mode="r", iterableargs=iterableargs)
                             items = list(
                                 _disk_dedup_stream(iterable, key_field_list, keep, temp_dir)
                             )

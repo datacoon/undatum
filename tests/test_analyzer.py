@@ -12,9 +12,7 @@ from undatum.common.errors import FileNotFoundError
 def semicolon_csv(tmp_path):
     path = tmp_path / "orgs.csv"
     path.write_text(
-        'id;name;city\n'
-        '1;"Acme, Inc";"New York"\n'
-        '2;"Beta LLC";London\n',
+        "id;name;city\n" '1;"Acme, Inc";"New York"\n' '2;"Beta LLC";London\n',
         encoding="utf8",
     )
     return str(path)
@@ -24,10 +22,7 @@ def semicolon_csv(tmp_path):
 def simple_csv(tmp_path):
     path = tmp_path / "people.csv"
     path.write_text(
-        "id,name,city\n"
-        "1,Alice,NYC\n"
-        "2,Bob,NYC\n"
-        "3,Carol,LA\n",
+        "id,name,city\n" "1,Alice,NYC\n" "2,Bob,NYC\n" "3,Carol,LA\n",
         encoding="utf8",
     )
     return str(path)
@@ -111,6 +106,27 @@ class TestAnalyzeCsv:
         field_names = {f["name"] for f in payload["tables"][0]["fields"]}
         assert field_names == {"id", "name", "city"}
 
+    def test_analyzer_json_from_output_extension(self, simple_csv, tmp_path):
+        output = tmp_path / "report.json"
+        Analyzer().analyze(
+            simple_csv,
+            {
+                "engine": None,
+                "output": str(output),
+            },
+        )
+        payload = json.loads(output.read_text(encoding="utf-8"))
+        assert payload["success"] is True
+        assert payload["file_type"] == "csv"
+
+    def test_analyzer_markdown_from_output_extension(self, simple_csv, tmp_path):
+        output = tmp_path / "report.md"
+        Analyzer().analyze(simple_csv, {"output": str(output)})
+        text = output.read_text(encoding="utf-8")
+        assert text.startswith("# Analysis report")
+        assert "| Field Name |" in text
+        assert "name" in text
+
     def test_missing_file_raises(self, tmp_path):
         missing = str(tmp_path / "missing.csv")
         with pytest.raises(FileNotFoundError):
@@ -123,6 +139,7 @@ class TestAnalyzeCsv:
         assert len(report.tables) == 1
         field_names = {f.name for f in report.tables[0].fields}
         assert field_names == {"id", "name", "city"}
+
 
 class TestAnalyzeXml:
     def test_nested_xml_records(self, tmp_path):
@@ -142,7 +159,11 @@ class TestAnalyzeXml:
         assert report.total_records == 2
         assert report.tables[0].num_cols > 0
         field_names = {f.name for f in report.tables[0].fields}
-        assert "@ИдДок" in field_names or "ИдДок" in field_names or any("ИдДок" in n for n in field_names)
+        assert (
+            "@ИдДок" in field_names
+            or "ИдДок" in field_names
+            or any("ИдДок" in n for n in field_names)
+        )
 
 
 class TestAnalyzeXlsx:

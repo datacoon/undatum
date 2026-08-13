@@ -5,7 +5,11 @@ import logging
 from rich.console import Console
 from rich.table import Table
 
-from ..common.command_utils import ITERABLE_OPTIONS_KEYS, get_iterable_options  # noqa: F401
+from ..common.command_utils import (  # noqa: F401
+    ITERABLE_OPTIONS_KEYS,
+    get_iterable_options,
+    iter_command_rows,
+)
 from ..common.s3_iterable import open_path as open_iterable
 from ..utils import get_option
 
@@ -36,7 +40,7 @@ class TableFormatter:
         items = []
         try:
             count = 0
-            for item in iterable:
+            for item in iter_command_rows(iterable, options):
                 if count >= limit:
                     break
                 if isinstance(item, dict):
