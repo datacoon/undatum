@@ -67,6 +67,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e ".[s3]"
           pip install pyinstaller
+      - name: Assert PyInstaller spec is present
+        shell: bash
+        run: test -f packaging/undatum.spec
       - name: Build binary
         run: pyinstaller --noconfirm packaging/undatum.spec
       - name: Smoke-test binary (Unix)

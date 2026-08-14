@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased](https://github.com/datacoon/undatum/compare/v1.7.0...HEAD)
 
+### Fixed
+
+- **Release binaries** — stop gitignoring `packaging/undatum.spec` so tagged PyInstaller jobs can find the spec
+
 ## [1.7.0](https://github.com/datacoon/undatum/compare/v1.6.0...v1.7.0) - 2026-08-13
 
 ### Added
