@@ -102,6 +102,55 @@ class TestOpenIterableWithS3:
             "gs://bucket/data.jsonl", mode="r", iterableargs={}
         )
 
+    @patch("undatum.common.s3_iterable.open_iterable")
+    def test_open_gcs_alias_delegates_to_native_cloud(self, mock_open_iterable):
+        """gcs:// is treated the same as gs://."""
+        mock_iterable = MagicMock()
+        mock_open_iterable.return_value.__enter__.return_value = mock_iterable
+        mock_open_iterable.return_value.__exit__.return_value = None
+
+        with open_iterable_with_s3("gcs://bucket/data.jsonl", mode="r") as result:
+            assert result == mock_iterable
+
+        mock_open_iterable.assert_called_once_with(
+            "gcs://bucket/data.jsonl", mode="r", iterableargs={}
+        )
+
+    @patch("undatum.common.s3_iterable.open_iterable")
+    def test_open_azure_file_delegates_to_native_cloud(self, mock_open_iterable):
+        """Azure URIs are opened directly via iterabledata (read and write)."""
+        mock_iterable = MagicMock()
+        mock_open_iterable.return_value.__enter__.return_value = mock_iterable
+        mock_open_iterable.return_value.__exit__.return_value = None
+
+        with open_iterable_with_s3("az://container/data.jsonl", mode="w") as result:
+            assert result == mock_iterable
+
+        mock_open_iterable.assert_called_once_with(
+            "az://container/data.jsonl", mode="w", iterableargs={}
+        )
+
+    @patch("undatum.common.s3_iterable.open_iterable")
+    def test_open_gcs_missing_extra_raises_dependency_error(self, mock_open_iterable):
+        """Missing gcsfs becomes a DependencyError with an install hint."""
+        from undatum.common.errors import DependencyError
+
+        mock_open_iterable.side_effect = ImportError("No module named 'gcsfs'")
+        with pytest.raises(DependencyError, match="undatum\\[gcs\\]"):
+            with open_iterable_with_s3("gs://bucket/data.jsonl", mode="r"):
+                pass
+
+    @patch("undatum.common.s3_iterable.open_iterable")
+    def test_open_path_azure_delegates_to_native_cloud(self, mock_open_iterable):
+        from undatum.common.s3_iterable import open_path
+
+        mock_open_iterable.return_value = MagicMock()
+        result = open_path("abfs://container/data.csv", mode="r")
+        mock_open_iterable.assert_called_once_with(
+            "abfs://container/data.csv", mode="r", iterableargs={}
+        )
+        assert result is mock_open_iterable.return_value
+
     @patch("undatum.common.s3_iterable.is_s3_uri", return_value=True)
     @patch("undatum.common.s3_iterable.parse_s3_uri")
     @patch("undatum.common.s3_iterable.get_s3_client")

@@ -23,7 +23,6 @@ from ..common.parallel import parallel_process_chunks
 from ..common.parallel_workers import validate_rules_chunk
 from ..common.path_utils import validate_file_path
 from ..common.progress import wrap_iterable
-from ..common.s3_iterable import open_iterable_with_s3
 from ..common.validation_rules import ValidationRuleError, parse_validation_rules
 from ..utils import field_values, get_file_type, get_option
 from ..validate import VALIDATION_RULEMAP
@@ -78,23 +77,15 @@ class Validator:
         format_in = get_option(options, "format_in")
         get_file_type(fromfile) if format_in is None else format_in
 
-        # Use iterable for consistent record processing
-        from ..common.path_utils import is_s3_uri
         from ..common.s3_iterable import open_path as open_iterable
 
         iterableargs = get_iterable_options(options)
-        if is_s3_uri(fromfile):
-            iterable_context = open_iterable_with_s3(fromfile, mode="r", iterableargs=iterableargs)
-            it_in = iterable_context.__enter__()
-            use_context = True
-        else:
-            it_in = open_iterable(fromfile, mode="r", iterableargs=iterableargs)
-            use_context = False
+        it_in = open_iterable(fromfile, mode="r", iterableargs=iterableargs)
 
         show_progress = get_option(options, "progress") or False
         filter_expr = options.get("filter")
         threads = get_option(options, "threads")
-        use_parallel = bool(threads) and int(threads) > 1 and not use_context
+        use_parallel = bool(threads) and int(threads) > 1
 
         try:
             records = wrap_iterable(
@@ -132,8 +123,8 @@ class Validator:
                     violations = rule_set.validate_record(record, record_index)
                     all_violations.extend(violations)
         finally:
-            if use_context:
-                iterable_context.__exit__(None, None, None)
+            if hasattr(it_in, "close"):
+                it_in.close()
 
         # Generate reports
         self._generate_validation_report(all_violations, total_records, options)

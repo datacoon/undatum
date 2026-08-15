@@ -5,10 +5,16 @@ import os
 import pytest
 
 from undatum.common.path_utils import (
+    is_azure_uri,
+    is_cloud_uri,
+    is_gcs_uri,
     is_http_uri,
+    is_native_cloud_uri,
     is_s3_uri,
     is_uri,
+    missing_cloud_extra_error,
     normalize_path,
+    parse_cloud_uri,
     parse_s3_uri,
     resolve_path,
 )
@@ -149,3 +155,72 @@ class TestResolvePath:
         """Test resolving HTTP URI."""
         uri = "https://example.com/path"
         assert resolve_path(uri) == uri
+
+
+class TestCloudUriHelpers:
+    """GCS/Azure/cloud URI detection and parsing."""
+
+    def test_is_gcs_uri(self):
+        assert is_gcs_uri("gs://bucket/data.csv") is True
+        assert is_gcs_uri("gcs://bucket/data.csv") is True
+        assert is_gcs_uri("s3://bucket/data.csv") is False
+        assert is_gcs_uri("/local/path") is False
+
+    def test_is_azure_uri(self):
+        assert is_azure_uri("az://container/data.csv") is True
+        assert is_azure_uri("abfs://container/data.csv") is True
+        assert is_azure_uri("abfss://container@account.dfs.core.windows.net/data.csv") is True
+        assert is_azure_uri("gs://bucket/data.csv") is False
+
+    def test_is_native_cloud_uri(self):
+        assert is_native_cloud_uri("gs://bucket/data.csv") is True
+        assert is_native_cloud_uri("az://container/data.csv") is True
+        assert is_native_cloud_uri("s3a://bucket/data.csv") is True
+        assert is_native_cloud_uri("s3://bucket/data.csv") is False
+
+    def test_is_cloud_uri(self):
+        assert is_cloud_uri("s3://bucket/data.csv") is True
+        assert is_cloud_uri("gs://bucket/data.csv") is True
+        assert is_cloud_uri("az://container/data.csv") is True
+        assert is_cloud_uri("https://example.com/data.csv") is False
+        assert is_cloud_uri("/local/file.csv") is False
+
+    def test_parse_cloud_uri_gcs(self):
+        scheme, bucket, key = parse_cloud_uri("gs://my-bucket/path/to/file.csv")
+        assert scheme == "gs"
+        assert bucket == "my-bucket"
+        assert key == "path/to/file.csv"
+
+    def test_parse_cloud_uri_azure(self):
+        scheme, bucket, key = parse_cloud_uri("az://my-container/data.jsonl")
+        assert scheme == "az"
+        assert bucket == "my-container"
+        assert key == "data.jsonl"
+
+    def test_parse_cloud_uri_invalid_scheme(self):
+        with pytest.raises(ValueError, match="Unsupported cloud URI scheme"):
+            parse_cloud_uri("https://example.com/file.csv")
+
+    def test_parse_cloud_uri_missing_bucket(self):
+        with pytest.raises(ValueError, match="Missing bucket or container"):
+            parse_cloud_uri("gs:///path/to/file")
+
+    def test_parse_cloud_uri_missing_key(self):
+        with pytest.raises(ValueError, match="Missing key"):
+            parse_cloud_uri("az://container/")
+
+    def test_missing_cloud_extra_error_gcs(self):
+        from undatum.common.errors import DependencyError
+
+        error = missing_cloud_extra_error("gs://bucket/data.csv")
+        assert isinstance(error, DependencyError)
+        assert error.exit_code == 2
+        assert "gcsfs" in str(error)
+        assert "undatum[gcs]" in str(error)
+        assert "undatum[cloud]" in str(error)
+
+    def test_missing_cloud_extra_error_azure(self):
+        error = missing_cloud_extra_error("az://container/data.csv")
+        assert "adlfs" in str(error)
+        assert "undatum[azure]" in str(error)
+        assert "undatum[cloud]" in str(error)

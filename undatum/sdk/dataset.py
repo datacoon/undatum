@@ -60,10 +60,10 @@ class Dataset:
 
     @classmethod
     def read(cls, path: str, **options) -> "Dataset":
-        """Read data from a file or S3 URI.
+        """Read data from a file or cloud URI.
 
         Args:
-            path: File path or S3 URI (s3://bucket/path)
+            path: File path or cloud URI (s3://, gs://, az://, ...)
             **options: Additional options (encoding, delimiter, format_in, table, etc.)
 
         Returns:
@@ -72,6 +72,7 @@ class Dataset:
         Example:
             >>> ds = Dataset.read("data.csv")
             >>> ds = Dataset.read("s3://bucket/data.jsonl", encoding="utf8")
+            >>> ds = Dataset.read("gs://bucket/data.csv")
             >>> ds = Dataset.read("workbook.xlsx", table="Sheet2")
             >>> ds = Dataset.read("nested.jsonl", flatten_nested=True)
         """
@@ -88,15 +89,16 @@ class Dataset:
         return {**self._options, **options}
 
     def write(self, path: str, **options) -> None:
-        """Write dataset to a file or S3 URI.
+        """Write dataset to a file or cloud URI.
 
         Args:
-            path: Output file path or S3 URI
+            path: Output file path or cloud URI (s3://, gs://, az://, ...)
             **options: Additional options (format_out, delimiter, etc.)
 
         Example:
             >>> ds.write("output.jsonl")
             >>> ds.write("s3://bucket/output.parquet", format_out="parquet")
+            >>> ds.write("az://container/output.csv")
         """
         # Get data source
         if self._data is not None:

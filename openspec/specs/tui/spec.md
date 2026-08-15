@@ -3,7 +3,6 @@
 ## Purpose
 Optional Textual terminal session (`undatum tui`) that previews a bounded sample
 and calls the same CLI processors as `undatum` commands. Not a spreadsheet editor.
-
 ## Requirements
 ### Requirement: Optional TUI entry point
 The system SHALL provide an interactive terminal UI via `undatum tui` that is
@@ -115,8 +114,18 @@ History SHALL store paths (or URIs) only, never sample row contents.
 
 #### Scenario: Open an S3 URI
 - **WHEN** the user enters an `s3://` URI in the file picker
-- **THEN** the system SHALL open it through the existing path/S3 helpers
+- **THEN** the system SHALL open it through the existing cloud path helpers
 - **AND** SHALL NOT require a local DirectoryTree listing of the bucket
+
+#### Scenario: Open a GCS URI
+- **WHEN** the user enters a `gs://` URI in the file picker
+- **THEN** the system SHALL open it through the existing cloud path helpers
+- **AND** SHALL NOT require a local DirectoryTree listing of the bucket
+
+#### Scenario: Open an Azure URI
+- **WHEN** the user enters an `az://` URI in the file picker
+- **THEN** the system SHALL open it through the existing cloud path helpers
+- **AND** SHALL NOT require a local DirectoryTree listing of the container
 
 ### Requirement: TUI is not a spreadsheet
 The TUI SHALL NOT edit individual cells in the source file.

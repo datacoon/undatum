@@ -10,8 +10,7 @@ from ..common.command_utils import (
 )
 from ..common.errors import FileNotFoundError, PermissionError, ValidationError, find_similar_files
 from ..common.masking import mask_value
-from ..common.path_utils import is_s3_uri, validate_file_path
-from ..common.s3_iterable import open_iterable_with_s3
+from ..common.path_utils import validate_file_path
 from ..common.s3_iterable import open_path as open_iterable
 from ..utils import get_option
 
@@ -81,42 +80,13 @@ class Masker:
 
         logging.info(f"Masking fields: {fields_to_mask} using method: {method}")
 
-        # Open input file (with S3 support)
-        if is_s3_uri(fromfile):
-            iterable_context = open_iterable_with_s3(fromfile, mode="r", iterableargs=iterableargs)
-            it_in = iterable_context.__enter__()
-        else:
-            it_in = open_iterable(fromfile, mode="r", iterableargs=iterableargs)
-
-        # Open output file
-        import os
-
-        if tofile:
-            if is_s3_uri(tofile):
-                # For S3 output, we'll need to write to temp file first
-                import tempfile
-
-                from ..formats.s3 import S3Writer, parse_s3_uri
-
-                suffix = os.path.splitext(parse_s3_uri(tofile)[1])[1] or ".tmp"
-                temp_fd, temp_output = tempfile.mkstemp(suffix=suffix)
-                os.close(temp_fd)
-                s3_writer = S3Writer(tofile)
-                s3_writer.__enter__()
-            else:
-                temp_output = tofile
-                s3_writer = None
-        else:
-            temp_output = None
-            s3_writer = None
+        it_in = open_iterable(fromfile, mode="r", iterableargs=iterableargs)
 
         try:
-            # Determine output keys from first record
             first_record = None
             keys = None
             records = iter_command_rows(it_in, options)
 
-            # Read first record to determine schema
             try:
                 first_record = next(records)
                 if isinstance(first_record, dict):
@@ -124,17 +94,10 @@ class Masker:
             except StopIteration:
                 pass
 
-            # Open output iterable
-            if temp_output:
-                it_out = open_iterable(
-                    temp_output, mode="w", iterableargs={"keys": keys} if keys else {}
-                )
-            else:
-                # Write to stdout
-                it_out = open_iterable("-", mode="w", iterableargs={"keys": keys} if keys else {})
+            out_args = {"keys": keys} if keys else {}
+            it_out = open_iterable(tofile or "-", mode="w", iterableargs=out_args)
 
             try:
-                # Process first record if we read it
                 if first_record is not None:
                     masked_record = self._mask_record(first_record, fields_to_mask, method, salt)
                     if hasattr(it_out, "write"):
@@ -142,7 +105,6 @@ class Masker:
                     else:
                         it_out.write_bulk([masked_record])
 
-                # Process remaining records
                 count = 0
                 batch = []
                 batch_size = 10000
@@ -163,7 +125,6 @@ class Masker:
                     if count % 100000 == 0:
                         logging.info(f"Masked {count} records")
 
-                # Write remaining batch
                 if batch:
                     if hasattr(it_out, "write_bulk"):
                         it_out.write_bulk(batch)
@@ -178,18 +139,6 @@ class Masker:
 
         finally:
             it_in.close()
-            if is_s3_uri(fromfile):
-                iterable_context.__exit__(None, None, None)
-
-            # Upload to S3 if needed
-            if s3_writer and temp_output:
-                with open(temp_output, "rb") as f:
-                    s3_writer.client.upload_fileobj(f, s3_writer.bucket, s3_writer.key)
-                try:
-                    os.remove(temp_output)
-                except OSError:
-                    pass
-                s3_writer.__exit__(None, None, None)
 
     def _mask_record(
         self, record: dict, fields_to_mask: list[str], method: str, salt: Optional[str] = None

@@ -20,7 +20,15 @@ from starlette.requests import Request
 
 from .. import __version__
 from ..common.errors import FileNotFoundError, PermissionError, find_similar_files
-from ..common.path_utils import is_s3_uri, is_uri, validate_file_path
+from ..common.path_utils import (
+    cloud_object_suffix,
+    is_cloud_uri,
+    is_s3_uri,
+    is_uri,
+    looks_like_missing_cloud_dep,
+    missing_cloud_extra_error,
+    validate_file_path,
+)
 from ..common.schema_utils import duckdb_decompose
 from ..constants import DUCKABLE_FILE_TYPES
 from ..utils import get_option
@@ -97,7 +105,7 @@ def _unique_resource_name(base: str, used: set[str]) -> str:
 def _detect_format(path: str, override: str | None) -> str | None:
     if override:
         return override.lower()
-    if is_s3_uri(path):
+    if is_cloud_uri(path):
         ext = os.path.splitext(path.split("?")[0])[1].lstrip(".").lower()
         if ext == "ndjson":
             return "jsonl"
@@ -364,26 +372,51 @@ def validate_api_config_schema(config: Any) -> None:
             raise ValueError(f"{label} query must be an object.")
 
 
-def _materialize_resource_path(path: str, temp_files: list[str]) -> str:
-    """Return a local path DuckDB can read, downloading s3:// URIs as needed."""
-    if is_s3_uri(path):
-        from ..formats.s3 import get_s3_client, parse_s3_uri
+def _download_fsspec_uri(path: str, dest: str) -> None:
+    """Copy a GCS/Azure/s3a object to a local file via fsspec."""
+    try:
+        import fsspec
+    except ImportError as exc:
+        raise missing_cloud_extra_error(path, exc) from exc
+    try:
+        fs, _, paths = fsspec.get_fs_token_paths(path)
+        src_path = paths[0] if paths else path
+        with fs.open(src_path, "rb") as src, open(dest, "wb") as out:
+            while True:
+                chunk = src.read(1024 * 1024)
+                if not chunk:
+                    break
+                out.write(chunk)
+    except Exception as exc:
+        if looks_like_missing_cloud_dep(path, exc):
+            raise missing_cloud_extra_error(path, exc) from exc
+        raise
 
-        bucket, key = parse_s3_uri(path)
-        suffix = os.path.splitext(key)[1] or ".tmp"
-        temp_fd, temp_path = tempfile.mkstemp(suffix=suffix)
-        os.close(temp_fd)
-        try:
+
+def _materialize_resource_path(path: str, temp_files: list[str]) -> str:
+    """Return a local path DuckDB can read, downloading cloud URIs as needed."""
+    if not is_cloud_uri(path):
+        return path
+
+    suffix = cloud_object_suffix(path)
+    temp_fd, temp_path = tempfile.mkstemp(suffix=suffix)
+    os.close(temp_fd)
+    try:
+        logger.info("Downloading %s for Data API", path)
+        if is_s3_uri(path):
+            from ..formats.s3 import get_s3_client, parse_s3_uri
+
+            bucket, key = parse_s3_uri(path)
             client = get_s3_client()
-            logger.info("Downloading %s for Data API", path)
             client.download_file(bucket, key, temp_path)
-        except Exception:
-            if os.path.exists(temp_path):
-                os.remove(temp_path)
-            raise
-        temp_files.append(temp_path)
-        return temp_path
-    return path
+        else:
+            _download_fsspec_uri(path, temp_path)
+    except Exception:
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+        raise
+    temp_files.append(temp_path)
+    return temp_path
 
 
 def load_api_config(path: str) -> dict[str, Any]:
@@ -419,8 +452,11 @@ def _validate_resources_config(config: dict[str, Any], temp_files: list[str] | N
         fmt = resource.get("format")
         if not path or not fmt:
             raise ValueError(f"Resource {name} missing path or format.")
-        if is_uri(path) and not is_s3_uri(path):
-            raise ValueError(f"Resource {name} path '{path}' is not a local file or s3:// URI.")
+        if is_uri(path) and not is_cloud_uri(path):
+            raise ValueError(
+                f"Resource {name} path '{path}' is not a local file or cloud URI "
+                f"(s3://, gs://, gcs://, az://, abfs://, abfss://)."
+            )
         try:
             validate_file_path(path, check_read=True)
         except FileNotFoundError as exc:
@@ -792,7 +828,7 @@ class DataApi:
                 raise FormatError(abs_path, "unknown", supported)
             infer_temps: list[str] = []
             infer_path = abs_path
-            if is_s3_uri(abs_path):
+            if is_cloud_uri(abs_path):
                 infer_path = _materialize_resource_path(abs_path, infer_temps)
             try:
                 fields = _infer_fields(infer_path, filetype)

@@ -93,6 +93,8 @@ Some features require optional dependencies, installed as extras. This is the ca
 | `langchain` | LangChain agent tools |
 | `polars`, `dask` | DataFrame interop from the `Dataset` SDK |
 | `s3` | S3 cloud storage support (boto3) |
+| `gcs` | Google Cloud Storage (`gs://` / `gcs://`, gcsfs) |
+| `azure` | Azure Blob / ADLS (`az://` / `abfs://`, adlfs) |
 | `cloud` | Multi-cloud storage via fsspec (S3 + GCS + Azure) |
 | `postgres`, `mysql`, `mssql`, `clickhouse` | Database connectors |
 | `frictionless` | Full Frictionless Data Package validation |
@@ -113,6 +115,8 @@ pip install "undatum[langchain]"
 pip install "undatum[polars]"
 pip install "undatum[dask]"
 pip install "undatum[s3]"
+pip install "undatum[gcs]"
+pip install "undatum[azure]"
 pip install "undatum[cloud]"
 pip install "undatum[postgres]"
 pip install "undatum[mysql]"
@@ -601,7 +605,7 @@ On startup, the server prints a banner with the base URL, resource endpoints, an
 
 The `total` field is included only when `include_total=true` is passed (may be slower on large files).
 
-See [Data API security](docs/DATA_API.md) for API keys, CORS, reverse-proxy guidance, and `s3://` resource paths.
+See [Data API security](docs/DATA_API.md) for API keys, CORS, reverse-proxy guidance, and cloud (`s3://` / `gs://` / `az://`) resource paths.
 
 **Query parameters:**
 
@@ -944,7 +948,7 @@ column, `/` filter the sample, `e` export the current view, `w` convert/save as
 (full file, `--low-memory`), `v` validate the sample, `m` mask preview, `p`
 export pipeline YAML, `:` command palette, `ctrl+s` SQL (default `LIMIT 500` on
 the `data` view), `Tab` cycle panes. From the file picker, `u` opens a local
-path or `s3://` URI. The status line shows the equivalent CLI command. Recent
+path or `s3://` / `gs://` / `az://` URI. The status line shows the equivalent CLI command. Recent
 files are stored as paths only in `~/.undatum/tui-history.json`. Use `table` /
 `profile` / `sql` when you are not on an interactive terminal.
 
@@ -961,7 +965,7 @@ undatum web workbook.xlsx --table Sheet2
 undatum web nested.jsonl --flatten-nested --no-open
 ```
 
-Open a path or `s3://` URI, or upload a file (streamed to a temp directory).
+Open a path or `s3://` / `gs://` / `az://` URI, or upload a file (streamed to a temp directory).
 The page shows a bounded sample, equivalent CLI lines, profile, frequency,
 filter, SQL (default `LIMIT 500`), export, convert `--low-memory`, validate,
 mask, and pipeline YAML export. Use `undatum api serve` for a read-only machine
@@ -2258,6 +2262,12 @@ undatum reads and writes cloud object storage URIs natively through iterabledata
 # AWS S3 only
 pip install "undatum[s3]"
 
+# Google Cloud Storage only
+pip install "undatum[gcs]"
+
+# Azure Blob / ADLS only
+pip install "undatum[azure]"
+
 # S3 + Google Cloud Storage + Azure Blob (recommended for multi-cloud)
 pip install "undatum[cloud]"
 ```
@@ -2291,7 +2301,7 @@ undatum mask s3://bucket/data.csv --fields email --method hash az://container/ma
 **Notes:**
 - Cloud I/O is streaming-aware; large files do not need to be downloaded manually first.
 - Local-only options such as `--atomic` apply to local output paths only.
-- For S3-only workflows, `undatum[s3]` is sufficient; use `undatum[cloud]` when you need GCS or Azure.
+- For S3-only workflows, `undatum[s3]` is sufficient; use `undatum[gcs]` or `undatum[azure]` for a single other cloud, or `undatum[cloud]` for all three.
 
 ## Python SDK
 

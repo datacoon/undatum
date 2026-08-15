@@ -246,7 +246,7 @@ make test                 # Via Makefile
 **Data Sources:**
 - File-based input/output (primary)
 - Database connections for `ingest`, `db query`, and `db load` (MongoDB, PostgreSQL, DuckDB, MySQL, SQLite, Elasticsearch)
-- S3 object storage via `s3://` URIs (optional `s3` extra)
+- Object storage via `s3://`, `gs://`/`gcs://`, and `az://`/`abfs://`/`abfss://` URIs (optional `s3`, `gcs`, `azure`, or `cloud` extras)
 - Support for compressed archives (ZIP, 7Z)
 - Network filesystems supported (no special handling required)
 

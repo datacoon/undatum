@@ -2,7 +2,7 @@
 
 ## Purpose
 Read-only HTTP API over file-backed datasets (CSV, JSON/JSONL, Parquet), including optional
-API-key authentication, CORS, S3 resource paths, and OpenAPI documentation.
+API-key authentication, CORS, cloud resource paths (S3/GCS/Azure), and OpenAPI documentation.
 ## Requirements
 ### Requirement: API Config Format
 The system SHALL support a YAML or JSON API config that defines file-backed resources, including
@@ -70,18 +70,32 @@ configured via `--api-key` or the `UNDATUM_API_KEY` environment variable.
 - **AND** a client omits the key
 - **THEN** the server responds with HTTP 401
 
-### Requirement: S3 Resource Paths
-The system SHALL support `s3://` URIs as resource paths in API config when cloud dependencies
-are available.
-
-#### Scenario: Serve S3-backed resource
-- **WHEN** a config resource points to `s3://bucket/path/data.parquet`
-- **THEN** the resource endpoint serves rows from that object
-
 ### Requirement: CORS Configuration
 The system SHALL support optional CORS origins for browser clients via `--cors-origins`.
 
 #### Scenario: Browser preflight
 - **WHEN** CORS origins are configured
 - **THEN** cross-origin requests from allowed origins succeed
+
+### Requirement: Cloud Resource Paths
+The system SHALL support `s3://`, `gs://`/`gcs://`, and `az://`/`abfs://`/`abfss://`
+URIs as resource paths in API config when the matching cloud dependencies are
+available. Cloud objects SHALL be materialized to a temporary local file for
+DuckDB-backed endpoints.
+
+#### Scenario: Serve S3-backed resource
+- **WHEN** a config resource points to `s3://bucket/path/data.parquet`
+- **THEN** the resource endpoint serves rows from that object
+
+#### Scenario: Serve GCS-backed resource
+- **WHEN** a config resource points to `gs://bucket/path/data.parquet`
+- **THEN** the resource endpoint serves rows from that object
+
+#### Scenario: Serve Azure-backed resource
+- **WHEN** a config resource points to `az://container/path/data.csv`
+- **THEN** the resource endpoint serves rows from that object
+
+#### Scenario: Reject unsupported remote URIs
+- **WHEN** a config resource path is an HTTP URL or another non-cloud URI
+- **THEN** the system rejects the config with an error naming supported schemes
 

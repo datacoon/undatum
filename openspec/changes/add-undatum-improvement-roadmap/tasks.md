@@ -78,7 +78,7 @@ Create OpenSpec change proposals for ecosystem expansion:
   - Define plugin API for commands, IO connectors, transforms
   - Support plugin discovery and registration
 
-- [ ] 4.2 Create `add-cloud-connectors` proposal — deferred (Phase 3, out of finish-unfinished wave)
+- [x] 4.2 Create `add-cloud-connectors` proposal — implemented and archived (`gs://`/`gcs://`, `az://`/`abfs://`; extras `gcs`/`azure`/`cloud`)
 - [ ] 4.3 Create `add-streaming-connectors` proposal — deferred
 - [ ] 4.4 Create `add-synthetic-data` proposal — deferred
 - [x] 4.5 Create `add-tui-interface` proposal — implemented and archived (`undatum tui`)

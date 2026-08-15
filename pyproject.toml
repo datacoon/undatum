@@ -103,6 +103,14 @@ dask = [
 s3 = [
     "boto3",
 ]
+gcs = [
+    "fsspec",
+    "gcsfs",
+]
+azure = [
+    "fsspec",
+    "adlfs",
+]
 cloud = [
     "fsspec",
     "s3fs",

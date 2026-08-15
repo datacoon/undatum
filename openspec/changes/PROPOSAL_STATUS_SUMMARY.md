@@ -1,6 +1,6 @@
 # Proposal Status Summary
 
-**Last updated:** 2026-08-13
+**Last updated:** 2026-08-15
 
 > This file is a point-in-time snapshot. For live status, run `openspec list`.
 
@@ -19,10 +19,15 @@ On 2026-08-13:
 - `add-web-ui` — `undatum web` (extra `web`, FastAPI + Jinja2 + HTMX); specs in `openspec/specs/web-ui/`
 - `remove-mistql-support` — removed `undatum query` and the `mistql` dependency; `--filter` is comparison/boolean only
 
+On 2026-08-15:
+
+- `add-cloud-connectors` — GCS (`gs://`/`gcs://`) and Azure (`az://`/`abfs://`)
+  as first-class cloud paths (CLI, SDK, Data API, TUI/web); extras `gcs`/`azure`
+
 ## Active — remaining
 
-- `add-undatum-improvement-roadmap` — remaining Phase 3 child proposals (cloud
-  beyond S3, Kafka, synth, drift, LLM pipeline autodoc) explicitly deferred.
+- `add-undatum-improvement-roadmap` — remaining Phase 3 child proposals (Kafka,
+  synth, drift, LLM pipeline autodoc) explicitly deferred.
   Visual pipeline DAG, inline plot images, and Data API embed from the web UI
   remain follow-on (not in the archived web UI change).
 

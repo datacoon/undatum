@@ -32,7 +32,7 @@ class BrowseScreen(Screen):
     def compose(self) -> ComposeResult:
         yield Header()
         yield Static(
-            "Select a data file, pick Recent, or press u for a path / s3:// URI.",
+            "Select a data file, pick Recent, or press u for a path / cloud URI.",
             id="browse-hint",
         )
         if self._recent:
@@ -78,7 +78,7 @@ class BrowseScreen(Screen):
             self._open_path(path)
 
         self.app.push_screen(
-            PromptScreen("Path or s3:// URI", placeholder="s3://bucket/data.csv"),
+            PromptScreen("Path or cloud URI", placeholder="gs://bucket/data.csv"),
             _open,
         )
 

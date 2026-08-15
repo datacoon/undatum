@@ -295,3 +295,65 @@ def test_api_s3_resource_path_materialized(sample_csv):
     assert temps and local == temps[0]
     assert open(local, encoding="utf8").read().startswith("id,name")
     mock_client.download_file.assert_called_once()
+
+
+def test_api_gcs_resource_path_materialized(sample_csv):
+    from unittest.mock import patch
+
+    from undatum.cmds.api import _materialize_resource_path
+
+    def fake_download(path, dest):
+        import shutil
+
+        shutil.copy(str(sample_csv), dest)
+
+    temps = []
+    with patch("undatum.cmds.api._download_fsspec_uri", side_effect=fake_download):
+        local = _materialize_resource_path("gs://bucket/data.csv", temps)
+    assert temps and local == temps[0]
+    assert open(local, encoding="utf8").read().startswith("id,name")
+
+
+def test_api_azure_resource_path_materialized(sample_csv):
+    from unittest.mock import patch
+
+    from undatum.cmds.api import _materialize_resource_path
+
+    def fake_download(path, dest):
+        import shutil
+
+        shutil.copy(str(sample_csv), dest)
+
+    temps = []
+    with patch("undatum.cmds.api._download_fsspec_uri", side_effect=fake_download):
+        local = _materialize_resource_path("az://container/data.csv", temps)
+    assert temps and local == temps[0]
+    assert open(local, encoding="utf8").read().startswith("id,name")
+
+
+def test_api_gcs_missing_fsspec_raises_dependency_error(tmp_path):
+    from unittest.mock import patch
+
+    from undatum.cmds.api import _download_fsspec_uri
+    from undatum.common.errors import DependencyError
+
+    dest = tmp_path / "unused.csv"
+    with patch.dict("sys.modules", {"fsspec": None}):
+        with pytest.raises(DependencyError, match="undatum\\[gcs\\]"):
+            _download_fsspec_uri("gs://bucket/data.csv", str(dest))
+
+
+def test_api_rejects_http_resource_path(tmp_path):
+    from undatum.cmds.api import _validate_resources_config
+
+    config = {
+        "resources": [
+            {
+                "name": "data",
+                "path": "https://example.com/data.csv",
+                "format": "csv",
+            }
+        ]
+    }
+    with pytest.raises(ValueError, match="cloud URI"):
+        _validate_resources_config(config)

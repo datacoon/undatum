@@ -23,8 +23,8 @@
         <h2>Open</h2>
         <form method="post" action="/open">
           <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-          <label>Path or s3:// URI
-            <input type="text" name="path" placeholder="data.csv" required>
+          <label>Path or cloud URI
+            <input type="text" name="path" placeholder="s3://bucket/data.csv" value="{{ session.source if session else '' }}" required>
           </label>
           <button type="submit">Open</button>
         </form>
@@ -175,7 +175,7 @@
         </table>
       </div>
       {% else %}
-      <p>Open a local path, an <code>s3://</code> URI, or upload a file. The table shows a sample of at most {{ sample_limit }} rows.</p>
+      <p>Open a local path, an <code>s3://</code> / <code>gs://</code> / <code>az://</code> URI, or upload a file. The table shows a sample of at most {{ sample_limit }} rows.</p>
       {% endif %}
 
       {% if result %}

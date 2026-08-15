@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased](https://github.com/datacoon/undatum/compare/v1.7.0...HEAD)
 
+### Added
+
+- **GCS and Azure cloud connectors** — first-class `gs://`/`gcs://` and `az://`/`abfs://`/`abfss://` URIs next to S3 for CLI, SDK, TUI/web, and Data API resources; extras `undatum[gcs]` and `undatum[azure]`; missing-extra errors name the install command
+
 ### Fixed
 
 - **Release binaries** — stop gitignoring `packaging/undatum.spec` so tagged PyInstaller jobs can find the spec

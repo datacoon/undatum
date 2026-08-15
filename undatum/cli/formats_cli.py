@@ -284,9 +284,9 @@ def tables(
         enable_verbose()
 
     from ..common.command_utils import list_source_tables
-    from ..common.path_utils import is_s3_uri
+    from ..common.path_utils import is_uri
 
-    if "://" not in source and not is_s3_uri(source):
+    if not is_uri(source):
         from pathlib import Path
 
         if not Path(source).exists():

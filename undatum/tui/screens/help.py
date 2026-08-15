@@ -14,7 +14,7 @@ undatum tui — explore a sample, not the whole file.
  q                 Quit
  ?                 This help
  o                 Open another file
- u                 Path or s3:// URI (from the file picker)
+ u                 Path or cloud URI (s3://, gs://, az://)
  s                 Profile (full file, via undatum profile)
  f                 Frequency on the selected grid column
  /                 Filter the loaded sample

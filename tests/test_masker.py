@@ -52,9 +52,8 @@ class TestMasker:
         masker = Masker()
         assert masker is not None
 
-    @patch("undatum.cmds.masker.is_s3_uri", return_value=False)
     @patch("undatum.cmds.masker.open_iterable")
-    def test_mask_missing_fields_option(self, mock_open_iterable, mock_is_s3_uri, tmp_path):
+    def test_mask_missing_fields_option(self, mock_open_iterable, tmp_path):
         """Test masking without fields option."""
         input_file = tmp_path / "input.jsonl"
         input_file.write_text('{"email": "a@b.com"}\n')
@@ -62,9 +61,8 @@ class TestMasker:
         with pytest.raises(ValidationError, match="--fields option is required"):
             masker.mask(str(input_file), "output.jsonl", options={})
 
-    @patch("undatum.cmds.masker.is_s3_uri", return_value=False)
     @patch("undatum.cmds.masker.open_iterable")
-    def test_mask_empty_fields(self, mock_open_iterable, mock_is_s3_uri, tmp_path):
+    def test_mask_empty_fields(self, mock_open_iterable, tmp_path):
         """Test masking with empty fields."""
         input_file = tmp_path / "input.jsonl"
         input_file.write_text('{"email": "a@b.com"}\n')
@@ -72,9 +70,8 @@ class TestMasker:
         with pytest.raises(ValidationError, match="No valid fields specified"):
             masker.mask(str(input_file), "output.jsonl", options={"fields": "   ,  ,  "})
 
-    @patch("undatum.cmds.masker.is_s3_uri", return_value=False)
     @patch("undatum.cmds.masker.open_iterable")
-    def test_mask_invalid_method(self, mock_open_iterable, mock_is_s3_uri, tmp_path):
+    def test_mask_invalid_method(self, mock_open_iterable, tmp_path):
         """Test masking with invalid method."""
         input_file = tmp_path / "input.jsonl"
         input_file.write_text('{"email": "a@b.com"}\n')
@@ -84,9 +81,7 @@ class TestMasker:
                 str(input_file), "output.jsonl", options={"fields": "email", "method": "invalid"}
             )
 
-    @patch("undatum.cmds.masker.is_s3_uri", return_value=False)
-    @patch("undatum.cmds.masker.open_iterable")
-    def test_mask_record(self, mock_open_iterable, mock_is_s3_uri):
+    def test_mask_record(self):
         """Test _mask_record method."""
         masker = Masker()
         record = {"email": "test@example.com", "name": "John"}
@@ -96,9 +91,7 @@ class TestMasker:
         assert result["email"] == "***"
         assert result["name"] == "John"
 
-    @patch("undatum.cmds.masker.is_s3_uri", return_value=False)
-    @patch("undatum.cmds.masker.open_iterable")
-    def test_mask_record_multiple_fields(self, mock_open_iterable, mock_is_s3_uri):
+    def test_mask_record_multiple_fields(self):
         """Test masking multiple fields."""
         masker = Masker()
         record = {"email": "test@example.com", "phone": "123-456-7890", "name": "John"}
@@ -109,9 +102,7 @@ class TestMasker:
         assert result["phone"] == "***"
         assert result["name"] == "John"
 
-    @patch("undatum.cmds.masker.is_s3_uri", return_value=False)
-    @patch("undatum.cmds.masker.open_iterable")
-    def test_mask_record_field_not_present(self, mock_open_iterable, mock_is_s3_uri):
+    def test_mask_record_field_not_present(self):
         """Test masking field that doesn't exist in record."""
         masker = Masker()
         record = {"name": "John"}
@@ -121,9 +112,7 @@ class TestMasker:
         assert "email" not in result
         assert result["name"] == "John"
 
-    @patch("undatum.cmds.masker.is_s3_uri", return_value=False)
-    @patch("undatum.cmds.masker.open_iterable")
-    def test_mask_record_with_salt(self, mock_open_iterable, mock_is_s3_uri):
+    def test_mask_record_with_salt(self):
         """Test masking with salt."""
         masker = Masker()
         record = {"email": "test@example.com"}

@@ -252,3 +252,31 @@ def test_load_sample_opens_s3_via_open_path(monkeypatch):
     session = TuiServices().load_sample("s3://bucket/data.csv", {}, 10)
     assert session.source == "s3://bucket/data.csv"
     assert session.sample_rows[0]["name"] == "Alice"
+
+
+def test_load_sample_opens_gcs_via_open_path(monkeypatch):
+    class FakeIterable:
+        def __iter__(self):
+            return iter([{"name": "Alice"}])
+
+        def close(self):
+            return None
+
+    monkeypatch.setattr("undatum.tui.services.open_path", lambda *args, **kwargs: FakeIterable())
+    session = TuiServices().load_sample("gs://bucket/data.csv", {}, 10)
+    assert session.source == "gs://bucket/data.csv"
+    assert session.sample_rows[0]["name"] == "Alice"
+
+
+def test_load_sample_opens_azure_via_open_path(monkeypatch):
+    class FakeIterable:
+        def __iter__(self):
+            return iter([{"name": "Alice"}])
+
+        def close(self):
+            return None
+
+    monkeypatch.setattr("undatum.tui.services.open_path", lambda *args, **kwargs: FakeIterable())
+    session = TuiServices().load_sample("az://container/data.csv", {}, 10)
+    assert session.source == "az://container/data.csv"
+    assert session.sample_rows[0]["name"] == "Alice"

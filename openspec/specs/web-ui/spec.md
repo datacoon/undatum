@@ -3,7 +3,6 @@
 ## Purpose
 Optional local browser session (`undatum web`) over the same sampled processors as
 the TUI. Default bind is localhost. Not a spreadsheet and not the read-only Data API.
-
 ## Requirements
 ### Requirement: Optional web UI entry point
 The system SHALL provide a local browser UI via `undatum web` that is optional to
@@ -41,7 +40,7 @@ with detected field names.
   unbounded in-browser table
 
 #### Scenario: Open by path or upload
-- **WHEN** the user submits a local path, an `s3://` URI, or a file upload
+- **WHEN** the user submits a local path, an `s3://` / `gs://` / `az://` URI, or a file upload
 - **THEN** the system SHALL open that source through existing path helpers
 - **AND** uploads SHALL be written to a temporary working directory, not held
   entirely as an in-memory table

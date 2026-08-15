@@ -9,22 +9,13 @@ from typing import Any, Optional
 from iterable.helpers.detect import open_iterable
 
 from ..common.command_utils import apply_iterable_csv_delimiter, apply_table_selection
-from ..common.path_utils import is_s3_uri
+from ..common.path_utils import (
+    is_native_cloud_uri,
+    is_s3_uri,
+    looks_like_missing_cloud_dep,
+    missing_cloud_extra_error,
+)
 from ..formats.s3 import get_s3_client, parse_s3_uri
-
-# Cloud storage URI schemes handled natively by iterabledata via fsspec
-# (GCS, Azure Blob/Data Lake, S3-over-s3a). Plain ``s3://`` keeps using the
-# boto3 download path below to preserve region/profile handling.
-_NATIVE_CLOUD_SCHEMES = ("gs://", "gcs://", "az://", "abfs://", "abfss://", "s3a://")
-
-
-def _is_native_cloud_uri(path: str) -> bool:
-    """Return True for cloud URIs that iterabledata can open directly.
-
-    Covers GCS, Azure, and ``s3a://`` but not plain ``s3://`` (which is served by
-    the boto3-based temp-file path so AWS region/profile options keep working).
-    """
-    return isinstance(path, str) and path.startswith(_NATIVE_CLOUD_SCHEMES)
 
 
 def _configure_iterable(iterable, path: str, iterableargs: dict) -> None:
@@ -118,10 +109,15 @@ def open_iterable_with_s3(
             return
 
     # GCS/Azure/s3a are opened directly by iterabledata (read and write).
-    if _is_native_cloud_uri(path):
-        with open_iterable(path, mode=mode, iterableargs=iterableargs) as iterable:
-            _configure_iterable(iterable, path, iterableargs)
-            yield iterable
+    if is_native_cloud_uri(path):
+        try:
+            with open_iterable(path, mode=mode, iterableargs=iterableargs) as iterable:
+                _configure_iterable(iterable, path, iterableargs)
+                yield iterable
+        except Exception as exc:
+            if looks_like_missing_cloud_dep(path, exc):
+                raise missing_cloud_extra_error(path, exc) from exc
+            raise
         return
 
     if not is_s3_uri(path):
@@ -250,8 +246,13 @@ def open_path(
             return db_iterable
 
     # GCS/Azure/s3a are opened directly by iterabledata (read and write).
-    if _is_native_cloud_uri(path):
-        iterable = open_iterable(path, mode=mode, iterableargs=iterableargs)
+    if is_native_cloud_uri(path):
+        try:
+            iterable = open_iterable(path, mode=mode, iterableargs=iterableargs)
+        except Exception as exc:
+            if looks_like_missing_cloud_dep(path, exc):
+                raise missing_cloud_extra_error(path, exc) from exc
+            raise
         _configure_iterable(iterable, path, iterableargs)
         return iterable
 
