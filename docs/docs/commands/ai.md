@@ -6,7 +6,7 @@ description: "undatum ai command reference"
 
 AI-assisted workflows backed by iterabledata's `iterable.ai` stack. Subcommands: `doc`, `filter`, `plan`, and `suggest`.
 
-Configure providers via `undatum.yaml`, `~/.undatum/config.yaml`, environment variables, or CLI flags. Supported providers: OpenAI, Anthropic, Gemini, Azure OpenAI, OpenRouter, Ollama, LM Studio, and Perplexity. See [AI documentation](/integrations/ai) and the provider flags under [`analyze`](/commands/analyze).
+Configure providers via `undatum.yaml`, `~/.undatum/config.yaml`, environment variables, or CLI flags. The `ai *` subcommands use iterabledata's provider set (OpenAI, Anthropic, Gemini, Azure OpenAI, OpenRouter, Ollama, LM Studio, Perplexity). Legacy `analyze --autodoc` / `schema --autodoc` / `doc --autodoc` only accept openai, openrouter, ollama, lmstudio, and perplexity — see [`analyze`](/commands/analyze).
 
 For block-based documentation with schema enrichment, prefer `ai doc` over legacy `analyze --autodoc` / `schema --autodoc`.
 
@@ -31,8 +31,8 @@ Notable flags: `--format`, `--blocks`, `--tables`, `--cache`, `--pii-mask-sample
 Translate a natural-language or expression filter. Use `--apply` to stream matching rows.
 
 ```bash
-undatum ai filter data.csv "active users in New York" --apply
-undatum ai filter workbook.xlsx "city is Dushanbe" --table Sheet2 --apply
+undatum ai filter "active users in New York" data.csv --apply
+undatum ai filter "city is Dushanbe" workbook.xlsx --table Sheet2 --apply
 undatum ai filter "age > 30" data.csv --sample-size 500
 undatum ai filter "name == 'Alice'" quoted.csv --quotechar "'"
 undatum ai filter "lat > 40" nested.jsonl --flatten-nested --apply

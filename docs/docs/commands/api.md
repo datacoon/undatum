@@ -99,4 +99,4 @@ curl "http://127.0.0.1:8000/sales/42"
 
 See [Data API security](/integrations/data-api) for CORS, reverse-proxy guidance, and cloud resource paths.
 
-See also: [examples/api/api-example.md](https://github.com/datenoio/undatum/blob/main/examples/api/api-example.md).
+See also: [examples/api/api-example.md](https://github.com/datenoio/undatum/blob/master/examples/api/api-example.md).

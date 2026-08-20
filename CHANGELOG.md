@@ -19,7 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **GitHub repository** moved from `datacoon/undatum` to [`datenoio/undatum`](https://github.com/datenoio/undatum). GitHub redirects the old URLs; documentation is at https://datenoio.github.io/undatum/
 - **GCS and Azure cloud connectors** — first-class `gs://`/`gcs://` and `az://`/`abfs://`/`abfss://` URIs next to S3 for CLI, SDK, TUI/web, and Data API resources; extras `undatum[gcs]` and `undatum[azure]`; missing-extra errors name the install command
-- **Docs accuracy** — `ai plan` takes two positional paths; Data API auth notes match `--api-key`; contributing install uses `make install-dev` / `.[dev]`; `llms.txt` and OpenWiki cover domain, operations, integrations, testing, and source maps
+- **Docs accuracy** — `ai plan` takes two positional paths; Data API auth notes match `--api-key`; contributing install uses `make install-dev` / `.[dev]`; `llms.txt` and OpenWiki cover domain, operations, integrations, testing, and source maps; command write examples use `--output` (not a trailing positional path); `schema-bulk` hyphen; `ai filter` is expression then file; convert flattening is `--flatten-data`; replace is `--global-replace`; GitHub edit/blob links target `master`
 
 ### Fixed
 

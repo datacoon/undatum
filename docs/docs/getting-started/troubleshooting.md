@@ -314,7 +314,8 @@ fi
 
 ## Related Documentation
 
-- [README.md](/getting-started/quick-start) - General usage and installation
+- [Installation](/getting-started/installation) - Install and extras
+- [Quick start](/getting-started/quick-start) - First commands
 - [Developer Error Handling Patterns](/development/error-handling) - For contributors
 
 
@@ -336,11 +337,12 @@ undatum analyze data.csv --autodoc --ai-provider openai
 # Error: API key is required
 # Solution: Set provider-specific API key
 export OPENAI_API_KEY=sk-...
+export OPENROUTER_API_KEY=sk-or-...
+export PERPLEXITY_API_KEY=pplx-...
+# ai doc / ai filter (iterabledata) may also use:
 export ANTHROPIC_API_KEY=sk-ant-...
 export GEMINI_API_KEY=...
 export AZURE_OPENAI_API_KEY=...
-export OPENROUTER_API_KEY=sk-or-...
-export PERPLEXITY_API_KEY=pplx-...
 ```
 
 **Ollama connection failed:**
@@ -367,6 +369,10 @@ export LMSTUDIO_BASE_URL=http://localhost:1234/v1
 - Check provider documentation for model compatibility
 
 ### Provider-Specific Notes
+
+**Legacy `--autodoc`** (`analyze`, `schema`, `schema-bulk`, `doc`): openai, openrouter, ollama, lmstudio, perplexity only.
+
+**`ai *` subcommands** (iterabledata):
 
 - **OpenAI**: Requires API key; models include `gpt-4o-mini`, `gpt-4o`, `gpt-3.5-turbo`
 - **Anthropic**: Requires `ANTHROPIC_API_KEY`; models include Claude 3.5/3 Haiku and Sonnet families

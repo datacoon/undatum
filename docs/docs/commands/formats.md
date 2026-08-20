@@ -29,4 +29,6 @@ undatum formats describe geojson --json
 
 # Export catalog for tooling or CI checks
 undatum formats export --output formats.json
+undatum formats export --no-capabilities
+undatum formats list --json
 ```

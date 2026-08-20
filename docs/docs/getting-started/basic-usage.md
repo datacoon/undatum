@@ -36,7 +36,7 @@ undatum select --fields name,email --filter '`status` == "active"' --engine duck
 undatum uniq --fields city --filter 'age >= 30' --engine duckdb data.jsonl
 
 # Natural-language filter (translates to an expression; use --apply to run)
-undatum ai filter data.csv "customers in California with orders over 1000" --apply
+undatum ai filter "customers in California with orders over 1000" data.csv --apply
 ```
 
 **Filter syntax:**
@@ -56,7 +56,7 @@ For ad-hoc SQL over files, use [`sql`](/commands/sql) or [`db query`](/commands/
 
 ### Custom Encoding and Delimiters
 
-CSV/TSV delimiters (comma, semicolon, tab, pipe) and encoding are **auto-detected** when `--delimiter` / `--encoding` are omitted on supported commands (`convert`, `analyze`, `select`, `doc`, `package`, and shared read paths).
+CSV/TSV delimiters (comma, semicolon, tab, pipe) are **auto-detected** when `--delimiter` is omitted on commands that leave it unset (`analyze`, `select`, `headers`, and most inspect/transform commands). `convert`, `flatten`, `apply`, and `split` default `--encoding` to `utf8`; pass `--encoding` when the file is not UTF-8.
 
 Override when needed:
 
@@ -70,7 +70,9 @@ undatum convert --encoding utf-8 --delimiter "," data.csv data.jsonl
 Automatic date/datetime field detection:
 
 ```bash
-undatum stats --checkdates data.jsonl
+undatum stats data.jsonl
+# Date detection is on by default; disable with --no-checkdates
+undatum stats --no-checkdates data.jsonl
 ```
 
 This uses the `qddate` library to automatically identify and parse date fields.

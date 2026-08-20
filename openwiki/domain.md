@@ -28,7 +28,7 @@ Vocabulary used across the CLI, SDK, Data API, and agent tools.
 ## Packaging and quality
 
 - `validate` — YAML/JSON rule files, or legacy `--rule` names (`common.email`, `ru.org.inn`, …).
-- `schema` / `schema_bulk` — inferred schemas; `--format cerberus` replaces deprecated `scheme`.
+- `schema` / `schema-bulk` — inferred schemas; `--format cerberus` replaces deprecated `scheme`.
 - `package` — Frictionless `datapackage.json`.
 - `doc` / `ai doc` — dataset documentation; `ai doc` is the block-based path.
 

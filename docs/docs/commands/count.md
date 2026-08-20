@@ -19,3 +19,5 @@ undatum count data.parquet --engine duckdb
 # Named Excel sheet
 undatum count workbook.xlsx --table Sheet2
 ```
+
+**Key options:** `--engine auto|duckdb|iterable`, `--filetype` (override type detection; this command does **not** take `--format-in`), `--table` / `--sheet`. See [shared options](/commands/shared-options).

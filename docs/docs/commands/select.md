@@ -16,3 +16,6 @@ undatum select --fields name,email --engine duckdb --output subset.csv data.json
 undatum select --fields name --table Sheet2 workbook.xlsx
 undatum select --fields name,capital_city.lat --flatten-nested nested.jsonl
 ```
+
+**Key options:** `--fields`, `--filter` / `--filter-expr`, `--output`, `--format-out`, `--engine auto|duckdb|iterable`, `--zipfile`, `--duckdb-threads` / `--duckdb-memory` / `--duckdb-temp-dir`. Also `--table`, `--flatten-nested`, `--on-error`, `--error-log`, `--quotechar`, `--trust` ([shared options](/commands/shared-options)).
+

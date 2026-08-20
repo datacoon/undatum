@@ -40,10 +40,10 @@ undatum convert messy.csv out.jsonl --on-error skip --error-log errors.jsonl
 |------|---------|
 | `--table` / `--sheet` | Named table or Excel sheet. Two-file commands also take `--table2`. `ingest` / `db load` use `--source-table`. |
 | `--start-page N` | 0-based sheet index (Excel) |
-| `--delimiter` | CSV delimiter. Auto-detected (comma, semicolon, tab, pipe) when omitted on shared read paths. |
+| `--delimiter` | CSV delimiter. Auto-detected (comma, semicolon, tab, pipe) when omitted on commands that leave it unset. Some commands default to `,` instead of auto-detect (`fmt`, `flatten`, `apply`, `split`). |
 | `--quotechar` | CSV quote character (iterabledata default `"`). Also `defaults.quotechar` / `UNDATUM_QUOTECHAR`. |
-| `--encoding` | Text encoding (auto-detected when omitted on supported commands) |
-| `--format-in` | Override input format detection (`csv`, `jsonl`, `xml`, …) |
+| `--encoding` | Text encoding. Auto-detected when the command leaves it unset; several commands default to `utf8` (`convert`, `flatten`, `apply`, `split`). |
+| `--format-in` | Override input format on most commands (`csv`, `jsonl`, `xml`, …). **Exceptions:** `sort`, `dedup`, `reverse`, `slice`, and `count` use `--filetype` instead. |
 | `--tagname` | XML element that contains one record |
 | `--trust` | Acknowledge pickle deserialization risk (convert, stats, schema, select, head, and others that can read pickle) |
 
@@ -64,6 +64,8 @@ undatum frequency --fields city --filter 'age >= 30' data.jsonl
 ```
 
 `--filter` does not support `LIKE`, `IN`, or regex. Use [`sql`](/commands/sql) for those. Full syntax: [Basic usage](/getting-started/basic-usage).
+
+`convert` takes two positional paths and `--flatten-data` (not `--flatten-nested`). Most other write commands take `--output PATH` rather than a trailing positional file.
 
 ## Cloud URIs
 

@@ -17,7 +17,7 @@ undatum plugins info my-plugin
 undatum plugins validate
 ```
 
-Base classes live in `undatum.plugins.base`: `CommandPlugin`, `ConnectorPlugin`, `TransformPlugin`. Worked examples: [examples/plugins](https://github.com/datenoio/undatum/tree/main/examples/plugins). CLI surface: [`plugins`](/commands/plugins).
+Base classes live in `undatum.plugins.base`: `CommandPlugin`, `ConnectorPlugin`, `TransformPlugin`. Worked examples: [examples/plugins](https://github.com/datenoio/undatum/tree/master/examples/plugins). CLI surface: [`plugins`](/commands/plugins).
 
 ## Command plugin
 

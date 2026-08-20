@@ -8,17 +8,19 @@ Reformats tabular data as CSV with an explicit dialect (delimiter, quote style, 
 
 ```bash
 # Change delimiter
-undatum fmt data.csv --delimiter ";" output.csv
+undatum fmt data.csv --delimiter ";" --output output.csv
 
 # Change quote style
-undatum fmt data.csv --quote always output.csv
+undatum fmt data.csv --quote always --output output.csv
 
 # Change escape character
-undatum fmt data.csv --escape backslash output.csv
+undatum fmt data.csv --escape backslash --output output.csv
 
 # Change line endings
-undatum fmt data.csv --line-ending crlf output.csv
+undatum fmt data.csv --line-ending crlf --output output.csv
 ```
+
+Without `--output`, CSV is written to stdout.
 
 ## Options
 
@@ -29,7 +31,7 @@ undatum fmt data.csv --line-ending crlf output.csv
 | `--escape` | `double`, `backslash`, `none` | `double` |
 | `--line-ending` | `unix`, `windows`, `crlf`, `mac` | `unix` |
 | `--quotechar` | CSV quote character | iterabledata default `"` |
-| `--encoding` | Text encoding | auto-detect when omitted |
+| `--encoding` | Text encoding | `utf8` |
 | `--output` | Output path | stdout |
 
 Also accepts `--table`, `--flatten-nested`, `--on-error`, and `--error-log` ([shared options](/commands/shared-options)).

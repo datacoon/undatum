@@ -5,12 +5,10 @@ description: "Read-only FastAPI + DuckDB server over files"
 # Data API
 
 The file-backed Data API (`undatum api serve` / `undatum api run`) is **read-only**.
-
-Command examples: [`api`](/commands/api).
-
-The file-backed Data API (`undatum api serve` / `undatum api run`) is **read-only**.
 It is intended for local exploration and trusted networks. Harden it before exposing
 it beyond localhost.
+
+Command examples: [`api`](/commands/api).
 
 ## Built-in API key (optional)
 

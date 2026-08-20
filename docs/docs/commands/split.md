@@ -17,4 +17,4 @@ undatum split nested.jsonl --fields capital_city.lat --flatten-nested --dirname 
 undatum split events.jsonl --filter '`city` == "Berlin"' --dirname out/
 ```
 
-`--filter` uses the same comparison syntax as `select`. See [shared CLI options](/commands/shared-options).
+`--filter` uses the same comparison syntax as `select`. `--dirname` is the output directory; `--output` can set a filename prefix. Also `--gzipfile` / `--zipfile` for compressed inputs. See [shared CLI options](/commands/shared-options).

@@ -41,10 +41,10 @@ undatum convert data.csv gs://my-bucket/output.parquet
 
 # Cloud-to-cloud conversion
 undatum convert s3://bucket/input.jsonl gs://bucket/output.parquet
-undatum mask s3://bucket/data.csv --fields email --method hash az://container/masked.csv
+undatum mask s3://bucket/data.csv --fields email --method hash --output az://container/masked.csv
 ```
 
-**Supported commands:** Any command that accepts file paths — including `convert`, `stats`, `count`, `analyze`, `select`, `validate`, `ingest`, `mask`, and SDK `Dataset.read()` / `write()`.
+**Supported commands:** Any command that accepts file paths — including `convert`, `stats`, `count`, `analyze`, `select`, `validate`, `ingest`, `mask`, and SDK `Dataset.read()` / `write()`. [`repack`](/commands/repack) is **local files only**; download first or use `convert` for cloud URIs.
 
 **Notes:**
 - Cloud I/O is streaming-aware; large files do not need to be downloaded manually first.

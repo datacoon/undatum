@@ -33,7 +33,7 @@ undatum sql "SELECT * FROM orders JOIN users USING (user_id)" orders.csv users.p
 
 ```bash
 pip install "undatum[plot]"
-undatum plot sales.csv --fields amount --type hist --output amount.png
+undatum plot sales.csv --field amount --type histogram --output amount.png
 ```
 
 See [`sql`](/commands/sql), [`stats`](/commands/stats), [`plot`](/commands/plot), [`tui`](/commands/tui), and [`web`](/commands/web).

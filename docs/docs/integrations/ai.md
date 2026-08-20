@@ -11,10 +11,13 @@ undatum offers several AI documentation paths:
 | `ai doc` | Block-based docs (general, schema, quality, …) with schema enrichment — **recommended** |
 | `doc --autodoc` | Markdown/JSON/YAML dataset documentation with metadata and PII options |
 | `analyze --autodoc` | Human-readable analysis report with field descriptions |
-| `schema --autodoc` / `schema_bulk --autodoc` | Schema files with AI field descriptions |
+| `schema --autodoc` / `schema-bulk --autodoc` | Schema files with AI field descriptions |
 | `package create --autodoc` | Frictionless Data Package metadata |
 
-All paths share the same provider configuration (`undatum.yaml`, environment variables, CLI flags). Supported providers: OpenAI, Anthropic, Gemini, Azure OpenAI, OpenRouter, Ollama, LM Studio, Perplexity.
+Two stacks share config files but not the same provider list:
+
+- **`ai doc` / `ai filter` / `ai plan` / `ai suggest`** — iterabledata providers: OpenAI, Anthropic, Gemini, Azure OpenAI, OpenRouter, Ollama, LM Studio, Perplexity.
+- **`analyze --autodoc` / `schema --autodoc` / `schema-bulk --autodoc` / `doc --autodoc`** — undatum providers only: openai, openrouter, ollama, lmstudio, perplexity. Unknown ids (including `anthropic`, `gemini`, `azure`) disable autodoc.
 
 ### Quick Examples
 
@@ -52,7 +55,7 @@ ai:
   ollama_base_url: http://localhost:11434
 ```
 
-`./undatum.yaml` is preferred over `~/.undatum/config.yaml`. CLI `--ai-provider` / `--ai-model` flags override the file. Provider API keys stay in the environment (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, …). Full `defaults:` keys: [`config`](/commands/config).
+`./undatum.yaml` is preferred over `~/.undatum/config.yaml`. CLI `--ai-provider` / `--ai-model` flags override the file. Provider API keys stay in the environment (`OPENAI_API_KEY`, and for `ai *` also `ANTHROPIC_API_KEY` / `GEMINI_API_KEY` / `AZURE_OPENAI_API_KEY` when using those iterabledata providers). Full `defaults:` keys: [`config`](/commands/config).
 
 ### Language Support
 

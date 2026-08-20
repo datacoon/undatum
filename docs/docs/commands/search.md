@@ -14,5 +14,7 @@ undatum search data.csv --pattern "error|warning"
 undatum search data.jsonl --pattern "^[0-9]+$" --fields id,code
 
 # Case-insensitive search
-undatum search data.csv --pattern "ERROR" --ignore-case
+undatum search data.csv --pattern "ERROR" --ignore-case --output matches.jsonl
 ```
+
+**Key options:** `--pattern` (required), `--fields`, `--ignore-case`, `--output`, `--engine`. Also accepts `--table`, `--flatten-nested`, `--on-error`, `--error-log`, and `--quotechar` ([shared options](/commands/shared-options)).

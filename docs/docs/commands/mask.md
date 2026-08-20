@@ -21,3 +21,6 @@ undatum mask data.csv --fields age,email --method randomize --output masked.csv
 - `redact` (default) - replace values with a fixed token (`***`)
 - `hash` - deterministic one-way hash; the same input always produces the same output, so joins across files are preserved. Use `--salt` for additional security
 - `randomize` - replace values with random but type-compatible values
+
+**Key options:** `--fields`, `--method`, `--salt`, `--output`, `--format-out`. Also `--table`, `--flatten-nested`, `--on-error`, `--error-log`, `--quotechar` ([shared options](/commands/shared-options)).
+

@@ -46,8 +46,14 @@ undatum convert s3://bucket/input.jsonl s3://bucket/output.parquet
 - `--error-log PATH` — append skipped/warned parse errors as JSONL
 - `--delimiter`, `--quotechar`, `--encoding`, `--tagname` — passed through to the reader (delimiter auto-detected for CSV when omitted)
 - `--recursive` / `--to-ext` / `--filename-pattern` — bulk-convert directories or globs (`{name}`, `{stem}`, `{ext}` in the output name)
-- `--flatten` — flatten nested records to a flat schema
+- `--flatten-data` — flatten nested records to a flat schema (not `--flatten`; convert does **not** take `--flatten-nested`)
+- `--low-memory` — streaming / native-batch path for large files
+- `--engine auto|duckdb|python`
+- `--compression` — output codec (for example `snappy`, `gzip`, `brotli`)
+- `--prefix-strip` / `--no-prefix-strip` — XML namespace prefixes
+- `--start-line`, `--scan-limit` — skip leading lines; cap format detection scan
+- `--strict-native` / `--no-native-batch` — require or disable native bulk I/O
 - `--atomic` — write to a temp file and rename on success (local paths only)
-- `--threads`, `--batch-size`, `--progress` — throughput and feedback controls (`--threads` enables process-pool chunk parallelism for single-file Python-engine convert; also used as concurrent workers for `--recursive` bulk convert)
+- `--threads`, `--batch-size`, `--progress` / `--no-progress` — throughput and feedback (`--threads` is process-pool chunk parallelism for single-file Python-engine convert, and concurrent workers for `--recursive`)
 
-Reader, error-policy, table, and nested-flatten flags that convert shares with other commands: [Shared CLI options](/commands/shared-options).
+`convert` takes two **positional** paths (`INPUT OUTPUT`). Reader and error-policy flags (`--table`, `--on-error`, `--error-log`, `--quotechar`, `--trust`): [Shared CLI options](/commands/shared-options).

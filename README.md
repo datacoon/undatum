@@ -18,7 +18,7 @@
 - **Frictionless Data Packaging**: Create, extend, and validate `datapackage.json` descriptors (`undatum package`)
 - **Data validation**: Built-in rules for emails, URLs, and custom validators
 - **Ad-hoc SQL on files**: Run DuckDB SQL over CSV, JSONL, Parquet, and other formats (`undatum sql`)
-- **AI-powered tooling**: Dataset documentation and natural-language filters via OpenAI, Anthropic, Gemini, Azure, OpenRouter, Ollama, LM Studio, and Perplexity
+- **AI-powered tooling**: `ai doc` / `ai filter` via iterabledata (OpenAI, Anthropic, Gemini, Azure, OpenRouter, Ollama, LM Studio, Perplexity). Legacy `--autodoc` on `analyze` / `schema` / `doc` supports openai, openrouter, ollama, lmstudio, and perplexity.
 - **Agent tools & MCP server**: JSON tools, LangChain `StructuredTool`s, or `undatum mcp serve`
 - **Optional Data API**: Serve file-backed datasets over HTTP (FastAPI + DuckDB)
 
@@ -157,7 +157,7 @@ More first-success paths: [quick start](https://datenoio.github.io/undatum/getti
 
 All commands are available as `undatum <command>` or via the shorter `data` alias.
 
-**Top-level data commands:** `convert`, `extract`, `analyze`, `doc`, `stats` (`profile`), `validate`, `schema`, `schema_bulk`, `sql`, `select`, `search`, `mask`, `plot`, `ingest`, `tui`, `web`, and the other transform/inspection commands in the [CLI reference](https://datenoio.github.io/undatum/commands/).
+**Top-level data commands:** `convert`, `extract`, `analyze`, `doc` (`document`), `stats` (`profile`), `validate`, `schema`, `schema-bulk`, `sql`, `select`, `search`, `mask`, `plot`, `ingest`, `tui`, `web`, and the other transform/inspection commands in the [CLI reference](https://datenoio.github.io/undatum/commands/).
 
 **Command groups:**
 

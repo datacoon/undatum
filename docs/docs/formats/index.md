@@ -56,7 +56,7 @@ Codec performance profiles (`fast`, `balanced`, `max`) are available through ite
 `undatum repack` uses maximum compression by default.
 
 Use `undatum repack` to recompress container-coded files at maximum compression, or to rewrite
-Parquet/ORC/AVRO with format-native compression (see README `repack` section).
+Parquet/ORC/AVRO with format-native compression. See [`repack`](/commands/repack).
 
 ## Format families (non-exhaustive)
 

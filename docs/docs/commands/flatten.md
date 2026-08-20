@@ -11,4 +11,4 @@ undatum flatten data.jsonl
 undatum flatten data.jsonl --filter '`type` == "city"' --output flat.jsonl
 ```
 
-`--filter` uses the same comparison syntax as `select`. See [shared CLI options](/commands/shared-options).
+`flatten` does not take `--flatten-nested` (it already emits dotted paths). It does accept `--output`, `--filter`, `--table` / `--sheet`, `--format-in`, `--quotechar`, `--trust`, `--on-error`, `--error-log`, `--delimiter`, and `--encoding`. See [shared CLI options](/commands/shared-options).

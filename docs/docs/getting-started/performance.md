@@ -54,8 +54,7 @@ undatum dedup data.jsonl --key-fields id --low-memory --output unique.jsonl
   forwards the Parquet flush threshold (skips DuckDB COPY); `undatum repack` defaults
   to maximum container or format-native compression.
 
-See also: [Quickstarts](/getting-started/quick-start), [Format support](/formats/), issue-oriented
-roadmap in `dev/docs/undatum-improvement-recommendations.md`.
+See also: [Quickstarts](/getting-started/quick-start), [Format support](/formats/).
 
 
 ## Performance tips

@@ -44,4 +44,4 @@ defaults:
 | `UNDATUM_QUOTECHAR` | `defaults.quotechar` |
 | `UNDATUM_FORMAT_OUT` | `defaults.format_out` |
 
-**AI settings** (`ai:`): environment, then the first config file found (`./undatum.yaml` preferred over `~/.undatum/config.yaml`), then CLI flags. Provider API keys (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, …) are always read from the environment. See [AI documentation](/integrations/ai).
+**AI settings** (`ai:`): environment, then the first config file found (`./undatum.yaml` preferred over `~/.undatum/config.yaml`), then CLI flags. `OPENAI_API_KEY`, `OPENROUTER_API_KEY`, and `PERPLEXITY_API_KEY` apply to both stacks. Anthropic / Gemini / Azure keys apply to `ai *` (iterabledata), not to `analyze --autodoc`. See [AI documentation](/integrations/ai).

@@ -4,91 +4,44 @@ description: "undatum repack command reference"
 ---
 # `repack`
 
-Recompress a file at **maximum compression by default**, preserving the data format.
+Recompress a **local** file at **maximum compression by default**, without changing the data format. Use [`convert`](/commands/convert) when you need a different format or a cloud URI.
 
-- Container codecs (`.gz`, `.zst`, `.bz2`, `.xz`, `.lz4`, …): stream-recompress with the same codec at max strength (or `--level`).
-- Built-in formats (Parquet / ORC / AVRO): rewrite using native compression (Parquet defaults to `zstd`).
-- Omitting OUTPUT rewrites the input atomically.
+Two paths:
+
+- **Container codecs** (`.gz`, `.zst`, `.bz2`, `.xz`, `.lz4`, …): stream-decompress and recompress. Same codec unless the output extension or `--compression` says otherwise.
+- **Built-in compression** (Parquet / ORC / AVRO): rewrite the file with format-native compression. Parquet and ORC default to `zstd`; AVRO defaults to `zstandard`.
+
+Omitting OUTPUT writes to a sibling temp file and atomically replaces the input on success.
 
 ```bash
 # In-place max recompress of a gzip file
 undatum repack data.csv.gz
 
-# Explicit output and faster level
+# Explicit output and a faster level
 undatum repack data.jsonl.zst out.jsonl.zst --level 3
 
-# Parquet → zstd (built-in compression)
+# Parquet → zstd (format-native compression)
 undatum repack data.parquet out.parquet
 
 # Wrap an uncompressed file into a codec container
 undatum repack data.csv data.csv.zst
+
+# Change container codec (gzip → zstd)
+undatum repack data.csv.gz data.csv.zst
 ```
 
 **Key options:**
-- `--level` / `-l` — compression level (overrides default maximum)
-- `--compression` — override codec (container or format-native)
+- `--level` / `-l` — compression level (overrides the default `max` profile). Applies to container codecs and Parquet; ORC and AVRO ignore `--level`.
+- `--compression` — override codec. For containers: `gz`, `zst`, `bz2`, `xz`, `lz4`, … For Parquet/ORC/AVRO: a format-native codec (for example `zstd`, `snappy`).
 - `--progress` / `--no-progress` — progress bar (default: on)
-
-**Supported conversions:**
-
-`convert` uses iterabledata's engine, so any **readable** format can be converted to any **writable** one — there is no fixed pairwise matrix. The live catalog depends on installed optional dependencies; inspect it on your machine:
-
-```bash
-# All formats with read/write flags
-undatum formats list
-
-# Formats that can be used as conversion output
-undatum formats list --writable
-
-# Read-only inputs (e.g. ARFF, Hudi, GPX, HDF5, TAR)
-undatum formats list --read-only
-
-# Capability matrix (bulk, streaming, tables, nested, maturity, native bulk)
-undatum formats list --capabilities
-
-# List sheets/tables in a workbook or SQLite/lakehouse source
-undatum formats tables workbook.xlsx
-undatum formats tables data.sqlite --json
-
-# Single-format details (aliases, optional extras, limitations)
-undatum formats describe parquet
-
-# Machine-readable catalog export
-undatum formats export --output formats.json
-```
-
-**Common examples:**
-
-| Use case | Example |
-|----------|---------|
-| Tabular text → columnar | `undatum convert data.csv data.parquet` |
-| Columnar → tabular text | `undatum convert data.parquet data.csv` |
-| JSON Lines ↔ CSV | `undatum convert data.jsonl data.csv` |
-| Excel → JSON Lines | `undatum convert sheet.xlsx sheet.jsonl` |
-| XML → JSON Lines | `undatum convert --tagname item feed.xml feed.jsonl` |
-| Geospatial | `undatum convert points.geojson points.parquet` |
-| GeoJSON Text Sequence | `undatum convert features.geojsonl features.parquet` |
-| Bulk directory/glob | `undatum convert ./raw ./out --recursive --to-ext parquet` |
-
-**Format families** (non-exhaustive; run `formats list` for the full set):
-
-| Family | Examples |
-|--------|----------|
-| Tabular text | `csv` (alias: `tsv`), `jsonl` (alias: `ndjson`), `annotatedcsv`, `csvw`, `fwf`, `ssv` |
-| Columnar / analytics | `parquet`, `orc`, `avro`, `arrow`, `geoparquet`, `zarr`, `ddb` |
-| Lakehouse | `delta`, `iceberg`, `lance`, `ducklake`, `paimon` (Hudi remains read-only) |
-| Documents / config | `json`, `yml` (alias: `yaml`), `xml`, `toml` |
-| Geospatial | `geojson`, `geojsonseq`, `gml`, `gpx`, `shp`, `gpkg`, `kml`, `fgdb`, `mif`, `las` |
-| Scientific / statistical | `h5`, `nc`, `mat`, `segy`, `grib2`, `sas`, `sav`, `dta` (many are read-only) |
-| Containers | `zip`, `tar` (read-only multi-member), WebDataset |
-| Logs / feeds | `log`, `gelf`, `cef`, `rss`, `kafka` |
-| Graph / RDF | `graphml`, `gexf`, `jsonld`, `nt`, `ttl`, `trig`, `hdt` |
-
-See the [format support matrix](/formats/) for extras (`undatum[lakehouse]`, `undatum[gis]`, `undatum[scientific]`) and version notes.
+- `--verbose` — verbose logging
 
 **Limitations:**
 
-- **Read-only formats** can be inputs but not outputs — check with `formats list --writable`.
-- **Schema-required outputs** (`protobuf`, `capnp`, `thrift`) need an externally supplied schema or message class and cannot be used as generic conversion targets.
-- Override detection when the file extension is ambiguous: `--format-in` / `--format-out` (see `undatum convert --help`).
-- Lakehouse and many open-data formats need the matching **iterabledata** optional extra and Python 3.10+.
+- **Local files only.** Remote URIs (`s3://`, `gs://`, `az://`) are rejected. Download first, or use [`convert`](/commands/convert).
+- **Uncompressed input needs a codec.** `undatum repack data.csv` fails. Point OUTPUT at a compressed path (`data.csv.zst`) or pass `--compression`.
+- **Format is preserved.** `repack` does not convert CSV to Parquet. Use [`convert`](/commands/convert) for that, then `repack` if you want max native compression.
+- **ZIP / 7z** are available as codecs but are not the primary path. Prefer single-stream containers (`gz`, `zst`, `bz2`, `xz`, `lz4`).
+- Parquet repack requires `pyarrow`.
+
+See the [format support matrix](/formats/) for the codec list and extras (`undatum[compression]`).

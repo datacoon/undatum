@@ -13,7 +13,7 @@ undatum validate data.csv --rules rules.yml --output-format json \
   --violation-report violations.json --fail-on-warnings
 ```
 
-Example rule files live in the [examples/validation-rules](https://github.com/datenoio/undatum/tree/main/examples/validation-rules) directory.
+Example rule files live in the [examples/validation-rules](https://github.com/datenoio/undatum/tree/master/examples/validation-rules) directory.
 
 ## Detect unintended changes
 

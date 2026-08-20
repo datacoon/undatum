@@ -119,7 +119,7 @@ npm start          # local preview
 npm run build      # production build (also `make docs`)
 ```
 
-See the [docs README](https://github.com/datenoio/undatum/blob/main/docs/README.md) and [GitHub Pages setup](https://github.com/datenoio/undatum/blob/main/docs/GITHUB_PAGES_SETUP.md). The published site is https://datenoio.github.io/undatum/.
+See the [docs README](https://github.com/datenoio/undatum/blob/master/docs/README.md) and [GitHub Pages setup](https://github.com/datenoio/undatum/blob/master/docs/GITHUB_PAGES_SETUP.md). The published site is https://datenoio.github.io/undatum/.
 
 ## Testing
 

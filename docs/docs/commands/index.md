@@ -74,6 +74,8 @@ are documented under [Shared CLI options](/commands/shared-options).
 | `schema` | [`/commands/schema`](/commands/schema) |
 | `schema-bulk` | [`/commands/schema-bulk`](/commands/schema-bulk) |
 | `doc` | [`/commands/doc`](/commands/doc) |
+| `document` | alias of `doc` — [`/commands/doc`](/commands/doc) |
+| `scheme` | deprecated; use `schema --format cerberus` — [`/commands/schema`](/commands/schema) |
 
 ## SQL and visualization
 
