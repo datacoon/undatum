@@ -157,6 +157,15 @@ access = [
 compression = [
     "iterabledata[compression]",
 ]
+dev = [
+    "black",
+    "ruff",
+    "mypy",
+    "pylint",
+    "pytest",
+    "pytest-cov",
+    "pre-commit",
+]
 
 [project.scripts]
 undatum = "undatum.__main__:main"

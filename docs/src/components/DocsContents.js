@@ -49,6 +49,7 @@ const sections = [
     description: 'Command-by-command reference for convert, validate, SQL, databases, and more.',
     links: [
       {label: 'All commands', to: '/commands/'},
+      {label: 'Shared options', to: '/commands/shared-options'},
       {label: 'convert', to: '/commands/convert'},
       {label: 'validate', to: '/commands/validate'},
       {label: 'sql', to: '/commands/sql'},

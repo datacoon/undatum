@@ -5,8 +5,8 @@ description: "Task-oriented first success paths for undatum"
 # Quick Start
 
 Short task-oriented paths to first success. Not sure where to start? Pick your
-role and goal in the [scenario index](/getting-started/cookbook). For the full reference,
-see the [README](/getting-started/quick-start).
+role and goal in the [cookbook](/getting-started/cookbook). Installation details:
+[Installation](/getting-started/installation). CLI flag list: [CLI reference](/commands/).
 
 ## CSV → Parquet in 30 seconds
 
@@ -58,7 +58,7 @@ available as the view `data`; multiple inputs are named after their file stems.
 undatum sql "SELECT city, COUNT(*) AS n FROM data GROUP BY 1" events.jsonl
 # or use frequency / select for simpler extractions:
 undatum frequency events.jsonl --fields city
-undatum select events.jsonl --fields id,city,ts --filter-expr '`city` == "Berlin"'
+undatum select --fields id,city,ts --filter '`city` == "Berlin"' events.jsonl
 ```
 
 ## Dump a database table to Parquet

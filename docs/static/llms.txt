@@ -1,13 +1,17 @@
-# CLI Reference
+# undatum
 
-undatum commands grouped the same way as the documentation sidebar.
+Command-line tool for converting, validating, querying, and documenting datasets across 140+ formats (iterabledata), with a streaming-first CLI. Entry points: `undatum` and `data`.
+
+Site: https://datenoio.github.io/undatum/
+CLI help: `undatum <command> --help`
 
 ## Getting started
 
-- [Installation](https://datenoio.github.io/undatum/getting-started/installation)
+- [Installation](https://datenoio.github.io/undatum/getting-started/installation) — extras, uv/pipx, Python 3.9–3.13 CI, binaries
 - [Quick start](https://datenoio.github.io/undatum/getting-started/quick-start)
-- [When to use](https://datenoio.github.io/undatum/getting-started/when-to-use)
 - [Cookbook](https://datenoio.github.io/undatum/getting-started/cookbook)
+- [Basic usage](https://datenoio.github.io/undatum/getting-started/basic-usage) — `--filter` syntax, encoding, compression
+- [Shared CLI options](https://datenoio.github.io/undatum/commands/shared-options) — `--flatten-nested`, `--on-error`, `--error-log`, `--table`, `--quotechar`
 - [Performance](https://datenoio.github.io/undatum/getting-started/performance)
 - [Troubleshooting](https://datenoio.github.io/undatum/getting-started/troubleshooting)
 
@@ -15,21 +19,36 @@ undatum commands grouped the same way as the documentation sidebar.
 
 - [Command index](https://datenoio.github.io/undatum/commands/)
 - [convert](https://datenoio.github.io/undatum/commands/convert)
+- [repack](https://datenoio.github.io/undatum/commands/repack)
+- [formats](https://datenoio.github.io/undatum/commands/formats)
+- [analyze](https://datenoio.github.io/undatum/commands/analyze)
+- [stats](https://datenoio.github.io/undatum/commands/stats) (`profile` alias)
+- [select](https://datenoio.github.io/undatum/commands/select) — `--filter` (alias `--filter-expr`)
 - [validate](https://datenoio.github.io/undatum/commands/validate)
+- [schema](https://datenoio.github.io/undatum/commands/schema)
 - [sql](https://datenoio.github.io/undatum/commands/sql)
-- [stats](https://datenoio.github.io/undatum/commands/stats)
-- [pipeline](https://datenoio.github.io/undatum/commands/pipeline)
-- [db](https://datenoio.github.io/undatum/commands/db)
+- [pipeline](https://datenoio.github.io/undatum/commands/pipeline) — YAML DSL, templates including `jsonl-normalization`
+- [apply](https://datenoio.github.io/undatum/commands/apply) — `--script` or `--plugin`
+- [db](https://datenoio.github.io/undatum/commands/db) — query, load, dump
+- [ingest](https://datenoio.github.io/undatum/commands/ingest)
 - [api](https://datenoio.github.io/undatum/commands/api)
-- [ai](https://datenoio.github.io/undatum/commands/ai)
+- [ai](https://datenoio.github.io/undatum/commands/ai) — `ai plan SOURCE TARGET` (two paths, not `--to`)
+- [doc](https://datenoio.github.io/undatum/commands/doc)
 - [mcp](https://datenoio.github.io/undatum/commands/mcp)
+- [tui](https://datenoio.github.io/undatum/commands/tui) / [web](https://datenoio.github.io/undatum/commands/web)
+- [config](https://datenoio.github.io/undatum/commands/config)
+- [plugins](https://datenoio.github.io/undatum/commands/plugins)
+- [extract](https://datenoio.github.io/undatum/commands/extract) — `undatum[extract]`
+- [package](https://datenoio.github.io/undatum/commands/package)
 
 ## Integrations
 
-- [MCP server](https://datenoio.github.io/undatum/integrations/mcp)
-- [Python SDK](https://datenoio.github.io/undatum/integrations/sdk)
-- [Data API](https://datenoio.github.io/undatum/integrations/data-api)
-- [Cloud storage](https://datenoio.github.io/undatum/integrations/cloud)
+- [MCP server and tool catalog](https://datenoio.github.io/undatum/integrations/mcp)
+- [Python SDK](https://datenoio.github.io/undatum/integrations/sdk) — Dataset.read/write, fill, dedup, sort, filter, select, join, sample, mask, rename, explode, enum, reverse, stats, package, convert_many
+- [Data API](https://datenoio.github.io/undatum/integrations/data-api) — optional `--api-key` / `UNDATUM_API_KEY`
+- [Cloud storage](https://datenoio.github.io/undatum/integrations/cloud) — `s3://`, `gs://`, `az://`
+- [Plugins](https://datenoio.github.io/undatum/integrations/plugins)
+- [AI documentation](https://datenoio.github.io/undatum/integrations/ai)
 
 ## Formats
 

@@ -75,4 +75,4 @@ undatum stats --checkdates data.jsonl
 
 This uses the `qddate` library to automatically identify and parse date fields.
 
-See also: [CLI reference](/commands/), [performance](/getting-started/performance).
+See also: [CLI reference](/commands/), [shared CLI options](/commands/shared-options), [performance](/getting-started/performance).

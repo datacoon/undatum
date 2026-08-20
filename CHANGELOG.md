@@ -10,14 +10,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **Docusaurus documentation site** — user docs live in `docs/` (content in `docs/docs/`), organized like iterabledata (getting started, use cases, CLI reference, formats, integrations, development), with GitHub Pages deployment at https://datenoio.github.io/undatum/
+- **Shared CLI options page** — `--flatten-nested`, `--on-error`, `--error-log`, `--table`/`--sheet`, `--quotechar`, and `--filter` documented once and linked from convert and the command index
+- **Pipeline YAML reference** — step `args` mapping, `$step_name`, `package` subcommands, and the `jsonl-normalization` template
+- **MCP client config** — Cursor `mcp.json` / Claude Desktop examples and a tool catalog on the MCP docs
+- **`undatum[dev]` extra** — black, ruff, mypy, pylint, pytest, pytest-cov, pre-commit (`make install-dev` uses it)
 
 ### Changed
 
 - **GitHub repository** moved from `datacoon/undatum` to [`datenoio/undatum`](https://github.com/datenoio/undatum). GitHub redirects the old URLs; documentation is at https://datenoio.github.io/undatum/
 - **GCS and Azure cloud connectors** — first-class `gs://`/`gcs://` and `az://`/`abfs://`/`abfss://` URIs next to S3 for CLI, SDK, TUI/web, and Data API resources; extras `undatum[gcs]` and `undatum[azure]`; missing-extra errors name the install command
+- **Docs accuracy** — `ai plan` takes two positional paths; Data API auth notes match `--api-key`; contributing install uses `make install-dev` / `.[dev]`; `llms.txt` and OpenWiki cover domain, operations, integrations, testing, and source maps
 
 ### Fixed
 
+- **`--filter` on select / validate / split / flatten / apply** — same flag as frequency / uniq / plot; `--filter-expr` remains an alias
 - **Release binaries** — stop gitignoring `packaging/undatum.spec` so tagged PyInstaller jobs can find the spec
 
 ## [1.7.0](https://github.com/datenoio/undatum/compare/v1.6.0...v1.7.0) - 2026-08-13

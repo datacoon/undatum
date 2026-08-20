@@ -15,6 +15,7 @@ Use YAML/JSON rule files for comprehensive, reusable validation:
 undatum validate data.csv --rules validation-rules.yml
 undatum validate workbook.xlsx --table Sheet2 --rules validation-rules.yml
 undatum validate nested.jsonl --rules rules.yml --flatten-nested
+undatum validate data.csv --rules rules.yml --filter '`status` == "active"'
 
 # Filter by severity
 undatum validate data.jsonl --rules rules.yml --severity error

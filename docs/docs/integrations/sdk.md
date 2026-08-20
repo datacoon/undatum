@@ -44,6 +44,19 @@ ds = ds.fill("age", value=0)
 ds = ds.fill(["name", "email"], value="N/A")
 ds = ds.fill("status", strategy="forward")
 
+# Rename fields
+ds = ds.rename(mapping={"id": "user_id"})
+ds = ds.rename(pattern="^old_", replacement="new_")
+
+# Explode a delimited field into rows
+ds = ds.explode("tags", separator=",")
+
+# Add row numbers or UUIDs
+ds = ds.enum(field="row_id", enum_type="number", start=1)
+
+# Reverse row order
+ds = ds.reverse()
+
 # Remove duplicates
 ds = ds.dedup()  # By all fields
 ds = ds.dedup(keys=["user_id", "email"])

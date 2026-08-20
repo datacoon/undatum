@@ -29,7 +29,10 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 ```
 
 3. Install development dependencies:
+
 ```bash
+make install-dev
+# or
 pip install -e ".[dev]"
 ```
 

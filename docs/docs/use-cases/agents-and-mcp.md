@@ -14,7 +14,20 @@ undatum mcp tools
 undatum mcp serve
 ```
 
-Wire `undatum mcp serve` (stdio) into your MCP client. Confirm-gated writes stay explicit.
+Add this to Cursor `mcp.json` or Claude Desktop MCP settings:
+
+```json
+{
+  "mcpServers": {
+    "undatum": {
+      "command": "undatum",
+      "args": ["mcp", "serve"]
+    }
+  }
+}
+```
+
+Write tools require `confirm=true`. Full catalog and flags: [MCP](/integrations/mcp) and [`mcp`](/commands/mcp).
 
 ## Generate assisted dataset documentation
 
@@ -25,10 +38,12 @@ undatum ai doc data.csv --format json --blocks general,schema,quality
 ## Python tools without MCP
 
 ```python
-from undatum.tools import call_tool, export_schemas
+from undatum import tools
+from undatum.tools import schemas
 
-print(call_tool("headers", {"path": "data.csv"}))
-print(export_schemas())
+print(tools.detect_format("data.csv"))
+print(schemas.call_tool("query_sql", {"path": "data.csv", "query": "SELECT * FROM data LIMIT 5"}))
+print(schemas.to_openai_functions())
 ```
 
 See [MCP](/integrations/mcp), [AI documentation](/integrations/ai), [`ai`](/commands/ai), and the [Python SDK](/integrations/sdk).

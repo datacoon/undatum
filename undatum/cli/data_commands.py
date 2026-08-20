@@ -514,7 +514,12 @@ def uniq(
         typer.Option(help="Processing engine: 'auto' (default), 'duckdb', or 'iterable'."),
     ] = None,
     filter_expr: Annotated[
-        str, typer.Option("--filter", help="Filter expression to apply before extracting uniques.")
+        str,
+        typer.Option(
+            "--filter",
+            "--filter-expr",
+            help="Filter expression to apply before extracting uniques.",
+        ),
     ] = None,
     format_out: Annotated[
         str,
@@ -723,7 +728,12 @@ def flatten(
         str, typer.Option(help="Override input file format detection (e.g., 'jsonl', 'xml').")
     ] = None,
     filter_expr: Annotated[
-        str, typer.Option(help="Filter expression to apply before flattening.")
+        str,
+        typer.Option(
+            "--filter",
+            "--filter-expr",
+            help="Filter expression to apply before flattening.",
+        ),
     ] = None,
     verbose: Annotated[bool, typer.Option(help="Enable verbose logging output.")] = False,
     table: TableNameOpt = None,
@@ -801,7 +811,11 @@ def frequency(
     duckdb_temp_dir: Annotated[str, typer.Option(help="Temporary directory for DuckDB.")] = None,
     filter_expr: Annotated[
         str,
-        typer.Option("--filter", help="Filter expression to apply before counting frequencies."),
+        typer.Option(
+            "--filter",
+            "--filter-expr",
+            help="Filter expression to apply before counting frequencies.",
+        ),
     ] = None,
     format_out: Annotated[
         str,
@@ -866,7 +880,12 @@ def select(
     ] = None,
     zipfile: Annotated[bool, typer.Option(help="Treat input file as a ZIP archive.")] = False,
     filter_expr: Annotated[
-        str, typer.Option(help="Filter expression to apply (e.g., \"`status` == 'active'\").")
+        str,
+        typer.Option(
+            "--filter",
+            "--filter-expr",
+            help="Filter expression to apply (e.g., \"`status` == 'active'\").",
+        ),
     ] = None,
     start_page: Annotated[int, typer.Option(help="Sheet index (0-based) for Excel files.")] = 0,
     table: TableNameOpt = None,
@@ -950,7 +969,12 @@ def split(
         typer.Option(help="Number of records per chunk when splitting by size (default: 10000)."),
     ] = 10000,
     filter_expr: Annotated[
-        str, typer.Option(help="Filter expression to apply before splitting.")
+        str,
+        typer.Option(
+            "--filter",
+            "--filter-expr",
+            help="Filter expression to apply before splitting.",
+        ),
     ] = None,
     dirname: Annotated[str, typer.Option(help="Directory path to write output files to.")] = None,
     table: TableNameOpt = None,
@@ -1017,7 +1041,12 @@ def validate(
         ),
     ] = None,
     filter_expr: Annotated[
-        str, typer.Option(help="Filter expression to apply before validation.")
+        str,
+        typer.Option(
+            "--filter",
+            "--filter-expr",
+            help="Filter expression to apply before validation.",
+        ),
     ] = None,
     mode: Annotated[
         str,
@@ -1148,7 +1177,12 @@ def apply(
         typer.Option(help="Name of a registered transform plugin to apply instead of a script."),
     ] = None,
     filter_expr: Annotated[
-        str, typer.Option(help="Filter expression to apply before transformation.")
+        str,
+        typer.Option(
+            "--filter",
+            "--filter-expr",
+            help="Filter expression to apply before transformation.",
+        ),
     ] = None,
     table: TableNameOpt = None,
     start_page: Annotated[int, typer.Option(help="Sheet index (0-based) for Excel files.")] = 0,
@@ -3458,7 +3492,12 @@ def plot(
         str, typer.Option(help="Matplotlib style name (e.g. 'ggplot', 'seaborn-v0_8').")
     ] = None,
     filter_expr: Annotated[
-        str, typer.Option("--filter", help="Filter expression applied before plotting.")
+        str,
+        typer.Option(
+            "--filter",
+            "--filter-expr",
+            help="Filter expression applied before plotting.",
+        ),
     ] = None,
     aggregate: Annotated[
         str,

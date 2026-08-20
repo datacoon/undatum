@@ -1,0 +1,70 @@
+---
+title: "Shared CLI options"
+description: "Flags that appear on many undatum commands"
+---
+# Shared CLI options
+
+Many file commands accept the same reader and error-policy flags. `undatum <command> --help` is the live list for a given command; this page explains the ones that show up repeatedly.
+
+See also [Basic usage](/getting-started/basic-usage) for filter syntax, encoding, and compression.
+
+## Nested records
+
+Unfold nested dict / array-of-dict fields onto dotted paths before the command runs:
+
+```bash
+undatum select --fields name,capital_city.lat --flatten-nested nested.jsonl
+undatum stats nested.jsonl --flatten-nested --max-nested-depth 2 --no-keep-nested-parents
+```
+
+| Flag | Meaning |
+|------|---------|
+| `--flatten-nested` | Unfold nested objects onto dotted field names |
+| `--max-nested-depth N` | Cap unfold depth (engine default is 5) |
+| `--keep-nested-parents` / `--no-keep-nested-parents` | Keep or drop parent dict/array fields alongside dotted children. Default is **on** for most row commands and `stats`; **off** for `schema`. |
+
+## Parse errors
+
+| Flag | Meaning |
+|------|---------|
+| `--on-error raise\|skip\|warn` | What to do with a malformed row (default: `raise`). `skip` and `warn` force the iterable engine instead of DuckDB. |
+| `--error-log PATH` | Append skipped or warned parse errors as JSONL (use with `skip` or `warn`) |
+
+```bash
+undatum convert messy.csv out.jsonl --on-error skip --error-log errors.jsonl
+```
+
+## Tables, sheets, and CSV dialect
+
+| Flag | Meaning |
+|------|---------|
+| `--table` / `--sheet` | Named table or Excel sheet. Two-file commands also take `--table2`. `ingest` / `db load` use `--source-table`. |
+| `--start-page N` | 0-based sheet index (Excel) |
+| `--delimiter` | CSV delimiter. Auto-detected (comma, semicolon, tab, pipe) when omitted on shared read paths. |
+| `--quotechar` | CSV quote character (iterabledata default `"`). Also `defaults.quotechar` / `UNDATUM_QUOTECHAR`. |
+| `--encoding` | Text encoding (auto-detected when omitted on supported commands) |
+| `--format-in` | Override input format detection (`csv`, `jsonl`, `xml`, …) |
+| `--tagname` | XML element that contains one record |
+| `--trust` | Acknowledge pickle deserialization risk (convert, stats, schema, select, head, and others that can read pickle) |
+
+List sheets before converting:
+
+```bash
+undatum formats tables workbook.xlsx
+undatum convert workbook.xlsx out.jsonl --table Sheet2
+```
+
+## Row filters
+
+Commands that subset rows take `--filter` (alias `--filter-expr`) with a comparison expression. The same expression is pushed to DuckDB `WHERE` when possible.
+
+```bash
+undatum select --fields name,email --filter '`status` == "active"' data.jsonl
+undatum frequency --fields city --filter 'age >= 30' data.jsonl
+```
+
+`--filter` does not support `LIKE`, `IN`, or regex. Use [`sql`](/commands/sql) for those. Full syntax: [Basic usage](/getting-started/basic-usage).
+
+## Cloud URIs
+
+Input and output paths may be `s3://`, `gs://` / `gcs://`, or `az://` / `abfs://` / `abfss://` when the matching extra is installed. See [Cloud storage](/integrations/cloud).

@@ -1,7 +1,7 @@
 # roadmap-planning Specification
 
 ## Purpose
-TBD - created by archiving change add-user-needs-improvement-roadmap. Update Purpose after archive.
+User-needs roadmap that prefers install, memory, and correctness work over further niche format expansion.
 ## Requirements
 ### Requirement: User-Needs Improvement Roadmap
 The project SHALL maintain a user-needs-driven improvement roadmap that prioritizes trust,

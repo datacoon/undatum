@@ -8,8 +8,7 @@ install: ## Install package in production mode
 	pip install -e .
 
 install-dev: ## Install package with development dependencies
-	pip install -e .
-	pip install black ruff mypy pylint pytest pytest-cov pre-commit
+	pip install -e ".[dev]"
 
 test: ## Run tests
 	pytest

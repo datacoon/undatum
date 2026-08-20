@@ -1,7 +1,7 @@
 # workflow-automation Specification
 
 ## Purpose
-TBD - created by archiving change add-pipeline-templates. Update Purpose after archive.
+YAML/JSON multi-step workflows (`pipeline run` / `validate` / `doc`) plus built-in templates (`pipeline templates`).
 ## Requirements
 ### Requirement: Pipeline Templates
 The system SHALL provide reusable pipeline templates for common workflows.

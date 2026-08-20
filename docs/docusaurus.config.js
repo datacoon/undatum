@@ -37,7 +37,7 @@ const config = {
       ({
         docs: {
           sidebarPath: require.resolve('./sidebars.js'),
-          editUrl: 'https://github.com/datenoio/undatum/edit/master/docs/docs/',
+          editUrl: 'https://github.com/datenoio/undatum/edit/main/docs/docs/',
           routeBasePath: '/',
         },
         blog: false,
@@ -150,7 +150,7 @@ const config = {
               },
               {
                 label: 'Changelog',
-                href: 'https://github.com/datenoio/undatum/blob/master/CHANGELOG.md',
+                href: 'https://github.com/datenoio/undatum/blob/main/CHANGELOG.md',
               },
               {
                 label: 'License',

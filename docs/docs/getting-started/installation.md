@@ -31,9 +31,9 @@ brew install pipx && pipx install undatum
 uv tool install undatum
 ```
 
-A Homebrew formula for undatum itself is tracked separately; `pipx`/`uv` are the supported macOS install methods today.
+A Homebrew formula is not published from this repository. Use `pipx` or `uv` on macOS.
 
-Release tags also publish **PyInstaller single-file binaries** (Linux, macOS, Windows) as GitHub Actions artifacts. These are ops-oriented; `pipx`/`uv` remain the supported install paths for most users.
+Release tags publish **PyInstaller single-file binaries** (Linux, macOS, Windows) on the [GitHub Releases](https://github.com/datenoio/undatum/releases) page (Actions artifacts on the tag workflow). These are ops-oriented; `pipx`/`uv` remain the supported install paths for most users.
 
 A man page ships with the package (`man undatum` after install, or `make man` to regenerate `man/undatum.1`).
 
@@ -123,7 +123,7 @@ undatum --show-completion bash
 
 ### Requirements
 
-- Python 3.9 or greater
+- Python 3.9 or greater (CI tests 3.9–3.13)
 
 ### Install from source
 
@@ -132,6 +132,10 @@ python -m pip install --upgrade pip setuptools wheel
 python -m pip install .
 # or build distributables
 python -m pip install build && python -m build
+
+# Contributors
+make install-dev
+# or: pip install -e ".[dev]"
 ```
 
 ## Next steps

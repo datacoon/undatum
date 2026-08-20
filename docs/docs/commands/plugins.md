@@ -17,9 +17,11 @@ undatum plugins info my-plugin
 undatum plugins validate
 ```
 
-Connector plugins are consulted for non-`s3://` URIs in the I/O path. Transform plugins can be applied with `undatum apply data.jsonl --plugin my-transform`. Examples live in `examples/plugins/`.
+Connector plugins are consulted for URI schemes that are not built-in cloud paths (`s3://`, `gs://`, `az://`, …). Transform plugins can be applied with `undatum apply data.jsonl --plugin my-transform`. Examples live in `examples/plugins/`.
 
-**Plugin Types:**
+See [Plugins](/integrations/plugins) for CommandPlugin, TransformPlugin (`apply --plugin`), and ConnectorPlugin examples.
+
+**Plugin types:**
 - **Command plugins**: Add custom CLI commands
 - **Connector plugins**: Add support for custom URI schemes and data sources
 - **Transform plugins**: Add custom data transformation functions

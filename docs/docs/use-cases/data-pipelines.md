@@ -19,6 +19,7 @@ undatum profile clean.parquet
 ```bash
 undatum pipeline templates list
 undatum pipeline templates init basic-cleaning --var input_file=data.csv
+undatum pipeline templates init jsonl-normalization --output normalize.yml
 undatum pipeline validate my-pipeline.yml
 undatum pipeline run my-pipeline.yml
 ```
@@ -33,4 +34,4 @@ undatum db load clean.parquet --db postgresql://user:pass@host/db \
   --table events --mode upsert --upsert-key id
 ```
 
-See [`pipeline`](/commands/pipeline), [`db`](/commands/db), and [cloud storage](/integrations/cloud).
+See [`pipeline`](/commands/pipeline) for the YAML DSL (`steps`, `args`, `$step_name`), [`db`](/commands/db), and [cloud storage](/integrations/cloud).

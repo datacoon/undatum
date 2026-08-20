@@ -1,7 +1,7 @@
 # data-security Specification
 
 ## Purpose
-TBD - created by archiving change add-mask-command. Update Purpose after archive.
+Mask or redact sensitive fields (`undatum mask`) so datasets can be shared without exposing PII.
 ## Requirements
 ### Requirement: Mask Command
 The system SHALL provide a `mask` command for anonymizing sensitive data fields.

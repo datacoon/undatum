@@ -1,7 +1,7 @@
 # examples Specification
 
 ## Purpose
-TBD - created by archiving change add-examples-command. Update Purpose after archive.
+Copy-paste recipes (`undatum examples list` / `show` / `run`) for common conversion, validation, and database tasks.
 ## Requirements
 ### Requirement: Examples Command
 The system SHALL provide an `examples` command group for managing and executing recipe libraries.

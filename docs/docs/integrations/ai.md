@@ -52,6 +52,8 @@ ai:
   ollama_base_url: http://localhost:11434
 ```
 
+`./undatum.yaml` is preferred over `~/.undatum/config.yaml`. CLI `--ai-provider` / `--ai-model` flags override the file. Provider API keys stay in the environment (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, …). Full `defaults:` keys: [`config`](/commands/config).
+
 ### Language Support
 
 Generate descriptions in different languages:

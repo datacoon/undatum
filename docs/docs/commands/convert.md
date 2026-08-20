@@ -49,3 +49,5 @@ undatum convert s3://bucket/input.jsonl s3://bucket/output.parquet
 - `--flatten` — flatten nested records to a flat schema
 - `--atomic` — write to a temp file and rename on success (local paths only)
 - `--threads`, `--batch-size`, `--progress` — throughput and feedback controls (`--threads` enables process-pool chunk parallelism for single-file Python-engine convert; also used as concurrent workers for `--recursive` bulk convert)
+
+Reader, error-policy, table, and nested-flatten flags that convert shares with other commands: [Shared CLI options](/commands/shared-options).

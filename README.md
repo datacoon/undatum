@@ -65,7 +65,7 @@ brew install pipx && pipx install undatum
 uv tool install undatum
 ```
 
-Release tags also publish **PyInstaller single-file binaries** (Linux, macOS, Windows) as GitHub Actions artifacts. `pipx`/`uv` remain the supported install paths for most users.
+Release tags publish **PyInstaller single-file binaries** (Linux, macOS, Windows) on [GitHub Releases](https://github.com/datenoio/undatum/releases). `pipx`/`uv` remain the supported install paths for most users.
 
 A man page ships with the package (`man undatum` after install, or `make man` to regenerate `man/undatum.1`).
 
@@ -114,7 +114,7 @@ undatum --show-completion bash      # preview without installing
 
 ### Requirements
 
-- Python 3.9 or greater
+- Python 3.9 or greater (CI tests 3.9–3.13)
 
 ### Install from source
 
@@ -167,11 +167,11 @@ All commands are available as `undatum <command>` or via the shorter `data` alia
 | `api` | `discover`, `serve`, `run`, `openapi` |
 | `db` | `query`, `load`, `dump` |
 | `package` | `create`, `add-resource`, `validate` |
-| `pipeline` | `run`, `validate`, `templates list`, `templates init` |
+| `pipeline` | `run`, `validate`, `doc`, `templates list`, `templates init` |
 | `formats` | `list`, `describe`, `export`, `tables` |
 | `mcp` | `serve`, `tools` |
 | `examples` | `list`, `show`, `run` |
-| `plugins` | `list`, `info` |
+| `plugins` | `list`, `info`, `validate` |
 | `config` | `show` |
 
 ```bash

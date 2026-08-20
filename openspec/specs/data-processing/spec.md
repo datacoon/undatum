@@ -1,7 +1,7 @@
 # data-processing Specification
 
 ## Purpose
-TBD - created by archiving change add-schema-format-exports. Update Purpose after archive.
+Infer and export schemas (`schema` / `schema_bulk`) in JSON Schema, YAML, Frictionless, and Cerberus formats.
 ## Requirements
 ### Requirement: JSON Schema Export
 The system SHALL support exporting schemas in JSON Schema format (W3C/IETF standard).

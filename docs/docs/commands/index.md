@@ -9,7 +9,9 @@ slug: /commands
 All commands are available as `undatum <command>` or the shorter `data` alias
 (`data convert …` is identical to `undatum convert …`).
 
-Use `undatum <command> --help` for the live flag list.
+Use `undatum <command> --help` for the live flag list. Flags that appear on many
+commands (`--flatten-nested`, `--on-error`, `--filter`, `--table`, `--quotechar`)
+are documented under [Shared CLI options](/commands/shared-options).
 
 ## Convert and I/O
 
@@ -19,6 +21,7 @@ Use `undatum <command> --help` for the live flag list.
 | `repack` | [`/commands/repack`](/commands/repack) |
 | `flatten` | [`/commands/flatten`](/commands/flatten) |
 | `formats` | [`/commands/formats`](/commands/formats) |
+| Shared flags | [`/commands/shared-options`](/commands/shared-options) |
 
 ## Inspect
 
@@ -32,6 +35,7 @@ Use `undatum <command> --help` for the live flag list.
 | `tail` | [`/commands/tail`](/commands/tail) |
 | `table` | [`/commands/table`](/commands/table) |
 | `stats` | [`/commands/stats`](/commands/stats) |
+| `profile` | alias of `stats` — [`/commands/stats`](/commands/stats) |
 | `frequency` | [`/commands/frequency`](/commands/frequency) |
 | `uniq` | [`/commands/uniq`](/commands/uniq) |
 

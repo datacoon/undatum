@@ -299,9 +299,9 @@ pytest tests/benchmarks/ -v
 ### CI
 
 GitHub Actions workflow (`.github/workflows/ci.yml`) runs on:
-- Python 3.9, 3.10, 3.11
+- Python 3.9, 3.10, 3.11, 3.12, 3.13
 - Ubuntu latest
-- Steps: checkout → setup Python → install package → install pytest, pytest-benchmark → run pytest
+- Jobs: lint, docs (Docusaurus build), type-check (advisory), test matrix with pytest
 
 ## Development Conventions
 
@@ -399,6 +399,13 @@ This repository has documentation located in the /openwiki directory.
 
 Start here:
 - [OpenWiki quickstart](openwiki/quickstart.md)
+- [Architecture](openwiki/architecture.md)
+- [Workflows](openwiki/workflows.md)
+- [Domain concepts](openwiki/domain.md)
+- [Operations](openwiki/operations.md)
+- [Integrations](openwiki/integrations.md)
+- [Testing](openwiki/testing.md)
+- [Source maps](openwiki/source-maps.md)
 
 OpenWiki includes repository overview, architecture notes, workflows, domain concepts, operations, integrations, testing guidance, and source maps.
 

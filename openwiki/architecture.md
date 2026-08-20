@@ -17,11 +17,11 @@ Source evidence: `undatum/__main__.py`, `undatum/core.py`, `tests/test_main.py`,
 ## Command groups
 The current top-level shape is assembled in `undatum/core.py`:
 - Top-level data commands are merged directly from `undatum.cli.data_commands.data_app`.
-- Named groups are attached for `ai`, `api`, `package`, `pipeline`, `db`, `examples`, `formats`, `mcp`, and `plugins`.
+- Named groups are attached for `ai`, `api`, `package`, `pipeline`, `db`, `examples`, `formats`, `mcp`, `plugins`, and `config`.
 - Optional session UIs are top-level commands: `tui` (`undatum/cli/tui_cli.py`) and `web` (`undatum/cli/web_cli.py`). Both call `undatum.tui.services.TuiServices`; the web extra must not import Textual screens.
 
 Representative command-group modules:
-- `undatum/cli/data_commands.py` — primary data workflows such as convert, extract, uniq, diff, filter, query, select, sort, sql, stats, validate, and transform-style operations.
+- `undatum/cli/data_commands.py` — primary data workflows such as convert, extract, uniq, diff, select, sort, sql, stats, validate, and transform-style operations.
 - `undatum/cli/api_cli.py` — file-backed API discovery, serve, run, and OpenAPI export.
 - `undatum/cli/plugins_cli.py` — plugin listing and inspection.
 - `undatum/cli/mcp_cli.py` — MCP server support.
@@ -61,3 +61,5 @@ When changing core behavior:
 ## Related docs
 - [Quickstart](quickstart.md)
 - [Contributor workflow and change process](workflows.md)
+- [Domain concepts](domain.md)
+- [Source maps](source-maps.md)

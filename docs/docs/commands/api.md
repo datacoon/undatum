@@ -92,7 +92,11 @@ curl "http://127.0.0.1:8000/sales/42"
 
 **Security notes:**
 
-- The API is read-only; no mutations are possible
-- Binds to `127.0.0.1` by default; there is no built-in authentication, so put it behind a reverse proxy with auth before exposing it publicly
+- The API is read-only; there are no mutation endpoints
+- It binds to `127.0.0.1` by default
+- Optional shared-secret auth: `--api-key` or `UNDATUM_API_KEY` (`X-API-Key` or `?api_key=`). This is not SSO or per-user authorization
+- Put the server behind a reverse proxy with TLS and real auth before exposing it beyond localhost
 
-See also: [examples/api/api-example.md](https://github.com/datenoio/undatum/blob/main/examples/api/api-example.md) and [Data API operations](/integrations/data-api).
+See [Data API security](/integrations/data-api) for CORS, reverse-proxy guidance, and cloud resource paths.
+
+See also: [examples/api/api-example.md](https://github.com/datenoio/undatum/blob/main/examples/api/api-example.md).

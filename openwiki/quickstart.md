@@ -8,8 +8,13 @@ The canonical product overview and install examples live in `README.md`; package
 ## Start here
 - [Architecture and command surface](architecture.md)
 - [Contributor workflow and change process](workflows.md)
+- [Domain concepts](domain.md)
+- [Operations](operations.md)
+- [Integrations](integrations.md)
+- [Testing](testing.md)
+- [Source maps](source-maps.md)
 - Documentation site: `docs/` (Docusaurus; content in `docs/docs/`)
-- OpenSpec capabilities: `openspec/specs/tui/spec.md`, `openspec/specs/web-ui/spec.md`
+- OpenSpec capabilities: `openspec/specs/`
 
 ## High-level map
 - `undatum/__main__.py` — process entrypoint; configures logging and dispatches to the Typer app.

@@ -11,7 +11,7 @@ undatum config
 undatum config show
 ```
 
-Example project config:
+Example project `undatum.yaml`:
 
 ```yaml
 ai:
@@ -23,7 +23,25 @@ defaults:
   threads: 4
   progress: true
   encoding: utf8
+  delimiter: ","
+  quotechar: '"'
   format_out: json
 ```
 
-Environment variables such as `UNDATUM_AI_PROVIDER` and `UNDATUM_QUOTECHAR` override file defaults. CLI flags override both.
+`defaults:` keys: `engine`, `threads`, `progress`, `encoding`, `delimiter`, `quotechar`, `format_out`.
+
+### Precedence
+
+**CLI defaults** (`defaults:` / `UNDATUM_*`): later sources win — environment, then `~/.undatum/config.yaml`, then `./undatum.yaml`. Explicit CLI flags override all of them.
+
+| Environment | Config key |
+|-------------|------------|
+| `UNDATUM_ENGINE` | `defaults.engine` |
+| `UNDATUM_THREADS` | `defaults.threads` |
+| `UNDATUM_PROGRESS` | `defaults.progress` |
+| `UNDATUM_ENCODING` | `defaults.encoding` |
+| `UNDATUM_DELIMITER` | `defaults.delimiter` |
+| `UNDATUM_QUOTECHAR` | `defaults.quotechar` |
+| `UNDATUM_FORMAT_OUT` | `defaults.format_out` |
+
+**AI settings** (`ai:`): environment, then the first config file found (`./undatum.yaml` preferred over `~/.undatum/config.yaml`), then CLI flags. Provider API keys (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, …) are always read from the environment. See [AI documentation](/integrations/ai).

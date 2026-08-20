@@ -67,6 +67,7 @@ const sidebars = {
             'commands/repack',
             'commands/flatten',
             'commands/formats',
+            'commands/shared-options',
           ],
         },
         {

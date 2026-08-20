@@ -53,3 +53,4 @@ When you are asked to modify this repository:
 ## Related docs
 - [Quickstart](quickstart.md)
 - [Architecture and command surface](architecture.md)
+- [Testing](testing.md)
