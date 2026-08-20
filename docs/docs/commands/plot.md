@@ -1,0 +1,82 @@
+---
+title: "plot"
+description: "undatum plot command reference"
+---
+# `plot`
+
+Generate data visualizations from data files. Supports histograms, bar charts, scatter plots, and line plots for quick data exploration.
+
+```bash
+# Generate histogram for numerical field
+undatum plot data.csv --field age --type histogram --output age_dist.png
+
+# Generate bar chart for categorical field
+undatum plot data.csv --field status --type bar
+
+# Generate scatter plot for two fields
+undatum plot data.csv --field x,y --type scatter --output scatter.png
+
+# Generate line plot
+undatum plot data.csv --field value --type line --output trend.png
+
+# Auto-detect plot type based on field type
+undatum plot data.csv --field age --output age_plot.png
+
+# Multiple fields in subplots
+undatum plot data.csv --field age,income,score --type histogram --output distributions.png
+
+# Customize plot appearance
+undatum plot data.csv --field age --title "Age Distribution" \
+  --xlabel "Age (years)" --ylabel "Frequency" \
+  --width 12 --height 8 --dpi 150 --output age_plot.png
+
+# Filter before plotting, keep the top categories
+undatum plot data.csv --field city --type bar --filter '`status` == "active"' \
+  --top-n 10 --output cities.png
+
+# Bar chart of summed amounts by category
+undatum plot data.csv --field city --type bar --aggregate sum --value-field amount \
+  --output totals.png
+undatum plot workbook.xlsx --table Sheet2 --field city --type bar --output cities.png
+undatum plot nested.jsonl --field capital_city.lat --flatten-nested --type histogram --output lats.png
+```
+
+**Plot Types:**
+- `histogram` - Distribution of numerical values (default for numerical fields)
+- `bar` - Frequency of categorical values (default for categorical fields)
+- `scatter` - Relationship between two numerical fields
+- `line` - Time series or sequential data
+- `auto` - Auto-detect based on field type (default)
+
+**Output Formats:**
+- PNG (default) - Raster image format
+- SVG - Vector image format
+- PDF - Print-ready document format
+
+**Features:**
+- **Auto-detection**: Automatically suggests appropriate plot type based on field data type
+- **Multiple fields**: Generate multiple subplots for multiple fields
+- **Customizable**: Control titles, labels, colors, size, and resolution
+- **Multiple formats**: Save as PNG, SVG, or PDF
+- **Display mode**: Show plot interactively if no output file specified
+
+**Options:**
+- `--field`: Field name(s) to plot (comma-separated for multiple)
+- `--type`: Plot type (`histogram`, `bar`, `scatter`, `line`, or `auto`)
+- `--output`: Output file path (if not specified, displays plot)
+- `--format`: Output format (`png`, `svg`, or `pdf`)
+- `--title`: Plot title
+- `--xlabel`: X-axis label
+- `--ylabel`: Y-axis label
+- `--width`: Figure width in inches (default: 10)
+- `--height`: Figure height in inches (default: 6)
+- `--dpi`: Resolution for raster formats (default: 100)
+- `--color`: Color scheme name (matplotlib colormap)
+- `--style`: Matplotlib style name (e.g. `ggplot`)
+- `--filter`: Filter expression applied before plotting
+- `--aggregate`: Bar-chart aggregation (`count`, `sum`, `mean`, or `none`)
+- `--value-field`: Numeric field to sum/mean when `--aggregate` is `sum` or `mean`
+- `--top-n`: Keep the top N aggregated groups for bar charts
+
+**Requirements:**
+- Install the plot extra: `pip install "undatum[plot]"` (includes matplotlib)

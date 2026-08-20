@@ -1,0 +1,58 @@
+---
+title: "plugins"
+description: "undatum plugins command reference"
+---
+# `plugins`
+
+Manage and discover plugins that extend undatum functionality. Plugins can add custom commands, IO connectors, and transforms.
+
+```bash
+# List all installed plugins
+undatum plugins list
+
+# Show plugin information
+undatum plugins info my-plugin
+
+# Validate loaded plugins
+undatum plugins validate
+```
+
+Connector plugins are consulted for non-`s3://` URIs in the I/O path. Transform plugins can be applied with `undatum apply data.jsonl --plugin my-transform`. Examples live in `examples/plugins/`.
+
+**Plugin Types:**
+- **Command plugins**: Add custom CLI commands
+- **Connector plugins**: Add support for custom URI schemes and data sources
+- **Transform plugins**: Add custom data transformation functions
+
+**Creating Plugins:**
+
+Plugins are Python packages that register with undatum via entry points. Example plugin:
+
+```python
+# setup.py or pyproject.toml
+[project.entry-points."undatum.plugins"]
+my-plugin = "mypackage.plugin:register"
+
+# plugin.py
+from undatum.plugins.base import CommandPlugin, Plugin
+import typer
+
+def register(undatum_app):
+    return MyPlugin(undatum_app)
+
+class MyPlugin(CommandPlugin):
+    def __init__(self, app):
+        super().__init__("my-plugin", "1.0.0", "My custom plugin")
+        self.app = app
+    
+    def register_commands(self, app):
+        @app.command()
+        def my_command(input_file: str):
+            """My custom command."""
+            # Command implementation
+            pass
+```
+
+**Plugin Discovery:**
+
+Plugins are automatically discovered from installed packages via the `undatum.plugins` entry point group. No configuration needed - just install the plugin package and undatum will find it.

@@ -126,7 +126,7 @@ def render_manpage() -> str:
             ".B 3",
             "Permission or database/system error.",
             ".SH SEE ALSO",
-            "Full documentation: https://github.com/datacoon/undatum",
+            "Full documentation: https://github.com/datenoio/undatum",
             ".br",
             "Run",
             ".B undatum COMMAND \\-\\-help",

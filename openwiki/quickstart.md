@@ -8,6 +8,7 @@ The canonical product overview and install examples live in `README.md`; package
 ## Start here
 - [Architecture and command surface](architecture.md)
 - [Contributor workflow and change process](workflows.md)
+- Documentation site: `docs/` (Docusaurus; content in `docs/docs/`)
 - OpenSpec capabilities: `openspec/specs/tui/spec.md`, `openspec/specs/web-ui/spec.md`
 
 ## High-level map

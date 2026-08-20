@@ -376,7 +376,7 @@ class OpenRouterProvider(AIService):
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json",
-            "HTTP-Referer": "https://github.com/datacoon/undatum",
+            "HTTP-Referer": "https://github.com/datenoio/undatum",
             "X-Title": "Undatum Data Analysis",
         }
 
@@ -438,7 +438,7 @@ class OpenRouterProvider(AIService):
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json",
-            "HTTP-Referer": "https://github.com/datacoon/undatum",
+            "HTTP-Referer": "https://github.com/datenoio/undatum",
             "X-Title": "Undatum Data Analysis",
         }
 
@@ -512,7 +512,7 @@ Please provide a short description of this dataset in {language}. Consider this 
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json",
-            "HTTP-Referer": "https://github.com/datacoon/undatum",
+            "HTTP-Referer": "https://github.com/datenoio/undatum",
             "X-Title": "Undatum Data Analysis",
         }
         user_content = _metadata_prompt(data, fields, language)

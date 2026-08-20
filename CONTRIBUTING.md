@@ -14,7 +14,7 @@ Thank you for your interest in contributing to undatum! This document provides g
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/datacoon/undatum.git
+git clone https://github.com/datenoio/undatum.git
 cd undatum
 ```
 
@@ -101,14 +101,19 @@ def example_function(param1: str, param2: int = 10) -> bool:
     pass
 ```
 
-### Building Documentation
+### Documentation site
 
-Documentation is built using Sphinx:
+User-facing docs are a Docusaurus site in `docs/` (content in `docs/docs/`).
 
 ```bash
 cd docs
-make html
+npm install
+npm start          # local preview
+npm run build      # production build (also `make docs`)
 ```
+
+See `docs/README.md` and `docs/GITHUB_PAGES_SETUP.md`. The published site is
+https://datenoio.github.io/undatum/.
 
 ## Testing
 
@@ -186,7 +191,7 @@ Feel free to open an issue for questions or reach out to the maintainers.
 ## Community
 
 - Prefer **GitHub Discussions** for Q&A and ideas; use Issues for bugs and
-  actionable feature requests. See `docs/COMMUNITY.md`.
+  actionable feature requests. See `docs/docs/development/community.md`.
 - Look for the `good first issue` label when getting started.
 - External contributors are welcome — undatum has persistent usage but historically few PRs;
   small focused patches (tests, docs, install fixes) are especially helpful.

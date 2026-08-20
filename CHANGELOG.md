@@ -5,17 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased](https://github.com/datacoon/undatum/compare/v1.7.0...HEAD)
+## [Unreleased](https://github.com/datenoio/undatum/compare/v1.7.0...HEAD)
 
 ### Added
 
+- **Docusaurus documentation site** — user docs live in `docs/` (content in `docs/docs/`), organized like iterabledata (getting started, use cases, CLI reference, formats, integrations, development), with GitHub Pages deployment at https://datenoio.github.io/undatum/
+
+### Changed
+
+- **GitHub repository** moved from `datacoon/undatum` to [`datenoio/undatum`](https://github.com/datenoio/undatum). GitHub redirects the old URLs; documentation is at https://datenoio.github.io/undatum/
 - **GCS and Azure cloud connectors** — first-class `gs://`/`gcs://` and `az://`/`abfs://`/`abfss://` URIs next to S3 for CLI, SDK, TUI/web, and Data API resources; extras `undatum[gcs]` and `undatum[azure]`; missing-extra errors name the install command
 
 ### Fixed
 
 - **Release binaries** — stop gitignoring `packaging/undatum.spec` so tagged PyInstaller jobs can find the spec
 
-## [1.7.0](https://github.com/datacoon/undatum/compare/v1.6.0...v1.7.0) - 2026-08-13
+## [1.7.0](https://github.com/datenoio/undatum/compare/v1.6.0...v1.7.0) - 2026-08-13
 
 ### Added
 
@@ -94,7 +99,7 @@ path, and later steps can use `$step_name` or the previous step's output
 - Raised minimum dependency versions to address historical Snyk advisories for `setuptools`,
 `dnspython`, `numpy`, and `zipp`.
 
-## [1.6.0](https://github.com/datacoon/undatum/compare/v1.5.0...v1.6.0) - 2026-07-22
+## [1.6.0](https://github.com/datenoio/undatum/compare/v1.5.0...v1.6.0) - 2026-07-22
 
 ### Added
 
@@ -142,7 +147,7 @@ path, and later steps can use `$step_name` or the previous step's output
   - **1.0.17** — codec performance profiles; native Parquet/Arrow batch conversion; Zarr, GeoParquet, FlatGeobuf, BED/GFF, CRAM, OTLP profiles; bounded columnar I/O
   - **1.0.18** — experimental open-data format pack (FileGDB, MIF, LAS, Access, MAT, SEG-Y, GRIB2, IATI, …); Paimon Row/Mosaic/tables and DuckLake; Delta Lake and Iceberg bounded writes (Hudi remains read-only)
 
-## [1.5.0](https://github.com/datacoon/undatum/compare/v1.4.0...v1.5.0) - 2026-06-29
+## [1.5.0](https://github.com/datenoio/undatum/compare/v1.4.0...v1.5.0) - 2026-06-29
 
 ### Added
 
@@ -165,7 +170,7 @@ path, and later steps can use `$step_name` or the previous step's output
 - **Data API** — `serve`, `run`, and `openapi` raise a clear `DependencyError` when the `api` extra is not installed
 - `**api-serve-data` recipe** — default flow uses `api run`; config path defaults to `api-config.yml`
 
-## [1.4.0](https://github.com/datacoon/undatum/compare/v1.3.0...v1.4.0) - 2026-06-26
+## [1.4.0](https://github.com/datenoio/undatum/compare/v1.3.0...v1.4.0) - 2026-06-26
 
 ### Added
 
@@ -185,7 +190,7 @@ path, and later steps can use `$step_name` or the previous step's output
 - `SUPPORTED_FILE_TYPES`, `COMPRESSED_FILE_TYPES`, `TEXT_DATA_TYPES`, and `BINARY_FILE_TYPES` are now derived at import time from iterabledata's registries (with static fallbacks when iterabledata is unavailable), so undatum recognizes every format and codec the underlying engine supports
 - `doc` command metadata extraction (keywords, geographic/temporal coverage, language, theme) and semantic-type/PII detection now delegate to `iterable.ai.metadata` and `iterable.ai.semantic` while keeping CLI output backward compatible
 
-## [1.3.0](https://github.com/datacoon/undatum/compare/v1.1.1...v1.3.0) - 2026-06-11
+## [1.3.0](https://github.com/datenoio/undatum/compare/v1.1.1...v1.3.0) - 2026-06-11
 
 ### Added
 
@@ -237,7 +242,7 @@ path, and later steps can use `$step_name` or the previous step's output
 - Unsupported database URI schemes (e.g. `http://`) now raise a clear error instead of being treated as SQLite paths
 - Fixed YAML syntax error in the `api-serve-data` recipe
 
-## [1.1.1](https://github.com/datacoon/undatum/compare/v1.1.0...v1.1.1) - 2026-01-19
+## [1.1.1](https://github.com/datenoio/undatum/compare/v1.1.0...v1.1.1) - 2026-01-19
 
 ### Added
 
@@ -248,7 +253,7 @@ path, and later steps can use `$step_name` or the previous step's output
 
 - Expanded README with documentation pointers and dataset doc references
 
-## [1.1.0](https://github.com/datacoon/undatum/compare/v1.0.18...v1.1.0) - 2026-01-18
+## [1.1.0](https://github.com/datenoio/undatum/compare/v1.0.18...v1.1.0) - 2026-01-18
 
 ### Added
 
@@ -325,13 +330,13 @@ path, and later steps can use `$step_name` or the previous step's output
 - Fixed schema command AI documentation not working
 - Fixed schema command missing record counting
 
-## [1.0.18](https://github.com/datacoon/undatum/compare/v1.0.17...v1.0.18) - 2025-12-15
+## [1.0.18](https://github.com/datenoio/undatum/compare/v1.0.17...v1.0.18) - 2025-12-15
 
 ### Fixed
 
 - Declared runtime dependencies in `pyproject.toml` and aligned `setup.py` so `pip install undatum` installs all required packages in clean environments
 
-## [1.0.17](https://github.com/datacoon/undatum/compare/v1.0.16...v1.0.17) - 2025-12-12
+## [1.0.17](https://github.com/datenoio/undatum/compare/v1.0.16...v1.0.17) - 2025-12-12
 
 ### Changed
 
@@ -344,7 +349,7 @@ path, and later steps can use `$step_name` or the previous step's output
 - Fixed analyzer output not writing to files correctly when `--output` option was used
 - Improved consistency between stdout and file output formatting
 
-## [1.0.16](https://github.com/datacoon/undatum/compare/v1.0.15...v1.0.16) - 2025-12-12
+## [1.0.16](https://github.com/datenoio/undatum/compare/v1.0.15...v1.0.16) - 2025-12-12
 
 ### Added
 
@@ -384,7 +389,7 @@ path, and later steps can use `$step_name` or the previous step's output
 - **Fixed fragile AI response parsing**: Replaced error-prone text extraction with proper JSON parsing
 - **Fixed AI service initialization**: Added proper error handling and fallback when AI service fails to initialize
 
-## [1.0.15](https://github.com/datacoon/undatum/compare/v1.0.14...v1.0.15) - 2024-12-12
+## [1.0.15](https://github.com/datenoio/undatum/compare/v1.0.14...v1.0.15) - 2024-12-12
 
 ### Added
 
@@ -407,7 +412,7 @@ path, and later steps can use `$step_name` or the previous step's output
 - Fixed JSON output for analyzer command
 - Minor fixes and improvements
 
-## [1.0.14](https://github.com/datacoon/undatum/compare/v1.0.13...v1.0.14) - 2024-11-20
+## [1.0.14](https://github.com/datenoio/undatum/compare/v1.0.13...v1.0.14) - 2024-11-20
 
 ### Added
 
@@ -416,7 +421,7 @@ path, and later steps can use `$step_name` or the previous step's output
 - Added encoding option for analyze command to allow manually set encoding
 - Added formats conversion table to documentation
 
-## [1.0.13](https://github.com/datacoon/undatum/compare/v1.0.12...v1.0.13) - 2022-04-20
+## [1.0.13](https://github.com/datenoio/undatum/compare/v1.0.12...v1.0.13) - 2022-04-20
 
 ### Fixed
 
@@ -426,44 +431,44 @@ path, and later steps can use `$step_name` or the previous step's output
 
 - Added experimental command "query", not documented yet. Allows to use mistql query engine.
 
-## [1.0.12](https://github.com/datacoon/undatum/compare/v1.0.11...v1.0.12) - 2022-01-30
+## [1.0.12](https://github.com/datenoio/undatum/compare/v1.0.11...v1.0.12) - 2022-01-30
 
 ### Added
 
 - Added command "analyze" it provides human-readable information about data files: CSV, BSON, JSON lines, JSON, XML. Detects encoding, delimiters, type of files, fields with objects for JSON and XML files. Doesn't support Gzipped, ZIPped and other compressed files yet.
 
-## [1.0.11](https://github.com/datacoon/undatum/compare/v1.0.10...v1.0.11) - 2022-01-30
+## [1.0.11](https://github.com/datenoio/undatum/compare/v1.0.10...v1.0.11) - 2022-01-30
 
 ### Changed
 
 - Updated setup.py and requirements.txt to require certain versions of libs and Python 3.8
 
-## [1.0.10](https://github.com/datacoon/undatum/compare/v1.0.9...v1.0.10) - 2022-01-29
+## [1.0.10](https://github.com/datenoio/undatum/compare/v1.0.9...v1.0.10) - 2022-01-29
 
 ### Added
 
 - Added encoding and delimiter detection for commands: uniq, select, frequency and headers. Completely rewrote these functions. If options for encoding and delimiter set, they override detected. If not set, detected delimiter and encoding used.
 - Added support of .parquet files to convert to. It's done in a simplest way using pandas "to_parquet" function.
 
-## [1.0.9](https://github.com/datacoon/undatum/compare/v1.0.8...v1.0.9) - 2022-01-18
+## [1.0.9](https://github.com/datenoio/undatum/compare/v1.0.8...v1.0.9) - 2022-01-18
 
 ### Added
 
 - Added support for CSV and BSON files for "stats" command
 
-## [1.0.8](https://github.com/datacoon/undatum/compare/v1.0.7...v1.0.8) - 2021-07-14
+## [1.0.8](https://github.com/datenoio/undatum/compare/v1.0.7...v1.0.8) - 2021-07-14
 
 ### Changed
 
 - Replaced json with orjson for some operations. Keep looking on performance changes and going to replace or json lib calls to orjson
 
-## [1.0.7](https://github.com/datacoon/undatum/compare/v1.0.6...v1.0.7) - 2020-10-26
+## [1.0.7](https://github.com/datenoio/undatum/compare/v1.0.6...v1.0.7) - 2020-10-26
 
 ### Added
 
 - Added initial code to convert JSON lines files to CSV
 
-## [1.0.6](https://github.com/datacoon/undatum/tree/v1.0.6) - 2020-04-20
+## [1.0.6](https://github.com/datenoio/undatum/tree/v1.0.6) - 2020-04-20
 
 ### Added
 

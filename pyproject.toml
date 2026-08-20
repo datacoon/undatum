@@ -63,6 +63,13 @@ dependencies = [
     "zipp>=3.19.1",
 ]
 
+[project.urls]
+Homepage = "https://github.com/datenoio/undatum"
+Documentation = "https://datenoio.github.io/undatum/"
+Repository = "https://github.com/datenoio/undatum"
+Changelog = "https://github.com/datenoio/undatum/blob/master/CHANGELOG.md"
+Issues = "https://github.com/datenoio/undatum/issues"
+
 [project.optional-dependencies]
 extract = [
     "pdfplumber",
@@ -150,11 +157,6 @@ access = [
 compression = [
     "iterabledata[compression]",
 ]
-
-[project.urls]
-Homepage = "https://github.com/datacoon/undatum"
-Repository = "https://github.com/datacoon/undatum"
-Changelog = "https://github.com/datacoon/undatum/blob/master/CHANGELOG.md"
 
 [project.scripts]
 undatum = "undatum.__main__:main"

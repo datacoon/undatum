@@ -1,0 +1,37 @@
+# CLI Reference
+
+undatum commands grouped the same way as the documentation sidebar.
+
+## Getting started
+
+- [Installation](https://datenoio.github.io/undatum/getting-started/installation)
+- [Quick start](https://datenoio.github.io/undatum/getting-started/quick-start)
+- [When to use](https://datenoio.github.io/undatum/getting-started/when-to-use)
+- [Cookbook](https://datenoio.github.io/undatum/getting-started/cookbook)
+- [Performance](https://datenoio.github.io/undatum/getting-started/performance)
+- [Troubleshooting](https://datenoio.github.io/undatum/getting-started/troubleshooting)
+
+## Commands
+
+- [Command index](https://datenoio.github.io/undatum/commands/)
+- [convert](https://datenoio.github.io/undatum/commands/convert)
+- [validate](https://datenoio.github.io/undatum/commands/validate)
+- [sql](https://datenoio.github.io/undatum/commands/sql)
+- [stats](https://datenoio.github.io/undatum/commands/stats)
+- [pipeline](https://datenoio.github.io/undatum/commands/pipeline)
+- [db](https://datenoio.github.io/undatum/commands/db)
+- [api](https://datenoio.github.io/undatum/commands/api)
+- [ai](https://datenoio.github.io/undatum/commands/ai)
+- [mcp](https://datenoio.github.io/undatum/commands/mcp)
+
+## Integrations
+
+- [MCP server](https://datenoio.github.io/undatum/integrations/mcp)
+- [Python SDK](https://datenoio.github.io/undatum/integrations/sdk)
+- [Data API](https://datenoio.github.io/undatum/integrations/data-api)
+- [Cloud storage](https://datenoio.github.io/undatum/integrations/cloud)
+
+## Formats
+
+- [Format support matrix](https://datenoio.github.io/undatum/formats/)
+- [iterabledata formats](https://datenoio.github.io/iterabledata/formats/)

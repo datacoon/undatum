@@ -24,6 +24,23 @@ jobs:
     - name: Black
       run: black --check undatum/ tests/
 
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: "20"
+        cache: "npm"
+        cache-dependency-path: docs/package-lock.json
+    - name: Install documentation dependencies
+      working-directory: ./docs
+      run: npm ci
+    - name: Build documentation site
+      working-directory: ./docs
+      run: npm run build
+
   type-check:
     runs-on: ubuntu-latest
     # Advisory until the mypy error backlog is paid down (tracked in

@@ -1,4 +1,4 @@
-.PHONY: help install install-dev test lint format type-check docs man clean build
+.PHONY: help install install-dev test lint format type-check docs docs-serve man clean build
 
 help: ## Show this help message
 	@echo "Available targets:"
@@ -9,7 +9,7 @@ install: ## Install package in production mode
 
 install-dev: ## Install package with development dependencies
 	pip install -e .
-	pip install black ruff mypy pylint pytest pytest-cov pre-commit sphinx sphinx-rtd-theme
+	pip install black ruff mypy pylint pytest pytest-cov pre-commit
 
 test: ## Run tests
 	pytest
@@ -33,11 +33,11 @@ type-check: ## Run type checker
 man: ## Generate man/undatum.1 from the CLI
 	python scripts/generate_manpage.py
 
-docs: ## Build documentation
-	cd docs && make html
+docs: ## Build documentation site (Docusaurus)
+	cd docs && npm ci && npm run build
 
-docs-serve: ## Serve documentation locally (requires sphinx-autobuild)
-	cd docs && sphinx-autobuild . _build/html
+docs-serve: ## Serve documentation locally (Docusaurus)
+	cd docs && npm start
 
 clean: ## Clean build artifacts
 	rm -rf build/
@@ -47,6 +47,8 @@ clean: ## Clean build artifacts
 	rm -rf .mypy_cache
 	rm -rf htmlcov/
 	rm -rf docs/_build/
+	rm -rf docs/build/
+	rm -rf docs/.docusaurus/
 	find . -type d -name __pycache__ -exec rm -r {} +
 	find . -type f -name "*.pyc" -delete
 

@@ -23,7 +23,7 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 
 **undatum** is a Python command-line tool for data processing and analysis. It provides a unified interface for converting, analyzing, validating, and transforming data across multiple formats with a focus on low memory footprint through streaming.
 
-- **Repository**: https://github.com/datacoon/undatum
+- **Repository**: https://github.com/datenoio/undatum
 - **Version**: 1.7.0
 - **License**: MIT
 - **Author**: Ivan Begtin <ivan@begtin.tech>
@@ -31,7 +31,7 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 
 ### Key Capabilities
 
-- Multi-format I/O: CSV, JSON Lines, BSON, XML, XLS, XLSX, Parquet, AVRO, ORC, YAML, TSV, plus 140+ formats via `iterabledata` (geospatial, lakehouse, scientific; see `docs/FORMAT_SUPPORT.md`)
+- Multi-format I/O: CSV, JSON Lines, BSON, XML, XLS, XLSX, Parquet, AVRO, ORC, YAML, TSV, plus 140+ formats via `iterabledata` (geospatial, lakehouse, scientific; see `docs/docs/formats/index.md`)
 - Compression: ZIP, XZ, GZ, BZ2, ZSTD, LZ4, 7Z (codec profiles `fast`/`balanced`/`max` via iterabledata)
 - Streaming processing for large files via `iterabledata`
 - Automatic encoding, delimiter, and file type detection
@@ -131,9 +131,10 @@ openspec/                 # OpenSpec spec-driven development
 ├── specs/                # Current capability specifications
 └── changes/              # Active and archived change proposals
 
-docs/                     # Documentation
-├── ERROR_HANDLING.md     # Troubleshooting guide
-└── ERROR_HANDLING_PATTERNS.md # Developer error handling patterns
+docs/                     # Docusaurus documentation site
+├── docs/                 # Markdown content (getting-started, commands, …)
+├── src/                  # Homepage and theme components
+└── docusaurus.config.js  # Site configuration
 ```
 
 ## Build and Test Commands
@@ -142,7 +143,7 @@ All common tasks are available via `Makefile`:
 
 ```bash
 # Install for development
-make install-dev          # Installs package + black, ruff, mypy, pylint, pytest, pytest-cov, pre-commit, sphinx
+make install-dev          # Installs package + black, ruff, mypy, pylint, pytest, pytest-cov, pre-commit
 
 # Testing
 make test                 # pytest
@@ -161,8 +162,8 @@ make build                # python -m build
 make clean                # Remove build artifacts, caches, .pyc files
 
 # Documentation
-make docs                 # cd docs && make html
-make docs-serve           # cd docs && sphinx-autobuild . _build/html
+make docs                 # cd docs && npm ci && npm run build
+make docs-serve           # cd docs && npm start
 
 # Pre-commit hooks
 make pre-commit-install   # pre-commit install
@@ -387,8 +388,9 @@ pip install "undatum[api]"
 - `README.md` — User-facing documentation and quick start.
 - `CONTRIBUTING.md` — Detailed contribution guidelines.
 - `WORKFLOW_GUIDE.md` — OpenSpec workflow quick reference.
-- `docs/ERROR_HANDLING.md` — Troubleshooting common errors.
-- `docs/ERROR_HANDLING_PATTERNS.md` — Patterns for developers adding error handling.
+- `docs/docs/getting-started/troubleshooting.md` — Troubleshooting common errors.
+- `docs/docs/development/error-handling.md` — Patterns for developers adding error handling.
+- `docs/README.md` — Docusaurus site development and GitHub Pages deployment.
 - `CHANGELOG.md` — Version history.
 
 ## OpenWiki
