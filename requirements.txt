@@ -1,6 +1,6 @@
 avro>=1.10.2
 chardet>=5.2.0
-click>=8.0.3
+click>=8.5.0
 dnspython>=2.6.1
 duckdb
 elasticsearch
