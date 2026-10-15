@@ -131,6 +131,9 @@ SQLite compaction reclaims unused pages; it does not add a compression codec. Om
 `--threads` other than 1 are errors. All profiles use the same operation. Reports show
 `codec: none`, `level: null`, `strategy: vacuum_into` and the SQLite runtime version.
 No fallback to ordinary `VACUUM` is used because that can renumber hidden rowids.
+Some SQLite runtimes also renumber hidden rowids during `VACUUM INTO` for particular
+table definitions (for example, a CHECK constraint). Verification refuses those
+candidates and preserves the source and any existing destination.
 
 Python's SQLite **3.31 or newer** is required; there is no extra package dependency.
 There is no total file-size or row-count cap. The supported profile limits catalog

@@ -4,11 +4,37 @@ import gzip
 import json
 import subprocess
 import sys
+import textwrap
 
 import pytest
 
 from undatum.cmds.repacker import Repacker
 from undatum.common.repack_types import ResourceLimitError
+
+
+@pytest.mark.skipif(not sys.platform.startswith("linux"), reason="Linux RSS accounting")
+def test_worker_peak_does_not_inherit_large_parent_rss():
+    code = textwrap.dedent(
+        """
+        import json
+        import resource
+        import subprocess
+        import sys
+
+        allocation = bytearray(128 * 1024 * 1024)
+        worker = subprocess.check_output([
+            sys.executable, '-c',
+            'from undatum.common.repack_worker import _peak_rss; print(_peak_rss())',
+        ], text=True)
+        print(json.dumps([resource.getrusage(resource.RUSAGE_SELF).ru_maxrss * 1024, int(worker)]))
+        """
+    )
+    result = subprocess.run(
+        [sys.executable, "-c", code], capture_output=True, text=True, check=True, timeout=30
+    )
+    parent_peak, worker_peak = json.loads(result.stdout)
+    assert parent_peak >= 128 * 1024 * 1024
+    assert 0 < worker_peak < 128 * 1024 * 1024
 
 
 def test_hard_rss_limit_terminates_worker_and_keeps_source(tmp_path):

@@ -39,6 +39,18 @@ def require_monitor(options: RepackOptions) -> None:
 
 def _peak_rss() -> int | None:
     """Read the OS high-water RSS to catch allocations between monitor samples."""
+    if sys.platform.startswith("linux"):
+        # ru_maxrss can retain the parent's pre-exec peak. VmHWM belongs to
+        # this executable's address space, so a large caller cannot cause a
+        # small isolated worker to fail its own memory budget.
+        try:
+            with open("/proc/self/status", encoding="ascii") as status:
+                for line in status:
+                    if line.startswith("VmHWM:"):
+                        return int(line.split()[1]) * 1024
+        except OSError:
+            pass
+        return None
     if sys.platform == "win32":
         try:
             import psutil

@@ -240,24 +240,57 @@ def test_minimum_savings_copies_original(tmp_path):
 
 
 @pytest.mark.parametrize(
-    "ddl",
+    ("ddl", "identity"),
     [
-        "CREATE TABLE t(rowid TEXT, value); INSERT INTO t(_rowid_,rowid,value) VALUES(99,'shadow',42)",
-        "CREATE TABLE t(rowid TEXT, _rowid_ TEXT, value); INSERT INTO t(oid,value) VALUES(99,42)",
-        "CREATE TABLE t(id INTEGER PRIMARY KEY DESC, value); INSERT INTO t(rowid,id,value) VALUES(99,7,42)",
-        "CREATE TABLE t(rowid TEXT, _rowid_ INTEGER, oid BLOB, PRIMARY KEY(rowid,_rowid_)) WITHOUT ROWID; INSERT INTO t VALUES('key',42,x'00')",
-        "CREATE TABLE t(value TEXT CHECK(value != 'WITHOUT ROWID')); INSERT INTO t(rowid,value) VALUES(99,'keep')",
-        "CREATE TABLE t(value TEXT DEFAULT 'CREATE VIRTUAL TABLE harmless'); INSERT INTO t(rowid,value) VALUES(99,'keep')",
+        (
+            "CREATE TABLE t(rowid TEXT, value); INSERT INTO t(_rowid_,rowid,value) VALUES(99,'shadow',42)",
+            "_rowid_",
+        ),
+        (
+            "CREATE TABLE t(rowid TEXT, _rowid_ TEXT, value); INSERT INTO t(oid,value) VALUES(99,42)",
+            "oid",
+        ),
+        (
+            "CREATE TABLE t(id INTEGER PRIMARY KEY DESC, value); INSERT INTO t(rowid,id,value) VALUES(99,7,42)",
+            "rowid",
+        ),
+        (
+            "CREATE TABLE t(rowid TEXT, _rowid_ INTEGER, oid BLOB, PRIMARY KEY(rowid,_rowid_)) WITHOUT ROWID; INSERT INTO t VALUES('key',42,x'00')",
+            None,
+        ),
+        (
+            "CREATE TABLE t(value TEXT CHECK(value != 'WITHOUT ROWID')); INSERT INTO t(rowid,value) VALUES(99,'keep')",
+            "rowid",
+        ),
+        (
+            "CREATE TABLE t(value TEXT DEFAULT 'CREATE VIRTUAL TABLE harmless'); INSERT INTO t(rowid,value) VALUES(99,'keep')",
+            "rowid",
+        ),
     ],
 )
-def test_row_identity_profiles_are_not_inferred_from_sql_substrings(tmp_path, ddl):
+def test_row_identity_profiles_are_not_inferred_from_sql_substrings(tmp_path, ddl, identity):
     source, output = tmp_path / "source.db", tmp_path / "out.db"
+    native = tmp_path / "native.db"
+    query = "SELECT " + (identity + ", " if identity else "") + "* FROM t"
     with closing(sqlite3.connect(source)) as connection:
         connection.executescript(ddl)
-        expected = connection.execute("SELECT * FROM t").fetchall()
+        expected = connection.execute(query).fetchall()
+        connection.execute("VACUUM INTO ?", (str(native),))
+    with closing(sqlite3.connect(native)) as connection:
+        preserved = connection.execute(query).fetchall() == expected
+    if not preserved:
+        # Some SQLite runtimes renumber hidden rowids when a CHECK prevents
+        # native table transfer. Refusal must preserve both existing files.
+        original = source.read_bytes()
+        output.write_bytes(b"prior")
+        with pytest.raises(RepackError, match="rowids"):
+            repack(source, output, allow_grow=True)
+        assert source.read_bytes() == original and output.read_bytes() == b"prior"
+        assert_clean(tmp_path)
+        return
     repack(source, output, allow_grow=True)
     with closing(sqlite3.connect(output)) as connection:
-        assert connection.execute("SELECT * FROM t").fetchall() == expected
+        assert connection.execute(query).fetchall() == expected
     assert_clean(tmp_path)
 
 

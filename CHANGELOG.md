@@ -27,6 +27,7 @@ Upgrading: `repack` now verifies every candidate before publication and keeps th
 ### Fixed
 
 - **Repack preservation** — explicit identical input/output paths no longer truncate the input; empty Parquet remains valid. Native ORC retains typed rows, metadata and timestamp nanoseconds; native Avro retains encoded union branches, original schema/metadata/sync instead of coercing records to strings. Failed encoding or verification preserves existing destinations and source permissions/mtime/xattrs.
+- **Linux repack memory limits** — worker peak RSS is measured for its own address space, avoiding false budget failures inherited from a large parent process. SQLite candidates whose runtime renumbers hidden rowids are refused without replacing existing files.
 - **ORC dependency compatibility** — require pyorc 0.11 or newer after reproducing native crashes with older pyorc wheels loaded alongside PyArrow 16 on macOS; the supported lower-bound combination passes the preservation suite.
 - **Data API authentication** — resources whose names begin with `docs` require the API key; only the exact documentation routes are public.
 - **Partitioned output** — null and empty keys share one writer, literal null markers and composite keys cannot overwrite other partitions, and unsafe field names or symlinks cannot direct writes outside the output directory. Underscores in flat partition values are percent-encoded to distinguish keys from separators and numbered parts.
