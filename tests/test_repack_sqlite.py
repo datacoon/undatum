@@ -275,6 +275,14 @@ def test_row_identity_profiles_are_not_inferred_from_sql_substrings(tmp_path, dd
     with closing(sqlite3.connect(source)) as connection:
         connection.executescript(ddl)
         expected = connection.execute(query).fetchall()
+    with closing(
+        sqlite3.connect(
+            source.resolve().as_uri() + "?mode=ro&immutable=1", uri=True, isolation_level=None
+        )
+    ) as connection:
+        connection.execute("PRAGMA trusted_schema=OFF")
+        connection.execute("PRAGMA temp_store=MEMORY")
+        connection.execute("PRAGMA cache_size=-8192")
         connection.execute("VACUUM INTO ?", (str(native),))
     with closing(sqlite3.connect(native)) as connection:
         preserved = connection.execute(query).fetchall() == expected
