@@ -5,11 +5,34 @@ import json
 import subprocess
 import sys
 import textwrap
+from dataclasses import asdict
+from pathlib import Path
 
 import pytest
 
-from undatum.cmds.repacker import Repacker
-from undatum.common.repack_types import ResourceLimitError
+from undatum.cmds.repacker import Repacker, prepare_plan
+from undatum.common.repack_types import RepackOptions, ResourceLimitError
+
+
+def test_binary_entry_accepts_worker_protocol(tmp_path):
+    source, target = tmp_path / "data.csv.gz", tmp_path / "candidate.csv.gz"
+    source.write_bytes(gzip.compress(b"payload" * 1000, compresslevel=1, mtime=0))
+    original = source.read_bytes()
+    options = RepackOptions(progress=False)
+    plan = prepare_plan(str(source), str(target), False, options)
+    request = {"plan": asdict(plan), "options": asdict(options), "target": str(target)}
+    entry = Path(__file__).resolve().parents[1] / "packaging" / "entry.py"
+    result = subprocess.run(
+        [sys.executable, str(entry), "--_undatum-repack-worker"],
+        input=json.dumps(request),
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=True,
+    )
+    assert json.loads(result.stdout)["result"]["verification"]["passed"]
+    assert gzip.decompress(target.read_bytes()) == b"payload" * 1000
+    assert source.read_bytes() == original
 
 
 @pytest.mark.skipif(not sys.platform.startswith("linux"), reason="Linux RSS accounting")

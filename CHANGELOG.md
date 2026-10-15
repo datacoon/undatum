@@ -36,6 +36,7 @@ Upgrading: `repack` now verifies every candidate before publication and keeps th
 - **CLI pipelines** — CSV/TSV stdout preserves the first batch's fields and reports later additional fields instead of silently dropping them; compressed stdin keeps its codec with `--format-in`; attached and repeated format options such as `-Ojsonl` follow the command parser.
 - **Agent tools and sorting** — `head` and `tail` apply the requested operation limit when returning or writing records, including zero; Python CLI sorting uses the SDK's null-safe ordering for missing and mixed values, including external merge sort.
 - **Release artifacts** — the GitHub release job downloads only distributions and platform binaries, preventing unrelated build artifacts from breaking publication.
+- **Release packaging** — standalone binaries dispatch supervised repack workers through their frozen entry point, with a smoke test on each platform; container builds include third-party license notices.
 - **Documentation dependencies** — update image-size, fast-uri, proxy-addr and brace-expansion in the documentation build.
 
 ## [1.8.0](https://github.com/datenoio/undatum/compare/v1.7.0...v1.8.0) - 2026-10-09

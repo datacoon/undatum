@@ -77,7 +77,9 @@ def supervised_repack(
     )
     with tempfile.TemporaryFile(mode="w+b") as response:
         process = subprocess.Popen(
-            [sys.executable, "-m", "undatum.common.repack_worker"],
+            [sys.executable, "--_undatum-repack-worker"]
+            if getattr(sys, "frozen", False)
+            else [sys.executable, "-m", "undatum.common.repack_worker"],
             stdin=subprocess.PIPE,
             stdout=response,
             stderr=None,
