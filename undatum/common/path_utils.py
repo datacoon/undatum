@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ntpath
 import os
 import urllib.parse
 from pathlib import Path
@@ -32,7 +33,7 @@ _CLOUD_EXTRA_BY_SCHEME = {
 
 def _uri_scheme(path: str) -> str:
     """Return the lowercase URI scheme, or empty string for local paths."""
-    if not isinstance(path, str):
+    if not isinstance(path, str) or ntpath.splitdrive(path)[0]:
         return ""
     return urllib.parse.urlparse(path).scheme.lower()
 

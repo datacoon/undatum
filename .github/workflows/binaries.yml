@@ -71,7 +71,8 @@ jobs:
           with tempfile.TemporaryDirectory() as directory:
               source = pathlib.Path(directory) / "data.csv.gz"
               source.write_bytes(gzip.compress(b"name,age\nAlice,30\n" * 1000, compresslevel=1))
-              result = subprocess.run([str(binary), "repack", str(source), "--timeout", "60", "--json", "--no-progress"], capture_output=True, text=True, check=True, timeout=90)
+              result = subprocess.run([str(binary), "repack", str(source), "--timeout", "60", "--json", "--no-progress"], capture_output=True, text=True, timeout=90)
+              assert result.returncode == 0, (result.stdout, result.stderr)
               assert json.loads(result.stdout)["verification"]["passed"]
               assert gzip.decompress(source.read_bytes()) == b"name,age\nAlice,30\n" * 1000
           PY

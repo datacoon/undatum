@@ -5,9 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased](https://github.com/datenoio/undatum/compare/v1.9.0...HEAD)
+## [Unreleased](https://github.com/datenoio/undatum/compare/v1.9.1...HEAD)
+
+## [1.9.1](https://github.com/datenoio/undatum/compare/v1.9.0...v1.9.1) - 2026-10-15
+
+This is the first GitHub/PyPI release of the 1.9 series and includes all features and fixes listed under 1.9.0 below. The 1.9.0 release workflow stopped at its Windows verification gate before GitHub/PyPI publication.
+
+### Fixed
+
+- **Windows paths** — absolute drive paths, drive-relative paths, UNC shares and extended-length paths are recognized as local files rather than remote URIs. This restores commands such as `repack` with an absolute Windows input or output path.
 
 ## [1.9.0](https://github.com/datenoio/undatum/compare/v1.8.0...v1.9.0) - 2026-10-15
+
+GitHub/PyPI publication did not complete; use 1.9.1 or later.
 
 Upgrading: `repack` now verifies every candidate before publication and keeps the original when optimization does not save space. Use `--allow-grow` if a script requires replacement regardless of size. Replacing an existing SQLite destination requires `--sqlite-offline`; see the [repack reference](https://datenoio.github.io/undatum/commands/repack) for supported profiles and limits.
 
