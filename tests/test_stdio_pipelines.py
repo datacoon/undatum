@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import csv
 import gzip
 import io
 import json
@@ -224,3 +225,67 @@ def test_format_in_is_used_by_the_reader(tmp_path):
     result = run(["head", str(gz), "-F", "csv", "-O", "jsonl"])
     assert result.returncode == 0, result.stderr
     assert json.loads(result.stdout) == {"a": "1", "b": "2"}
+
+
+@pytest.mark.parametrize("fmt,delimiter", [("csv", ","), ("tsv", "\t")])
+def test_stdout_keeps_all_fields_in_first_batch(capsys, fmt, delimiter):
+    assert write_stdout([{"a": 1}, {"a": 2, "b": "KEEP"}], fmt) == 2
+    rows = list(csv.DictReader(io.StringIO(capsys.readouterr().out), delimiter=delimiter))
+    assert rows == [{"a": "1", "b": ""}, {"a": "2", "b": "KEEP"}]
+
+
+@pytest.mark.parametrize("fmt", ["csv", "tsv"])
+def test_later_csv_columns_are_a_user_error(tmp_path, fmt):
+    from undatum.ops.runner import BATCH_ROWS
+
+    source = tmp_path / "variable.jsonl"
+    source.write_text(
+        "".join(json.dumps({"a": i}) + "\n" for i in range(BATCH_ROWS))
+        + '{"a": 99999, "b": "KEEP"}\n'
+    )
+    result = run(["head", str(source), "-n", str(BATCH_ROWS + 1), "-e", "python", "-O", fmt])
+    assert result.returncode == 1
+    assert b"Additional fields" in result.stderr and b"b" in result.stderr
+    assert b"Traceback" not in result.stderr
+
+
+@pytest.mark.parametrize("codec", ["gz", "bz2", "xz", "zst"])
+def test_compressed_stdin_with_explicit_format(codec):
+    import bz2
+    import lzma
+
+    import zstandard
+
+    compress = {
+        "gz": gzip.compress,
+        "bz2": bz2.compress,
+        "xz": lzma.compress,
+        "zst": zstandard.ZstdCompressor().compress,
+    }[codec]
+    result = run(["head", "-", "-n", "1", "-F", "csv"], stdin=compress(CSV.encode()))
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.decode().splitlines() == ["a,b", "3,x"]
+
+
+@pytest.mark.parametrize(
+    "options",
+    [["-Ojsonl"], ["-O", "csv", "-Ojsonl"], ["--format-out=csv", "-Ojsonl"]],
+)
+def test_attached_and_repeated_format_options_follow_the_parser(data_csv, options):
+    result = run(["head", str(data_csv), "-n1", *options])
+    assert result.returncode == 0, result.stderr
+    assert json.loads(result.stdout) == {"a": "3", "b": "x"}
+
+
+def test_attached_input_format_is_applied_before_spooling():
+    result = run(["head", "-", "-n1", "-Ftsv", "-Ojsonl"], stdin="a,b\tc\n1,2\t3\n")
+    assert result.returncode == 0, result.stderr
+    assert json.loads(result.stdout) == {"a,b": "1,2", "c": "3"}
+
+
+def test_option_terminator_keeps_filename_from_being_an_option(tmp_path):
+    path = tmp_path / "-Ojsonl.csv"
+    path.write_text(CSV)
+    result = run(["head", "-n1", "--", path.name], cwd=tmp_path)
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.decode().splitlines() == ["a,b", "3,x"]

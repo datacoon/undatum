@@ -11,6 +11,7 @@ from ..options import (
     AddOpt,
     ErrorLogOpt,
     FlattenNestedOpt,
+    JsonOpt,
     KeepNestedParentsOpt,
     MaxNestedDepthOpt,
     MaxOpenFilesOpt,
@@ -316,6 +317,10 @@ def repack(
         str | None,
         typer.Argument(help="Output path (defaults to atomic in-place rewrite of INPUT)."),
     ] = None,
+    output_path: Annotated[
+        str | None,
+        typer.Option("--output", "-o", help="Output path (alias for positional OUTPUT)."),
+    ] = None,
     level: Annotated[
         int | None,
         typer.Option(
@@ -324,42 +329,124 @@ def repack(
             help="Compression level (overrides default maximum / max profile).",
         ),
     ] = None,
+    profile: Annotated[str, typer.Option(help="Compression profile: fast, balanced, max.")] = "max",
+    dry_run: Annotated[
+        bool,
+        typer.Option(
+            "--dry-run", help="Encode and verify without publishing; report measured savings."
+        ),
+    ] = False,
+    sqlite_offline: Annotated[
+        bool,
+        typer.Option(help="Assert SQLite users are closed before replacing an existing path."),
+    ] = False,
+    allow_grow: Annotated[
+        bool, typer.Option("--allow-grow", help="Allow a larger verified optimization candidate.")
+    ] = False,
+    min_savings: Annotated[
+        float | None, typer.Option(help="Minimum candidate savings percentage (0–100).")
+    ] = None,
+    max_decoded_bytes: Annotated[
+        int | None, typer.Option(help="Cumulative decoded-byte limit, including verification.")
+    ] = None,
+    temp_limit: Annotated[
+        int | None,
+        typer.Option(help="Maximum candidate/fallback plus owned database sidecars, in bytes."),
+    ] = None,
+    memory_limit: Annotated[
+        int | None,
+        typer.Option(help="Native worker RSS limit in bytes (requires undatum[repack])."),
+    ] = None,
+    timeout: Annotated[
+        float | None,
+        typer.Option(help="Operation wall-time limit in seconds; terminate the native worker."),
+    ] = None,
+    batch_size: Annotated[
+        int,
+        typer.Option(
+            help="Parquet transfer / database verification batch rows (databases max 1024)."
+        ),
+    ] = 65536,
+    row_group_size: Annotated[
+        int, typer.Option(help="Target Parquet row-group rows, separate from batch size.")
+    ] = 65536,
+    threads: Annotated[int, typer.Option(help="Codec threads (zstd streams/Avro only).")] = 1,
+    format_out: Annotated[
+        str | None, typer.Option("--format-out", "-O", help="Summary format: text or json.")
+    ] = None,
+    json_output: JsonOpt = False,
     compression: Annotated[
         str | None,
         typer.Option(
             help=(
                 "Override compression codec. For container files: gz/zst/bz2/…. "
-                "For Parquet/ORC/AVRO: format-native codec (e.g. zstd, snappy)."
+                "For Parquet/ORC/AVRO: format-native codec (e.g. zstd, snappy). "
+                "DuckDB: auto only. SQLite compaction: none/auto. Databases reject --level."
             ),
         ),
     ] = None,
     progress: Annotated[bool, typer.Option(help="Show progress bar.")] = True,
     verbose: Annotated[bool, typer.Option(help="Enable verbose logging output.")] = False,
 ):
-    """Recompress a file at maximum compression by default.
+    """Recompress a local file with verified preservation and atomic publication.
 
     Container-compressed files (``.gz``, ``.zst``, ``.bz2``, …) are stream-recompressed
     with the same codec at max strength. Formats with built-in compression (Parquet,
     ORC, AVRO) are rewritten using native compression (Parquet defaults to ``zstd``).
+    Offline DuckDB databases are compacted with automatic native compression.
+    SQLite uses VACUUM INTO; replacing an existing path requires --sqlite-offline.
 
-    When OUTPUT is omitted, the input is replaced atomically after a successful write.
+    Default max compression retains the original when optimization cannot shrink it.
+    Every OUTPUT is staged and independently verified. Use --dry-run to measure savings.
 
     Examples:
         undatum repack data.csv.gz
         undatum repack data.csv.gz data.csv.gz --level 6
         undatum repack data.parquet out.parquet
+        undatum repack warehouse.duckdb compact.duckdb
+        undatum repack warehouse.sqlite --sqlite-offline
         undatum repack data.csv data.csv.zst
     """
     from ...cmds.repacker import Repacker
+    from ...common.file_snapshot import same_file
+    from ...common.results import REPACK, emit
+
+    if output and output_path and not same_file(output, output_path):
+        raise ValidationError("Positional OUTPUT and --output disagree.", field="output")
+    if format_out not in (None, "text", "json"):
+        raise ValidationError("Choose text or json.", field="format_out")
 
     if verbose:
         enable_verbose()
     options = {
         "level": level,
         "compression": compression,
-        "progress": progress,
+        "progress": progress and not (json_output or format_out == "json"),
+        "profile": profile,
+        "dry_run": dry_run,
+        "sqlite_offline": sqlite_offline,
+        "allow_grow": allow_grow,
+        "min_savings": min_savings,
+        "max_decoded_bytes": max_decoded_bytes,
+        "temp_limit": temp_limit,
+        "memory_limit": memory_limit,
+        "timeout": timeout,
+        "batch_size": batch_size,
+        "row_group_size": row_group_size,
+        "threads": threads,
     }
-    Repacker().repack(input_file, output, options)
+    result = Repacker().repack(input_file, output_path or output, options)
+    if json_output or format_out == "json":
+        emit(REPACK, result)
+    else:
+        share = result["candidate_savings_percent"]
+        saving = f"{share:.2f}%" if share is not None else "n/a"
+        typer.echo(
+            f"{result['status']}: {result['input_size']:,} bytes; "
+            f"candidate {result['candidate_size']:,} bytes ({saving} savings); "
+            f"output {result['output_size']} bytes; {result['reason_code']}; "
+            f"{result['elapsed_seconds']:.3f}s"
+        )
 
 
 @data_app.command()

@@ -55,6 +55,10 @@ the file does not have fails.
 schema or a reference data file (see [schema drift](/commands/schema-drift)); `--rules` takes
 a [rule file](/commands/validate-rules).
 
+The reported `type` and `schema_check.inferred` describe the data actually observed;
+`--schema` supplies the target for type conformance and the schema comparison. Native
+JSON/Parquet values are checked too: a fractional number does not conform to `integer`.
+
 ## In CI
 
 ```yaml norun

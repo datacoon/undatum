@@ -154,3 +154,58 @@ def test_sdk_and_pipeline(data):
     assert report["summary"]["violations"]["error"] == 1
     spec = PipelineSpec([{"name": "q", "command": "quality", "args": {"input": "data.csv"}}])
     assert validate_pipeline(spec) == []
+
+
+def test_strict_schema_compares_the_actual_type(tmp_path):
+    source = tmp_path / "bad.csv"
+    source.write_text("amount\nBAD\nBAD\n")
+    schema = tmp_path / "schema.json"
+    schema.write_text(json.dumps({"fields": [{"name": "amount", "type": "integer"}]}))
+    thresholds = tmp_path / "q.yml"
+    thresholds.write_text("schema: strict\n")
+    result, report = _json(str(source), "--schema", str(schema), "--thresholds", str(thresholds))
+    assert result.exit_code == 1
+    assert report["fields"][0]["type"] == "string"
+    assert report["fields"][0]["conformance"] == 0.0
+    assert report["schema_check"]["inferred"] == {"amount": "string"}
+    assert report["schema_check"]["changes"] == [
+        {"kind": "type", "field": "amount", "old": "integer", "new": "string"}
+    ]
+
+
+@pytest.mark.parametrize(
+    "values,expected,actual,conformance",
+    [
+        ([1.5, 2.5], "integer", "number", 0.0),
+        ([1.5, 2.0], "integer", "number", 0.5),
+        ([True, False], "integer", "boolean", 0.0),
+        ([1, 2], "boolean", "integer", 0.0),
+        ([{"a": 1}, {"a": 2}], "array", "object", 0.0),
+    ],
+)
+def test_native_types_are_checked_against_expected_schema(
+    tmp_path, values, expected, actual, conformance
+):
+    source = tmp_path / "data.jsonl"
+    source.write_text("".join(json.dumps({"value": v}) + "\n" for v in values))
+    schema = tmp_path / "schema.json"
+    schema.write_text(json.dumps({"fields": [{"name": "value", "type": expected}]}))
+    thresholds = tmp_path / "q.yml"
+    thresholds.write_text("schema: strict\nmin_type_conformance: 1.0\n")
+    result, report = _json(str(source), "--schema", str(schema), "--thresholds", str(thresholds))
+    assert result.exit_code == 1
+    assert report["verdict"]["passed"] is False
+    assert report["fields"][0]["type"] == actual
+    assert report["fields"][0]["conformance"] == conformance
+    assert report["schema_check"]["inferred"]["value"] == actual
+    assert report["schema_check"]["changes"][0]["kind"] == "type"
+
+
+def test_native_integers_conform_to_number_schema(tmp_path):
+    from undatum.cmds.quality import profile
+
+    source = tmp_path / "data.jsonl"
+    source.write_text('{"n": 1}\n{"n": 2}\n')
+    _, fields = profile(str(source), expected={"n": "number"})
+    assert fields[0].type == "integer"
+    assert fields[0].conformance == 1.0

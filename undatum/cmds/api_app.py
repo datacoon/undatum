@@ -36,7 +36,7 @@ from .api import (
     _validate_resources_config,
 )
 
-PUBLIC_PATHS = {"/docs", "/redoc", "/openapi.json"}
+PUBLIC_PATHS = {"/docs", "/docs/oauth2-redirect", "/redoc", "/openapi.json"}
 
 
 def build_api_app(
@@ -86,7 +86,7 @@ def build_api_app(
         class APIKeyMiddleware(BaseHTTPMiddleware):
             async def dispatch(self, request: Request, call_next):
                 path = request.url.path
-                if path in PUBLIC_PATHS or path.startswith("/docs"):
+                if path in PUBLIC_PATHS:
                     return await call_next(request)
                 provided = request.headers.get("x-api-key") or ""
                 if not hmac.compare_digest(provided.encode("utf8"), expected):

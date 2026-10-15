@@ -1,0 +1,30 @@
+{
+  "fixture": "tests/test_repack_duckdb.py::database(fragmented=True)",
+  "versions": {
+    "duckdb": "1.5.4",
+    "pyarrow": "25.0.0"
+  },
+  "input_size": 16265216,
+  "candidate_size": 1585152,
+  "savings_percent": 90.25434399395618,
+  "rows": 4,
+  "timings": {
+    "encode_seconds": 0.1414858749922132,
+    "verify_seconds": 0.3202606669947272
+  },
+  "resources": {
+    "decoded_bytes_processed": 3606,
+    "scratch_peak_bytes": 1585152,
+    "memory_enforcement": "none",
+    "peak_rss_bytes": null
+  },
+  "verification": {
+    "method": "duckdb-catalog-typed-values",
+    "passed": true,
+    "candidate_sha256": "2a86649e08b4e188016659df4bd42b982573c99af5acf2606643c282b953452e",
+    "duckdb_version": "1.5.4"
+  },
+  "filerepack_size": 1585152,
+  "filerepack_verifies_undatum": true,
+  "filerepack_verifies_reference": true
+}

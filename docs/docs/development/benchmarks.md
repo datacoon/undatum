@@ -72,3 +72,66 @@ Measured on macOS arm64 with Python 3.13:
 Open items: `sort` peaks at about 900 MB on 1M rows (DuckDB sorts with every core; one thread
 needs 455 MB). Converting CSV to Parquet peaks at about 800 MB. Converting Parquet to JSON
 Lines takes 5.5 s through the Python writer.
+
+## Verified repack benchmarks
+
+`scripts/benchmark_repack.py` generates low/high-cardinality CSV, JSONL, gzip/zstd
+streams, tiny/empty gzip and typed Parquet/ORC/Avro fixtures. It records physical
+sizes, encode/verify times, cold process-tree RSS, candidate scratch and read-back
+or downstream scan time. Independent preservation checks apply to every implementation;
+failed or lossy outputs are retained as failures rather than reported as compression wins.
+
+```bash norun
+pip install "undatum[dev,repack,compression]"
+# Three repeats, rotating implementations/profiles to reduce ordering effects
+python scripts/benchmark_repack.py --size-mib 1 --repeat 3 \
+  --output repack.json --budgets tests/benchmarks/repack_budgets.json
+# Compare the previous repacker and an installed local filerepack checkout
+python scripts/benchmark_repack.py --baseline-ref HEAD --repeat 3 \
+  --filerepack-root ../filerepack --filerepack-python ../filerepack/venv/bin/python \
+  --output comparison.json
+# Larger corpus and a focused Parquet layout experiment
+python scripts/benchmark_repack.py --size-mib 16 --profiles max --output large.json
+python scripts/benchmark_repack.py --size-mib 16 --profiles max --only typed.parquet \
+  --batch-size 8192 --row-group-size 131072 --output layout.json
+```
+
+The checked-in JSON budgets apply to the **1 MiB** corpus and its current profiles.
+They gate preservation, time, RSS, output size and scratch. To recalibrate on a chosen
+runner, use `--calibrate PATH`, inspect the measurements, then review the budget diff.
+The current local margins are max(3 × median time, median + 1 s), 1.3 × RSS + 20 MiB,
+3% + 16 bytes for output and 20% + 4 KiB for scratch. These are local regression
+budgets; Linux CI calibration and automatic CI wiring remain separate work.
+
+Evidence is saved in `openspec/changes/improve-repack-preservation/benchmarks*.json`.
+Each report records Python/library versions, Git revisions and implementation hashes;
+the filerepack comparison uses its local modified checkout, not a released package.
+The new command is measured through the CLI, while both baselines use their APIs in
+cold subprocesses, so end-to-end time includes different startup costs. On the shared
+workstation timing varied substantially; no general speedup is inferred from these runs.
+
+The 2026-10-13 runs used Python 3.10.20, iterabledata 1.0.23, PyArrow 25.0.1 and
+pyorc 0.11.0 on macOS arm64. All 27 profile/case combinations and all larger-corpus
+candidates passed independent preservation. Representative max-profile physical sizes:
+
+| Case | Input bytes | Verified candidate bytes | Finding |
+|------|-------------|--------------------------|---------|
+| Tiny gzip | 28 | 28 | Previous repacker wrote 57 bytes; no-growth now retains the original by default |
+| Empty gzip | 20 | 20 | Previous repacker wrote 50 bytes |
+| Typed Parquet | 54,023 | 25,875 | Same size as the verified comparable filerepack candidate at zstd level 19 |
+| Typed ORC | 11,055 | 8,561 | Original types/rows retained; previous repacker's 123-byte output loses rows |
+| Typed Avro | 508,268 | 32,226 | Encoded records/schema/metadata retained; previous smaller output changes types |
+| High-cardinality zstd | 479,865 | 494,874 | More effort can grow output; normal no-growth mode rejects this candidate |
+
+Trials deliberately use `--allow-grow` to expose each profile's actual candidate. The
+local filerepack ORC adapter refuses these fixtures because it passes a RecordBatch to
+an ORC writer requiring a Table; its failure time is not a valid successful-repack result.
+Gzip comparison uses level 9 and zstd comparison level 19, one codec thread, relaxed
+filerepack native budgets and the same Python/data libraries.
+
+On the 16 MiB corpus, gzip/Avro RSS stayed around 56–57 MiB; zstd max used about
+155 MiB, showing native codec memory beyond the transfer buffer. Parquet with the default
+65,536-row batch/group used about 150 MiB. Changing to 8,192-row batches and a
+131,072-row group raised it to about 160 MiB, increased output from 397,504 to
+403,786 bytes and did not improve time. Keep the default layout; tune explicit settings
+for a particular workload and measure downstream read-back as well as compression.

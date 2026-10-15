@@ -1,0 +1,138 @@
+{
+  "schema": "undatum.repack-benchmark/1",
+  "environment": {
+    "platform": "macOS-26.5.1-arm64-arm-64bit",
+    "cpu_count": 14,
+    "python": "3.10.20 (main, Mar  3 2026, 14:59:45) [Clang 21.1.4 ]",
+    "versions": {
+      "iterabledata": "1.0.23",
+      "pyarrow": "25.0.1",
+      "duckdb": "1.5.5",
+      "pyorc": "0.11.0",
+      "avro": "1.12.2"
+    },
+    "commit": "22c15df279601dbc9acf296507f0358e44c28d48",
+    "repacker_sha256": "65b06b7a371828c0b75fffc937c7e84b60eb7d68d276afa0479e29eb2fb89971",
+    "baseline_ref": null,
+    "baseline_commit": null,
+    "filerepack_root": null,
+    "filerepack": null,
+    "source_sha256": {
+      "scripts/benchmark_repack.py": "1c7adf53dada5a3912f127f4408e1c84cf608ee31c838ab69eae432d40016a4b",
+      "undatum/cmds/repacker.py": "65b06b7a371828c0b75fffc937c7e84b60eb7d68d276afa0479e29eb2fb89971",
+      "undatum/common/repack_avro.py": "92542504e119df4c62d5f6497ee73ffc62c48a3628d0ee4f032e0210e9029771",
+      "undatum/common/repack_columnar.py": "2257d204de7366e323cb8d1189ea1d603184f498bbd587adb2ba7dd51c00b94c",
+      "undatum/common/repack_streams.py": "5c6c263c066a778f5667e02c247d2df7a5fa390a219603e2bd473a7a46275418",
+      "undatum/common/repack_types.py": "fdd729bd9784084c5aa36145acbc9ecfdc8991f88353c0272551c797e58f0671",
+      "undatum/common/repack_worker.py": "8f77e28cc56053a3b59713832b3740d899a0ff27a783ed0925f57e23d6057a6f",
+      "undatum/common/file_snapshot.py": "42a1ad08f1068791d844e666c19df3ac92581f2561ab9102423bdeee04ce628e",
+      "undatum/common/writer.py": "87137f1c2f9fa3e8373a9b88937abf65086c5de4ec83707662cd7a98f417a623"
+    },
+    "mode": "cold subprocess; rotating implementations per repeat; sizes include headers; all undatum candidates verified"
+  },
+  "size_mib": 16,
+  "repeat": 3,
+  "layout": {
+    "batch_size": 8192,
+    "row_group_size": 131072
+  },
+  "records": [
+    {
+      "case": "typed.parquet",
+      "kind": "parquet",
+      "implementation": "undatum",
+      "profile": "max",
+      "input_size": 819436,
+      "logical_size": 16777216,
+      "trials": [
+        {
+          "seconds": 0.6235776250250638,
+          "peak_rss_bytes": 167247872,
+          "preservation_passed": true,
+          "output_size": 403786,
+          "timings": {
+            "encode_seconds": 0.3201641249470413,
+            "verify_seconds": 0.00743587501347065
+          },
+          "resources": {
+            "decoded_bytes_processed": 27672576,
+            "scratch_peak_bytes": 403786,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "zstd",
+            "profile": "max",
+            "level": 19,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 0.09733499999856576,
+          "read_back_mib_per_second": 164.3807469074409
+        },
+        {
+          "seconds": 0.5846089589758776,
+          "peak_rss_bytes": 168099840,
+          "preservation_passed": true,
+          "output_size": 403786,
+          "timings": {
+            "encode_seconds": 0.3227288750349544,
+            "verify_seconds": 0.006628833012655377
+          },
+          "resources": {
+            "decoded_bytes_processed": 27672576,
+            "scratch_peak_bytes": 403786,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "zstd",
+            "profile": "max",
+            "level": 19,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 0.0060703749768435955,
+          "read_back_mib_per_second": 2635.751508108565
+        },
+        {
+          "seconds": 0.5747413749922998,
+          "peak_rss_bytes": 167182336,
+          "preservation_passed": true,
+          "output_size": 403786,
+          "timings": {
+            "encode_seconds": 0.31237962504383177,
+            "verify_seconds": 0.006643582950346172
+          },
+          "resources": {
+            "decoded_bytes_processed": 27672576,
+            "scratch_peak_bytes": 403786,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "zstd",
+            "profile": "max",
+            "level": 19,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 0.006142874946817756,
+          "read_back_mib_per_second": 2604.6436137021824
+        }
+      ],
+      "median_seconds": 0.5846089589758776,
+      "peak_rss_bytes": 168099840,
+      "preservation_passed": true
+    }
+  ]
+}

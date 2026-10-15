@@ -40,6 +40,16 @@ Duplicate commands are hidden from `--help` and warn when used: `profile` (use `
 Global flags go before the command: `-v` (progress messages), `-vv` (debug), `-q` (errors only).
 A successful command prints nothing on stderr by default.
 
+## Record output
+
+CSV/TSV stdout includes the fields found in the first batch. If later records introduce
+additional fields, the command exits with an error instead of dropping those values.
+Use `-O jsonl` for records with varying fields, or `select --fields` to choose fixed columns.
+
+`--format-in` changes the data format independently of compression: gzip, zstd, bz2 and
+xz on stdin are still decompressed when a format is supplied. Attached short options
+such as `-Ojsonl` work like `-O jsonl`; the last repeated format option takes precedence.
+
 ## Nested records
 
 Unfold nested dict / array-of-dict fields onto dotted paths before the command runs:

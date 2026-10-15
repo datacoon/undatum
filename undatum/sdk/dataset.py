@@ -791,9 +791,9 @@ class Dataset:
         """
         from ..cmds.quality import build_report
 
-        with self._materialized() as path:
+        with self._materialized() as (path, reader_options):
             return build_report(
-                path, rules=rules, schema=schema, thresholds=thresholds, options=self._spec.options
+                path, rules=rules, schema=schema, thresholds=thresholds, options=reader_options
             )
 
     def stats(self, **options: Any) -> dict[str, Any]:
@@ -812,8 +812,8 @@ class Dataset:
         """
         from ..cmds.statistics import StatProcessor
 
-        with self._materialized() as path:
-            stats_opts = {**self._spec.options, "quiet": True, "progress": False, **options}
+        with self._materialized() as (path, reader_options):
+            stats_opts = {**reader_options, "quiet": True, "progress": False, **options}
             profile = StatProcessor().stats(path, stats_opts)
         return StatsResult(profile or {})
 
@@ -835,12 +835,12 @@ class Dataset:
         """
         from ..cmds.packager import Packager
 
-        pack_opts = {**self._spec.options, "quiet": True, **options}
-        if output:
-            pack_opts["output"] = output
-        if package_dir:
-            pack_opts["package_dir"] = package_dir
-        with self._materialized() as path:
+        with self._materialized() as (path, reader_options):
+            pack_opts = {**reader_options, "quiet": True, **options}
+            if output:
+                pack_opts["output"] = output
+            if package_dir:
+                pack_opts["package_dir"] = package_dir
             return Packager().create([path], pack_opts)
 
     def _materialized(self) -> _Materialized:
@@ -949,14 +949,20 @@ class _Materialized:
         self._dataset = dataset
         self._temp: str | None = None
 
-    def __enter__(self) -> str:
+    def __enter__(self) -> tuple[str, dict[str, Any]]:
         spec = self._dataset._spec
         if not self._dataset._steps and spec.path is not None:
-            return spec.path
+            return spec.path, dict(spec.options)
         fd, self._temp = tempfile.mkstemp(prefix="undatum-sdk-", suffix=".jsonl")
         os.close(fd)
-        write_rows(self._dataset._rows(), self._temp, format_out="jsonl")
-        return self._temp
+        try:
+            write_rows(self._dataset._rows(), self._temp, format_out="jsonl")
+        except BaseException:
+            self.__exit__()
+            raise
+        # The source's format, encoding, sheet and flattening settings have
+        # already been applied. This file contains the resulting JSONL records.
+        return self._temp, {"format_in": "jsonl"}
 
     def __exit__(self, *exc: object) -> None:
         if self._temp and os.path.exists(self._temp):

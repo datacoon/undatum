@@ -38,14 +38,27 @@ def hive_value(value: Any) -> str:
     """The directory value of a key, encoded like DuckDB and Hive (empty counts as NULL)."""
     if value is None or value == "":
         return HIVE_NULL
-    return quote(str(value), safe="-_.~")
+    encoded = quote(str(value), safe="-_.~")
+    # Hive's reserved NULL marker must stay distinguishable from literal text.
+    return "%5F" + encoded[1:] if encoded == HIVE_NULL else encoded
 
 
 def flat_value(value: Any) -> str:
     """The file-name part of a key for the flat layout."""
     if value is None or value == "":
         return FLAT_NULL
-    return quote(str(value), safe="-_.~ ,()@+")
+    # Underscores delimit composite keys and numbered parts, so escape them in
+    # values (urllib.quote always leaves unreserved characters unchanged).
+    return quote(str(value), safe="-_.~ ,()@+").replace("_", "%5F")
+
+
+def _validate_fields(fields: list[str]) -> None:
+    for field in fields:
+        if not field or field in (".", "..") or any(c in field for c in ("/", "\\", "\0")):
+            raise ValidationError(
+                f"Unsafe partition field name: {field!r}; path separators are not allowed",
+                field="fields",
+            )
 
 
 def check_output_directory(directory: str) -> None:
@@ -90,6 +103,8 @@ class PartitionedWriter:
     ) -> None:
         if not fields:
             raise ValidationError("partitioning needs at least one field", field="fields")
+        if hive:
+            _validate_fields(fields)
         if max_open_files < 1:
             raise ValidationError("--max-open-files must be at least 1", field="max_open_files")
         self.directory = Path(directory)
@@ -114,10 +129,14 @@ class PartitionedWriter:
                 f"{field}={hive_value(value)}"
                 for field, value in zip(self.fields, key, strict=True)
             ]
-            return self.directory.joinpath(*parts, f"data_{part}.{self.extension}")
-        stem = "_".join(flat_value(value) for value in key)
-        suffix = f"_{part}" if part else ""
-        return self.directory / f"{stem}{suffix}.{self.extension}"
+            path = self.directory.joinpath(*parts, f"data_{part}.{self.extension}")
+        else:
+            stem = "_".join(flat_value(value) for value in key)
+            suffix = f"_{part}" if part else ""
+            path = self.directory / f"{stem}{suffix}.{self.extension}"
+        if not path.resolve().is_relative_to(self.directory.resolve()):
+            raise ValidationError("Partition path leaves the output directory", field="output")
+        return path
 
     def write(self, row: Any) -> None:
         """Add one record (records that are not dicts are ignored)."""
@@ -131,7 +150,12 @@ class PartitionedWriter:
                     field="fields",
                     suggestions=list(row),
                 )
-        key = tuple(row.get(field) for field in self.fields)
+        # Key the buffers by the values used in file names, so NULL and empty
+        # text share one sink and cannot overwrite one another on close.
+        key = tuple(
+            None if row.get(field) is None or row[field] == "" else str(row[field])
+            for field in self.fields
+        )
         if not self.keep_fields:
             row = {k: v for k, v in row.items() if k not in self.fields}
         for column in row:
@@ -212,6 +236,7 @@ def duckdb_partitioned_copy(
     native = DUCKDB_FORMATS.get(format_out)
     if native is None or not _duckdb_names_null_partitions():
         return False
+    _validate_fields(fields)
     described = conn.sql(f"DESCRIBE {query}").fetchall()
     columns = [str(row[0]) for row in described]
     missing = [field for field in fields if field not in columns]
@@ -230,6 +255,9 @@ def duckdb_partitioned_copy(
     # Empty text goes to the NULL partition, as in the Python writer (and Spark).
     text_keys = [f for f in fields if types[f] == "VARCHAR"]
     if text_keys:
+        sentinel = " OR ".join(f"{_quote(f)} = '{HIVE_NULL}'" for f in text_keys)
+        if conn.sql(f"SELECT EXISTS (SELECT 1 FROM ({query}) WHERE {sentinel})").fetchone()[0]:
+            return False  # COPY uses the same directory for NULL and literal sentinel text.
         replaced = ", ".join(f"nullif({_quote(f)}, '') AS {_quote(f)}" for f in text_keys)
         query = f"SELECT * REPLACE ({replaced}) FROM ({query})"
     options = [f"FORMAT {native}", f"PARTITION_BY ({', '.join(_quote(f) for f in fields)})"]

@@ -1,0 +1,166 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://datenoio.github.io/undatum/schemas/undatum.repack.v1.json",
+  "title": "Verified local-file recompression outcome",
+  "description": "Printed by `undatum repack --json`.",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": "undatum.repack/1",
+      "description": "Result layout"
+    },
+    "input": {
+      "type": "string",
+      "description": "Source path"
+    },
+    "output": {
+      "type": "string",
+      "description": "Requested destination"
+    },
+    "mode": {
+      "type": "string",
+      "description": "container or builtin"
+    },
+    "input_size": {
+      "type": "integer",
+      "description": "Original physical source bytes"
+    },
+    "candidate_size": {
+      "type": "integer",
+      "description": "Measured encoded candidate bytes"
+    },
+    "output_size": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Actual destination bytes, null when absent"
+    },
+    "status": {
+      "type": "string",
+      "description": "replaced, unchanged, skipped or dry_run"
+    },
+    "reason_code": {
+      "type": "string",
+      "description": "accepted, no_benefit or below_min_savings"
+    },
+    "published": {
+      "type": "boolean",
+      "description": "Whether this invocation published a destination"
+    },
+    "changed": {
+      "type": "boolean",
+      "description": "Whether a changed candidate was published"
+    },
+    "would_publish": {
+      "type": "boolean",
+      "description": "Whether policy accepts publication, including original-copy fallback"
+    },
+    "savings_bytes": {
+      "type": "integer",
+      "description": "Realized physical savings; zero without publication"
+    },
+    "savings_percent": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Realized savings percentage, null for zero-size input"
+    },
+    "candidate_savings_bytes": {
+      "type": "integer",
+      "description": "Original size minus measured candidate size"
+    },
+    "candidate_savings_percent": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Measured candidate savings percentage"
+    },
+    "elapsed_seconds": {
+      "type": "number",
+      "description": "Total operation time including verification and guards"
+    },
+    "effective_settings": {
+      "type": "object",
+      "description": "Candidate codec/profile/level/threads and whether applied"
+    },
+    "verification": {
+      "type": "object",
+      "description": "Independent preservation method and result"
+    },
+    "resources": {
+      "type": "object",
+      "description": "Decoded work, scratch peak and native worker monitoring"
+    },
+    "timings": {
+      "type": "object",
+      "description": "Encoding and verification times in seconds"
+    },
+    "rows": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Preserved native row count"
+    },
+    "decoded_bytes": {
+      "type": "integer",
+      "description": "Source payload/logical native bytes processed once"
+    },
+    "bytes_read": {
+      "type": "integer",
+      "description": "Legacy alias of decoded_bytes"
+    },
+    "bytes_written": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Legacy alias of actual output_size"
+    },
+    "codec": {
+      "type": "string",
+      "description": "Requested outer codec for container mode"
+    },
+    "compression": {
+      "type": "string",
+      "description": "Requested native codec for builtin mode"
+    },
+    "level": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Candidate compression level"
+    },
+    "profile": {
+      "type": "string",
+      "description": "Candidate performance profile"
+    }
+  },
+  "required": [
+    "schema",
+    "input",
+    "output",
+    "mode",
+    "input_size",
+    "candidate_size",
+    "output_size",
+    "status",
+    "reason_code",
+    "published",
+    "changed",
+    "would_publish",
+    "savings_bytes",
+    "savings_percent",
+    "candidate_savings_bytes",
+    "candidate_savings_percent",
+    "elapsed_seconds",
+    "effective_settings",
+    "verification",
+    "resources",
+    "timings"
+  ]
+}
