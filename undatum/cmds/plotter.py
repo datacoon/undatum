@@ -1,6 +1,7 @@
 """Data plotting module for generating visualizations."""
 
 import logging
+from collections.abc import Sequence
 from typing import Any
 
 try:
@@ -357,6 +358,8 @@ class Plotter:
             ax = axes[idx]
             values = [r.get(field) for r in data if r.get(field) is not None]
 
+            categories: Sequence[Any]
+            frequencies: Sequence[Any]
             if data and "_count" in data[0]:
                 categories = [r.get(field) for r in data if r.get(field) is not None]
                 frequencies = [r.get("_count") or 0 for r in data if r.get(field) is not None]

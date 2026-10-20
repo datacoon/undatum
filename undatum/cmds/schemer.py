@@ -9,6 +9,7 @@ import os
 import sys
 import tempfile
 import zipfile
+from typing import IO
 
 import duckdb
 import orjson
@@ -929,6 +930,7 @@ class Schemer:
             from ..common.errors import FormatError
 
             raise FormatError(fromfile, str(f_type), ["jsonl", "bson", "csv"])
+        infile: IO[bytes] | IO[str]
         if options["zipfile"]:
             z = zipfile.ZipFile(fromfile, mode="r")
             fnames = z.namelist()
