@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased](https://github.com/datenoio/undatum/compare/v1.9.1...HEAD)
 
+### Fixed
+
+- Forward and backward fill now accept `0`, `0.0` and `False` as fallback values when no neighbour value exists.
+
 ## [1.9.1](https://github.com/datenoio/undatum/compare/v1.9.0...v1.9.1) - 2026-10-15
 
 This is the first GitHub/PyPI release of the 1.9 series and includes all features and fixes listed under 1.9.0 below. The 1.9.0 release workflow stopped at its Windows verification gate before GitHub/PyPI publication.
