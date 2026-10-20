@@ -5,7 +5,7 @@ description: "MIT license for undatum"
 # License
 
 undatum is released under the MIT License. See the
-[LICENSE](https://github.com/datenoio/undatum/blob/main/LICENSE) file in the repository.
+[LICENSE](https://github.com/datenoio/undatum/blob/master/LICENSE) file in the repository.
 
 ```
 MIT License

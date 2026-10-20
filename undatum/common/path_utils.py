@@ -2,9 +2,14 @@
 
 from __future__ import annotations
 
+import ntpath
 import os
 import urllib.parse
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .errors import DependencyError
 
 # Google Cloud Storage
 GCS_URI_SCHEMES = ("gs", "gcs")
@@ -28,7 +33,7 @@ _CLOUD_EXTRA_BY_SCHEME = {
 
 def _uri_scheme(path: str) -> str:
     """Return the lowercase URI scheme, or empty string for local paths."""
-    if not isinstance(path, str):
+    if not isinstance(path, str) or ntpath.splitdrive(path)[0]:
         return ""
     return urllib.parse.urlparse(path).scheme.lower()
 
@@ -156,7 +161,7 @@ def cloud_object_suffix(path: str) -> str:
     return os.path.splitext(key)[1] or ".tmp"
 
 
-def missing_cloud_extra_error(path: str, cause: BaseException | None = None):
+def missing_cloud_extra_error(path: str, cause: BaseException | None = None) -> DependencyError:
     """Build a DependencyError telling the user which cloud extra to install.
 
     Args:

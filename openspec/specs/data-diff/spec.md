@@ -1,7 +1,7 @@
 # data-diff Specification
 
 ## Purpose
-TBD - created by archiving change add-diff-command. Update Purpose after archive.
+Compare two datasets (`undatum diff`) by key or whole-row equality and emit added, removed, and changed records.
 ## Requirements
 ### Requirement: Dataset diff command
 The system SHALL provide a `diff` command that compares two input datasets and

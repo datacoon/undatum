@@ -1,7 +1,7 @@
 # database-integration Specification
 
 ## Purpose
-TBD - created by archiving change add-db-query-load. Update Purpose after archive.
+Query and load SQL databases (`db query`, `db load`, `db dump`) and ingest files into MongoDB, Elasticsearch, DuckDB, and SQL engines.
 ## Requirements
 ### Requirement: Database Query Command
 The system SHALL provide a `db query` command for executing SQL queries against databases and outputting results.

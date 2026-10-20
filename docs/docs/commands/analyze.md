@@ -6,6 +6,8 @@ description: "undatum analyze command reference"
 
 Analyzes data files and provides human-readable insights about structure, encoding, fields, and data types. With `--autodoc`, automatically generates field descriptions and dataset summaries using AI.
 
+`--autodoc` uses the same iterabledata providers as [`ai doc`](/commands/ai); prefer `ai doc` for block-based documentation.
+
 ```bash
 # Basic analysis
 undatum analyze data.jsonl
@@ -13,10 +15,10 @@ undatum analyze data.jsonl
 # With AI-powered documentation
 undatum analyze data.jsonl --autodoc
 
-# Using specific AI provider
+# Using a supported autodoc provider
 undatum analyze data.jsonl --autodoc --ai-provider openai --ai-model gpt-4o-mini
 
-# Output to file
+# Output to file (format inferred from --output, or set --format-out)
 undatum analyze data.jsonl --output report.yaml --autodoc
 
 # Named Excel sheet
@@ -35,105 +37,99 @@ undatum analyze nested.jsonl --flatten-nested
 - AI-generated field descriptions (with `--autodoc`)
 - AI-generated dataset summary (with `--autodoc`)
 
-**Read options** (auto-detected when omitted):
-- `--delimiter` — CSV/TSV separator (comma, semicolon, tab, or pipe)
+**Read and scan options:**
+- `--delimiter` — CSV/TSV separator (auto-detected when omitted: comma, semicolon, tab, or pipe)
 - `--quotechar` — CSV quote character
 - `--encoding` — file encoding
-- `--engine` — `auto` (default) or `duckdb` for accelerated tabular analysis
+- `--engine` — `auto` (default), `duckdb`, or `python`
 - `--table` / `--sheet` — named Excel sheet or multi-table source
+- `--limit` — max records to scan (default 10000)
+- `--no-scan` / `--no-stats` — skip structure scan or uniqueness stats
+- `--use-pandas` — use pandas for the analysis path
+- `--format-out` / `-O` — `text`, `json`, `yaml`, or `markdown` (also inferred from `--output`); `--json` is short for `-O json`
+- `--lang` — language for `--autodoc` text (default `English`)
 
-**AI Provider Options:**
-- `--ai-provider`: Provider id (`openai`, `anthropic`, `gemini`, `azure`, `openrouter`, `ollama`, `lmstudio`, `perplexity`)
-- `--ai-model`: Model name (provider-specific)
-- `--ai-base-url`: Custom API endpoint URL
+**`--autodoc` providers** (iterabledata's `iterable.ai`, the same as [`ai`](/commands/ai)):
 
-**Supported AI Providers:**
+`openai`, `anthropic`, `gemini`, `azure`, `openrouter`, `ollama`, `lmstudio`, `perplexity`,
+`openai-compatible`
 
-1. **OpenAI** (default if `OPENAI_API_KEY` is set)
-   ```bash
-   export OPENAI_API_KEY=sk-...
-   undatum analyze data.csv --autodoc --ai-provider openai --ai-model gpt-4o-mini
-   ```
+```bash norun
+export OPENAI_API_KEY=sk-...
+undatum analyze data.csv --autodoc --ai-provider openai --ai-model gpt-4o-mini
 
-2. **Anthropic**
-   ```bash
-   export ANTHROPIC_API_KEY=sk-ant-...
-   undatum analyze data.csv --autodoc --ai-provider anthropic --ai-model claude-3-5-haiku-latest
-   ```
+export ANTHROPIC_API_KEY=sk-ant-...
+undatum analyze data.csv --autodoc --ai-provider anthropic
 
-3. **Google Gemini**
-   ```bash
-   export GEMINI_API_KEY=...
-   undatum analyze data.csv --autodoc --ai-provider gemini --ai-model gemini-2.0-flash
-   ```
+export GEMINI_API_KEY=...
+undatum analyze data.csv --autodoc --ai-provider gemini
 
-4. **Azure OpenAI**
-   ```bash
-   export AZURE_OPENAI_API_KEY=...
-   export AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com/
-   undatum analyze data.csv --autodoc --ai-provider azure --ai-model gpt-4o-mini
-   ```
+export OPENROUTER_API_KEY=sk-or-...
+undatum analyze data.csv --autodoc --ai-provider openrouter --ai-model openai/gpt-4o-mini
 
-5. **OpenRouter** (unified API for many hosted models)
-   ```bash
-   export OPENROUTER_API_KEY=sk-or-...
-   undatum analyze data.csv --autodoc --ai-provider openrouter --ai-model openai/gpt-4o-mini
-   ```
+# Local (no API key)
+undatum analyze data.csv --autodoc --ai-provider ollama --ai-model llama3.2
+undatum analyze data.csv --autodoc --ai-provider lmstudio --ai-model local-model
+```
 
-6. **Ollama** (local models, no API key required)
-   ```bash
-   # Start Ollama and pull a model first: ollama pull llama3.2
-   undatum analyze data.csv --autodoc --ai-provider ollama --ai-model llama3.2
-   # Or set custom URL: export OLLAMA_BASE_URL=http://localhost:11434
-   ```
+Without `--ai-provider` or `UNDATUM_AI_PROVIDER`, the first API key found in the environment
+picks the provider (`OPENAI_API_KEY`, `OPENROUTER_API_KEY`, `PERPLEXITY_API_KEY`,
+`ANTHROPIC_API_KEY`, `GEMINI_API_KEY`). `--ai-model` and `--ai-base-url` override the provider
+defaults (`OLLAMA_BASE_URL`, `LMSTUDIO_BASE_URL`). A local provider that is not listening is
+detected within 2 seconds; a failing provider skips the AI content with one warning.
 
-7. **LM Studio** (local models, OpenAI-compatible API)
-   ```bash
-   # Start LM Studio and load a model
-   undatum analyze data.csv --autodoc --ai-provider lmstudio --ai-model local-model
-   # Or set custom URL: export LMSTUDIO_BASE_URL=http://localhost:1234/v1
-   ```
+Before a data sample goes to a remote provider, values in columns that look like personal data
+are replaced with `***`; `--no-pii-mask-samples` turns this off (see
+[PII masking](/integrations/ai#what-is-sent-and-pii-masking)).
 
-8. **Perplexity** (backward compatible, uses `PERPLEXITY_API_KEY`)
-   ```bash
-   export PERPLEXITY_API_KEY=pplx-...
-   undatum analyze data.csv --autodoc --ai-provider perplexity
-   ```
+**Configuration** (lowest to highest): environment (`UNDATUM_AI_PROVIDER`, provider API keys), `undatum.yaml` / `~/.undatum/config.yaml`, then CLI flags. Inspect with `undatum config show`. See [AI documentation](/integrations/ai) and [`config`](/commands/config).
 
-**Configuration Methods:**
+<!-- BEGIN GENERATED: reference -->
+<!-- Generated by scripts/generate_cli_reference.py from the CLI; do not edit by hand. -->
 
-AI provider can be configured via:
-1. **Environment variables** (lowest precedence):
-   ```bash
-   export UNDATUM_AI_PROVIDER=openai
-   export OPENAI_API_KEY=sk-...
-   ```
+## Reference
 
-2. **Config file** (medium precedence):
-   Create `undatum.yaml` in your project root or `~/.undatum/config.yaml`:
-   ```yaml
-   ai:
-     provider: openai
-     api_key: ${OPENAI_API_KEY}  # Can reference env vars
-     model: gpt-4o-mini
-     timeout: 30
-   defaults:
-     engine: duckdb
-     threads: 4
-     progress: true
-     encoding: utf8
-     # delimiter: ";"   # omit to keep CSV auto-detection
-     # quotechar: "'"   # omit to keep iterabledata default '"'
-     format_out: json
-   ```
+**Reads:** any readable format · **Writes:** report (see `--format-out`) · **Memory:** bounded: a sample of `--limit` records · **Engines:** auto, duckdb, python
 
-   Inspect the resolved values with `undatum config show`. Environment variables
-   `UNDATUM_ENGINE`, `UNDATUM_THREADS`, `UNDATUM_PROGRESS`, `UNDATUM_ENCODING`,
-   `UNDATUM_DELIMITER`, `UNDATUM_QUOTECHAR`, and `UNDATUM_FORMAT_OUT` are the
-   lowest-precedence source.
-   Explicit CLI flags always win.
+```text
+undatum analyze [OPTIONS] INPUT_FILE
+```
 
-3. **CLI arguments** (highest precedence):
-   ```bash
-   undatum analyze data.csv --autodoc --ai-provider openai --ai-model gpt-4o-mini
-   ```
+| Argument | Description |
+|----------|-------------|
+| `INPUT_FILE` | Path to input file to analyze. (required) |
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `--verbose` / `--no-verbose` | Enable verbose logging output. | `--no-verbose` |
+| `-e`, `--engine` [auto\|duckdb\|python] | Processing engine: auto (default), duckdb, or python. |  |
+| `--use-pandas` / `--no-use-pandas` | Use pandas for data processing (may use more memory). | `--no-use-pandas` |
+| `-O`, `--format-out` TEXT | Output format: 'text' (default), 'json', 'yaml', or 'markdown'. Also inferred from --output (.json/.yaml/.yml/.md). |  |
+| `-o`, `--output` TEXT | Optional output file path. If not specified, prints to stdout. |  |
+| `--autodoc` / `--no-autodoc` | Enable AI-powered automatic field and dataset documentation. | `--no-autodoc` |
+| `--lang` TEXT | Language for AI-generated documentation (default: 'English'). | `English` |
+| `--ai-provider` TEXT | AI provider: openai, anthropic, gemini, azure, openrouter, ollama, lmstudio, perplexity or openai-compatible (default: UNDATUM_AI_PROVIDER or the ai: section of undatum.yaml). |  |
+| `--ai-model` TEXT | Model name to use (provider-specific, e.g., 'gpt-4o-mini' for OpenAI). |  |
+| `--ai-base-url` TEXT | Base URL for AI API (optional, uses provider-specific defaults if not specified). |  |
+| `--pii-mask-samples` / `--no-pii-mask-samples` | Mask likely PII in sample rows sent to the AI provider with --autodoc. Default: masked for remote providers, unmasked for ollama and lmstudio. |  |
+| `-d`, `--delimiter` TEXT | CSV delimiter character (auto-detected when omitted). |  |
+| `--quotechar` TEXT | CSV quote character (iterabledata default '"' when omitted). |  |
+| `--encoding` TEXT | File encoding (e.g., 'utf8', 'latin1'). |  |
+| `-n`, `--limit` INTEGER | Maximum number of records to scan for schema inference. | `10000` |
+| `--ignore-errors` / `--no-ignore-errors` | Ignore parse errors in CSV/JSON files (default: True). | `--ignore-errors` |
+| `--no-scan` / `--no-no-scan` | Return file metadata only; skip structure scan. | `--no-no-scan` |
+| `--no-stats` / `--no-no-stats` | Skip uniqueness statistics in field analysis. | `--no-no-stats` |
+| `--table`, `--sheet` TEXT | Table or sheet name for multi-table sources (Excel, SQLite, lakehouse). |  |
+| `--start-page` INTEGER | Sheet index (0-based) for Excel files. | `0` |
+| `--trust` | Acknowledge pickle deserialization risk when reading pickle sources. |  |
+| `--on-error` TEXT | Parse-error policy: raise (default), skip, or warn. |  |
+| `--error-log` TEXT | Append parse errors as JSONL (use with --on-error skip or warn). |  |
+| `--flatten-nested` | Unfold nested dict / array-of-dict fields into dotted paths (e.g. city.lat). |  |
+| `--max-nested-depth` INTEGER | With --flatten-nested, maximum nest depth to unfold (engine default 5). |  |
+| `--keep-nested-parents` / `--no-keep-nested-parents` | With --flatten-nested, keep parent dict/array fields alongside dotted children. | `--keep-nested-parents` |
+| `--json` | Print the result as one JSON document (same as --format-out json). |  |
+
+Deprecated spellings (removed in 2.0): `--objects-limit` → `--limit`, `--outtype` → `--format-out`.
+
+See also [shared options](/commands/shared-options).
+<!-- END GENERATED: reference -->

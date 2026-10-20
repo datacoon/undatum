@@ -1,7 +1,7 @@
 # error-handling Specification
 
 ## Purpose
-TBD - created by archiving change improve-command-error-handling. Update Purpose after archive.
+Typed `UndatumError` hierarchy, actionable messages, and consistent CLI exit codes for command failures.
 ## Requirements
 ### Requirement: User-Friendly Error Messages
 All commands SHALL display clear, actionable error messages to users instead of raw Python exceptions.

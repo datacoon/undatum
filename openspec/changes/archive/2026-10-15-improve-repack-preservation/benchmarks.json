@@ -1,0 +1,3883 @@
+{
+  "schema": "undatum.repack-benchmark/1",
+  "environment": {
+    "platform": "macOS-26.5.1-arm64-arm-64bit",
+    "cpu_count": 14,
+    "python": "3.10.20 (main, Mar  3 2026, 14:59:45) [Clang 21.1.4 ]",
+    "versions": {
+      "iterabledata": "1.0.23",
+      "pyarrow": "25.0.1",
+      "duckdb": "1.5.5",
+      "pyorc": "0.11.0",
+      "avro": "1.12.2"
+    },
+    "commit": "22c15df279601dbc9acf296507f0358e44c28d48",
+    "repacker_sha256": "65b06b7a371828c0b75fffc937c7e84b60eb7d68d276afa0479e29eb2fb89971",
+    "baseline_ref": "HEAD",
+    "baseline_commit": "22c15df279601dbc9acf296507f0358e44c28d48",
+    "filerepack_root": "/Users/ibegtin/workspace/ivbeg/filerepack",
+    "filerepack": {
+      "commit": "95827f3206d68760819d1a0f21ab9acfcf74313b",
+      "dirty": true,
+      "source_sha256": {
+        "filerepack/__init__.py": "721e192aececad1f75628005d2dbda7e354234b7dd75aeb80396675cd5cd702d",
+        "filerepack/__main__.py": "574a3023e99d4900e4a1bf9bdfa2448b65399f52364cb564e440a4164eebba20",
+        "filerepack/_cfb_upper_table.py": "328b830eb3826d27f56d8152311068f9449ce818524fa43cad16090c383f0b09",
+        "filerepack/archive_manifest.py": "e39da87f57fce36101d16738e43ec70b796a060c9752d9181d0d5aae68fbba5e",
+        "filerepack/archives.py": "52b1d24ce0fba55bf8176b240491125f2b6ec52e117c37022a7262efdd2a601d",
+        "filerepack/aseprite.py": "74f773f9465ded4cd13725af37788f553b49d7dd3f748709129a2e9fd6c4c9ee",
+        "filerepack/avro.py": "16b14c609227c6688203f8c90d5471a7a0d2e2da9e7ba52c484be893ecd4790f",
+        "filerepack/blend.py": "0188b483c93155ec8d0631a615ef9b4d9b32d992c50705b8c1da2e849c0fd82a",
+        "filerepack/candidates.py": "061d894bef0320054cb6ed3d4354a0283e30f71941ea6676bd6e1f6cd1c1cb99",
+        "filerepack/capabilities.py": "79aee93acef286ca7159d0ea49d0f910df4a4917f4d7c87df44d3716476579c5",
+        "filerepack/car.py": "b0b7e9c0c2b82e8035b727e044aca32e78dad9fb91059b56db6519931564f761",
+        "filerepack/cfb_name_compare.py": "e3e2e40677b4ad5b306f03ee7b390e59b50d20a1d71cd9fdc2003dea9d02e957",
+        "filerepack/checkpoint.py": "5d93fcf2df70c5088779bd5554bc9ce82c8a710057ee311bbc81f8931f671d8e",
+        "filerepack/codecs.py": "19b799984db7c580f9f06a021eac40953ecfd2d14de6b296a5b2a1024c9c39ac",
+        "filerepack/columnar.py": "c49be7cde33886bac4d2c51c73827b13d8c73f02b897dd71504dde36b7bcfb0d",
+        "filerepack/commands.py": "f096701f3f45b47045a0d0c7ca9ebf07952e896b5f617179bcc482551b1451af",
+        "filerepack/compression.py": "199b9fd233d8fc50d60adaf0251a383183c874af76a12e34ee4ac37526987040",
+        "filerepack/consts.py": "0fbdf065dcfa4efc8b99e83b2f53c5e1f5df21ccb2ee49d6f14b87f6fd68362d",
+        "filerepack/containers.py": "b4938c8bda182237a0a352f03cca96041af24b2c5a39e8e5b007b6f043094615",
+        "filerepack/covers.py": "0262c9912f72ab7412009ef133dd587a9206c7c96b7d725ab6e98a0f75d2aa88",
+        "filerepack/cpio.py": "a8038c5deec6db47f7e18a3f9cb0ff7ce62aa21ae07aa535df44ddd15ca1cf8c",
+        "filerepack/data.py": "83edc49b50c0a7c9cd1d6bdce39dc78a00dd3f8771dda6a298e9908ab5ebab3c",
+        "filerepack/destinations.py": "eff9b165c6add1f09b6a918abfab205ced17b7e23239b4eb4994723f1d48ef21",
+        "filerepack/dicom.py": "aa0d389902199271878ae8cf9649335c35db54b909597c2200de4a07be3be4d5",
+        "filerepack/dicom_verify.py": "e072d9a1f68e773de5c8585b6e8f6f8d65840ead630573939d005d4fa4d225db",
+        "filerepack/dispatch.py": "7e67831544c56ebe2c4fd27321932ec8b3b834727fa1e9d20746a534528010cd",
+        "filerepack/distributed_checkpoint.py": "5ba51a1fab352cef4fcd0a1b98d6203e7f5fc9835f308d750ae8086b6bf59a07",
+        "filerepack/documents.py": "d7d94e81fbd6ff2e714b59187ad92e2517dab781599fb3be7e6e674c6729a391",
+        "filerepack/duckdb.py": "773bfce1f84a1895760ba49ecc370b3a0bef85f4513188a0939b762feef04af2",
+        "filerepack/encoder_trials.py": "08aa7e7ca27761014f51efed6036b1d39069b980a975dd668e60c89d7d215e21",
+        "filerepack/evidence.py": "6d30e3c4808dc0f8ec8ab0a211a23f1aaa4cd4bf0dfe9a3661c7ff253c22dbb0",
+        "filerepack/exr.py": "c768f3232cffd28b3fcbfffa6f8d7ef1e19c00b87f7c32fbd4cfa081df425ca2",
+        "filerepack/fits.py": "b5a69efe38e835fd0f96a11629679b24f363b45751200f258ac4bbfc0829d295",
+        "filerepack/fonts.py": "5f62d1c0902f3df9051954926d60e5f12d1226dafae6cbba7da4984f83f8cefd",
+        "filerepack/format_registry.py": "01023513916902a784961ab7b650e0919bb267903a0eaa507b330bfe34201bfa",
+        "filerepack/format_support.py": "e79726b6b2d5c05924fbd97fc8f8979632133bf88cadfb125bcc5942f6401b29",
+        "filerepack/format_worker.py": "fffeaafb76cef2171ad03bd6e924ee71c926e87a6dced1eb36598ac3bfea48ed",
+        "filerepack/formats.py": "45b02e1fec7257404b96452f4261295d180af4bf540492a5f4968dd3196ac9ec",
+        "filerepack/hierarchical.py": "1570b2a1c4f71e059d737719643341fab05a4fb0bb6674f7838a6129dda34f71",
+        "filerepack/image_codec_profiles.py": "bfbc5068098481e39957fc411de8c0925b55c45f1141587c19c2db11a5085195",
+        "filerepack/images.py": "5a7aab6d9f86924d1aac78daecd334400bb155f127805403b6ea2090250fef4d",
+        "filerepack/inspection.py": "e7129945c1db65ff0505b15ac9e55092f90f148fb04f1d85dff01c9292b1e161",
+        "filerepack/install_hints.py": "89a1a4959f92566badff1a1e8ce784d6116568eb1638ff6011265c80b03c23ae",
+        "filerepack/jobs.py": "79d8f49db90012cdc6bf8e2cc3bde008f054c499d6b385dd25ee61ad38a53c2d",
+        "filerepack/jpeg_metadata.py": "4769663736e61ad6d67656fb96720f640a8e372236d804a7869f8eb5619efa0f",
+        "filerepack/markup.py": "6598c25942d189dc81cb5556b41e925051946f7df9889352f5e1fecaa02ca336",
+        "filerepack/mat.py": "3eeb912c243a4603ca8b75aca835266aba8ff364533736c7c8d02ed687daa96f",
+        "filerepack/media.py": "1ae888ee04a126cefed8aaedbe3cc71043c9869320b0bb1f72f83970a0d76316",
+        "filerepack/media_verify.py": "57eb3ee9d489dba23d1e95c6f6634061fde74c90c4d8337773671770f901df20",
+        "filerepack/medical.py": "5e124ef59c327359a8e8d6e6df788459cdd67667d86f7df7d7402562782f3440",
+        "filerepack/model_formats.py": "f63d1412e23e0b4211ea638b06935169629a16aa10f1cf75c6d697a9df03ef86",
+        "filerepack/models.py": "a773e0b441e927b31a19d4a07852a4026eff11e323b6ef61b28cf034d785d3d7",
+        "filerepack/native.py": "9e3a48432236c5352317dcfaef94843ad4e82232520ac4caa11703fb058082aa",
+        "filerepack/nib.py": "b47ad0796b302ad3591e1eb41634d82bc4370c3eb878ac09df171033302a69f2",
+        "filerepack/nrrd.py": "86f7d70c380c2a89abacba07d1e80113996c73f9b556f33885eedc81ac57baff",
+        "filerepack/ole.py": "4228fe0614e71818dae3d266df5e3da202cc9fbb1237255988df667594cdc7be",
+        "filerepack/ole_art_layout.py": "ea439d1ecf74eb4581bfcfb569587cb041f7a4310acc16af5f364e364fdc6dc3",
+        "filerepack/ole_dedup.py": "a91ae91a1c52f9195ecd63838300d2c3dc25d39efd471cf4c52b1d9d17d86d42",
+        "filerepack/ole_embedded.py": "31e5e5d7333df7ff116de3a063474f9d646314d6787cce6afabceb72a9a02f68",
+        "filerepack/ole_hosts.py": "10e103533c69ab49810faa76f67b87f9ac4216e9e0abf246b2c0d8e973e7b4e9",
+        "filerepack/ole_hwp.py": "164e71c153f330fcd99eaf54cdff5c45b307023810fac00d14a51737bead4993",
+        "filerepack/ole_officeart.py": "b5cd7baa48efdbd723bf20d44cd15f656382535166b8a8c9857235e4f2e36299",
+        "filerepack/ole_ppt.py": "cff70ae41f5798222f1de7d21a74615aeca79b41df8b61188a6a3e462b78f949",
+        "filerepack/ole_ppt_art.py": "ac8e36d253639c5204f60935b3d9d173fa2a61b3359c6db7e76a115651b864b9",
+        "filerepack/ole_ppt_extensions.py": "49228572aedb071527396d225c70f6cee4114f8feb57a50e2f4131ee353b027b",
+        "filerepack/ole_ppt_host.py": "8e84f7701470a1d63dfa4e5b67e3cc900f8c10d64e759598da7516d341a99d91",
+        "filerepack/ole_ppt_records.py": "f2776cdfc44927c18b3fe545f20c42db67e1566505f80a4e3028feb9b3163b76",
+        "filerepack/ole_ppt_storage.py": "ce4f61ad5442a8a0e9a33db474ace401bc58a9823a21228ce5bab3a636c2ade9",
+        "filerepack/ole_ppt_timing.py": "f956b467105a884088809964b58f25e44cc0591940fa9551c03b2f0fc935ce24",
+        "filerepack/ole_protection.py": "a2a347807982795988abf0fad9ed9ecf83e6ed66e7e03d935735c3cb825bfe25",
+        "filerepack/ole_raster.py": "eaa09e211c1756e3c85736820c66c58c137d577d8059a00e10164374a4e951e2",
+        "filerepack/ole_recompress.py": "4bca0643a5660160a04b100557e34e1224d81800a20f8baf6dcc4514cd5f5a6c",
+        "filerepack/ole_root.py": "1bad72495302900504e8c88534dd11a2e0e7c02b8f389772e1a9e03ad0460309",
+        "filerepack/ole_transform.py": "e758d4e62998e83121678c1eb15e4f1380da37db8f96049819fb0099b6e8534e",
+        "filerepack/ole_verify.py": "efef19a4148079d9dd4a3938e55b75712dfef2e50d865cf9b3e086dd4c68596c",
+        "filerepack/ole_word_art.py": "e55de31591ee055663260455e0262abbae5b62549bf4038787c2079d7f006225",
+        "filerepack/ole_word_data.py": "7b60774bc307252e5d42a0d6e23595bb229ae964d9c722a6c797775bd7448c67",
+        "filerepack/ole_word_floating.py": "f3382b07abe6b372519dea7d5b4f449cd9404761f4b5686bb1b1f2d4ce41215d",
+        "filerepack/ole_xls_art.py": "8c47b68b0550531fd0dcc82750dda8f6a35051ad006a4f76587e96eb44ec799f",
+        "filerepack/outcomes.py": "7b99faf4871ab9a817ce155f401a10afa017127c900878812d3d76019ec68965",
+        "filerepack/package_policy.py": "78b54a209c08291b2a7c386363ad95e3370161efa1f12c19f69b1d53b7c0001a",
+        "filerepack/parquet.py": "9ac194c13e46931002f14149fcb3db15661d84d98a5a593b22524dfb20ca9980",
+        "filerepack/pdf_streams.py": "ecd0a62144e7141d5896e6368f6a4440a10b40bf732de19751c679f8475fc204",
+        "filerepack/pdf_verify.py": "b4ed45b6661ceeb3d313e8e3e913ac5a7e0ba585c556bcc1d8acb6484c5ce9f9",
+        "filerepack/peek_worker.py": "c98ae5c1692405193bbda01ccb7069156ecc1bcc5a701fa406964ae46dc32a72",
+        "filerepack/png_support.py": "bf0ca5dedd28285877aa6b14ba7f974418ce9a19e65057ff99df7e411dc0bdb1",
+        "filerepack/prediction_cache.py": "90c4181498d0e910a04e528d33d632736b9cbb3df536e27e8d7e52d5c19feb94",
+        "filerepack/profiles.py": "1187ea6812ffab079c782a9465fbe5351cc17ba2cdd4edca5799f48d5fc36086",
+        "filerepack/progress.py": "5155f339f121e6b9f19ad37eb0018af67801f4ca72f051f703b5ebd4bbc49724",
+        "filerepack/psb.py": "18e596d40d5aa49e5a6bf8b621c3f96b9a0d67d497e8f47adcbe29a86dab09e5",
+        "filerepack/qgis.py": "0e11b215fa2ac3cae2f4a589d53452f27b346ae042c213d4fa24ce7de037649b",
+        "filerepack/r_serialization.py": "7fb6022ee802b080debbfc6e55db3b59ea5c9ad521ed3d926a8b4e7c26bd8c29",
+        "filerepack/raster_layout.py": "cb2dff444d81014a0e6ef919ada72328889cddfe82b050acfd5f8eea42874d6f",
+        "filerepack/repack.py": "cb2f0b75bccd312a36fe223885015a7e37582151e7991334d3abcb7d25014bd2",
+        "filerepack/reports.py": "e2369317aaa0b91da3179d38c2c8c98f8fd88e5830c0bb758a606b5e69201055",
+        "filerepack/resource_slots.py": "d570ae6eabb749cc9b5474f2d30a321245b48a20600cb6f5083abbf904f8c7b4",
+        "filerepack/resume.py": "88b8964c86f989520e0cf270a4bf45aafbea11f3d25b3ff4c7c07a3e0ae1d561",
+        "filerepack/rtf.py": "af5b8fd87f9aa581003ea006bdd8c83ec87edc62568955ef02d752cd586e4edf",
+        "filerepack/runtime.py": "84fef17b76cca55989043ce56474261ede994e9e3da51b85a0f5cc4afd2e3f8f",
+        "filerepack/selection.py": "5ad76f71883df239735df840bf3de7565e9645ce4c4ef4eb44f8361e17fae3fc",
+        "filerepack/sidecars.py": "e0dc592eb683b06d2f390a4c4124545df6e25d810c94c99b572170c4c7db1636",
+        "filerepack/spss.py": "27a4fd895073d2f61e79c8675a779cb076f156392155309bde3661b96f3332df",
+        "filerepack/stream_worker.py": "4907605bbf9d4655d32c277e0904d1d4f1358f3cddcd8afbf0a2b39b306c52f1",
+        "filerepack/streams.py": "336186fdacdcef97283cf6b453f1b6a3b72974585ee29915ec232497233fceea",
+        "filerepack/swf.py": "b75fc8abfc18d34c43c6db63918839532f4f89ba184d49707b86dda8cf8ae504",
+        "filerepack/tgs.py": "9a050b15ca45cedc63d7fa9d80f747143f1ca635f38002318e146e5f4c7bdfe5",
+        "filerepack/tiff.py": "0e1e9c64dbd5f9439a470cb58bcbeefce14d8baa7749bca2ac310f25c9f0c840",
+        "filerepack/tiff_codecs.py": "cfcc88f838baeaf51d9f0bfbef27a429e72f58eaa30b4ddf4ad85ec29f735d15",
+        "filerepack/tools.py": "9cec086e1c20116ea00818d8b5ef1e7bd2951fdfd101a71c63c27fb4d0be1772",
+        "filerepack/tracev3.py": "d463ed186cf6c2b04c3c3533e50cf92c909013fd5686ceffd1f56d6da83d0878",
+        "filerepack/transactions.py": "7ac2ea1f7efc63b12eb90c536f38568435be73681369068a709bc8a9cff05187",
+        "filerepack/utils.py": "0869b6d255960ceac853be89845b957e50735a5acbb7811800d11879b0e4a7eb",
+        "filerepack/validation.py": "1c5f8a8b98b95ecf981e89f7abe9d86750d9170f59b41019d1b1bdc0fc201058",
+        "filerepack/verification.py": "6854209777c49c03fe807e7002f62320cde1252c4e1fb01fea67937e06165849",
+        "filerepack/warc.py": "2cabd4c66f1b61ebde17eb8e69cbf6f1c2b110585dbb0969df3f1de2ba5fc78c",
+        "filerepack/wim.py": "67b8eb40499337002cd7e39570cadbd4bbc9c4afeec099ae910975e7690c761f",
+        "filerepack/xattrs.py": "e670e625f73a1ba08c7eeb0e5464fd2146905dcad3982305770c73669303606f",
+        "filerepack/zarr_store.py": "71607b1675b0871a2a35eaa7d939c0640e099a6055851c87ce45d887d014e6b8",
+        "filerepack/zip_copy.py": "ccee8326ac92cae83915eadcf4520852578a2a903abd46324d203d764fe99eb8",
+        "filerepack/zip_native.py": "cd45529e42bf962af88bb3fdbfa20846c53835408d84b9c7f49a8dba308a100c"
+      },
+      "runtime": {
+        "python": "3.10.20 (main, Mar  3 2026, 14:59:45) [Clang 21.1.4 ]",
+        "versions": {
+          "pyarrow": "25.0.1",
+          "avro": "1.12.2",
+          "zstandard": "0.25.0"
+        }
+      },
+      "settings": "gzip level 9, zstd level 19 (ultra=False); one codec thread; growth allowed; native scratch/decoded/RSS limits relaxed"
+    },
+    "source_sha256": {
+      "scripts/benchmark_repack.py": "426e95a31108ca4d8ee19d85198570f714af52e3f2ed9addfaad919c072ae3ed",
+      "undatum/cmds/repacker.py": "65b06b7a371828c0b75fffc937c7e84b60eb7d68d276afa0479e29eb2fb89971",
+      "undatum/common/repack_avro.py": "92542504e119df4c62d5f6497ee73ffc62c48a3628d0ee4f032e0210e9029771",
+      "undatum/common/repack_columnar.py": "2257d204de7366e323cb8d1189ea1d603184f498bbd587adb2ba7dd51c00b94c",
+      "undatum/common/repack_streams.py": "5c6c263c066a778f5667e02c247d2df7a5fa390a219603e2bd473a7a46275418",
+      "undatum/common/repack_types.py": "fdd729bd9784084c5aa36145acbc9ecfdc8991f88353c0272551c797e58f0671",
+      "undatum/common/repack_worker.py": "8f77e28cc56053a3b59713832b3740d899a0ff27a783ed0925f57e23d6057a6f",
+      "undatum/common/file_snapshot.py": "42a1ad08f1068791d844e666c19df3ac92581f2561ab9102423bdeee04ce628e",
+      "undatum/common/writer.py": "87137f1c2f9fa3e8373a9b88937abf65086c5de4ec83707662cd7a98f417a623"
+    },
+    "mode": "cold subprocess; rotating implementations per repeat; sizes include headers; all undatum candidates verified"
+  },
+  "size_mib": 1,
+  "repeat": 3,
+  "layout": {
+    "batch_size": 65536,
+    "row_group_size": 65536
+  },
+  "records": [
+    {
+      "case": "csv-low.csv.gz",
+      "kind": "gzip",
+      "implementation": "undatum",
+      "profile": "fast",
+      "input_size": 62797,
+      "logical_size": 1048645,
+      "trials": [
+        {
+          "seconds": 1.718998999975156,
+          "peak_rss_bytes": 55001088,
+          "preservation_passed": true,
+          "output_size": 62797,
+          "timings": {
+            "encode_seconds": 0.008851833001244813,
+            "verify_seconds": 0.00264979200437665
+          },
+          "resources": {
+            "decoded_bytes_processed": 2097290,
+            "scratch_peak_bytes": 62797,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "gz",
+            "profile": "fast",
+            "level": 1,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 0.0006852909573353827,
+          "read_back_mib_per_second": 1459.3302199935463
+        },
+        {
+          "seconds": 1.3082054579863325,
+          "peak_rss_bytes": 55017472,
+          "preservation_passed": true,
+          "output_size": 62797,
+          "timings": {
+            "encode_seconds": 0.008421249978709966,
+            "verify_seconds": 0.003567083040252328
+          },
+          "resources": {
+            "decoded_bytes_processed": 2097290,
+            "scratch_peak_bytes": 62797,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "gz",
+            "profile": "fast",
+            "level": 1,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 0.0011997909750789404,
+          "read_back_mib_per_second": 833.533360643951
+        },
+        {
+          "seconds": 1.5134514999808744,
+          "peak_rss_bytes": 54837248,
+          "preservation_passed": true,
+          "output_size": 62797,
+          "timings": {
+            "encode_seconds": 0.010293958010151982,
+            "verify_seconds": 0.0038139160024002194
+          },
+          "resources": {
+            "decoded_bytes_processed": 2097290,
+            "scratch_peak_bytes": 62797,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "gz",
+            "profile": "fast",
+            "level": 1,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 0.0007674589869566262,
+          "read_back_mib_per_second": 1303.0869668926712
+        }
+      ],
+      "median_seconds": 1.5134514999808744,
+      "peak_rss_bytes": 55017472,
+      "preservation_passed": true
+    },
+    {
+      "case": "csv-low.csv.gz",
+      "kind": "gzip",
+      "implementation": "undatum",
+      "profile": "balanced",
+      "input_size": 62797,
+      "logical_size": 1048645,
+      "trials": [
+        {
+          "seconds": 1.1689285829779692,
+          "peak_rss_bytes": 54870016,
+          "preservation_passed": true,
+          "output_size": 64000,
+          "timings": {
+            "encode_seconds": 0.019601625041104853,
+            "verify_seconds": 0.002603208995424211
+          },
+          "resources": {
+            "decoded_bytes_processed": 2097290,
+            "scratch_peak_bytes": 64000,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "gz",
+            "profile": "balanced",
+            "level": 6,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 0.000880290986970067,
+          "read_back_mib_per_second": 1136.0627546239295
+        },
+        {
+          "seconds": 1.3544356250204146,
+          "peak_rss_bytes": 55001088,
+          "preservation_passed": true,
+          "output_size": 64000,
+          "timings": {
+            "encode_seconds": 0.018349124991800636,
+            "verify_seconds": 0.004362125007901341
+          },
+          "resources": {
+            "decoded_bytes_processed": 2097290,
+            "scratch_peak_bytes": 64000,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "gz",
+            "profile": "balanced",
+            "level": 6,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 0.0009701669914647937,
+          "read_back_mib_per_second": 1030.8182120460478
+        },
+        {
+          "seconds": 1.449503583018668,
+          "peak_rss_bytes": 52903936,
+          "preservation_passed": true,
+          "output_size": 64000,
+          "timings": {
+            "encode_seconds": 0.023815541993826628,
+            "verify_seconds": 0.004939667007420212
+          },
+          "resources": {
+            "decoded_bytes_processed": 2097290,
+            "scratch_peak_bytes": 64000,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "gz",
+            "profile": "balanced",
+            "level": 6,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 0.001129249983932823,
+          "read_back_mib_per_second": 885.6017868115588
+        }
+      ],
+      "median_seconds": 1.3544356250204146,
+      "peak_rss_bytes": 55001088,
+      "preservation_passed": true
+    },
+    {
+      "case": "csv-low.csv.gz",
+      "kind": "gzip",
+      "implementation": "undatum",
+      "profile": "max",
+      "input_size": 62797,
+      "logical_size": 1048645,
+      "trials": [
+        {
+          "seconds": 1.328722000005655,
+          "peak_rss_bytes": 55115776,
+          "preservation_passed": true,
+          "output_size": 58507,
+          "timings": {
+            "encode_seconds": 0.07711637497413903,
+            "verify_seconds": 0.002792125043924898
+          },
+          "resources": {
+            "decoded_bytes_processed": 2097290,
+            "scratch_peak_bytes": 58507,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "gz",
+            "profile": "max",
+            "level": 9,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 0.0006345410365611315,
+          "read_back_mib_per_second": 1576.0459070506247
+        },
+        {
+          "seconds": 1.3470084999571554,
+          "peak_rss_bytes": 55148544,
+          "preservation_passed": true,
+          "output_size": 58507,
+          "timings": {
+            "encode_seconds": 0.07965058396803215,
+            "verify_seconds": 0.00308887503342703
+          },
+          "resources": {
+            "decoded_bytes_processed": 2097290,
+            "scratch_peak_bytes": 58507,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "gz",
+            "profile": "max",
+            "level": 9,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 0.0010050830314867198,
+          "read_back_mib_per_second": 995.0081457932223
+        },
+        {
+          "seconds": 1.1842000409960747,
+          "peak_rss_bytes": 55132160,
+          "preservation_passed": true,
+          "output_size": 58507,
+          "timings": {
+            "encode_seconds": 0.07426229200791568,
+            "verify_seconds": 0.00471541698789224
+          },
+          "resources": {
+            "decoded_bytes_processed": 2097290,
+            "scratch_peak_bytes": 58507,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "gz",
+            "profile": "max",
+            "level": 9,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 0.0013317919801920652,
+          "read_back_mib_per_second": 750.9174243440082
+        }
+      ],
+      "median_seconds": 1.328722000005655,
+      "peak_rss_bytes": 55148544,
+      "preservation_passed": true
+    },
+    {
+      "case": "csv-low.csv.gz",
+      "kind": "gzip",
+      "implementation": "baseline",
+      "profile": "max",
+      "input_size": 62797,
+      "logical_size": 1048645,
+      "trials": [
+        {
+          "seconds": 1.666611708002165,
+          "peak_rss_bytes": 111132672,
+          "preservation_passed": true,
+          "output_size": 58539,
+          "timings": {},
+          "resources": {},
+          "effective_settings": {},
+          "status": "legacy",
+          "reason": null,
+          "reason_code": null,
+          "decode_or_scan_seconds": 0.000956290983594954,
+          "read_back_mib_per_second": 1045.775627590168
+        },
+        {
+          "seconds": 1.7728148339665495,
+          "peak_rss_bytes": 110493696,
+          "preservation_passed": true,
+          "output_size": 58539,
+          "timings": {},
+          "resources": {},
+          "effective_settings": {},
+          "status": "legacy",
+          "reason": null,
+          "reason_code": null,
+          "decode_or_scan_seconds": 0.0015454579843208194,
+          "read_back_mib_per_second": 647.0999623890324
+        },
+        {
+          "seconds": 1.6405200420413166,
+          "peak_rss_bytes": 110559232,
+          "preservation_passed": true,
+          "output_size": 58539,
+          "timings": {},
+          "resources": {},
+          "effective_settings": {},
+          "status": "legacy",
+          "reason": null,
+          "reason_code": null,
+          "decode_or_scan_seconds": 0.0010942910448648036,
+          "read_back_mib_per_second": 913.8938020381837
+        }
+      ],
+      "median_seconds": 1.666611708002165,
+      "peak_rss_bytes": 111132672,
+      "preservation_passed": true
+    },
+    {
+      "case": "csv-low.csv.gz",
+      "kind": "gzip",
+      "implementation": "filerepack",
+      "profile": "max",
+      "input_size": 62797,
+      "logical_size": 1048645,
+      "trials": [
+        {
+          "seconds": 6.034891083021648,
+          "peak_rss_bytes": 61833216,
+          "preservation_passed": true,
+          "output_size": 58338,
+          "timings": {},
+          "resources": {
+            "decoded_bytes": 5243225,
+            "scratch_written_bytes": 1107152,
+            "peak_live_scratch_bytes": 1228287
+          },
+          "effective_settings": {},
+          "status": "replaced",
+          "reason": "",
+          "reason_code": "",
+          "decode_or_scan_seconds": 0.0007009170367382467,
+          "read_back_mib_per_second": 1426.796255633462
+        },
+        {
+          "seconds": 6.186021542001981,
+          "peak_rss_bytes": 62095360,
+          "preservation_passed": true,
+          "output_size": 58338,
+          "timings": {},
+          "resources": {
+            "decoded_bytes": 5243225,
+            "scratch_written_bytes": 1107152,
+            "peak_live_scratch_bytes": 1228287
+          },
+          "effective_settings": {},
+          "status": "replaced",
+          "reason": "",
+          "reason_code": "",
+          "decode_or_scan_seconds": 0.001523457991424948,
+          "read_back_mib_per_second": 656.4446208276689
+        },
+        {
+          "seconds": 6.389038915978745,
+          "peak_rss_bytes": 61980672,
+          "preservation_passed": true,
+          "output_size": 58338,
+          "timings": {},
+          "resources": {
+            "decoded_bytes": 5243225,
+            "scratch_written_bytes": 1107152,
+            "peak_live_scratch_bytes": 1228287
+          },
+          "effective_settings": {},
+          "status": "replaced",
+          "reason": "",
+          "reason_code": "",
+          "decode_or_scan_seconds": 0.0008144999737851322,
+          "read_back_mib_per_second": 1227.8279137080153
+        }
+      ],
+      "median_seconds": 6.186021542001981,
+      "peak_rss_bytes": 62095360,
+      "preservation_passed": true
+    },
+    {
+      "case": "csv-high.csv.gz",
+      "kind": "gzip",
+      "implementation": "undatum",
+      "profile": "fast",
+      "input_size": 578718,
+      "logical_size": 1048656,
+      "trials": [
+        {
+          "seconds": 1.3181429579854012,
+          "peak_rss_bytes": 55672832,
+          "preservation_passed": true,
+          "output_size": 578718,
+          "timings": {
+            "encode_seconds": 0.03870262502459809,
+            "verify_seconds": 0.010224000026937574
+          },
+          "resources": {
+            "decoded_bytes_processed": 2097312,
+            "scratch_peak_bytes": 578718,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "gz",
+            "profile": "fast",
+            "level": 1,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 0.006862916983664036,
+          "read_back_mib_per_second": 145.72175305716473
+        },
+        {
+          "seconds": 0.23057804198469967,
+          "peak_rss_bytes": 56459264,
+          "preservation_passed": true,
+          "output_size": 578718,
+          "timings": {
+            "encode_seconds": 0.00898620899533853,
+            "verify_seconds": 0.003344708005897701
+          },
+          "resources": {
+            "decoded_bytes_processed": 2097312,
+            "scratch_peak_bytes": 578718,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "gz",
+            "profile": "fast",
+            "level": 1,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 0.0018150829710066319,
+          "read_back_mib_per_second": 550.981034983033
+        },
+        {
+          "seconds": 0.22703920904314145,
+          "peak_rss_bytes": 55820288,
+          "preservation_passed": true,
+          "output_size": 578718,
+          "timings": {
+            "encode_seconds": 0.008733875001780689,
+            "verify_seconds": 0.0028353750240057707
+          },
+          "resources": {
+            "decoded_bytes_processed": 2097312,
+            "scratch_peak_bytes": 578718,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "gz",
+            "profile": "fast",
+            "level": 1,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 0.002058250014670193,
+          "read_back_mib_per_second": 485.8866934615624
+        }
+      ],
+      "median_seconds": 0.23057804198469967,
+      "peak_rss_bytes": 56459264,
+      "preservation_passed": true
+    },
+    {
+      "case": "csv-high.csv.gz",
+      "kind": "gzip",
+      "implementation": "undatum",
+      "profile": "balanced",
+      "input_size": 578718,
+      "logical_size": 1048656,
+      "trials": [
+        {
+          "seconds": 1.545930583961308,
+          "peak_rss_bytes": 55689216,
+          "preservation_passed": true,
+          "output_size": 565890,
+          "timings": {
+            "encode_seconds": 0.11646216601366177,
+            "verify_seconds": 0.01185891596833244
+          },
+          "resources": {
+            "decoded_bytes_processed": 2097312,
+            "scratch_peak_bytes": 565890,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "gz",
+            "profile": "balanced",
+            "level": 6,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 0.007661165960598737,
+          "read_back_mib_per_second": 130.5383931230168
+        },
+        {
+          "seconds": 2.4031873749918304,
+          "peak_rss_bytes": 53379072,
+          "preservation_passed": true,
+          "output_size": 565890,
+          "timings": {
+            "encode_seconds": 0.1327211660100147,
+            "verify_seconds": 0.01701958302874118
+          },
+          "resources": {
+            "decoded_bytes_processed": 2097312,
+            "scratch_peak_bytes": 565890,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "gz",
+            "profile": "balanced",
+            "level": 6,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 0.00738687498960644,
+          "read_back_mib_per_second": 135.38557175428724
+        },
+        {
+          "seconds": 0.2454064580379054,
+          "peak_rss_bytes": 56049664,
+          "preservation_passed": true,
+          "output_size": 565890,
+          "timings": {
+            "encode_seconds": 0.024468624964356422,
+            "verify_seconds": 0.003396292042452842
+          },
+          "resources": {
+            "decoded_bytes_processed": 2097312,
+            "scratch_peak_bytes": 565890,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "gz",
+            "profile": "balanced",
+            "level": 6,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 0.002358958008699119,
+          "read_back_mib_per_second": 423.9483239028993
+        }
+      ],
+      "median_seconds": 1.545930583961308,
+      "peak_rss_bytes": 56049664,
+      "preservation_passed": true
+    },
+    {
+      "case": "csv-high.csv.gz",
+      "kind": "gzip",
+      "implementation": "undatum",
+      "profile": "max",
+      "input_size": 578718,
+      "logical_size": 1048656,
+      "trials": [
+        {
+          "seconds": 1.8948257910087705,
+          "peak_rss_bytes": 54968320,
+          "preservation_passed": true,
+          "output_size": 565884,
+          "timings": {
+            "encode_seconds": 0.1953751670080237,
+            "verify_seconds": 0.02486533299088478
+          },
+          "resources": {
+            "decoded_bytes_processed": 2097312,
+            "scratch_peak_bytes": 565884,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "gz",
+            "profile": "max",
+            "level": 9,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 0.00739812501706183,
+          "read_back_mib_per_second": 135.1796964283382
+        },
+        {
+          "seconds": 1.9266265840269625,
+          "peak_rss_bytes": 56508416,
+          "preservation_passed": true,
+          "output_size": 565884,
+          "timings": {
+            "encode_seconds": 0.09306716697756201,
+            "verify_seconds": 0.009264874970540404
+          },
+          "resources": {
+            "decoded_bytes_processed": 2097312,
+            "scratch_peak_bytes": 565884,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "gz",
+            "profile": "max",
+            "level": 9,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 0.011812750017270446,
+          "read_back_mib_per_second": 84.66075151706279
+        },
+        {
+          "seconds": 0.2446262079756707,
+          "peak_rss_bytes": 56033280,
+          "preservation_passed": true,
+          "output_size": 565884,
+          "timings": {
+            "encode_seconds": 0.02604658401105553,
+            "verify_seconds": 0.003337666974402964
+          },
+          "resources": {
+            "decoded_bytes_processed": 2097312,
+            "scratch_peak_bytes": 565884,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "gz",
+            "profile": "max",
+            "level": 9,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 0.0023395830066874623,
+          "read_back_mib_per_second": 427.45920580150187
+        }
+      ],
+      "median_seconds": 1.8948257910087705,
+      "peak_rss_bytes": 56508416,
+      "preservation_passed": true
+    },
+    {
+      "case": "csv-high.csv.gz",
+      "kind": "gzip",
+      "implementation": "baseline",
+      "profile": "max",
+      "input_size": 578718,
+      "logical_size": 1048656,
+      "trials": [
+        {
+          "seconds": 2.4297303750063293,
+          "peak_rss_bytes": 108969984,
+          "preservation_passed": true,
+          "output_size": 565917,
+          "timings": {},
+          "resources": {},
+          "effective_settings": {},
+          "status": "legacy",
+          "reason": null,
+          "reason_code": null,
+          "decode_or_scan_seconds": 0.009584083978552371,
+          "read_back_mib_per_second": 104.3476138338647
+        },
+        {
+          "seconds": 0.7401229580282234,
+          "peak_rss_bytes": 111132672,
+          "preservation_passed": true,
+          "output_size": 565917,
+          "timings": {},
+          "resources": {},
+          "effective_settings": {},
+          "status": "legacy",
+          "reason": null,
+          "reason_code": null,
+          "decode_or_scan_seconds": 0.0024962910101749003,
+          "read_back_mib_per_second": 400.62488302405217
+        },
+        {
+          "seconds": 0.3910033749998547,
+          "peak_rss_bytes": 112459776,
+          "preservation_passed": true,
+          "output_size": 565917,
+          "timings": {},
+          "resources": {},
+          "effective_settings": {},
+          "status": "legacy",
+          "reason": null,
+          "reason_code": null,
+          "decode_or_scan_seconds": 0.002561040979344398,
+          "read_back_mib_per_second": 390.4960139299772
+        }
+      ],
+      "median_seconds": 0.7401229580282234,
+      "peak_rss_bytes": 112459776,
+      "preservation_passed": true
+    },
+    {
+      "case": "csv-high.csv.gz",
+      "kind": "gzip",
+      "implementation": "filerepack",
+      "profile": "max",
+      "input_size": 578718,
+      "logical_size": 1048656,
+      "trials": [
+        {
+          "seconds": 7.5033016669913195,
+          "peak_rss_bytes": 62095360,
+          "preservation_passed": true,
+          "output_size": 565884,
+          "timings": {},
+          "resources": {
+            "decoded_bytes": 5243280,
+            "scratch_written_bytes": 1614540,
+            "peak_live_scratch_bytes": 2759240
+          },
+          "effective_settings": {},
+          "status": "replaced",
+          "reason": "",
+          "reason_code": "",
+          "decode_or_scan_seconds": 0.006391583010554314,
+          "read_back_mib_per_second": 156.4677001446908
+        },
+        {
+          "seconds": 1.3561057500191964,
+          "peak_rss_bytes": 63799296,
+          "preservation_passed": true,
+          "output_size": 565884,
+          "timings": {},
+          "resources": {
+            "decoded_bytes": 5243280,
+            "scratch_written_bytes": 1614540,
+            "peak_live_scratch_bytes": 2759240
+          },
+          "effective_settings": {},
+          "status": "replaced",
+          "reason": "",
+          "reason_code": "",
+          "decode_or_scan_seconds": 0.0023822079529054463,
+          "read_back_mib_per_second": 419.81066041089116
+        },
+        {
+          "seconds": 1.3663722090423107,
+          "peak_rss_bytes": 63897600,
+          "preservation_passed": true,
+          "output_size": 565884,
+          "timings": {},
+          "resources": {
+            "decoded_bytes": 5243280,
+            "scratch_written_bytes": 1614540,
+            "peak_live_scratch_bytes": 2759240
+          },
+          "effective_settings": {},
+          "status": "replaced",
+          "reason": "",
+          "reason_code": "",
+          "decode_or_scan_seconds": 0.002571416029240936,
+          "read_back_mib_per_second": 388.9204557228058
+        }
+      ],
+      "median_seconds": 1.3663722090423107,
+      "peak_rss_bytes": 63897600,
+      "preservation_passed": true
+    },
+    {
+      "case": "zstd-high.csv.zst",
+      "kind": "zstd",
+      "implementation": "undatum",
+      "profile": "fast",
+      "input_size": 479865,
+      "logical_size": 1048656,
+      "trials": [
+        {
+          "seconds": 0.23014295898610726,
+          "peak_rss_bytes": 59260928,
+          "preservation_passed": true,
+          "output_size": 479865,
+          "timings": {
+            "encode_seconds": 0.005145459028426558,
+            "verify_seconds": 0.0014425000408664346
+          },
+          "resources": {
+            "decoded_bytes_processed": 2097312,
+            "scratch_peak_bytes": 479865,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "zst",
+            "profile": "fast",
+            "level": 1,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 0.0005454999627545476,
+          "read_back_mib_per_second": 1833.320554038801
+        },
+        {
+          "seconds": 0.22787899995455518,
+          "peak_rss_bytes": 57573376,
+          "preservation_passed": true,
+          "output_size": 479865,
+          "timings": {
+            "encode_seconds": 0.0030480840359814465,
+            "verify_seconds": 0.0018161250045523047
+          },
+          "resources": {
+            "decoded_bytes_processed": 2097312,
+            "scratch_peak_bytes": 479865,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "zst",
+            "profile": "fast",
+            "level": 1,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 0.0005399590008892119,
+          "read_back_mib_per_second": 1852.133758856456
+        },
+        {
+          "seconds": 0.22373174998210743,
+          "peak_rss_bytes": 57262080,
+          "preservation_passed": true,
+          "output_size": 479865,
+          "timings": {
+            "encode_seconds": 0.0028931659762747586,
+            "verify_seconds": 0.0016831670072861016
+          },
+          "resources": {
+            "decoded_bytes_processed": 2097312,
+            "scratch_peak_bytes": 479865,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "zst",
+            "profile": "fast",
+            "level": 1,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 0.0004917919868603349,
+          "read_back_mib_per_second": 2033.5351544256177
+        }
+      ],
+      "median_seconds": 0.22787899995455518,
+      "peak_rss_bytes": 59260928,
+      "preservation_passed": true
+    },
+    {
+      "case": "zstd-high.csv.zst",
+      "kind": "zstd",
+      "implementation": "undatum",
+      "profile": "balanced",
+      "input_size": 479865,
+      "logical_size": 1048656,
+      "trials": [
+        {
+          "seconds": 0.2324217910063453,
+          "peak_rss_bytes": 60522496,
+          "preservation_passed": true,
+          "output_size": 515168,
+          "timings": {
+            "encode_seconds": 0.004613750032149255,
+            "verify_seconds": 0.002010083000641316
+          },
+          "resources": {
+            "decoded_bytes_processed": 2097312,
+            "scratch_peak_bytes": 515168,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "zst",
+            "profile": "balanced",
+            "level": 3,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 0.0008473340421915054,
+          "read_back_mib_per_second": 1180.2621447366396
+        },
+        {
+          "seconds": 0.25561833300162107,
+          "peak_rss_bytes": 61358080,
+          "preservation_passed": true,
+          "output_size": 515168,
+          "timings": {
+            "encode_seconds": 0.004856417013797909,
+            "verify_seconds": 0.002000875014346093
+          },
+          "resources": {
+            "decoded_bytes_processed": 2097312,
+            "scratch_peak_bytes": 515168,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "zst",
+            "profile": "balanced",
+            "level": 3,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 0.0008859580266289413,
+          "read_back_mib_per_second": 1128.8077582530514
+        },
+        {
+          "seconds": 0.2123434590175748,
+          "peak_rss_bytes": 59916288,
+          "preservation_passed": true,
+          "output_size": 515168,
+          "timings": {
+            "encode_seconds": 0.004558958986308426,
+            "verify_seconds": 0.0017999170231632888
+          },
+          "resources": {
+            "decoded_bytes_processed": 2097312,
+            "scratch_peak_bytes": 515168,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "zst",
+            "profile": "balanced",
+            "level": 3,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 0.0007908749976195395,
+          "read_back_mib_per_second": 1264.5187886270896
+        }
+      ],
+      "median_seconds": 0.2324217910063453,
+      "peak_rss_bytes": 61358080,
+      "preservation_passed": true
+    },
+    {
+      "case": "zstd-high.csv.zst",
+      "kind": "zstd",
+      "implementation": "undatum",
+      "profile": "max",
+      "input_size": 479865,
+      "logical_size": 1048656,
+      "trials": [
+        {
+          "seconds": 0.4006476670037955,
+          "peak_rss_bytes": 143245312,
+          "preservation_passed": true,
+          "output_size": 494874,
+          "timings": {
+            "encode_seconds": 0.1800825420068577,
+            "verify_seconds": 0.002025208028499037
+          },
+          "resources": {
+            "decoded_bytes_processed": 2097312,
+            "scratch_peak_bytes": 494874,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "zst",
+            "profile": "max",
+            "level": 19,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 0.0009062919998541474,
+          "read_back_mib_per_second": 1103.481321810474
+        },
+        {
+          "seconds": 0.5075691670062952,
+          "peak_rss_bytes": 144113664,
+          "preservation_passed": true,
+          "output_size": 494874,
+          "timings": {
+            "encode_seconds": 0.2386072080116719,
+            "verify_seconds": 0.0023744170321151614
+          },
+          "resources": {
+            "decoded_bytes_processed": 2097312,
+            "scratch_peak_bytes": 494874,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "zst",
+            "profile": "max",
+            "level": 19,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 0.0009037089766934514,
+          "read_back_mib_per_second": 1106.6353436085762
+        },
+        {
+          "seconds": 0.3942997920094058,
+          "peak_rss_bytes": 144834560,
+          "preservation_passed": true,
+          "output_size": 494874,
+          "timings": {
+            "encode_seconds": 0.16487062501255423,
+            "verify_seconds": 0.002098417025990784
+          },
+          "resources": {
+            "decoded_bytes_processed": 2097312,
+            "scratch_peak_bytes": 494874,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "zst",
+            "profile": "max",
+            "level": 19,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 0.0009083329932764173,
+          "read_back_mib_per_second": 1101.001836714057
+        }
+      ],
+      "median_seconds": 0.4006476670037955,
+      "peak_rss_bytes": 144834560,
+      "preservation_passed": true
+    },
+    {
+      "case": "zstd-high.csv.zst",
+      "kind": "zstd",
+      "implementation": "baseline",
+      "profile": "max",
+      "input_size": 479865,
+      "logical_size": 1048656,
+      "trials": [
+        {
+          "seconds": 0.5101444590254687,
+          "peak_rss_bytes": 198213632,
+          "preservation_passed": true,
+          "output_size": 494874,
+          "timings": {},
+          "resources": {},
+          "effective_settings": {},
+          "status": "legacy",
+          "reason": null,
+          "reason_code": null,
+          "decode_or_scan_seconds": 0.0009901670273393393,
+          "read_back_mib_per_second": 1010.0076717688735
+        },
+        {
+          "seconds": 0.48353700002189726,
+          "peak_rss_bytes": 198000640,
+          "preservation_passed": true,
+          "output_size": 494874,
+          "timings": {},
+          "resources": {},
+          "effective_settings": {},
+          "status": "legacy",
+          "reason": null,
+          "reason_code": null,
+          "decode_or_scan_seconds": 0.0009064999758265913,
+          "read_back_mib_per_second": 1103.2281529113045
+        },
+        {
+          "seconds": 0.4725327500491403,
+          "peak_rss_bytes": 198524928,
+          "preservation_passed": true,
+          "output_size": 494874,
+          "timings": {},
+          "resources": {},
+          "effective_settings": {},
+          "status": "legacy",
+          "reason": null,
+          "reason_code": null,
+          "decode_or_scan_seconds": 0.0008888749871402979,
+          "read_back_mib_per_second": 1125.1034267065756
+        }
+      ],
+      "median_seconds": 0.48353700002189726,
+      "peak_rss_bytes": 198524928,
+      "preservation_passed": true
+    },
+    {
+      "case": "zstd-high.csv.zst",
+      "kind": "zstd",
+      "implementation": "filerepack",
+      "profile": "max",
+      "input_size": 479865,
+      "logical_size": 1048656,
+      "trials": [
+        {
+          "seconds": 0.3396775840083137,
+          "peak_rss_bytes": 70467584,
+          "preservation_passed": true,
+          "output_size": 494881,
+          "timings": {},
+          "resources": {
+            "decoded_bytes": 4194624,
+            "scratch_written_bytes": 1048656,
+            "peak_live_scratch_bytes": 2023402
+          },
+          "effective_settings": {},
+          "status": "replaced",
+          "reason": "",
+          "reason_code": "",
+          "decode_or_scan_seconds": 0.001132874982431531,
+          "read_back_mib_per_second": 882.7772785650295
+        },
+        {
+          "seconds": 0.3398142909863964,
+          "peak_rss_bytes": 70516736,
+          "preservation_passed": true,
+          "output_size": 494881,
+          "timings": {},
+          "resources": {
+            "decoded_bytes": 4194624,
+            "scratch_written_bytes": 1048656,
+            "peak_live_scratch_bytes": 2023402
+          },
+          "effective_settings": {},
+          "status": "replaced",
+          "reason": "",
+          "reason_code": "",
+          "decode_or_scan_seconds": 0.000997666036710143,
+          "read_back_mib_per_second": 1002.4158958473894
+        },
+        {
+          "seconds": 0.3220211659790948,
+          "peak_rss_bytes": 70565888,
+          "preservation_passed": true,
+          "output_size": 494881,
+          "timings": {},
+          "resources": {
+            "decoded_bytes": 4194624,
+            "scratch_written_bytes": 1048656,
+            "peak_live_scratch_bytes": 2023402
+          },
+          "effective_settings": {},
+          "status": "replaced",
+          "reason": "",
+          "reason_code": "",
+          "decode_or_scan_seconds": 0.0009296669741161168,
+          "read_back_mib_per_second": 1075.7360665588208
+        }
+      ],
+      "median_seconds": 0.3396775840083137,
+      "peak_rss_bytes": 70565888,
+      "preservation_passed": true
+    },
+    {
+      "case": "jsonl.jsonl.gz",
+      "kind": "gzip",
+      "implementation": "undatum",
+      "profile": "fast",
+      "input_size": 47437,
+      "logical_size": 1048582,
+      "trials": [
+        {
+          "seconds": 0.22759454097831622,
+          "peak_rss_bytes": 56705024,
+          "preservation_passed": true,
+          "output_size": 47437,
+          "timings": {
+            "encode_seconds": 0.0021242499933578074,
+            "verify_seconds": 0.0007907919934950769
+          },
+          "resources": {
+            "decoded_bytes_processed": 2097164,
+            "scratch_peak_bytes": 47437,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "gz",
+            "profile": "fast",
+            "level": 1,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 0.00023662502644583583,
+          "read_back_mib_per_second": 4226.119853281042
+        },
+        {
+          "seconds": 0.2264347080490552,
+          "peak_rss_bytes": 55902208,
+          "preservation_passed": true,
+          "output_size": 47437,
+          "timings": {
+            "encode_seconds": 0.0020083329873159528,
+            "verify_seconds": 0.0010158750228583813
+          },
+          "resources": {
+            "decoded_bytes_processed": 2097164,
+            "scratch_peak_bytes": 47437,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "gz",
+            "profile": "fast",
+            "level": 1,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 0.00029974995413795114,
+          "read_back_mib_per_second": 3336.1330276823833
+        },
+        {
+          "seconds": 0.22264245798578486,
+          "peak_rss_bytes": 55263232,
+          "preservation_passed": true,
+          "output_size": 47437,
+          "timings": {
+            "encode_seconds": 0.0021881250431761146,
+            "verify_seconds": 0.0007227500318549573
+          },
+          "resources": {
+            "decoded_bytes_processed": 2097164,
+            "scratch_peak_bytes": 47437,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "gz",
+            "profile": "fast",
+            "level": 1,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 0.00025166600244119763,
+          "read_back_mib_per_second": 3973.5431577793356
+        }
+      ],
+      "median_seconds": 0.2264347080490552,
+      "peak_rss_bytes": 56705024,
+      "preservation_passed": true
+    },
+    {
+      "case": "jsonl.jsonl.gz",
+      "kind": "gzip",
+      "implementation": "undatum",
+      "profile": "balanced",
+      "input_size": 47437,
+      "logical_size": 1048582,
+      "trials": [
+        {
+          "seconds": 0.22812112502288073,
+          "peak_rss_bytes": 55590912,
+          "preservation_passed": true,
+          "output_size": 46850,
+          "timings": {
+            "encode_seconds": 0.003323082986753434,
+            "verify_seconds": 0.000961042009294033
+          },
+          "resources": {
+            "decoded_bytes_processed": 2097164,
+            "scratch_peak_bytes": 46850,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "gz",
+            "profile": "balanced",
+            "level": 6,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 0.00021754199406132102,
+          "read_back_mib_per_second": 4596.839917556403
+        },
+        {
+          "seconds": 0.20906750002177432,
+          "peak_rss_bytes": 55721984,
+          "preservation_passed": true,
+          "output_size": 46850,
+          "timings": {
+            "encode_seconds": 0.0032297089928761125,
+            "verify_seconds": 0.0009991250117309391
+          },
+          "resources": {
+            "decoded_bytes_processed": 2097164,
+            "scratch_peak_bytes": 46850,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "gz",
+            "profile": "balanced",
+            "level": 6,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 0.00021708401618525386,
+          "read_back_mib_per_second": 4606.537780250572
+        },
+        {
+          "seconds": 0.23046754096867517,
+          "peak_rss_bytes": 57245696,
+          "preservation_passed": true,
+          "output_size": 46850,
+          "timings": {
+            "encode_seconds": 0.003946249955333769,
+            "verify_seconds": 0.0008548329933546484
+          },
+          "resources": {
+            "decoded_bytes_processed": 2097164,
+            "scratch_peak_bytes": 46850,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "gz",
+            "profile": "balanced",
+            "level": 6,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 0.00025445898063480854,
+          "read_back_mib_per_second": 3929.928979323685
+        }
+      ],
+      "median_seconds": 0.22812112502288073,
+      "peak_rss_bytes": 57245696,
+      "preservation_passed": true
+    },
+    {
+      "case": "jsonl.jsonl.gz",
+      "kind": "gzip",
+      "implementation": "undatum",
+      "profile": "max",
+      "input_size": 47437,
+      "logical_size": 1048582,
+      "trials": [
+        {
+          "seconds": 0.22731229197233915,
+          "peak_rss_bytes": 55525376,
+          "preservation_passed": true,
+          "output_size": 43175,
+          "timings": {
+            "encode_seconds": 0.01523091597482562,
+            "verify_seconds": 0.0009587080567143857
+          },
+          "resources": {
+            "decoded_bytes_processed": 2097164,
+            "scratch_peak_bytes": 43175,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "gz",
+            "profile": "max",
+            "level": 9,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 0.0002566250041127205,
+          "read_back_mib_per_second": 3896.7587180501473
+        },
+        {
+          "seconds": 0.22562358400318772,
+          "peak_rss_bytes": 57163776,
+          "preservation_passed": true,
+          "output_size": 43175,
+          "timings": {
+            "encode_seconds": 0.015326416003517807,
+            "verify_seconds": 0.0009679590002633631
+          },
+          "resources": {
+            "decoded_bytes_processed": 2097164,
+            "scratch_peak_bytes": 43175,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "gz",
+            "profile": "max",
+            "level": 9,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 0.0002157079870812595,
+          "read_back_mib_per_second": 4635.923479593668
+        },
+        {
+          "seconds": 0.24431537499185652,
+          "peak_rss_bytes": 56803328,
+          "preservation_passed": true,
+          "output_size": 43175,
+          "timings": {
+            "encode_seconds": 0.015022834006231278,
+            "verify_seconds": 0.0012168330140411854
+          },
+          "resources": {
+            "decoded_bytes_processed": 2097164,
+            "scratch_peak_bytes": 43175,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "gz",
+            "profile": "max",
+            "level": 9,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 0.00036524998722597957,
+          "read_back_mib_per_second": 2737.866548992366
+        }
+      ],
+      "median_seconds": 0.22731229197233915,
+      "peak_rss_bytes": 57163776,
+      "preservation_passed": true
+    },
+    {
+      "case": "jsonl.jsonl.gz",
+      "kind": "gzip",
+      "implementation": "baseline",
+      "profile": "max",
+      "input_size": 47437,
+      "logical_size": 1048582,
+      "trials": [
+        {
+          "seconds": 0.31113537499913946,
+          "peak_rss_bytes": 111132672,
+          "preservation_passed": true,
+          "output_size": 43207,
+          "timings": {},
+          "resources": {},
+          "effective_settings": {},
+          "status": "legacy",
+          "reason": null,
+          "reason_code": null,
+          "decode_or_scan_seconds": 0.00020591699285432696,
+          "read_back_mib_per_second": 4856.353563561111
+        },
+        {
+          "seconds": 0.31757416599430144,
+          "peak_rss_bytes": 111230976,
+          "preservation_passed": true,
+          "output_size": 43207,
+          "timings": {},
+          "resources": {},
+          "effective_settings": {},
+          "status": "legacy",
+          "reason": null,
+          "reason_code": null,
+          "decode_or_scan_seconds": 0.00020504096755757928,
+          "read_back_mib_per_second": 4877.102044327207
+        },
+        {
+          "seconds": 0.3323151670047082,
+          "peak_rss_bytes": 111542272,
+          "preservation_passed": true,
+          "output_size": 43207,
+          "timings": {},
+          "resources": {},
+          "effective_settings": {},
+          "status": "legacy",
+          "reason": null,
+          "reason_code": null,
+          "decode_or_scan_seconds": 0.00023666699416935444,
+          "read_back_mib_per_second": 4225.370443207274
+        }
+      ],
+      "median_seconds": 0.31757416599430144,
+      "peak_rss_bytes": 111542272,
+      "preservation_passed": true
+    },
+    {
+      "case": "jsonl.jsonl.gz",
+      "kind": "gzip",
+      "implementation": "filerepack",
+      "profile": "max",
+      "input_size": 47437,
+      "logical_size": 1048582,
+      "trials": [
+        {
+          "seconds": 1.2818557909922674,
+          "peak_rss_bytes": 62472192,
+          "preservation_passed": true,
+          "output_size": 43175,
+          "timings": {},
+          "resources": {
+            "decoded_bytes": 5242910,
+            "scratch_written_bytes": 1091757,
+            "peak_live_scratch_bytes": 1182570
+          },
+          "effective_settings": {},
+          "status": "replaced",
+          "reason": "",
+          "reason_code": "",
+          "decode_or_scan_seconds": 0.00020450004376471043,
+          "read_back_mib_per_second": 4890.002484285358
+        },
+        {
+          "seconds": 1.2732357499771751,
+          "peak_rss_bytes": 61751296,
+          "preservation_passed": true,
+          "output_size": 43175,
+          "timings": {},
+          "resources": {
+            "decoded_bytes": 5242910,
+            "scratch_written_bytes": 1091757,
+            "peak_live_scratch_bytes": 1182570
+          },
+          "effective_settings": {},
+          "status": "replaced",
+          "reason": "",
+          "reason_code": "",
+          "decode_or_scan_seconds": 0.00021224998636171222,
+          "read_back_mib_per_second": 4711.452467854148
+        },
+        {
+          "seconds": 1.2913804160198197,
+          "peak_rss_bytes": 62586880,
+          "preservation_passed": true,
+          "output_size": 43175,
+          "timings": {},
+          "resources": {
+            "decoded_bytes": 5242910,
+            "scratch_written_bytes": 1091757,
+            "peak_live_scratch_bytes": 1182570
+          },
+          "effective_settings": {},
+          "status": "replaced",
+          "reason": "",
+          "reason_code": "",
+          "decode_or_scan_seconds": 0.00020608300110325217,
+          "read_back_mib_per_second": 4852.441573018792
+        }
+      ],
+      "median_seconds": 1.2818557909922674,
+      "peak_rss_bytes": 62586880,
+      "preservation_passed": true
+    },
+    {
+      "case": "tiny.csv.gz",
+      "kind": "gzip",
+      "implementation": "undatum",
+      "profile": "fast",
+      "input_size": 28,
+      "logical_size": 8,
+      "trials": [
+        {
+          "seconds": 0.2250141660333611,
+          "peak_rss_bytes": 54493184,
+          "preservation_passed": true,
+          "output_size": 28,
+          "timings": {
+            "encode_seconds": 0.00027258298359811306,
+            "verify_seconds": 0.000130290980450809
+          },
+          "resources": {
+            "decoded_bytes_processed": 16,
+            "scratch_peak_bytes": 28,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "gz",
+            "profile": "fast",
+            "level": 1,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 9.158399188891053e-05,
+          "read_back_mib_per_second": 0.08330489175995184
+        },
+        {
+          "seconds": 0.26331079204101115,
+          "peak_rss_bytes": 53985280,
+          "preservation_passed": true,
+          "output_size": 28,
+          "timings": {
+            "encode_seconds": 0.00031104200752452016,
+            "verify_seconds": 0.00015579198952764273
+          },
+          "resources": {
+            "decoded_bytes_processed": 16,
+            "scratch_peak_bytes": 28,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "gz",
+            "profile": "fast",
+            "level": 1,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 4.654203075915575e-05,
+          "read_back_mib_per_second": 0.1639248311000943
+        },
+        {
+          "seconds": 0.22559124999679625,
+          "peak_rss_bytes": 54312960,
+          "preservation_passed": true,
+          "output_size": 28,
+          "timings": {
+            "encode_seconds": 0.0003077500150538981,
+            "verify_seconds": 0.00037220801459625363
+          },
+          "resources": {
+            "decoded_bytes_processed": 16,
+            "scratch_peak_bytes": 28,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "gz",
+            "profile": "fast",
+            "level": 1,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 4.416599404066801e-05,
+          "read_back_mib_per_second": 0.17274363901387252
+        }
+      ],
+      "median_seconds": 0.22559124999679625,
+      "peak_rss_bytes": 54493184,
+      "preservation_passed": true
+    },
+    {
+      "case": "tiny.csv.gz",
+      "kind": "gzip",
+      "implementation": "undatum",
+      "profile": "balanced",
+      "input_size": 28,
+      "logical_size": 8,
+      "trials": [
+        {
+          "seconds": 0.22772158397128806,
+          "peak_rss_bytes": 54231040,
+          "preservation_passed": true,
+          "output_size": 28,
+          "timings": {
+            "encode_seconds": 0.00025529100093990564,
+            "verify_seconds": 0.00025458395248278975
+          },
+          "resources": {
+            "decoded_bytes_processed": 16,
+            "scratch_peak_bytes": 28,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "gz",
+            "profile": "balanced",
+            "level": 6,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 3.970903344452381e-05,
+          "read_back_mib_per_second": 0.1921324663293247
+        },
+        {
+          "seconds": 0.2292738329852,
+          "peak_rss_bytes": 54296576,
+          "preservation_passed": true,
+          "output_size": 28,
+          "timings": {
+            "encode_seconds": 0.0002640410093590617,
+            "verify_seconds": 0.0004752919776365161
+          },
+          "resources": {
+            "decoded_bytes_processed": 16,
+            "scratch_peak_bytes": 28,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "gz",
+            "profile": "balanced",
+            "level": 6,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 4.116701893508434e-05,
+          "read_back_mib_per_second": 0.1853278359378093
+        },
+        {
+          "seconds": 0.20924237498547882,
+          "peak_rss_bytes": 54067200,
+          "preservation_passed": true,
+          "output_size": 28,
+          "timings": {
+            "encode_seconds": 0.0002859579981304705,
+            "verify_seconds": 0.00035137502709403634
+          },
+          "resources": {
+            "decoded_bytes_processed": 16,
+            "scratch_peak_bytes": 28,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "gz",
+            "profile": "balanced",
+            "level": 6,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 3.6833982449024916e-05,
+          "read_back_mib_per_second": 0.20712923295243543
+        }
+      ],
+      "median_seconds": 0.22772158397128806,
+      "peak_rss_bytes": 54296576,
+      "preservation_passed": true
+    },
+    {
+      "case": "tiny.csv.gz",
+      "kind": "gzip",
+      "implementation": "undatum",
+      "profile": "max",
+      "input_size": 28,
+      "logical_size": 8,
+      "trials": [
+        {
+          "seconds": 0.2312273329589516,
+          "peak_rss_bytes": 54181888,
+          "preservation_passed": true,
+          "output_size": 28,
+          "timings": {
+            "encode_seconds": 0.00029120902763679624,
+            "verify_seconds": 0.0005308749969117343
+          },
+          "resources": {
+            "decoded_bytes_processed": 16,
+            "scratch_peak_bytes": 28,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "gz",
+            "profile": "max",
+            "level": 9,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 4.970794543623924e-05,
+          "read_back_mib_per_second": 0.153484407055936
+        },
+        {
+          "seconds": 0.2261445409967564,
+          "peak_rss_bytes": 54689792,
+          "preservation_passed": true,
+          "output_size": 28,
+          "timings": {
+            "encode_seconds": 0.00027662498177960515,
+            "verify_seconds": 0.00013175001367926598
+          },
+          "resources": {
+            "decoded_bytes_processed": 16,
+            "scratch_peak_bytes": 28,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "gz",
+            "profile": "max",
+            "level": 9,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 4.445796366780996e-05,
+          "read_back_mib_per_second": 0.17160917644039791
+        },
+        {
+          "seconds": 0.22924266598420218,
+          "peak_rss_bytes": 54001664,
+          "preservation_passed": true,
+          "output_size": 28,
+          "timings": {
+            "encode_seconds": 0.00024766597198322415,
+            "verify_seconds": 0.00012495799455791712
+          },
+          "resources": {
+            "decoded_bytes_processed": 16,
+            "scratch_peak_bytes": 28,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "gz",
+            "profile": "max",
+            "level": 9,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 3.8833997678011656e-05,
+          "read_back_mib_per_second": 0.19646173423885918
+        }
+      ],
+      "median_seconds": 0.22924266598420218,
+      "peak_rss_bytes": 54689792,
+      "preservation_passed": true
+    },
+    {
+      "case": "tiny.csv.gz",
+      "kind": "gzip",
+      "implementation": "baseline",
+      "profile": "max",
+      "input_size": 28,
+      "logical_size": 8,
+      "trials": [
+        {
+          "seconds": 0.33808704098919407,
+          "peak_rss_bytes": 110460928,
+          "preservation_passed": true,
+          "output_size": 57,
+          "timings": {},
+          "resources": {},
+          "effective_settings": {},
+          "status": "legacy",
+          "reason": null,
+          "reason_code": null,
+          "decode_or_scan_seconds": 5.6958000641316175e-05,
+          "read_back_mib_per_second": 0.13394772367967903
+        },
+        {
+          "seconds": 0.316136917041149,
+          "peak_rss_bytes": 110116864,
+          "preservation_passed": true,
+          "output_size": 57,
+          "timings": {},
+          "resources": {},
+          "effective_settings": {},
+          "status": "legacy",
+          "reason": null,
+          "reason_code": null,
+          "decode_or_scan_seconds": 5.379103822633624e-05,
+          "read_back_mib_per_second": 0.14183393336168454
+        },
+        {
+          "seconds": 0.3076117089949548,
+          "peak_rss_bytes": 109740032,
+          "preservation_passed": true,
+          "output_size": 57,
+          "timings": {},
+          "resources": {},
+          "effective_settings": {},
+          "status": "legacy",
+          "reason": null,
+          "reason_code": null,
+          "decode_or_scan_seconds": 4.4707965571433306e-05,
+          "read_back_mib_per_second": 0.17064955727095069
+        }
+      ],
+      "median_seconds": 0.316136917041149,
+      "peak_rss_bytes": 110460928,
+      "preservation_passed": true
+    },
+    {
+      "case": "tiny.csv.gz",
+      "kind": "gzip",
+      "implementation": "filerepack",
+      "profile": "max",
+      "input_size": 28,
+      "logical_size": 8,
+      "trials": [
+        {
+          "seconds": 1.272318749979604,
+          "peak_rss_bytes": 60506112,
+          "preservation_passed": true,
+          "output_size": 28,
+          "timings": {},
+          "resources": {
+            "decoded_bytes": 40,
+            "scratch_written_bytes": 36,
+            "peak_live_scratch_bytes": 108
+          },
+          "effective_settings": {},
+          "status": "replaced",
+          "reason": "",
+          "reason_code": "",
+          "decode_or_scan_seconds": 5.137501284480095e-05,
+          "read_back_mib_per_second": 0.14850399267631675
+        },
+        {
+          "seconds": 1.2767896250006743,
+          "peak_rss_bytes": 60473344,
+          "preservation_passed": true,
+          "output_size": 28,
+          "timings": {},
+          "resources": {
+            "decoded_bytes": 40,
+            "scratch_written_bytes": 36,
+            "peak_live_scratch_bytes": 108
+          },
+          "effective_settings": {},
+          "status": "replaced",
+          "reason": "",
+          "reason_code": "",
+          "decode_or_scan_seconds": 5.945900920778513e-05,
+          "read_back_mib_per_second": 0.12831351603233682
+        },
+        {
+          "seconds": 1.2974272079882212,
+          "peak_rss_bytes": 60948480,
+          "preservation_passed": true,
+          "output_size": 28,
+          "timings": {},
+          "resources": {
+            "decoded_bytes": 40,
+            "scratch_written_bytes": 36,
+            "peak_live_scratch_bytes": 108
+          },
+          "effective_settings": {},
+          "status": "replaced",
+          "reason": "",
+          "reason_code": "",
+          "decode_or_scan_seconds": 5.024997517466545e-05,
+          "read_back_mib_per_second": 0.15182882189952832
+        }
+      ],
+      "median_seconds": 1.2767896250006743,
+      "peak_rss_bytes": 60948480,
+      "preservation_passed": true
+    },
+    {
+      "case": "empty.csv.gz",
+      "kind": "gzip",
+      "implementation": "undatum",
+      "profile": "fast",
+      "input_size": 20,
+      "logical_size": 0,
+      "trials": [
+        {
+          "seconds": 0.20844895800109953,
+          "peak_rss_bytes": 53985280,
+          "preservation_passed": true,
+          "output_size": 20,
+          "timings": {
+            "encode_seconds": 0.0002756250323727727,
+            "verify_seconds": 0.00043825001921504736
+          },
+          "resources": {
+            "decoded_bytes_processed": 0,
+            "scratch_peak_bytes": 20,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "gz",
+            "profile": "fast",
+            "level": 1,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 4.1000021155923605e-05,
+          "read_back_mib_per_second": 0.0
+        },
+        {
+          "seconds": 0.21005658397916704,
+          "peak_rss_bytes": 54231040,
+          "preservation_passed": true,
+          "output_size": 20,
+          "timings": {
+            "encode_seconds": 0.00023908400908112526,
+            "verify_seconds": 0.0001241250429302454
+          },
+          "resources": {
+            "decoded_bytes_processed": 0,
+            "scratch_peak_bytes": 20,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "gz",
+            "profile": "fast",
+            "level": 1,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 3.987498348578811e-05,
+          "read_back_mib_per_second": 0.0
+        },
+        {
+          "seconds": 0.21310375002212822,
+          "peak_rss_bytes": 54345728,
+          "preservation_passed": true,
+          "output_size": 20,
+          "timings": {
+            "encode_seconds": 0.00026133400388062,
+            "verify_seconds": 0.00045125000178813934
+          },
+          "resources": {
+            "decoded_bytes_processed": 0,
+            "scratch_peak_bytes": 20,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "gz",
+            "profile": "fast",
+            "level": 1,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 3.9416016079485416e-05,
+          "read_back_mib_per_second": 0.0
+        }
+      ],
+      "median_seconds": 0.21005658397916704,
+      "peak_rss_bytes": 54345728,
+      "preservation_passed": true
+    },
+    {
+      "case": "empty.csv.gz",
+      "kind": "gzip",
+      "implementation": "undatum",
+      "profile": "balanced",
+      "input_size": 20,
+      "logical_size": 0,
+      "trials": [
+        {
+          "seconds": 0.21058795897988603,
+          "peak_rss_bytes": 54116352,
+          "preservation_passed": true,
+          "output_size": 20,
+          "timings": {
+            "encode_seconds": 0.00036729202838614583,
+            "verify_seconds": 0.0004052920266985893
+          },
+          "resources": {
+            "decoded_bytes_processed": 0,
+            "scratch_peak_bytes": 20,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "gz",
+            "profile": "balanced",
+            "level": 6,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 4.012498538941145e-05,
+          "read_back_mib_per_second": 0.0
+        },
+        {
+          "seconds": 0.2254843339906074,
+          "peak_rss_bytes": 53985280,
+          "preservation_passed": true,
+          "output_size": 20,
+          "timings": {
+            "encode_seconds": 0.0002471249899826944,
+            "verify_seconds": 0.00011750002158805728
+          },
+          "resources": {
+            "decoded_bytes_processed": 0,
+            "scratch_peak_bytes": 20,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "gz",
+            "profile": "balanced",
+            "level": 6,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 3.854196984320879e-05,
+          "read_back_mib_per_second": 0.0
+        },
+        {
+          "seconds": 0.210295083001256,
+          "peak_rss_bytes": 54116352,
+          "preservation_passed": true,
+          "output_size": 20,
+          "timings": {
+            "encode_seconds": 0.00028133299201726913,
+            "verify_seconds": 0.0003606670070439577
+          },
+          "resources": {
+            "decoded_bytes_processed": 0,
+            "scratch_peak_bytes": 20,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "gz",
+            "profile": "balanced",
+            "level": 6,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 3.7582998629659414e-05,
+          "read_back_mib_per_second": 0.0
+        }
+      ],
+      "median_seconds": 0.21058795897988603,
+      "peak_rss_bytes": 54116352,
+      "preservation_passed": true
+    },
+    {
+      "case": "empty.csv.gz",
+      "kind": "gzip",
+      "implementation": "undatum",
+      "profile": "max",
+      "input_size": 20,
+      "logical_size": 0,
+      "trials": [
+        {
+          "seconds": 0.20860370801528916,
+          "peak_rss_bytes": 54018048,
+          "preservation_passed": true,
+          "output_size": 20,
+          "timings": {
+            "encode_seconds": 0.0002781659713946283,
+            "verify_seconds": 0.00039900001138448715
+          },
+          "resources": {
+            "decoded_bytes_processed": 0,
+            "scratch_peak_bytes": 20,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "gz",
+            "profile": "max",
+            "level": 9,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 3.583304351195693e-05,
+          "read_back_mib_per_second": 0.0
+        },
+        {
+          "seconds": 0.20981370797380805,
+          "peak_rss_bytes": 54394880,
+          "preservation_passed": true,
+          "output_size": 20,
+          "timings": {
+            "encode_seconds": 0.0003037910209968686,
+            "verify_seconds": 0.00037999998312443495
+          },
+          "resources": {
+            "decoded_bytes_processed": 0,
+            "scratch_peak_bytes": 20,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "gz",
+            "profile": "max",
+            "level": 9,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 4.074996104463935e-05,
+          "read_back_mib_per_second": 0.0
+        },
+        {
+          "seconds": 0.20486845803679898,
+          "peak_rss_bytes": 54099968,
+          "preservation_passed": true,
+          "output_size": 20,
+          "timings": {
+            "encode_seconds": 0.00028183398535475135,
+            "verify_seconds": 0.00037641701055690646
+          },
+          "resources": {
+            "decoded_bytes_processed": 0,
+            "scratch_peak_bytes": 20,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "gz",
+            "profile": "max",
+            "level": 9,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 3.9792037568986416e-05,
+          "read_back_mib_per_second": 0.0
+        }
+      ],
+      "median_seconds": 0.20860370801528916,
+      "peak_rss_bytes": 54394880,
+      "preservation_passed": true
+    },
+    {
+      "case": "empty.csv.gz",
+      "kind": "gzip",
+      "implementation": "baseline",
+      "profile": "max",
+      "input_size": 20,
+      "logical_size": 0,
+      "trials": [
+        {
+          "seconds": 0.30959120800253004,
+          "peak_rss_bytes": 109985792,
+          "preservation_passed": true,
+          "output_size": 50,
+          "timings": {},
+          "resources": {},
+          "effective_settings": {},
+          "status": "legacy",
+          "reason": null,
+          "reason_code": null,
+          "decode_or_scan_seconds": 4.3208012357354164e-05,
+          "read_back_mib_per_second": 0.0
+        },
+        {
+          "seconds": 0.30460408300859854,
+          "peak_rss_bytes": 110133248,
+          "preservation_passed": true,
+          "output_size": 50,
+          "timings": {},
+          "resources": {},
+          "effective_settings": {},
+          "status": "legacy",
+          "reason": null,
+          "reason_code": null,
+          "decode_or_scan_seconds": 4.583399277180433e-05,
+          "read_back_mib_per_second": 0.0
+        },
+        {
+          "seconds": 0.31429670797660947,
+          "peak_rss_bytes": 109789184,
+          "preservation_passed": true,
+          "output_size": 50,
+          "timings": {},
+          "resources": {},
+          "effective_settings": {},
+          "status": "legacy",
+          "reason": null,
+          "reason_code": null,
+          "decode_or_scan_seconds": 4.4124957639724016e-05,
+          "read_back_mib_per_second": 0.0
+        }
+      ],
+      "median_seconds": 0.30959120800253004,
+      "peak_rss_bytes": 110133248,
+      "preservation_passed": true
+    },
+    {
+      "case": "empty.csv.gz",
+      "kind": "gzip",
+      "implementation": "filerepack",
+      "profile": "max",
+      "input_size": 20,
+      "logical_size": 0,
+      "trials": [
+        {
+          "seconds": 1.2623484170180745,
+          "peak_rss_bytes": 60686336,
+          "preservation_passed": true,
+          "output_size": 20,
+          "timings": {},
+          "resources": {
+            "decoded_bytes": 0,
+            "scratch_written_bytes": 20,
+            "peak_live_scratch_bytes": 76
+          },
+          "effective_settings": {},
+          "status": "replaced",
+          "reason": "",
+          "reason_code": "",
+          "decode_or_scan_seconds": 4.225003067404032e-05,
+          "read_back_mib_per_second": 0.0
+        },
+        {
+          "seconds": 1.3268044159631245,
+          "peak_rss_bytes": 60293120,
+          "preservation_passed": true,
+          "output_size": 20,
+          "timings": {},
+          "resources": {
+            "decoded_bytes": 0,
+            "scratch_written_bytes": 20,
+            "peak_live_scratch_bytes": 76
+          },
+          "effective_settings": {},
+          "status": "replaced",
+          "reason": "",
+          "reason_code": "",
+          "decode_or_scan_seconds": 4.054198507219553e-05,
+          "read_back_mib_per_second": 0.0
+        },
+        {
+          "seconds": 1.2431922920513898,
+          "peak_rss_bytes": 60735488,
+          "preservation_passed": true,
+          "output_size": 20,
+          "timings": {},
+          "resources": {
+            "decoded_bytes": 0,
+            "scratch_written_bytes": 20,
+            "peak_live_scratch_bytes": 76
+          },
+          "effective_settings": {},
+          "status": "replaced",
+          "reason": "",
+          "reason_code": "",
+          "decode_or_scan_seconds": 5.41660119779408e-05,
+          "read_back_mib_per_second": 0.0
+        }
+      ],
+      "median_seconds": 1.2623484170180745,
+      "peak_rss_bytes": 60735488,
+      "preservation_passed": true
+    },
+    {
+      "case": "typed.parquet",
+      "kind": "parquet",
+      "implementation": "undatum",
+      "profile": "fast",
+      "input_size": 54023,
+      "logical_size": 1048576,
+      "trials": [
+        {
+          "seconds": 0.33823866600869223,
+          "peak_rss_bytes": 100237312,
+          "preservation_passed": true,
+          "output_size": 26780,
+          "timings": {
+            "encode_seconds": 0.06634745904011652,
+            "verify_seconds": 0.001691457990091294
+          },
+          "resources": {
+            "decoded_bytes_processed": 1729536,
+            "scratch_peak_bytes": 26780,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "zstd",
+            "profile": "fast",
+            "level": 1,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 0.06708337500458583,
+          "read_back_mib_per_second": 14.906823038221315
+        },
+        {
+          "seconds": 0.2794981669867411,
+          "peak_rss_bytes": 100073472,
+          "preservation_passed": true,
+          "output_size": 26780,
+          "timings": {
+            "encode_seconds": 0.018782917002681643,
+            "verify_seconds": 0.0011352080036886036
+          },
+          "resources": {
+            "decoded_bytes_processed": 1729536,
+            "scratch_peak_bytes": 26780,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "zstd",
+            "profile": "fast",
+            "level": 1,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 0.004981749982107431,
+          "read_back_mib_per_second": 200.732674982009
+        },
+        {
+          "seconds": 0.28031025000382215,
+          "peak_rss_bytes": 99827712,
+          "preservation_passed": true,
+          "output_size": 26780,
+          "timings": {
+            "encode_seconds": 0.018920124974101782,
+            "verify_seconds": 0.0008250829996541142
+          },
+          "resources": {
+            "decoded_bytes_processed": 1729536,
+            "scratch_peak_bytes": 26780,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "zstd",
+            "profile": "fast",
+            "level": 1,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 0.004914209013804793,
+          "read_back_mib_per_second": 203.4915481191055
+        }
+      ],
+      "median_seconds": 0.28031025000382215,
+      "peak_rss_bytes": 100237312,
+      "preservation_passed": true
+    },
+    {
+      "case": "typed.parquet",
+      "kind": "parquet",
+      "implementation": "undatum",
+      "profile": "balanced",
+      "input_size": 54023,
+      "logical_size": 1048576,
+      "trials": [
+        {
+          "seconds": 0.3352169589488767,
+          "peak_rss_bytes": 99991552,
+          "preservation_passed": true,
+          "output_size": 33235,
+          "timings": {
+            "encode_seconds": 0.01904191600624472,
+            "verify_seconds": 0.0008772080182097852
+          },
+          "resources": {
+            "decoded_bytes_processed": 1729536,
+            "scratch_peak_bytes": 33235,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "zstd",
+            "profile": "balanced",
+            "level": 3,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 0.005080832983367145,
+          "read_back_mib_per_second": 196.81812082263818
+        },
+        {
+          "seconds": 0.2872586250305176,
+          "peak_rss_bytes": 100237312,
+          "preservation_passed": true,
+          "output_size": 33235,
+          "timings": {
+            "encode_seconds": 0.019901249965187162,
+            "verify_seconds": 0.0009663749951869249
+          },
+          "resources": {
+            "decoded_bytes_processed": 1729536,
+            "scratch_peak_bytes": 33235,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "zstd",
+            "profile": "balanced",
+            "level": 3,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 0.005199166014790535,
+          "read_back_mib_per_second": 192.33853990336337
+        },
+        {
+          "seconds": 0.28406141698360443,
+          "peak_rss_bytes": 99663872,
+          "preservation_passed": true,
+          "output_size": 33235,
+          "timings": {
+            "encode_seconds": 0.01962025003740564,
+            "verify_seconds": 0.0012507080100476742
+          },
+          "resources": {
+            "decoded_bytes_processed": 1729536,
+            "scratch_peak_bytes": 33235,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "zstd",
+            "profile": "balanced",
+            "level": 3,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 0.004585666989441961,
+          "read_back_mib_per_second": 218.07078497029983
+        }
+      ],
+      "median_seconds": 0.2872586250305176,
+      "peak_rss_bytes": 100237312,
+      "preservation_passed": true
+    },
+    {
+      "case": "typed.parquet",
+      "kind": "parquet",
+      "implementation": "undatum",
+      "profile": "max",
+      "input_size": 54023,
+      "logical_size": 1048576,
+      "trials": [
+        {
+          "seconds": 0.29957316699437797,
+          "peak_rss_bytes": 101105664,
+          "preservation_passed": true,
+          "output_size": 25875,
+          "timings": {
+            "encode_seconds": 0.028241499967407435,
+            "verify_seconds": 0.0009043750469572842
+          },
+          "resources": {
+            "decoded_bytes_processed": 1729536,
+            "scratch_peak_bytes": 25875,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "zstd",
+            "profile": "max",
+            "level": 19,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 0.005035375012084842,
+          "read_back_mib_per_second": 198.5949403172577
+        },
+        {
+          "seconds": 0.291956165980082,
+          "peak_rss_bytes": 101351424,
+          "preservation_passed": true,
+          "output_size": 25875,
+          "timings": {
+            "encode_seconds": 0.028253374970518053,
+            "verify_seconds": 0.0012735840282402933
+          },
+          "resources": {
+            "decoded_bytes_processed": 1729536,
+            "scratch_peak_bytes": 25875,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "zstd",
+            "profile": "max",
+            "level": 19,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 0.004873458994552493,
+          "read_back_mib_per_second": 205.1930674122406
+        },
+        {
+          "seconds": 0.29436050000367686,
+          "peak_rss_bytes": 100892672,
+          "preservation_passed": true,
+          "output_size": 25875,
+          "timings": {
+            "encode_seconds": 0.028032500005792826,
+            "verify_seconds": 0.0008562500006519258
+          },
+          "resources": {
+            "decoded_bytes_processed": 1729536,
+            "scratch_peak_bytes": 25875,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "zstd",
+            "profile": "max",
+            "level": 19,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 0.004951625014655292,
+          "read_back_mib_per_second": 201.95390342368546
+        }
+      ],
+      "median_seconds": 0.29436050000367686,
+      "peak_rss_bytes": 101351424,
+      "preservation_passed": true
+    },
+    {
+      "case": "typed.parquet",
+      "kind": "parquet",
+      "implementation": "baseline",
+      "profile": "max",
+      "input_size": 54023,
+      "logical_size": 1048576,
+      "trials": [
+        {
+          "seconds": 0.31703579099848866,
+          "peak_rss_bytes": 121028608,
+          "preservation_passed": true,
+          "output_size": 25875,
+          "timings": {},
+          "resources": {},
+          "effective_settings": {},
+          "status": "legacy",
+          "reason": null,
+          "reason_code": null,
+          "decode_or_scan_seconds": 0.0048280839691869915,
+          "read_back_mib_per_second": 207.12150127918997
+        },
+        {
+          "seconds": 0.3164512920193374,
+          "peak_rss_bytes": 121143296,
+          "preservation_passed": true,
+          "output_size": 25875,
+          "timings": {},
+          "resources": {},
+          "effective_settings": {},
+          "status": "legacy",
+          "reason": null,
+          "reason_code": null,
+          "decode_or_scan_seconds": 0.0048511250060983,
+          "read_back_mib_per_second": 206.13775129334127
+        },
+        {
+          "seconds": 0.32495079102227464,
+          "peak_rss_bytes": 121470976,
+          "preservation_passed": true,
+          "output_size": 25875,
+          "timings": {},
+          "resources": {},
+          "effective_settings": {},
+          "status": "legacy",
+          "reason": null,
+          "reason_code": null,
+          "decode_or_scan_seconds": 0.004663208965212107,
+          "read_back_mib_per_second": 214.44460401840792
+        }
+      ],
+      "median_seconds": 0.31703579099848866,
+      "peak_rss_bytes": 121470976,
+      "preservation_passed": true
+    },
+    {
+      "case": "typed.parquet",
+      "kind": "parquet",
+      "implementation": "filerepack",
+      "profile": "max",
+      "input_size": 54023,
+      "logical_size": 1048576,
+      "trials": [
+        {
+          "seconds": 0.14291295898146927,
+          "peak_rss_bytes": 68714496,
+          "preservation_passed": true,
+          "output_size": 25875,
+          "timings": {},
+          "resources": {
+            "decoded_bytes": 0,
+            "scratch_written_bytes": 0,
+            "peak_live_scratch_bytes": 0
+          },
+          "effective_settings": {},
+          "status": "replaced",
+          "reason": "",
+          "reason_code": "",
+          "decode_or_scan_seconds": 0.004714958020485938,
+          "read_back_mib_per_second": 212.09096574245575
+        },
+        {
+          "seconds": 0.14167295797960833,
+          "peak_rss_bytes": 67895296,
+          "preservation_passed": true,
+          "output_size": 25875,
+          "timings": {},
+          "resources": {
+            "decoded_bytes": 0,
+            "scratch_written_bytes": 0,
+            "peak_live_scratch_bytes": 0
+          },
+          "effective_settings": {},
+          "status": "replaced",
+          "reason": "",
+          "reason_code": "",
+          "decode_or_scan_seconds": 0.004885500005912036,
+          "read_back_mib_per_second": 204.68733984031954
+        },
+        {
+          "seconds": 0.14002450002590194,
+          "peak_rss_bytes": 69533696,
+          "preservation_passed": true,
+          "output_size": 25875,
+          "timings": {},
+          "resources": {
+            "decoded_bytes": 0,
+            "scratch_written_bytes": 0,
+            "peak_live_scratch_bytes": 0
+          },
+          "effective_settings": {},
+          "status": "replaced",
+          "reason": "",
+          "reason_code": "",
+          "decode_or_scan_seconds": 0.005021499993745238,
+          "read_back_mib_per_second": 199.1436824147359
+        }
+      ],
+      "median_seconds": 0.14167295797960833,
+      "peak_rss_bytes": 69533696,
+      "preservation_passed": true
+    },
+    {
+      "case": "typed.orc",
+      "kind": "orc",
+      "implementation": "undatum",
+      "profile": "fast",
+      "input_size": 11055,
+      "logical_size": 1048576,
+      "trials": [
+        {
+          "seconds": 0.22711741598322988,
+          "peak_rss_bytes": 41205760,
+          "preservation_passed": true,
+          "output_size": 8537,
+          "timings": {
+            "encode_seconds": 0.05214266700204462,
+            "verify_seconds": 0.04417649999959394
+          },
+          "resources": {
+            "decoded_bytes_processed": 1488724,
+            "scratch_peak_bytes": 8537,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "zstd",
+            "profile": "fast",
+            "level": null,
+            "threads": 1,
+            "applied": true,
+            "strategy": "speed"
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 0.0016640840331092477,
+          "read_back_mib_per_second": 600.9311910358012
+        },
+        {
+          "seconds": 0.2256066250265576,
+          "peak_rss_bytes": 40697856,
+          "preservation_passed": true,
+          "output_size": 8537,
+          "timings": {
+            "encode_seconds": 0.0472974160220474,
+            "verify_seconds": 0.04370816703885794
+          },
+          "resources": {
+            "decoded_bytes_processed": 1488724,
+            "scratch_peak_bytes": 8537,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "zstd",
+            "profile": "fast",
+            "level": null,
+            "threads": 1,
+            "applied": true,
+            "strategy": "speed"
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 0.0015259580104611814,
+          "read_back_mib_per_second": 655.3260267612317
+        },
+        {
+          "seconds": 0.22641833301167935,
+          "peak_rss_bytes": 40697856,
+          "preservation_passed": true,
+          "output_size": 8537,
+          "timings": {
+            "encode_seconds": 0.048250374966301024,
+            "verify_seconds": 0.04526275000534952
+          },
+          "resources": {
+            "decoded_bytes_processed": 1488724,
+            "scratch_peak_bytes": 8537,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "zstd",
+            "profile": "fast",
+            "level": null,
+            "threads": 1,
+            "applied": true,
+            "strategy": "speed"
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 0.001576666021719575,
+          "read_back_mib_per_second": 634.2497309032892
+        }
+      ],
+      "median_seconds": 0.22641833301167935,
+      "peak_rss_bytes": 41205760,
+      "preservation_passed": true
+    },
+    {
+      "case": "typed.orc",
+      "kind": "orc",
+      "implementation": "undatum",
+      "profile": "balanced",
+      "input_size": 11055,
+      "logical_size": 1048576,
+      "trials": [
+        {
+          "seconds": 0.22389887500321493,
+          "peak_rss_bytes": 41156608,
+          "preservation_passed": true,
+          "output_size": 8561,
+          "timings": {
+            "encode_seconds": 0.047906374966260046,
+            "verify_seconds": 0.0435316669754684
+          },
+          "resources": {
+            "decoded_bytes_processed": 1488724,
+            "scratch_peak_bytes": 8561,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "zstd",
+            "profile": "balanced",
+            "level": null,
+            "threads": 1,
+            "applied": true,
+            "strategy": "compression"
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 0.001538667012937367,
+          "read_back_mib_per_second": 649.9131986270157
+        },
+        {
+          "seconds": 0.2272806249675341,
+          "peak_rss_bytes": 41893888,
+          "preservation_passed": true,
+          "output_size": 8561,
+          "timings": {
+            "encode_seconds": 0.04764554201392457,
+            "verify_seconds": 0.04324595897924155
+          },
+          "resources": {
+            "decoded_bytes_processed": 1488724,
+            "scratch_peak_bytes": 8561,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "zstd",
+            "profile": "balanced",
+            "level": null,
+            "threads": 1,
+            "applied": true,
+            "strategy": "compression"
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 0.001526332984212786,
+          "read_back_mib_per_second": 655.165033019158
+        },
+        {
+          "seconds": 0.22208366700215265,
+          "peak_rss_bytes": 41189376,
+          "preservation_passed": true,
+          "output_size": 8561,
+          "timings": {
+            "encode_seconds": 0.04717904102290049,
+            "verify_seconds": 0.044135124946478754
+          },
+          "resources": {
+            "decoded_bytes_processed": 1488724,
+            "scratch_peak_bytes": 8561,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "zstd",
+            "profile": "balanced",
+            "level": null,
+            "threads": 1,
+            "applied": true,
+            "strategy": "compression"
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 0.001608207996468991,
+          "read_back_mib_per_second": 621.8101154798491
+        }
+      ],
+      "median_seconds": 0.22389887500321493,
+      "peak_rss_bytes": 41893888,
+      "preservation_passed": true
+    },
+    {
+      "case": "typed.orc",
+      "kind": "orc",
+      "implementation": "undatum",
+      "profile": "max",
+      "input_size": 11055,
+      "logical_size": 1048576,
+      "trials": [
+        {
+          "seconds": 0.23082841699942946,
+          "peak_rss_bytes": 41648128,
+          "preservation_passed": true,
+          "output_size": 8561,
+          "timings": {
+            "encode_seconds": 0.047219375032000244,
+            "verify_seconds": 0.045964290970005095
+          },
+          "resources": {
+            "decoded_bytes_processed": 1488724,
+            "scratch_peak_bytes": 8561,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "zstd",
+            "profile": "max",
+            "level": null,
+            "threads": 1,
+            "applied": true,
+            "strategy": "compression"
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 0.0016149160219356418,
+          "read_back_mib_per_second": 619.2272455142268
+        },
+        {
+          "seconds": 0.22251125000184402,
+          "peak_rss_bytes": 41828352,
+          "preservation_passed": true,
+          "output_size": 8561,
+          "timings": {
+            "encode_seconds": 0.04634854203322902,
+            "verify_seconds": 0.04299145797267556
+          },
+          "resources": {
+            "decoded_bytes_processed": 1488724,
+            "scratch_peak_bytes": 8561,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "zstd",
+            "profile": "max",
+            "level": null,
+            "threads": 1,
+            "applied": true,
+            "strategy": "compression"
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 0.0016020420007407665,
+          "read_back_mib_per_second": 624.2033601725866
+        },
+        {
+          "seconds": 0.23424262495245785,
+          "peak_rss_bytes": 41680896,
+          "preservation_passed": true,
+          "output_size": 8561,
+          "timings": {
+            "encode_seconds": 0.04823195800418034,
+            "verify_seconds": 0.0438982910127379
+          },
+          "resources": {
+            "decoded_bytes_processed": 1488724,
+            "scratch_peak_bytes": 8561,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "zstd",
+            "profile": "max",
+            "level": null,
+            "threads": 1,
+            "applied": true,
+            "strategy": "compression"
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 0.0015883749583736062,
+          "read_back_mib_per_second": 629.5742669123515
+        }
+      ],
+      "median_seconds": 0.23082841699942946,
+      "peak_rss_bytes": 41828352,
+      "preservation_passed": true
+    },
+    {
+      "case": "typed.orc",
+      "kind": "orc",
+      "implementation": "baseline",
+      "profile": "max",
+      "input_size": 11055,
+      "logical_size": 1048576,
+      "trials": [
+        {
+          "seconds": 0.2993720840313472,
+          "peak_rss_bytes": 111673344,
+          "preservation_passed": false,
+          "output_size": 123,
+          "timings": {},
+          "resources": {},
+          "effective_settings": {},
+          "status": "legacy",
+          "reason": null,
+          "reason_code": null
+        },
+        {
+          "seconds": 0.29355162498541176,
+          "peak_rss_bytes": 112951296,
+          "preservation_passed": false,
+          "output_size": 123,
+          "timings": {},
+          "resources": {},
+          "effective_settings": {},
+          "status": "legacy",
+          "reason": null,
+          "reason_code": null
+        },
+        {
+          "seconds": 0.3008700829814188,
+          "peak_rss_bytes": 111640576,
+          "preservation_passed": false,
+          "output_size": 123,
+          "timings": {},
+          "resources": {},
+          "effective_settings": {},
+          "status": "legacy",
+          "reason": null,
+          "reason_code": null
+        }
+      ],
+      "median_seconds": 0.2993720840313472,
+      "peak_rss_bytes": 112951296,
+      "preservation_passed": false
+    },
+    {
+      "case": "typed.orc",
+      "kind": "orc",
+      "implementation": "filerepack",
+      "profile": "max",
+      "input_size": 11055,
+      "logical_size": 1048576,
+      "trials": [
+        {
+          "seconds": 0.21257625002181157,
+          "peak_rss_bytes": 91095040,
+          "preservation_passed": false,
+          "output_size": null,
+          "timings": {},
+          "resources": {
+            "decoded_bytes": 574464,
+            "scratch_written_bytes": 0,
+            "peak_live_scratch_bytes": 11055
+          },
+          "effective_settings": {},
+          "status": "failed",
+          "reason": "Argument 'table' has incorrect type (expected pyarrow.lib.Table, got pyarrow.lib.RecordBatch)",
+          "reason_code": "invalid_input"
+        },
+        {
+          "seconds": 0.19842850003624335,
+          "peak_rss_bytes": 91619328,
+          "preservation_passed": false,
+          "output_size": null,
+          "timings": {},
+          "resources": {
+            "decoded_bytes": 574464,
+            "scratch_written_bytes": 0,
+            "peak_live_scratch_bytes": 11055
+          },
+          "effective_settings": {},
+          "status": "failed",
+          "reason": "Argument 'table' has incorrect type (expected pyarrow.lib.Table, got pyarrow.lib.RecordBatch)",
+          "reason_code": "invalid_input"
+        },
+        {
+          "seconds": 0.19735487503930926,
+          "peak_rss_bytes": 91488256,
+          "preservation_passed": false,
+          "output_size": null,
+          "timings": {},
+          "resources": {
+            "decoded_bytes": 574464,
+            "scratch_written_bytes": 0,
+            "peak_live_scratch_bytes": 11055
+          },
+          "effective_settings": {},
+          "status": "failed",
+          "reason": "Argument 'table' has incorrect type (expected pyarrow.lib.Table, got pyarrow.lib.RecordBatch)",
+          "reason_code": "invalid_input"
+        }
+      ],
+      "median_seconds": 0.19842850003624335,
+      "peak_rss_bytes": 91619328,
+      "preservation_passed": false
+    },
+    {
+      "case": "typed.avro",
+      "kind": "avro",
+      "implementation": "undatum",
+      "profile": "fast",
+      "input_size": 508268,
+      "logical_size": 1048576,
+      "trials": [
+        {
+          "seconds": 0.3970780000090599,
+          "peak_rss_bytes": 55951360,
+          "preservation_passed": true,
+          "output_size": 50713,
+          "timings": {
+            "encode_seconds": 0.0010856669978238642,
+            "verify_seconds": 0.17113312502624467
+          },
+          "resources": {
+            "decoded_bytes_processed": 2031360,
+            "scratch_peak_bytes": 50713,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "zstandard",
+            "profile": "fast",
+            "level": 1,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 0.04845162498531863,
+          "read_back_mib_per_second": 20.639142656268202
+        },
+        {
+          "seconds": 0.40668595902388915,
+          "peak_rss_bytes": 55640064,
+          "preservation_passed": true,
+          "output_size": 50713,
+          "timings": {
+            "encode_seconds": 0.0010994159965775907,
+            "verify_seconds": 0.1872445410117507
+          },
+          "resources": {
+            "decoded_bytes_processed": 2031360,
+            "scratch_peak_bytes": 50713,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "zstandard",
+            "profile": "fast",
+            "level": 1,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 0.04826691700145602,
+          "read_back_mib_per_second": 20.718124589764745
+        },
+        {
+          "seconds": 0.401410833990667,
+          "peak_rss_bytes": 55738368,
+          "preservation_passed": true,
+          "output_size": 50713,
+          "timings": {
+            "encode_seconds": 0.0010714579839259386,
+            "verify_seconds": 0.17000591597752646
+          },
+          "resources": {
+            "decoded_bytes_processed": 2031360,
+            "scratch_peak_bytes": 50713,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "zstandard",
+            "profile": "fast",
+            "level": 1,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 0.04795062501216307,
+          "read_back_mib_per_second": 20.85478551627516
+        }
+      ],
+      "median_seconds": 0.401410833990667,
+      "peak_rss_bytes": 55951360,
+      "preservation_passed": true
+    },
+    {
+      "case": "typed.avro",
+      "kind": "avro",
+      "implementation": "undatum",
+      "profile": "balanced",
+      "input_size": 508268,
+      "logical_size": 1048576,
+      "trials": [
+        {
+          "seconds": 0.390091042034328,
+          "peak_rss_bytes": 56098816,
+          "preservation_passed": true,
+          "output_size": 63997,
+          "timings": {
+            "encode_seconds": 0.0012055419501848519,
+            "verify_seconds": 0.1691514999838546
+          },
+          "resources": {
+            "decoded_bytes_processed": 2031360,
+            "scratch_peak_bytes": 63997,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "zstandard",
+            "profile": "balanced",
+            "level": 3,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 0.04846658295718953,
+          "read_back_mib_per_second": 20.632772912488978
+        },
+        {
+          "seconds": 0.4001531670219265,
+          "peak_rss_bytes": 55721984,
+          "preservation_passed": true,
+          "output_size": 63997,
+          "timings": {
+            "encode_seconds": 0.0011765410308726132,
+            "verify_seconds": 0.17124266701284796
+          },
+          "resources": {
+            "decoded_bytes_processed": 2031360,
+            "scratch_peak_bytes": 63997,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "zstandard",
+            "profile": "balanced",
+            "level": 3,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 0.04893237497890368,
+          "read_back_mib_per_second": 20.43636754666276
+        },
+        {
+          "seconds": 0.38214304100256413,
+          "peak_rss_bytes": 56164352,
+          "preservation_passed": true,
+          "output_size": 63997,
+          "timings": {
+            "encode_seconds": 0.0011918749660253525,
+            "verify_seconds": 0.16476033302024007
+          },
+          "resources": {
+            "decoded_bytes_processed": 2031360,
+            "scratch_peak_bytes": 63997,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "zstandard",
+            "profile": "balanced",
+            "level": 3,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 0.0486878749798052,
+          "read_back_mib_per_second": 20.538994573387747
+        }
+      ],
+      "median_seconds": 0.390091042034328,
+      "peak_rss_bytes": 56164352,
+      "preservation_passed": true
+    },
+    {
+      "case": "typed.avro",
+      "kind": "avro",
+      "implementation": "undatum",
+      "profile": "max",
+      "input_size": 508268,
+      "logical_size": 1048576,
+      "trials": [
+        {
+          "seconds": 0.45294175000162795,
+          "peak_rss_bytes": 57704448,
+          "preservation_passed": true,
+          "output_size": 32226,
+          "timings": {
+            "encode_seconds": 0.07720537501154467,
+            "verify_seconds": 0.16584679199149832
+          },
+          "resources": {
+            "decoded_bytes_processed": 2031360,
+            "scratch_peak_bytes": 32226,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "zstandard",
+            "profile": "max",
+            "level": 19,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 0.04840758297359571,
+          "read_back_mib_per_second": 20.657920486248152
+        },
+        {
+          "seconds": 0.46338591701351106,
+          "peak_rss_bytes": 57769984,
+          "preservation_passed": true,
+          "output_size": 32226,
+          "timings": {
+            "encode_seconds": 0.07605783303733915,
+            "verify_seconds": 0.1658800839795731
+          },
+          "resources": {
+            "decoded_bytes_processed": 2031360,
+            "scratch_peak_bytes": 32226,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "zstandard",
+            "profile": "max",
+            "level": 19,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 0.04901620896998793,
+          "read_back_mib_per_second": 20.401414573132097
+        },
+        {
+          "seconds": 0.4710454170126468,
+          "peak_rss_bytes": 57720832,
+          "preservation_passed": true,
+          "output_size": 32226,
+          "timings": {
+            "encode_seconds": 0.07764891698025167,
+            "verify_seconds": 0.16817912500118837
+          },
+          "resources": {
+            "decoded_bytes_processed": 2031360,
+            "scratch_peak_bytes": 32226,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "zstandard",
+            "profile": "max",
+            "level": 19,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 0.04845362500054762,
+          "read_back_mib_per_second": 20.638290736527928
+        }
+      ],
+      "median_seconds": 0.46338591701351106,
+      "peak_rss_bytes": 57769984,
+      "preservation_passed": true
+    },
+    {
+      "case": "typed.avro",
+      "kind": "avro",
+      "implementation": "baseline",
+      "profile": "max",
+      "input_size": 508268,
+      "logical_size": 1048576,
+      "trials": [
+        {
+          "seconds": 0.5062762080342509,
+          "peak_rss_bytes": 112164864,
+          "preservation_passed": false,
+          "output_size": 17764,
+          "timings": {},
+          "resources": {},
+          "effective_settings": {},
+          "status": "legacy",
+          "reason": null,
+          "reason_code": null
+        },
+        {
+          "seconds": 0.5031497090240009,
+          "peak_rss_bytes": 112050176,
+          "preservation_passed": false,
+          "output_size": 17764,
+          "timings": {},
+          "resources": {},
+          "effective_settings": {},
+          "status": "legacy",
+          "reason": null,
+          "reason_code": null
+        },
+        {
+          "seconds": 0.5135379579733126,
+          "peak_rss_bytes": 112148480,
+          "preservation_passed": false,
+          "output_size": 17764,
+          "timings": {},
+          "resources": {},
+          "effective_settings": {},
+          "status": "legacy",
+          "reason": null,
+          "reason_code": null
+        }
+      ],
+      "median_seconds": 0.5062762080342509,
+      "peak_rss_bytes": 112164864,
+      "preservation_passed": false
+    },
+    {
+      "case": "typed.avro",
+      "kind": "avro",
+      "implementation": "filerepack",
+      "profile": "max",
+      "input_size": 508268,
+      "logical_size": 1048576,
+      "trials": [
+        {
+          "seconds": 0.4573870840249583,
+          "peak_rss_bytes": 67452928,
+          "preservation_passed": true,
+          "output_size": 32226,
+          "timings": {},
+          "resources": {
+            "decoded_bytes": 2031360,
+            "scratch_written_bytes": 32226,
+            "peak_live_scratch_bytes": 540494
+          },
+          "effective_settings": {},
+          "status": "replaced",
+          "reason": "",
+          "reason_code": "",
+          "decode_or_scan_seconds": 0.04844179202336818,
+          "read_back_mib_per_second": 20.643332094683924
+        },
+        {
+          "seconds": 0.44943237502593547,
+          "peak_rss_bytes": 66928640,
+          "preservation_passed": true,
+          "output_size": 32226,
+          "timings": {},
+          "resources": {
+            "decoded_bytes": 2031360,
+            "scratch_written_bytes": 32226,
+            "peak_live_scratch_bytes": 540494
+          },
+          "effective_settings": {},
+          "status": "replaced",
+          "reason": "",
+          "reason_code": "",
+          "decode_or_scan_seconds": 0.047721208014991134,
+          "read_back_mib_per_second": 20.9550437131822
+        },
+        {
+          "seconds": 0.4497699999483302,
+          "peak_rss_bytes": 65683456,
+          "preservation_passed": true,
+          "output_size": 32226,
+          "timings": {},
+          "resources": {
+            "decoded_bytes": 2031360,
+            "scratch_written_bytes": 32226,
+            "peak_live_scratch_bytes": 540494
+          },
+          "effective_settings": {},
+          "status": "replaced",
+          "reason": "",
+          "reason_code": "",
+          "decode_or_scan_seconds": 0.04846687498502433,
+          "read_back_mib_per_second": 20.632648593683577
+        }
+      ],
+      "median_seconds": 0.4497699999483302,
+      "peak_rss_bytes": 67452928,
+      "preservation_passed": true
+    }
+  ]
+}

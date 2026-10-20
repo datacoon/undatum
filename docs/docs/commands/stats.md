@@ -4,19 +4,19 @@ description: "undatum stats / profile command reference"
 ---
 # `stats / profile`
 
-Generates comprehensive statistics and profiling metrics about your dataset. With DuckDB engine, statistics generation is 10-100x faster for supported formats (CSV, JSONL, JSON, Parquet).
+Generates statistics and profiling metrics about your dataset. DuckDB is selected automatically for supported formats (CSV, JSONL, JSON, Parquet) and is typically much faster.
+
+`profile` is a deprecated alias of `stats` (it prints a warning and will be removed in 2.0).
 
 ```bash
 # Basic statistics
 undatum stats data.jsonl
 
-# Enhanced profiling (alias)
-undatum profile data.csv
 
-# With date detection
-undatum stats data.csv --checkdates
+# Date detection is on by default; disable with --no-checkdates
+undatum stats data.csv --no-checkdates
 
-# Using DuckDB engine
+# Force DuckDB
 undatum stats data.parquet --engine duckdb
 
 # Machine-readable JSON (also used when --output ends in .json)
@@ -35,81 +35,85 @@ undatum stats nested.jsonl --flatten-nested --no-keep-nested-parents
 undatum stats workbook.xlsx --table Sheet2
 ```
 
-**Statistics include:**
+**What is filled depends on the engine.** DuckDB populates missing rates, type categories, and distribution stats. `--engine python` still reports field names, uniqueness, and lengths; `mean` / `median` / `stddev` / `type_category` / `missing_rate` are often empty.
+
+**DuckDB statistics include:**
 - Field types and array flags
-- **Missing value rates** (count and percentage)
-- **Cardinality analysis** (distinct counts and percentages)
-- **Type inference** (categorical vs numerical classification)
-- **Distribution statistics** for numerical fields (mean, median, percentiles, min/max, stddev)
+- Missing value rates (count and percentage)
+- Cardinality (distinct counts and percentages)
+- Type inference: `categorical`, `numerical`, or `text`
+- Distribution for numerical fields: **mean, median, min, max, stddev** (not percentiles)
 - Unique value counts and percentages
 - Min/max/average lengths
-- Date field detection
+- Date field detection (`--checkdates` / `--no-checkdates`; default on)
 
-**Performance:** DuckDB engine automatically selected for supported formats, providing columnar processing and SQL-based aggregations for faster statistics.
+**Other options:** `--dictshare`, `--threads`, `--progress` / `--no-progress`, `--zipfile`, `--engine auto|duckdb|iterable`, `--format-out json|html|markdown`. Also accepts `--table`, `--flatten-nested`, `--on-error`, `--error-log`, `--quotechar`, and `--trust` ([shared options](/commands/shared-options)).
 
-**Profile Command:** The `profile` command is an alias for `stats` with a focus on data profiling and quality metrics.
+#### Profiling metrics (DuckDB)
 
-#### Profiling Metrics Explained
+**Missing value analysis:** count and percentage of missing/null values per field. Example: `5 (2.5%)` means 5 missing values out of 200 records.
 
-The enhanced statistics output provides comprehensive data profiling:
+**Cardinality:** distinct count and percentage of distinct values. High cardinality (IDs, timestamps) vs low cardinality (status, category).
 
-**Missing Value Analysis:**
-- Shows count and percentage of missing/null values per field
-- Helps identify data quality issues and incomplete records
-- Example: `5 (2.5%)` means 5 missing values out of 200 records (2.5%)
+**Type inference:**
+- **categorical** — low cardinality, typically string-like
+- **numerical** — numeric types
+- **text** — everything else (there is no `Mixed` category)
 
-**Cardinality Analysis:**
-- **Distinct count**: Number of unique values in a field
-- **Cardinality percentage**: Percentage of distinct values (distinct/total)
-- **High cardinality**: Fields with many unique values (e.g., IDs, timestamps)
-- **Low cardinality**: Fields with few unique values (e.g., status codes, categories)
-- Example: `150 (75%)` means 150 distinct values out of 200 records
+**Distribution (numerical fields):** mean (μ), median (m), min, max, standard deviation. Example: `μ=42.5, m=40.0`.
 
-**Type Inference:**
-- **Categorical**: Fields with low cardinality, typically string-like values (e.g., status, category, country)
-- **Numerical**: Fields with numeric types and high cardinality (e.g., age, price, score)
-- **Mixed**: Fields that don't clearly fit categorical or numerical patterns
-- Helps understand data structure and choose appropriate analysis methods
+#### Use cases
 
-**Distribution Statistics (Numerical Fields):**
-- **Mean (μ)**: Average value
-- **Median (m)**: Middle value (50th percentile)
-- **Percentiles**: 25th, 75th, 90th, 95th, 99th percentiles for outlier detection
-- **Min/Max**: Range of values
-- **Standard deviation**: Measure of data spread
-- Example output: `μ=42.5, m=40.0` shows mean of 42.5 and median of 40.0
-
-#### Use Cases
-
-**Data Quality Assessment:**
 ```bash
 # Profile dataset to identify quality issues
-undatum profile customer_data.csv
+undatum stats data.csv
 
-# Look for:
-# - High missing value rates (>10% may indicate data collection issues)
-# - Unexpected cardinality (e.g., status field with 1000+ unique values)
-# - Outliers in numerical fields (check min/max vs percentiles)
+# Look for high missing rates, unexpected cardinality, and min/max outliers
+
+# Understand structure before processing
+undatum stats data.jsonl --format-out json --output profile.json
 ```
 
-**Schema Discovery:**
-```bash
-# Understand dataset structure before processing
-undatum profile new_dataset.jsonl
+<!-- BEGIN GENERATED: reference -->
+<!-- Generated by scripts/generate_cli_reference.py from the CLI; do not edit by hand. -->
 
-# Use type inference to:
-# - Identify categorical fields for grouping/aggregation
-# - Identify numerical fields for statistical analysis
-# - Plan appropriate data transformations
+## Reference
+
+**Reads:** any readable format · **Writes:** report (see `--format-out`) · **Memory:** streaming aggregates; distinct values grow with cardinality · **Engines:** auto, duckdb, python
+
+```text
+undatum stats [OPTIONS] INPUT_FILE
 ```
 
-**Data Exploration Workflows:**
-```bash
-# Quick profiling as part of ETL pipeline
-undatum profile raw_data.csv > profile_report.txt
+| Argument | Description |
+|----------|-------------|
+| `INPUT_FILE` | Path to input file. (required) |
 
-# Use profiling metrics to:
-# - Decide on data cleaning strategies (fill missing values, handle outliers)
-# - Choose appropriate aggregation methods
-# - Validate data after transformations
-```
+| Option | Description | Default |
+|--------|-------------|---------|
+| `-o`, `--output` TEXT | Optional output file path. If not specified, prints to stdout. |  |
+| `--dictshare` INTEGER | Dictionary share threshold (0-100) for type detection. |  |
+| `-F`, `--format-in` TEXT | Override input file format detection (e.g., 'csv', 'jsonl'). |  |
+| `-O`, `--format-out` TEXT | Output format: 'json', 'html', or 'markdown' (also inferred from --output extension). |  |
+| `-d`, `--delimiter` TEXT | CSV delimiter character (auto-detected when omitted). |  |
+| `--quotechar` TEXT | CSV quote character (iterabledata default '"' when omitted). |  |
+| `--verbose` / `--no-verbose` | Enable verbose logging output. | `--no-verbose` |
+| `--zipfile` / `--no-zipfile` | Treat input file as a ZIP archive. | `--no-zipfile` |
+| `--checkdates` / `--no-checkdates` | Enable automatic date field detection. | `--checkdates` |
+| `--encoding` TEXT | File encoding (e.g., 'utf8', 'latin1'). |  |
+| `--progress` / `--no-progress` | Show progress bar (default: True). | `--progress` |
+| `--no-progress` / `--no-no-progress` | Disable progress bar (for non-interactive use). | `--no-no-progress` |
+| `-e`, `--engine` [auto\|duckdb\|python] | Processing engine: auto (default), duckdb, or python. |  |
+| `--threads` INTEGER | Worker processes for Python/iterable-engine chunk parallelism. Omit for sequential. For DuckDB, prefer --duckdb-threads / engine settings. |  |
+| `--table`, `--sheet` TEXT | Table or sheet name for multi-table sources (Excel, SQLite, lakehouse). |  |
+| `--start-page` INTEGER | Sheet index (0-based) for Excel files. | `0` |
+| `--flatten-nested` | Unfold nested dict / array-of-dict fields into dotted paths (e.g. city.lat). |  |
+| `--max-nested-depth` INTEGER | With --flatten-nested, maximum nest depth to unfold (engine default 5). |  |
+| `--keep-nested-parents` / `--no-keep-nested-parents` | With --flatten-nested, keep parent dict/array fields alongside dotted children. | `--keep-nested-parents` |
+| `--trust` | Acknowledge pickle deserialization risk when reading pickle sources. |  |
+| `--on-error` TEXT | Parse-error policy: raise (default), skip, or warn. |  |
+| `--error-log` TEXT | Append parse errors as JSONL (use with --on-error skip or warn). |  |
+| `--json` | Print the result as one JSON document (same as --format-out json). |  |
+
+See also [shared options](/commands/shared-options).
+<!-- END GENERATED: reference -->
