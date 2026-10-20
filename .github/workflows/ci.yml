@@ -14,16 +14,16 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
     - name: Set up Python
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v7
       with:
         python-version: "3.12"
     - name: Install linters
       # Keep in sync with the ruff pin in pyproject.toml (checked below).
       run: |
         python -m pip install --upgrade pip
-        pip install "ruff==0.14.9" packaging
+        pip install "ruff==0.17.1" packaging
     - name: Tool versions are in sync
       run: python scripts/check_tool_versions.py
     - name: Runtime dependencies have version bounds
@@ -43,8 +43,8 @@ jobs:
     # with --ignore-vuln <ID> plus a comment.
     continue-on-error: true
     steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-python@v5
+    - uses: actions/checkout@v7
+    - uses: actions/setup-python@v7
       with:
         python-version: "3.12"
     - name: pip-audit
@@ -56,7 +56,7 @@ jobs:
   docs:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
@@ -74,8 +74,8 @@ jobs:
     name: Documentation examples run
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-python@v5
+    - uses: actions/checkout@v7
+    - uses: actions/setup-python@v7
       with:
         python-version: "3.12"
     - uses: astral-sh/setup-uv@v6
@@ -89,9 +89,9 @@ jobs:
   type-check:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
     - name: Set up Python
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v7
       with:
         python-version: "3.10"
     - name: Install package and mypy
@@ -108,9 +108,9 @@ jobs:
       matrix:
         python-version: ["3.10", "3.11", "3.12", "3.13"]
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v7
       with:
         python-version: ${{ matrix.python-version }}
     - uses: astral-sh/setup-uv@v6
@@ -131,8 +131,8 @@ jobs:
     name: Memory budget of streaming commands
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-python@v5
+    - uses: actions/checkout@v7
+    - uses: actions/setup-python@v7
       with:
         python-version: "3.12"
     - uses: astral-sh/setup-uv@v6
@@ -147,10 +147,10 @@ jobs:
     name: Lowest direct dependencies
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
     - uses: astral-sh/setup-uv@v6
     - name: Set up Python
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v7
       with:
         python-version: "3.10"
     - name: Install lowest versions allowed by pyproject.toml
@@ -164,9 +164,9 @@ jobs:
     name: No deprecated APIs in undatum code
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
     - name: Set up Python
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v7
       with:
         python-version: "3.13"
     - name: Install dependencies
@@ -238,9 +238,9 @@ jobs:
       UNDATUM_TEST_CLICKHOUSE_URI: clickhouse://undatum:undatum@localhost:8123/undatum
       UNDATUM_TEST_MSSQL_URI: mssql://sa:Undatum_Pass1@localhost:1433/master?TrustServerCertificate=yes
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
     - name: Set up Python
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v7
       with:
         python-version: "3.12"
     - name: Install the Microsoft ODBC Driver 18 for SQL Server
@@ -268,9 +268,9 @@ jobs:
       matrix:
         python-version: ["3.10", "3.13"]
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v7
       with:
         python-version: ${{ matrix.python-version }}
     - name: Install the wheel without extras
@@ -298,9 +298,9 @@ jobs:
       matrix:
         python-version: ["3.10", "3.11", "3.13"]
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v7
       with:
         python-version: ${{ matrix.python-version }}
     - name: Build wheel

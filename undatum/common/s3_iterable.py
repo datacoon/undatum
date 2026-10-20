@@ -45,7 +45,7 @@ def _find_plugin_connector(path: str) -> Any:
 
 def _download_via_connector(connector: Any, path: str) -> str:
     """Download a connector-handled URI to a temp file and return its path."""
-    suffix = os.path.splitext(path.split("?")[0])[1] or ".tmp"
+    suffix = os.path.splitext(path.split("?", maxsplit=1)[0])[1] or ".tmp"
     temp_fd, temp_file = tempfile.mkstemp(suffix=suffix)
     try:
         logger.info(f"Fetching {path} via connector plugin '{connector.name}'")

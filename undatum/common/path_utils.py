@@ -157,7 +157,7 @@ def cloud_object_suffix(path: str) -> str:
     try:
         _, _, key = parse_cloud_uri(path)
     except ValueError:
-        key = path.split("?")[0]
+        key = path.split("?", maxsplit=1)[0]
     return os.path.splitext(key)[1] or ".tmp"
 
 

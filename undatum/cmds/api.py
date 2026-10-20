@@ -105,7 +105,7 @@ def _detect_format(path: str, override: str | None) -> str | None:
     if override:
         return override.lower()
     if is_cloud_uri(path):
-        ext = os.path.splitext(path.split("?")[0])[1].lstrip(".").lower()
+        ext = os.path.splitext(path.split("?", maxsplit=1)[0])[1].lstrip(".").lower()
         if ext == "ndjson":
             return "jsonl"
         if ext in {"csv", "json", "jsonl", "parquet"}:

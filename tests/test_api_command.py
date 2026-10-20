@@ -7,6 +7,7 @@ from undatum.cmds.api import (
     DataApi,
     _apply_sort_alias,
     _build_api_app,
+    _detect_format,
     _unique_resource_name,
     dump_api_config,
     load_api_config,
@@ -447,3 +448,15 @@ def test_api_rejects_http_resource_path(tmp_path):
     }
     with pytest.raises(ValueError, match="cloud URI"):
         _validate_resources_config(config)
+
+
+@pytest.mark.parametrize(
+    "path,expected",
+    [
+        ("s3://bucket/data.csv?token=first?second", "csv"),
+        ("gs://bucket/data.ndjson?token=first?second", "jsonl"),
+        ("az://container/data.unknown?token=first?second", None),
+    ],
+)
+def test_api_detect_cloud_format_ignores_query(path, expected):
+    assert _detect_format(path, None) == expected

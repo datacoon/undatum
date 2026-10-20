@@ -33,14 +33,14 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
       with:
         path: head
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
       with:
         ref: ${{ github.event.pull_request.base.sha }}
         path: base
-    - uses: actions/setup-python@v5
+    - uses: actions/setup-python@v7
       with:
         python-version: "3.12"
     - uses: astral-sh/setup-uv@v6
@@ -67,7 +67,7 @@ jobs:
         head/.venv/bin/python head/scripts/benchmarks.py compare benchmarks.json
         --base base --head head --budgets head/tests/benchmarks/budgets.toml
         | tee -a "$GITHUB_STEP_SUMMARY"
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v7
       if: always()
       with:
         name: benchmarks-pr-${{ github.event.pull_request.number }}
@@ -81,8 +81,8 @@ jobs:
     permissions:
       contents: write
     steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-python@v5
+    - uses: actions/checkout@v7
+    - uses: actions/setup-python@v7
       with:
         python-version: "3.12"
     - uses: astral-sh/setup-uv@v6
@@ -94,7 +94,7 @@ jobs:
       run: >-
         .venv/bin/python scripts/benchmarks.py run --tier 1m --data "$RUNNER_TEMP/bench-data"
         --python master=.venv/bin/python --out benchmarks.json
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v7
       with:
         name: benchmarks-nightly-${{ github.run_id }}
         path: benchmarks.json
