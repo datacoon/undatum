@@ -21,7 +21,13 @@ jobs:
         github-token: ${{ secrets.GITHUB_TOKEN }}
     - name: Enable auto-merge for patch updates
       if: steps.meta.outputs.update-type == 'version-update:semver-patch'
-      run: gh pr merge --auto --squash "$PR_URL"
+      run: |
+        auto_merge=$(gh api "repos/$GITHUB_REPOSITORY" --jq '.allow_auto_merge')
+        if [ "$auto_merge" != "true" ]; then
+          echo "Auto-merge is disabled for this repository; skipping."
+          exit 0
+        fi
+        gh pr merge --auto --squash "$PR_URL"
       env:
         PR_URL: ${{ github.event.pull_request.html_url }}
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
