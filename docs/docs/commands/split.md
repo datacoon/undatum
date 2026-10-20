@@ -20,6 +20,8 @@ undatum split events.jsonl --filter '`city` == "Berlin"' --dirname out/
 Parts are written in the input's format (CSV in, CSV out), or in `--format-out` /
 `-O`. Chunks are named `<name>_1.<ext>`, `<name>_2.<ext>`, ...; field splits name each file
 after its value (`north.csv`; empty and missing values are `__null__.csv`).
+Underscores inside values are escaped as `%5F` so composite keys and numbered parts
+cannot collide. A literal `__null__` value is distinct from a missing value.
 
 ## Hive partitions
 
@@ -40,6 +42,11 @@ Values are percent-encoded (`a/b` → `a%2Fb`), missing and empty values go to
 `__HIVE_DEFAULT_PARTITION__`, and the partition fields are left out of the files (readers
 restore them from the path). At most `--max-open-files` files (default 128) are open at once;
 with more distinct values, a partition that was closed continues in `data_1.<ext>`.
+Empty and missing keys share a partition. Literal null-marker text is escaped to keep
+it separate. Partition field names must not contain `/` or `\`; writes through symlinks
+outside the output directory are rejected.
+DuckDB versions before 1.5 read the standard Hive null marker as text; use DuckDB 1.5+
+when reconstructing null partition keys from the directory names.
 
 `--filter` uses the same comparison syntax as `select`. `--dirname` is the output directory;
 `--output` can set a filename prefix; `--gzipfile` gzips the parts. See

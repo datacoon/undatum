@@ -186,16 +186,28 @@ def call_generated(name: str, arguments: dict[str, Any]) -> dict[str, Any]:
         return tool_error("input_path is required", code="invalid_arguments")
     output_path = args.pop("output_path", None)
     confirm = bool(args.pop("confirm", False))
-    limit = int(args.pop("limit", 100) or 100)
     reader = {key: args.pop(key) for key in list(args) if key in READER_OPTIONS}
     config_class = _config_class(op)
     kwargs: dict[str, Any] = {}
     try:
+        # head/tail own a limit as well as limiting the inline response. Keep it
+        # for their config; other operations use it only as a response bound.
+        limit_value = args.get("limit")
+        limit = int(limit_value if limit_value is not None else 100)
+        if limit < 0:
+            raise ValueError("limit must be non-negative")
+        if "limit" in {f.name for f in dataclasses.fields(config_class)}:
+            if limit_value is not None:
+                args["limit"] = limit
+        else:
+            args.pop("limit", None)
         hints = typing.get_type_hints(config_class)
         for param, _schema, kind, _required in _config_fields(config_class):
-            if param not in args or args[param] is None:
+            if param not in args:
                 continue
             value = args.pop(param)
+            if value is None:
+                continue
             field_name = param.removesuffix("_paths").removesuffix("_path")
             if kind == "source":
                 value = RowSource(value, reader)

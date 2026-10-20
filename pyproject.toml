@@ -9,7 +9,7 @@ description = "A powerful command-line tool for data processing and analysis"
 readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"
-license-files = ["LICENSE"]
+license-files = ["LICENSE", "THIRD_PARTY_NOTICES"]
 authors = [
     {name = "Ivan Begtin", email = "ivan@begtin.tech"}
 ]
@@ -49,7 +49,7 @@ dependencies = [
     "pydantic>=2.5,<3",
     # Provides the ``bson`` module for BSON files as well as the MongoDB driver.
     "pymongo>=4.6.3,<5",
-    "pyorc>=0.9.0,<1",
+    "pyorc>=0.11.0,<1",
     "python-docx>=1.1.0,<2",
     "pyyaml>=6.0.1,<7",
     "pyzstd>=0.16,<1",
@@ -166,10 +166,14 @@ access = [
 ]
 compression = [
     "iterabledata[compression]",
+    "brotli-file>=0.1.0,<0.2",
+]
+repack = [
+    "psutil>=5.9,<8",
 ]
 # Every optional feature (the previous behaviour of a plain install plus all extras).
 all = [
-    "undatum[extract,api,plot,phone,tui,web,mcp,langchain,polars,dask,cloud,frictionless,elastic,postgres,mysql,mssql,clickhouse,lakehouse,gis,scientific,access,compression]",
+    "undatum[extract,api,plot,phone,tui,web,mcp,langchain,polars,dask,cloud,frictionless,elastic,postgres,mysql,mssql,clickhouse,lakehouse,gis,scientific,access,compression,repack]",
 ]
 # Tool versions are pinned here and mirrored in .pre-commit-config.yaml and CI;
 # scripts/check_tool_versions.py fails CI when they drift.

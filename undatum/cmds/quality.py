@@ -253,15 +253,30 @@ def profile(
             column = '"' + name.replace('"', '""') + '"'
             text = f"CAST({column} AS VARCHAR)"
             value = _value_sql(text) if kind == "VARCHAR" else column
-            target = (expected or {}).get(name) or normalize_type(dominant[name])
-            if kind != "VARCHAR" or target not in sql_types:
-                fits = f"count({value})"
+            actual = normalize_type(dominant[name])
+            target = (expected or {}).get(name) or actual
+            native = normalize_type(kind)
+            if kind != "VARCHAR":
+                if target == native or target == "number" and native == "integer":
+                    fits = f"count({value})"
+                elif target == "integer" and native == "number":
+                    # TRY_CAST rounds fractional numbers instead of validating them.
+                    fits = f"count_if(isfinite({value}) AND {value} = trunc({value}))"
+                else:
+                    fits = "0"
             elif target == "integer":
-                fits = f"count_if(regexp_matches({value}, '^[+-]?[0-9]{{1,18}}$'))"
+                fits = (
+                    f"count_if(regexp_matches({value}, '^[+-]?[0-9]+$')"
+                    f" AND TRY_CAST({value} AS HUGEINT) IS NOT NULL)"
+                )
             elif target == "boolean":
                 fits = f"count_if(lower({value}) IN ('true', 'false'))"
-            else:
+            elif target in sql_types:
                 fits = f"count(TRY_CAST({value} AS {sql_types[target]}))"
+            elif target == "string":
+                fits = f"count({value})"
+            else:
+                fits = "0"
             present, conforming, distinct = conn.sql(
                 f"SELECT count({value}), {fits}, count(DISTINCT {value}) FROM data"
             ).fetchone()  # type: ignore[misc]
@@ -273,7 +288,7 @@ def profile(
             fields.append(
                 FieldQuality(
                     name=name,
-                    type=target if present else "null",
+                    type=actual if present else "null",
                     values=int(present),
                     nulls=nulls,
                     null_rate=round(nulls / rows, 6) if rows else 0.0,

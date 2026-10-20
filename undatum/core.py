@@ -240,39 +240,51 @@ def _prepare_stdio(command, args):
             value_options.update(param.opts)
             value_options.update(param.secondary_opts)
 
+    # Use the command's parser without invoking callbacks: it handles attached
+    # short values, repeated options and -- exactly as the actual invocation.
+    parser_ctx = command.context_class(command)
+    parsed, _, _ = command.make_parser(parser_ctx).parse_args(list(args))
+
     def option_value(names):
-        for i, token in enumerate(args):
-            name, sep, value = token.partition("=")
-            if name in names:
-                if sep:
-                    return value
-                if i + 1 < len(args):
-                    return args[i + 1]
+        for param in getattr(command, "params", []):
+            if param.param_type_name == "option" and names.intersection(param.opts):
+                return parsed.get(param.name)
         return None
 
     format_in = option_value({"--format-in", "-F"})
     format_out = option_value({"--format-out", "-O"})
     result = []
     positionals = []
+    stdin_spooled = False
     expecting_value = False
+    options_ended = False
     for token in args:
         if expecting_value:
             expecting_value = False
             result.append(token)
             continue
-        if token.startswith("-") and token != STDIN_PATH:
+        if token == "--" and not options_ended:
+            options_ended = True
+            result.append(token)
+            continue
+        if not options_ended and token.startswith("-") and token != STDIN_PATH:
             name = token.partition("=")[0]
             expecting_value = name in value_options and "=" not in token
             result.append(token)
             continue
-        if token == STDIN_PATH and not any(p == STDIN_PATH for p in positionals):
-            positionals.append(token)
+        if token == STDIN_PATH and not stdin_spooled:
+            if command.name == "repack":
+                from .common.errors import ValidationError
+
+                raise ValidationError(
+                    "Repack requires a local regular file; stdin is unsupported.", field="input"
+                )
             token = spool_stdin(format_in)
-        else:
-            positionals.append(token)
+            stdin_spooled = True
+        positionals.append(token)
         result.append(token)
     detected = next(
-        (fmt for fmt in (text_format_of(t) for t in result if not t.startswith("-")) if fmt),
+        (fmt for fmt in (text_format_of(t) for t in positionals) if fmt),
         None,
     )
     if format_in and text_format_of(f"x.{format_in.lower()}"):

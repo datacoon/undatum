@@ -20,6 +20,23 @@ from undatum.common.path_utils import (
 )
 
 
+@pytest.mark.parametrize(
+    "path",
+    [
+        r"C:\data\file.csv",
+        "C:/data/file.csv",
+        "c:relative.csv",
+        r"\\server\share\file.csv",
+        r"\\?\C:\data\file.csv",
+        r"\\?\UNC\server\share\file.csv",
+    ],
+)
+def test_windows_paths_are_local(path):
+    assert is_uri(path) is False
+    assert is_cloud_uri(path) is False
+    assert is_http_uri(path) is False
+
+
 class TestIsUri:
     """Test is_uri function."""
 

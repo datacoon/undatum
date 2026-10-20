@@ -104,6 +104,42 @@ Each layout is also published as a JSON Schema file (linked below).
 
 <!-- BEGIN GENERATED: result-schemas -->
 
+### `undatum.repack/1`
+
+Verified local-file recompression outcome. Printed by `undatum repack --json`. [JSON Schema](pathname:///schemas/undatum.repack.v1.json)
+
+| Key | Type | Always | Description |
+|-----|------|--------|-------------|
+| `schema` | string | yes | `undatum.repack/1` |
+| `input` | string | yes | Source path |
+| `output` | string | yes | Requested destination |
+| `mode` | string | yes | container or builtin |
+| `input_size` | integer | yes | Original physical source bytes |
+| `candidate_size` | integer | yes | Measured encoded candidate bytes |
+| `output_size` | integer or null | yes | Actual destination bytes, null when absent |
+| `status` | string | yes | replaced, unchanged, skipped or dry_run |
+| `reason_code` | string | yes | accepted, no_benefit or below_min_savings |
+| `published` | boolean | yes | Whether this invocation published a destination |
+| `changed` | boolean | yes | Whether a changed candidate was published |
+| `would_publish` | boolean | yes | Whether policy accepts publication, including original-copy fallback |
+| `savings_bytes` | integer | yes | Realized physical savings; zero without publication |
+| `savings_percent` | number or null | yes | Realized savings percentage, null for zero-size input |
+| `candidate_savings_bytes` | integer | yes | Original size minus measured candidate size |
+| `candidate_savings_percent` | number or null | yes | Measured candidate savings percentage |
+| `elapsed_seconds` | number | yes | Total operation time including verification and guards |
+| `effective_settings` | object | yes | Candidate codec/profile/level/threads and whether applied |
+| `verification` | object | yes | Independent preservation method and result |
+| `resources` | object | yes | Decoded work, scratch peak and native worker monitoring |
+| `timings` | object | yes | Encoding and verification times in seconds |
+| `rows` | integer or null |  | Preserved native row count |
+| `decoded_bytes` | integer |  | Source payload/logical native bytes processed once |
+| `bytes_read` | integer |  | Legacy alias of decoded_bytes |
+| `bytes_written` | integer or null |  | Legacy alias of actual output_size |
+| `codec` | string |  | Requested outer codec for container mode |
+| `compression` | string |  | Requested native codec for builtin mode |
+| `level` | integer or null |  | Candidate compression level |
+| `profile` | string |  | Candidate performance profile |
+
 ### `undatum.count/1`
 
 Number of records in a file. Printed by `undatum count --json`. [JSON Schema](pathname:///schemas/undatum.count.v1.json)

@@ -262,6 +262,22 @@ def test_api_key_auth(sample_csv):
     assert client.get("/docs").status_code == 200
 
 
+@pytest.mark.parametrize("name", ["docs-private", "docs_data", "docs2"])
+def test_api_key_protects_resources_with_docs_prefix(sample_csv, name):
+    _skip_without_api()
+    from fastapi.testclient import TestClient
+
+    config = _sample_config(sample_csv)
+    config["resources"][0]["name"] = name
+    client = TestClient(_build_api_app(config, api_key="secret"))
+    for path in (f"/{name}", f"/{name}/1", f"/{name}?amount__gt=100"):
+        assert client.get(path).status_code == 401
+        assert client.get(path, headers={"X-API-Key": "wrong"}).status_code == 401
+        assert client.get(path, headers={"X-API-Key": "secret"}).status_code == 200
+    for path in ("/docs", "/docs/oauth2-redirect", "/redoc", "/openapi.json"):
+        assert client.get(path).status_code == 200
+
+
 def test_api_key_rejected_in_query_string(sample_csv):
     _skip_without_api()
     from fastapi.testclient import TestClient

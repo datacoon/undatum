@@ -13,7 +13,7 @@ import itertools
 import logging
 import os
 import tempfile
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from typing import Any
 
 from .errors import FormatError
@@ -167,6 +167,45 @@ def _temp_sibling(path: str) -> str:
     return target
 
 
+class AtomicFileTarget:
+    """Stage a local output and defer publication until the caller has verified it.
+
+    Args:
+        path: Final local destination. The parent directory must already exist.
+        before_commit: Optional final guard, called immediately before replacement.
+    """
+
+    def __init__(self, path: str, before_commit: Callable[[], None] | None = None):
+        if is_uri(path):
+            raise ValueError("AtomicFileTarget requires a local path")
+        self.path = path
+        self.target = _temp_sibling(path)
+        self.before_commit = before_commit
+
+    def commit(self) -> None:
+        """Publish the completed stage with atomic visibility, not crash durability."""
+        if self.before_commit:
+            self.before_commit()
+        os.replace(self.target, self.path)
+
+    def abort(self) -> None:
+        """Remove any remaining stage, including after an unsuccessful commit."""
+        if os.path.lexists(self.target):
+            os.unlink(self.target)
+
+    def __enter__(self) -> AtomicFileTarget:
+        return self
+
+    def __exit__(self, *args: object) -> None:
+        try:
+            self.abort()
+        except OSError:
+            if args and args[0] is not None:
+                logger.warning("Failed to clean output stage", exc_info=True)
+            else:
+                raise
+
+
 _ARROW_FORMATS = ("parquet", "orc", "feather")
 
 
@@ -215,7 +254,8 @@ class RecordSink:
         self.iterableargs = iterableargs or {}
         self.count = 0
         self._atomic = not is_uri(path)
-        self._target = _temp_sibling(path) if self._atomic else path
+        self._stage = AtomicFileTarget(path) if self._atomic else None
+        self._target = self._stage.target if self._stage else path
         self._writer: Any = None
 
     def _args(self) -> dict[str, Any]:
@@ -247,14 +287,15 @@ class RecordSink:
         if self._writer is None and self.format_id in _ARROW_FORMATS and self._atomic:
             # A columnar file needs a schema; the iterabledata writer would leave 0 bytes.
             _write_empty_arrow(self._target, self.format_id, self.fieldnames or [])
-            os.replace(self._target, self.path)
+            assert self._stage is not None
+            self._stage.commit()
             return
         if self._writer is None:
             self._writer = _open_writer(self._target, self.format_id, self._args())
         self._writer.close()
         self._writer = None
-        if self._atomic:
-            os.replace(self._target, self.path)
+        if self._stage:
+            self._stage.commit()
 
     def abort(self) -> None:
         """Discard the output after a failure."""
@@ -264,17 +305,27 @@ class RecordSink:
             except Exception:  # pragma: no cover - best effort cleanup
                 logger.debug("Failed to close writer for %s", self._target, exc_info=True)
             self._writer = None
-        if self._atomic and os.path.exists(self._target):
-            os.remove(self._target)
+        if self._stage:
+            self._stage.abort()
 
     def __enter__(self) -> RecordSink:
         return self
 
     def __exit__(self, exc_type: type[BaseException] | None, *exc: object) -> None:
         if exc_type is None:
-            self.close()
+            try:
+                self.close()
+            except BaseException:
+                try:
+                    self.abort()
+                except OSError:
+                    logger.warning("Failed to clean output stage", exc_info=True)
+                raise
         else:
-            self.abort()
+            try:
+                self.abort()
+            except OSError:
+                logger.warning("Failed to clean output stage", exc_info=True)
 
 
 def write_records(
@@ -324,7 +375,8 @@ class StdoutSink:
 
     Args:
         fmt: Output format.
-        fieldnames: CSV/TSV header; defaults to the first record's keys.
+        fieldnames: CSV/TSV header; defaults to the first batch's keys. Later
+            records with additional fields raise a ValidationError.
     """
 
     TEXT_FORMATS = ("csv", "tsv", "jsonl", "json")
@@ -366,6 +418,9 @@ class StdoutSink:
             self._binary.write_batch(batch)
             self.count += len(batch)
             return
+        if self.fmt in ("csv", "tsv") and self._csv is None and self.fieldnames is None:
+            records = list(records)
+            self.fieldnames = collect_fieldnames(records)
         stream = self._stream
         for record in records:
             record = normalize_for_json(record)
@@ -375,10 +430,19 @@ class StdoutSink:
                         stream,
                         fieldnames=self.fieldnames or list(record.keys()),
                         delimiter="\t" if self.fmt == "tsv" else ",",
-                        extrasaction="ignore",
                         lineterminator="\n",
                     )
                     self._csv.writeheader()
+                extra = record.keys() - self._csv.fieldnames
+                if extra:
+                    from .errors import ValidationError
+
+                    raise ValidationError(
+                        f"Additional fields in {self.fmt.upper()} output: "
+                        f"{', '.join(sorted(map(str, extra)))}. "
+                        "Use -O jsonl or select a fixed set of fields.",
+                        field="format_out",
+                    )
                 self._csv.writerow(record)
             elif self.fmt == "jsonl":
                 stream.write(json.dumps(record, ensure_ascii=False, default=str))
@@ -519,13 +583,8 @@ def duckdb_copy_to_file(conn: Any, query: str, path: str) -> bool:
     options = duckdb_copy_options(path)
     if options is None:
         return False
-    target = _temp_sibling(path)
-    escaped = target.replace("'", "''")
-    try:
+    with AtomicFileTarget(path) as stage:
+        escaped = stage.target.replace("'", "''")
         conn.execute(f"COPY ({query}) TO '{escaped}' ({options})")
-        os.replace(target, path)
-    except BaseException:
-        if os.path.exists(target):
-            os.remove(target)
-        raise
+        stage.commit()
     return True

@@ -73,8 +73,9 @@ CAPABILITIES: dict[str, Capability] = {
     "plot": Capability(writes="a chart image (PNG, SVG, PDF)", memory="loads the plotted fields"),
     "rename": Capability(),
     "repack": Capability(
-        writes="the same format, recompressed (Parquet/ORC/Avro natively)",
-        memory="streaming (record batches)",
+        reads="local verified streams, native Parquet/ORC/Avro and offline DuckDB/SQLite",
+        writes="the same format, verified and atomically published",
+        memory="stream/batch based; optional native worker RSS limit",
     ),
     "replace": Capability(),
     "reverse": Capability(memory="spills to disk in chunks of 50,000 records"),

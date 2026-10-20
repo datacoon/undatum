@@ -70,6 +70,75 @@ def _register(schema: ResultSchema) -> ResultSchema:
     return schema
 
 
+REPACK = _register(
+    ResultSchema(
+        "undatum.repack/1",
+        "repack",
+        "Verified local-file recompression outcome",
+        {
+            "input": ("string", "Source path"),
+            "output": ("string", "Requested destination"),
+            "mode": ("string", "container or builtin"),
+            "input_size": ("integer", "Original physical source bytes"),
+            "candidate_size": ("integer", "Measured encoded candidate bytes"),
+            "output_size": ("integer|null", "Actual destination bytes, null when absent"),
+            "status": ("string", "replaced, unchanged, skipped or dry_run"),
+            "reason_code": ("string", "accepted, no_benefit or below_min_savings"),
+            "published": ("boolean", "Whether this invocation published a destination"),
+            "changed": ("boolean", "Whether a changed candidate was published"),
+            "would_publish": (
+                "boolean",
+                "Whether policy accepts publication, including original-copy fallback",
+            ),
+            "savings_bytes": ("integer", "Realized physical savings; zero without publication"),
+            "savings_percent": (
+                "number|null",
+                "Realized savings percentage, null for zero-size input",
+            ),
+            "candidate_savings_bytes": ("integer", "Original size minus measured candidate size"),
+            "candidate_savings_percent": ("number|null", "Measured candidate savings percentage"),
+            "elapsed_seconds": ("number", "Total operation time including verification and guards"),
+            "effective_settings": (
+                "object",
+                "Candidate codec/profile/level/threads and whether applied",
+            ),
+            "verification": ("object", "Independent preservation method and result"),
+            "resources": ("object", "Decoded work, scratch peak and native worker monitoring"),
+            "timings": ("object", "Encoding and verification times in seconds"),
+            "rows": ("integer|null", "Preserved native row count"),
+            "decoded_bytes": ("integer", "Source payload/logical native bytes processed once"),
+            "bytes_read": ("integer", "Legacy alias of decoded_bytes"),
+            "bytes_written": ("integer|null", "Legacy alias of actual output_size"),
+            "codec": ("string", "Requested outer codec for container mode"),
+            "compression": ("string", "Requested native codec for builtin mode"),
+            "level": ("integer|null", "Candidate compression level"),
+            "profile": ("string", "Candidate performance profile"),
+        },
+        (
+            "input",
+            "output",
+            "mode",
+            "input_size",
+            "candidate_size",
+            "output_size",
+            "status",
+            "reason_code",
+            "published",
+            "changed",
+            "would_publish",
+            "savings_bytes",
+            "savings_percent",
+            "candidate_savings_bytes",
+            "candidate_savings_percent",
+            "elapsed_seconds",
+            "effective_settings",
+            "verification",
+            "resources",
+            "timings",
+        ),
+    )
+)
+
 COUNT = _register(
     ResultSchema(
         "undatum.count/1",

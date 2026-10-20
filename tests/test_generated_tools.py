@@ -48,8 +48,35 @@ def test_inline_result_without_output(data):
 
 
 def test_inline_result_is_limited(data):
-    result = schemas.call_tool("head", {"input_path": "x.csv", "limit": 1})
+    result = schemas.call_tool("dedup", {"input_path": "x.csv", "limit": 1})
     assert result["data"]["count"] == 1 and result["data"]["truncated"] is True
+
+
+@pytest.mark.parametrize("operation", ["head", "tail"])
+@pytest.mark.parametrize("limit", [0, 1, 20])
+@pytest.mark.parametrize("write_file", [False, True])
+def test_window_tools_apply_the_operation_limit(data, operation, limit, write_file):
+    (data / "many.jsonl").write_text("".join(json.dumps({"i": i}) + "\n" for i in range(30)))
+    args = {"input_path": "many.jsonl", "limit": limit}
+    if write_file:
+        args.update(output_path="out.jsonl", confirm=True)
+    result = schemas.call_tool(operation, args)
+    assert result["ok"], result
+    if write_file:
+        rows = [json.loads(line) for line in (data / "out.jsonl").read_text().splitlines()]
+    else:
+        rows = result["data"]["records"]
+        assert result["data"]["count"] == limit
+        assert result["data"]["truncated"] is False
+    start = 0 if operation == "head" else 30 - limit
+    assert rows == [{"i": i} for i in range(start, start + limit)]
+
+
+@pytest.mark.parametrize("limit", [-1, "bad"])
+def test_invalid_inline_limit_is_reported_as_arguments_error(data, limit):
+    result = schemas.call_tool("head", {"input_path": "x.csv", "limit": limit})
+    assert result["ok"] is False
+    assert result["code"] == "invalid_arguments"
 
 
 def test_writing_requires_confirm(data):
