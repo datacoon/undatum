@@ -4,7 +4,14 @@
 frozen script itself; this wrapper imports it as part of the package.
 """
 
-from undatum.__main__ import main
+import sys
 
 if __name__ == "__main__":
-    main()
+    if sys.argv[1:] == ["--_undatum-repack-worker"]:
+        from undatum.common.repack_worker import main
+
+        raise SystemExit(main())
+    else:
+        from undatum.__main__ import main
+
+        main()

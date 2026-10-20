@@ -62,6 +62,20 @@ jobs:
           Set-Content -Path sample.csv -Value "name,age`nAlice,30"
           & $bin convert sample.csv sample.jsonl --no-progress
           if ($LASTEXITCODE -ne 0) { exit 1 }
+      - name: Smoke-test supervised repack
+        shell: bash
+        run: |
+          uv run --frozen --no-sync python - <<'PY'
+          import gzip, json, pathlib, subprocess, tempfile
+          binary = pathlib.Path("dist/undatum.exe" if pathlib.Path("dist/undatum.exe").exists() else "dist/undatum").resolve()
+          with tempfile.TemporaryDirectory() as directory:
+              source = pathlib.Path(directory) / "data.csv.gz"
+              source.write_bytes(gzip.compress(b"name,age\nAlice,30\n" * 1000, compresslevel=1))
+              result = subprocess.run([str(binary), "repack", str(source), "--timeout", "60", "--json", "--no-progress"], capture_output=True, text=True, timeout=90)
+              assert result.returncode == 0, (result.stdout, result.stderr)
+              assert json.loads(result.stdout)["verification"]["passed"]
+              assert gzip.decompress(source.read_bytes()) == b"name,age\nAlice,30\n" * 1000
+          PY
       - name: Rename artifact
         shell: bash
         run: |

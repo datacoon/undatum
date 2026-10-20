@@ -81,7 +81,7 @@ class TestRepackBuiltin:
         table = pa.table({"a": [1, 2, 3], "b": ["x", "y", "z"]})
         pq.write_table(table, src, compression="snappy")
 
-        result = Repacker().repack(str(src), str(dst), {"progress": False})
+        result = Repacker().repack(str(src), str(dst), {"progress": False, "allow_grow": True})
         assert result["mode"] == "builtin"
         assert result["compression"] == "zstd"
         pf = pq.ParquetFile(dst)

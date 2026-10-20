@@ -144,3 +144,48 @@ def test_invalid_arguments_fail_when_the_step_is_added(csv_file):
         ds.rename()
     with pytest.raises(ValueError):
         ds.sample()
+
+
+def test_analysis_uses_materialized_format_instead_of_original_csv_options(tmp_path):
+    source = tmp_path / "source.csv"
+    source.write_bytes("id;city;amount\n1;Москва;5\n2;Париж;8\n3;Рим;10\n".encode("cp1251"))
+    plan = Dataset.read(str(source), format_in="csv", delimiter=";", encoding="cp1251").filter(
+        query="amount > 6"
+    )
+    assert plan.collect() == [
+        {"id": "2", "city": "Париж", "amount": "8"},
+        {"id": "3", "city": "Рим", "amount": "10"},
+    ]
+    report = plan.quality()
+    assert report["summary"]["rows"] == 2
+    assert {f["name"] for f in report["fields"]} == {"id", "city", "amount"}
+    assert plan.stats().count == 2
+    package = plan.package(output=str(tmp_path / "datapackage.json"))
+    fields = package["package"]["resources"][0]["schema"]["fields"]
+    assert {f["name"] for f in fields} == {"id", "city", "amount"}
+
+
+def test_analysis_does_not_reapply_sheet_selection(tmp_path):
+    source = tmp_path / "book.xlsx"
+    with pd.ExcelWriter(source) as writer:
+        pd.DataFrame({"wrong": [0]}).to_excel(writer, sheet_name="First", index=False)
+        pd.DataFrame({"city": ["Paris", "Rome"]}).to_excel(writer, sheet_name="Cities", index=False)
+    plan = Dataset.read(str(source), table="Cities").limit(1)
+    assert plan.quality()["summary"] == {
+        "rows": 1,
+        "fields": 1,
+        "empty_values": 0,
+        "violations": None,
+    }
+    assert plan.stats().count == 1
+
+
+def test_reverse_preserves_typed_values_at_default_spill_boundary():
+    from undatum.ops.spill import DEFAULT_CHUNK_ROWS
+
+    value = {"day": datetime.date(2026, 1, 1), "price": decimal.Decimal("1.50")}
+    plan = Dataset.from_records(dict(value, i=i) for i in range(DEFAULT_CHUNK_ROWS + 1)).reverse()
+    for i, row in enumerate(plan):
+        assert row == {**value, "i": DEFAULT_CHUNK_ROWS - i}
+        assert isinstance(row["day"], datetime.date)
+        assert isinstance(row["price"], decimal.Decimal)

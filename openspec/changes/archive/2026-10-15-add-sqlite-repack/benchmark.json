@@ -1,0 +1,44 @@
+{
+  "fixture": "tests/test_repack_sqlite.py::database(fragmented=True, journal=\"WAL\")",
+  "python": "3.13.7",
+  "sqlite": "3.53.3",
+  "input_size": 5570560,
+  "candidate_size": 122880,
+  "savings_percent": 97.79411764705883,
+  "rows": 35,
+  "decoded_bytes": 1476,
+  "effective_settings": {
+    "codec": "none",
+    "profile": "max",
+    "level": null,
+    "threads": 1,
+    "applied": true,
+    "strategy": "vacuum_into"
+  },
+  "verification": {
+    "method": "sqlite-schema-settings-rowids-storage-classes-values",
+    "passed": true,
+    "candidate_sha256": "2ec0bdb297641571b2c6da3f636aa61eaf45f142e4c05e44a51d058841270008",
+    "sqlite_version": "3.53.3",
+    "journal_mode": "wal"
+  },
+  "resources": {
+    "decoded_bytes_processed": 4428,
+    "scratch_peak_bytes": 155648,
+    "memory_enforcement": "none",
+    "peak_rss_bytes": null
+  },
+  "timings": {
+    "encode_seconds": 0.0024122500035446137,
+    "verify_seconds": 0.0017105839942814782
+  },
+  "source_bytes_unchanged": true,
+  "source_journal_header": [
+    2,
+    2
+  ],
+  "candidate_journal_header": [
+    2,
+    2
+  ]
+}

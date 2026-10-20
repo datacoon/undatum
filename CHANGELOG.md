@@ -5,15 +5,53 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased](https://github.com/datenoio/undatum/compare/v1.8.0...HEAD)
+## [Unreleased](https://github.com/datenoio/undatum/compare/v1.9.1...HEAD)
 
 ### Fixed
 
 - Forward and backward fill now accept `0`, `0.0` and `False` as fallback values when no neighbour value exists.
 
+## [1.9.1](https://github.com/datenoio/undatum/compare/v1.9.0...v1.9.1) - 2026-10-15
+
+This is the first GitHub/PyPI release of the 1.9 series and includes all features and fixes listed under 1.9.0 below. The 1.9.0 release workflow stopped at its Windows verification gate before GitHub/PyPI publication.
+
+### Fixed
+
+- **Windows paths** — absolute drive paths, drive-relative paths, UNC shares and extended-length paths are recognized as local files rather than remote URIs. This restores commands such as `repack` with an absolute Windows input or output path.
+
+## [1.9.0](https://github.com/datenoio/undatum/compare/v1.8.0...v1.9.0) - 2026-10-15
+
+GitHub/PyPI publication did not complete; use 1.9.1 or later.
+
+Upgrading: `repack` now verifies every candidate before publication and keeps the original when optimization does not save space. Use `--allow-grow` if a script requires replacement regardless of size. Replacing an existing SQLite destination requires `--sqlite-offline`; see the [repack reference](https://datenoio.github.io/undatum/commands/repack) for supported profiles and limits.
+
+### Added
+
+- **SQLite repack** — compact offline SQLite databases with `VACUUM INTO`, independently verify schema/settings, rowids and typed values, then publish atomically. Existing destinations require `--sqlite-offline`; active WAL/SHM/journal files and unsupported profiles are refused. Retains application metadata, AUTOINCREMENT, `WITHOUT ROWID` keys, encoding and closed WAL mode, with no new package dependency.
+
+- **DuckDB repack** — compact offline DuckDB databases using filerepack's native database-copy algorithm, with independent catalog/typed-value verification and atomic publication. Supports measured dry-run, savings controls and native worker limits; rejects pending WALs and unsupported database objects. Initial supported profile is limited to 256 MiB input, 1 million rows and 256 MiB of decoded values per verification side.
+
+- **Repack controls** — `--profile fast|balanced|max`, measured `--dry-run`, `--min-savings`, `--json` (`undatum.repack/1`), `--output/-o`, independent Parquet batch/row-group sizing and zstd codec threads. Decoded-byte, candidate-size, native worker RSS and timeout limits abort without publication; RSS supervision uses the optional `undatum[repack]` extra. A reproducible benchmark compares size, encoding/verification time, RSS, scratch and read-back with prior undatum and filerepack.
+
 ### Changed
 
-- **Benchmarks** — the 1M-row benchmark no longer runs every night; start it from the Actions tab (Benchmarks → Run workflow) when needed. Pull requests still compare 100k-row runs with the base branch
+- **Repack** — every destination is staged and independently verified before publication. Optimization keeps a larger/equal candidate out by default (`--allow-grow` restores always-replace); unchanged originals are copied to explicit compatible outputs. Codec/suffix conflicts, unsafe links and unsupported archive/level combinations fail before writing. Use a distinct output with a matching suffix for outer-codec changes; ORC uses compression strategies and rejects explicit `--level`.
+- **Benchmarks** — the 1M-row benchmark no longer runs every night; start it from the Actions tab (Benchmarks → Run workflow) when needed. Pull requests still compare 100k-row runs with the base branch.
+
+### Fixed
+
+- **Repack preservation** — explicit identical input/output paths no longer truncate the input; empty Parquet remains valid. Native ORC retains typed rows, metadata and timestamp nanoseconds; native Avro retains encoded union branches, original schema/metadata/sync instead of coercing records to strings. Failed encoding or verification preserves existing destinations and source permissions/mtime/xattrs.
+- **Linux repack memory limits** — worker peak RSS is measured for its own address space, avoiding false budget failures inherited from a large parent process. SQLite candidates whose runtime renumbers hidden rowids are refused without replacing existing files.
+- **ORC dependency compatibility** — require pyorc 0.11 or newer after reproducing native crashes with older pyorc wheels loaded alongside PyArrow 16 on macOS; the supported lower-bound combination passes the preservation suite.
+- **Data API authentication** — resources whose names begin with `docs` require the API key; only the exact documentation routes are public.
+- **Partitioned output** — null and empty keys share one writer, literal null markers and composite keys cannot overwrite other partitions, and unsafe field names or symlinks cannot direct writes outside the output directory. Underscores in flat partition values are percent-encoded to distinguish keys from separators and numbered parts.
+- **Quality reports** — schema comparisons use actual inferred types, and type conformance checks native values too; fractional numbers no longer pass an integer contract through rounding.
+- **SDK analysis and spill** — quality, stats and packages read transformed plans with their materialized JSONL settings; reverse and backward fill preserve dates, decimals, binary and nested types when spilling to disk.
+- **CLI pipelines** — CSV/TSV stdout preserves the first batch's fields and reports later additional fields instead of silently dropping them; compressed stdin keeps its codec with `--format-in`; attached and repeated format options such as `-Ojsonl` follow the command parser.
+- **Agent tools and sorting** — `head` and `tail` apply the requested operation limit when returning or writing records, including zero; Python CLI sorting uses the SDK's null-safe ordering for missing and mixed values, including external merge sort.
+- **Release artifacts** — the GitHub release job downloads only distributions and platform binaries, preventing unrelated build artifacts from breaking publication.
+- **Release packaging** — standalone binaries dispatch supervised repack workers through their frozen entry point, with a smoke test on each platform; container builds include third-party license notices.
+- **Documentation dependencies** — update image-size, fast-uri, proxy-addr and brace-expansion in the documentation build.
 
 ## [1.8.0](https://github.com/datenoio/undatum/compare/v1.7.0...v1.8.0) - 2026-10-09
 

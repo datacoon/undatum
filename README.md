@@ -14,10 +14,11 @@
 
 - **140+ formats via iterabledata**: CSV, JSON, JSON Lines, BSON, XML, XLS/XLSX, Parquet, AVRO, ORC, plus geospatial, lakehouse (Delta/Iceberg/Lance/DuckLake/Paimon), scientific, RDF, log, config, graph, and feed formats. Run `undatum formats list` to see every supported format and its read/write capabilities.
 - **Compression support**: GZ, XZ, BZ2, ZIP, ZSTD, LZ4, 7Z, Brotli, Snappy, LZO
+- **Verified repacking**: Recompress local streams and native Parquet, ORC and Avro files, or compact offline DuckDB and SQLite databases (`undatum repack`). Outputs are staged, independently verified and published atomically; optimization keeps the original unless the candidate saves space. Measure savings with `--dry-run --json` and set optional time, temporary-space and memory budgets
 - **Multi-cloud I/O**: Read and write `s3://`, `gs://`/`gcs://`, and `az://`/`abfs://`/`abfss://` URIs natively via iterabledata (`pip install "undatum[cloud]"`)
 - **Databases**: Query and dump PostgreSQL, MySQL/MariaDB, SQLite, SQL Server, ClickHouse, MongoDB, and Elasticsearch/OpenSearch (`undatum db query`, `undatum db dump`); load files into DuckDB, SQLite, PostgreSQL, MySQL, ClickHouse, SQL Server, MongoDB, and Elasticsearch/OpenSearch (`undatum db load`, with create-table, replace and upsert where the database supports them)
 - **Large files**: record commands stream with bounded memory; `sort`, `dedup` and `reverse` spill to disk; DuckDB runs SQL and many transforms out of core. Each [command page](https://datenoio.github.io/undatum/commands/) states its memory use (for example `uniq` and `frequency` grow with the number of distinct values)
-- **Unix pipelines**: `-` reads standard input and results go to standard output in the input's format: `cat data.csv \| undatum sort - --by amount \| undatum head - -n 10`
+- **Unix pipelines**: `-` reads standard input and results go to standard output in the input's format: `cat data.csv | undatum sort - --by amount | undatum head - -n 10`
 - **SQL expressions**: `--where "amount > 100 AND city = 'Berlin'"` filters and `--add "total = price * qty"` adds computed fields on `select`, `convert` and other commands, evaluated by DuckDB on typed values
 - **Partitioned output**: `undatum convert data.csv out/ --partition-by year,month -O parquet` writes Hive-style `field=value/` directories that DuckDB, Spark, Athena and BigQuery read
 - **Automatic detection**: Encoding, delimiters (comma, semicolon, tab, pipe), headers, compression and file types
@@ -84,7 +85,7 @@ A man page ships with the package (`man undatum` after install, or `make man` to
 
 ### Container
 
-From the next release, images are published to GitHub Container Registry:
+Release images are published to GitHub Container Registry:
 
 ```bash
 docker run --rm -v "$PWD:/data" ghcr.io/datenoio/undatum convert data.csv data.parquet
@@ -119,6 +120,7 @@ common extras. A Homebrew tap and a conda-forge package are planned; see the
 | `scientific` | MATLAB, geophysical, and HDF5 formats |
 | `access` | Microsoft Access (`.mdb` / `.accdb`) |
 | `compression` | Extra codecs (snappy, brotli, lzo) |
+| `repack` | Process memory monitoring for `repack --memory-limit` (psutil) |
 | `all` | Every extra |
 
 ```bash
@@ -161,6 +163,10 @@ undatum formats list --capabilities
 undatum convert people.csv people.parquet
 undatum convert --tagname item data.xml data.jsonl
 
+# Recompress local files with independent read-back verification
+undatum repack data.csv.gz
+undatum repack data.parquet --dry-run --json
+
 # Inspect
 undatum headers data.jsonl
 undatum analyze data.jsonl
@@ -191,11 +197,33 @@ undatum doc data.jsonl --format-out markdown --output dataset.md
 
 More first-success paths: [quick start](https://datenoio.github.io/undatum/getting-started/quick-start) and the [cookbook](https://datenoio.github.io/undatum/getting-started/cookbook).
 
+### Recompress and compact files
+
+```bash
+# Change the outer codec without changing the decoded bytes
+undatum repack data.csv.gz data.csv.zst
+
+# Compact offline databases into new files
+undatum repack warehouse.duckdb compact.duckdb
+undatum repack app.sqlite compact.sqlite
+
+# After closing all SQLite users, compact in place
+undatum repack app.sqlite --sqlite-offline
+```
+
+`repack` accepts local files and retains their data format. It preserves the source when
+encoding or verification fails and skips a same-representation candidate that does not
+save space; use `--allow-grow` to accept it. Replacing an existing SQLite destination
+requires `--sqlite-offline`; active database sidecars cause refusal. DuckDB's initial
+supported profile is limited to 256 MiB input and 1 million rows. See the
+[repack reference](https://datenoio.github.io/undatum/commands/repack) for format limits,
+profiles, resource budgets and the `undatum.repack/1` JSON report.
+
 ## Commands
 
 All commands are available as `undatum <command>` or via the shorter `data` alias.
 
-**Top-level data commands:** `convert`, `extract`, `analyze`, `doc`, `stats`, `validate`, `quality`, `schema`, `schema-bulk`, `schema-drift`, `diff`, `sql`, `select`, `search`, `mask`, `plot`, `tui`, `web`, `migrate-script`, and the other transform/inspection commands in the [CLI reference](https://datenoio.github.io/undatum/commands/).
+**Top-level data commands:** `convert`, `repack`, `extract`, `analyze`, `doc`, `stats`, `validate`, `quality`, `schema`, `schema-bulk`, `schema-drift`, `diff`, `sql`, `select`, `search`, `mask`, `plot`, `tui`, `web`, `migrate-script`, and the other transform/inspection commands in the [CLI reference](https://datenoio.github.io/undatum/commands/).
 
 **Upgrading:** the older names `document`, `profile`, `ingest` and `scheme` and the old option spellings (`--filetype`, `--outtype`, `--n`, ...) still work with a deprecation warning until 2.0 (use `doc`, `stats`, `db load`, `schema --format cerberus`). `undatum migrate-script scripts/ --write` rewrites them in shell scripts, Makefiles, Markdown and pipeline YAML; the [migration guide](https://datenoio.github.io/undatum/getting-started/migrating-to-2) and the [changelog](CHANGELOG.md) list the changed defaults.
 
@@ -226,6 +254,7 @@ Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) and the [devel
 ## License
 
 MIT License — see [LICENSE](LICENSE).
+Third-party attribution and license terms are in [THIRD_PARTY_NOTICES](THIRD_PARTY_NOTICES).
 
 ## Links
 

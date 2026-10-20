@@ -54,23 +54,10 @@ def _normalize_for_json(obj):
 
 
 def _get_sort_key(item, sort_fields, numeric_fields=None):
-    """Get sort key for an item."""
-    if not isinstance(item, dict):
-        return item
+    """Get the same null-safe, mixed-type sort key used by SDK operations."""
+    from ..ops.query import SortConfig, sort_key
 
-    numeric_set = set(numeric_fields or [])
-    keys = []
-    for field in sort_fields:
-        value = item.get(field)
-        if field in numeric_set:
-            # Try to convert to number for numeric sort
-            try:
-                keys.append(float(value) if value is not None else float("-inf"))
-            except (ValueError, TypeError):
-                keys.append(value)
-        else:
-            keys.append(value)
-    return tuple(keys)
+    return sort_key(item, SortConfig(by=tuple(sort_fields), numeric=tuple(numeric_fields or ())))
 
 
 class Sorter:

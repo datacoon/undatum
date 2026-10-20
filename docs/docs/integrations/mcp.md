@@ -81,6 +81,10 @@ a tool automatically.
   `cat(others_paths=[...])`; they are checked against the sandbox like `input_path`.
 - `format_in`, `table` and `flatten_nested` set how the inputs are read.
 
+For `head` and `tail`, `limit` also sets the number of records in the operation (default
+10), including when writing `output_path`; `limit=0` produces no records. Their
+`truncated` flag describes the operation result, rather than the complete input file.
+
 `undatum mcp tools --parity` lists every CLI command with the tool that covers it, or why none
 does.
 

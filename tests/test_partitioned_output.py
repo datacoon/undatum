@@ -179,3 +179,114 @@ def test_key_encoding():
     assert hive_value(2024) == "2024"
     assert flat_value(None) == flat_value("") == "__null__"
     assert flat_value("a/b c") == "a%2Fb c"
+
+
+@pytest.mark.parametrize("hive", [True, False])
+def test_null_empty_and_literal_null_markers_keep_all_records(tmp_path, monkeypatch, hive):
+    from undatum.io import partition
+
+    monkeypatch.setattr(partition, "FLUSH_ROWS", 1)
+    rows = [
+        {"k": None, "id": 0},
+        {"k": "", "id": 1},
+        {"k": HIVE_NULL, "id": 2},
+        {"k": "__null__", "id": 3},
+        {"k": "other", "id": 4},
+        {"k": "", "id": 5},
+        {"k": None, "id": 6},
+    ]
+    writer = PartitionedWriter(str(tmp_path / "out"), ["k"], "jsonl", hive=hive, max_open_files=1)
+    assert writer.write_all(rows) == len(rows)
+    assert len(writer.files) == len(set(writer.files))
+    saved = [json.loads(line) for p in writer.files for line in Path(p).read_text().splitlines()]
+    assert sorted(r["id"] for r in saved) == list(range(len(rows)))
+
+
+@pytest.mark.parametrize("engine", ["python", "duckdb"])
+def test_literal_hive_null_round_trips_separately_from_null(tmp_path, engine):
+    src = tmp_path / "input.jsonl"
+    src.write_text(
+        "\n".join(json.dumps(r) for r in [{"k": None, "id": 1}, {"k": HIVE_NULL, "id": 2}]) + "\n"
+    )
+    out = tmp_path / "out"
+    _invoke("convert", str(src), str(out), "--partition-by", "k", "-O", "parquet", "-e", engine)
+    assert _files(out) == [
+        f"k=%5F{HIVE_NULL[1:]}/data_0.parquet",
+        f"k={HIVE_NULL}/data_0.parquet",
+    ]
+    # Verify the files independently of the reader's Hive NULL handling: DuckDB
+    # 1.3/1.4 do not recognize the standard marker (their own writer uses NULL).
+    for directory, record_id in ((HIVE_NULL, 1), (f"%5F{HIVE_NULL[1:]}", 2)):
+        path = str(out / f"k={directory}" / "data_0.parquet").replace("'", "''")
+        assert duckdb.sql(
+            f"SELECT id FROM read_parquet('{path}', hive_partitioning=false)"
+        ).fetchall() == [(record_id,)]
+    from undatum.io.partition import _duckdb_names_null_partitions
+
+    if not _duckdb_names_null_partitions():
+        return
+    escaped = str(out / "**/*.parquet").replace("'", "''")
+    rows = duckdb.sql(
+        f"SELECT id, k FROM read_parquet('{escaped}', hive_partitioning=true) ORDER BY id"
+    ).fetchall()
+    assert rows == [(1, None), (2, HIVE_NULL)]
+
+
+def test_flat_composite_keys_and_numbered_parts_do_not_collide(tmp_path, monkeypatch):
+    from undatum.io import partition
+
+    monkeypatch.setattr(partition, "FLUSH_ROWS", 1)
+    for fields, rows in (
+        (["a", "b"], [{"a": "x_y", "b": "z", "id": 0}, {"a": "x", "b": "y_z", "id": 1}]),
+        (["a"], [{"a": "x", "id": 0}, {"a": "x_1", "id": 1}, {"a": "x", "id": 2}]),
+    ):
+        writer = PartitionedWriter(
+            str(tmp_path / f"flat_{len(fields)}"), fields, "jsonl", hive=False, max_open_files=1
+        )
+        writer.write_all(rows)
+        assert len(writer.files) == len(set(writer.files))
+        saved = [
+            json.loads(line) for p in writer.files for line in Path(p).read_text().splitlines()
+        ]
+        assert sorted(saved, key=lambda r: r["id"]) == rows
+
+
+@pytest.mark.parametrize("engine", ["python", "duckdb"])
+@pytest.mark.parametrize("field", ["../outside", "/absolute", "..\\outside", "C:\\outside"])
+def test_unsafe_partition_field_is_rejected_before_writing(tmp_path, engine, field):
+    src = tmp_path / "input.jsonl"
+    src.write_text(json.dumps({field: "x", "id": 1}) + "\n")
+    out = tmp_path / "out"
+    result = _invoke(
+        "convert",
+        str(src),
+        str(out),
+        "--partition-by",
+        field,
+        "-O",
+        "parquet",
+        "-e",
+        engine,
+        code=1,
+    )
+    assert isinstance(result.exception, ValidationError)
+    assert not out.exists()
+    assert list(tmp_path.iterdir()) == [src]
+
+
+def test_partition_symlink_cannot_redirect_output(tmp_path):
+    out, outside = tmp_path / "out", tmp_path / "outside"
+    out.mkdir()
+    outside.mkdir()
+    (out / "k=x").symlink_to(outside, target_is_directory=True)
+    writer = PartitionedWriter(str(out), ["k"], "jsonl")
+    with pytest.raises(ValidationError, match="leaves the output directory"):
+        writer.write_all([{"k": "x", "id": 1}])
+    assert list(outside.iterdir()) == []
+
+
+def test_flat_layout_allows_field_names_that_do_not_enter_paths(tmp_path):
+    writer = PartitionedWriter(str(tmp_path / "flat"), ["path/name"], "jsonl", hive=False)
+    row = {"path/name": "safe", "id": 1}
+    assert writer.write_all([row]) == 1
+    assert json.loads((tmp_path / "flat/safe.jsonl").read_text()) == row

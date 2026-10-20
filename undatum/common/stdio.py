@@ -106,7 +106,7 @@ def spool_stdin(format_in: str | None = None, stream: BinaryIO | None = None) ->
     head = source.read(65536)
     detected, codec = detect_stream_format(head)
     fmt = (format_in or detected).lower()
-    suffix = f".{fmt}" + (f".{codec}" if codec and not format_in else "")
+    suffix = f".{fmt}" + (f".{codec}" if codec else "")
     fd, path = tempfile.mkstemp(prefix="undatum-stdin-", suffix=suffix)
     with os.fdopen(fd, "wb") as target:
         target.write(head)
