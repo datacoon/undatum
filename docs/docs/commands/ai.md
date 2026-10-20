@@ -4,40 +4,186 @@ description: "undatum ai command reference"
 ---
 # `ai`
 
-AI-assisted workflows backed by iterabledata's `iterable.ai` stack. Subcommands: `doc`, `filter`, `plan`, and `suggest`. Supports OpenAI, Anthropic, Gemini, Azure OpenAI, OpenRouter, Ollama, LM Studio, and Perplexity — configure via `undatum.yaml`, environment variables, or CLI flags (see [AI Provider Options](/commands/analyze) under `analyze`).
+AI-assisted workflows backed by iterabledata's `iterable.ai` stack. Subcommands: `doc`, `filter`, `plan`, and `suggest`.
+
+Configure providers via `undatum.yaml`, `~/.undatum/config.yaml`, environment variables, or CLI flags. The `ai *` subcommands use iterabledata's provider set (OpenAI, Anthropic, Gemini, Azure OpenAI, OpenRouter, Ollama, LM Studio, Perplexity). Legacy `analyze --autodoc` / `schema --autodoc` / `doc --autodoc` only accept openai, openrouter, ollama, lmstudio, and perplexity — see [`analyze`](/commands/analyze).
+
+For block-based documentation with schema enrichment, prefer `ai doc` over legacy `analyze --autodoc` / `schema --autodoc`.
+
+## `ai doc`
+
+Block-based dataset documentation. Default blocks: `general`, `schema`, `quality`, `examples`, `statistics`, `agent_skill`, `codebook`.
 
 ```bash
-# Block-based dataset documentation (markdown default). Default blocks:
-# general, schema, quality, examples, statistics, agent_skill, codebook
 undatum ai doc data.csv
+undatum ai doc data.csv --format-out json --blocks general,schema,quality
+undatum ai doc workbook.xlsx --tables Sheet2 --cache --pii-mask-samples
+undatum ai doc data.csv --context '{"title": "City register"}'
+undatum ai doc data.csv --progress --job-id run-42
+undatum ai doc data.csv --sample-size 20 --no-detect-constraints --no-statistics
+undatum ai doc data.csv --temperature 0.2 --max-tokens 2048
+```
 
-# JSON output with selected blocks; schema enrichment maps LLM field names
-# to canonical columns and fills SDMX-style hints (e.g. FREQ:Frequency)
-undatum ai doc data.csv --format json --blocks general,schema,quality
+Notable flags: `--format`, `--blocks`, `--tables`, `--cache`, `--pii-mask-samples`, `--context`, `--progress`, `--job-id`, `--sample-size`, `--detect-constraints` / `--no-detect-constraints`, `--statistics` / `--no-statistics`, `--temperature`, `--max-tokens`, `--include-field-descriptions`, `--validate-output`.
 
-# Natural-language filter translation (use --apply to stream matching rows)
-undatum ai filter data.csv "active users in New York" --apply
-undatum ai filter workbook.xlsx "city is Dushanbe" --table Sheet2 --apply
+## `ai filter`
+
+Translate a natural-language or expression filter. Use `--apply` to stream matching rows.
+
+```bash norun
+undatum ai filter "active users in New York" data.csv --apply
+undatum ai filter "city is Dushanbe" workbook.xlsx --table Sheet2 --apply
 undatum ai filter "age > 30" data.csv --sample-size 500
 undatum ai filter "name == 'Alice'" quoted.csv --quotechar "'"
 undatum ai filter "lat > 40" nested.jsonl --flatten-nested --apply
-undatum ai filter "lat > 40" nested.jsonl --flatten-nested --max-nested-depth 2 --no-keep-nested-parents
-
-# Conversion planning and transform suggestions
-undatum ai plan data.csv --to parquet
-undatum ai suggest data.csv "normalize phone numbers"
-undatum ai suggest data.csv "normalize phone numbers" --sample-size 20
-
-# Apply a suggested transform spec (JSONL; --yes skips the confirm prompt)
-undatum ai suggest data.csv "rename id to user_id" --apply --yes --output out.jsonl
-
-# Document a named Excel sheet; cache and mask PII samples
-undatum ai doc workbook.xlsx --tables Sheet2 --cache --pii-mask-samples
-undatum ai doc data.csv --context '{"title": "City register"}'
-undatum ai doc data.csv --progress
-undatum ai doc data.csv --sample-size 20 --no-detect-constraints --no-statistics
-undatum ai doc data.csv --temperature 0.2 --max-tokens 2048
-undatum ai doc data.csv --job-id run-42 --progress
 ```
 
-For block-based documentation with schema enrichment, prefer `ai doc` over legacy `analyze --autodoc` / `schema --autodoc` workflows.
+`--flatten-nested`, `--max-nested-depth`, and `--keep-nested-parents` apply when unfolding nested fields for schema context and `--apply`. See [shared options](/commands/shared-options).
+
+## `ai plan`
+
+Produce a declarative conversion plan between two paths or format ids. **No conversion is performed.** Both arguments are positional (not `--to`).
+
+```bash norun
+undatum ai plan data.csv data.parquet
+undatum ai plan data.json data.geojson --use-llm
+```
+
+`--use-llm` adds LLM reasoning on top of catalog metadata.
+
+## `ai suggest`
+
+Suggest a transform spec from a natural-language goal. `--apply` writes transformed rows (confirm unless `--yes`).
+
+```bash norun
+undatum ai suggest data.csv "normalize phone numbers"
+undatum ai suggest data.csv "normalize phone numbers" --sample-size 20
+undatum ai suggest data.csv "rename id to user_id" --apply --yes --output out.jsonl
+```
+
+<!-- BEGIN GENERATED: reference -->
+<!-- Generated by scripts/generate_cli_reference.py from the CLI; do not edit by hand. -->
+
+## Reference
+
+### `undatum ai doc`
+
+```text
+undatum ai doc [OPTIONS] FILENAME
+```
+
+| Argument | Description |
+|----------|-------------|
+| `FILENAME` | Input data file or source to document. (required) |
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `-o`, `--output` TEXT | Output file path. Prints to stdout if not given. |  |
+| `-O`, `--format-out` TEXT | Output format: markdown, json, yaml, html, text. | `markdown` |
+| `--blocks` TEXT | Comma-separated documentation blocks (e.g. 'general,schema,quality'). |  |
+| `--language` TEXT | Language for generated content. | `English` |
+| `--pii-detect` / `--no-pii-detect` | Detect PII fields (requires metacrafter). | `--no-pii-detect` |
+| `--pii-mask-samples` | Mask detected PII in sample rows sent to the LLM. |  |
+| `--semantic-types` / `--no-semantic-types` | Detect semantic types (requires metacrafter). | `--no-semantic-types` |
+| `--tables` TEXT | Comma-separated table/sheet names for multi-table sources. |  |
+| `--cache` | Cache generated documentation by content hash. |  |
+| `--include-field-descriptions` | Generate per-field descriptions (non-block generate path). |  |
+| `--validate-output` | Validate JSON documentation against Pydantic models. |  |
+| `--context` TEXT | JSON object of extra prompt context, e.g. '&#123;"title": "Sales"&#125;'. |  |
+| `--progress` | Print documentation generation stages to stderr. |  |
+| `--sample-size` INTEGER | Override sample row count for documentation (engine default if omitted). |  |
+| `--detect-constraints` / `--no-detect-constraints` | Detect min/max/length/enum constraints during schema inference (block path). | `--detect-constraints` |
+| `--statistics` / `--no-statistics` | Compute statistics used by statistics/quality/codebook blocks. | `--statistics` |
+| `--temperature` FLOAT | LLM sampling temperature (engine default if omitted). |  |
+| `--max-tokens` INTEGER | Maximum tokens per LLM documentation block (engine default if omitted). |  |
+| `--job-id` TEXT | Stable job identifier for documentation progress and JSON results. |  |
+| `--provider` TEXT | LLM provider override. |  |
+| `--model` TEXT | Model name override. |  |
+| `--api-key` TEXT | API key override. |  |
+| `--base-url` TEXT | Base URL override (local providers). |  |
+| `--verbose` / `--no-verbose` | Enable verbose logging output. | `--no-verbose` |
+
+Deprecated spellings (removed in 2.0): `--format` → `--format-out`.
+
+### `undatum ai filter`
+
+```text
+undatum ai filter [OPTIONS] EXPRESSION [FILENAME]
+```
+
+| Argument | Description |
+|----------|-------------|
+| `EXPRESSION` | Natural-language or DSL filter (e.g. 'rows where age &gt; 30'). (required) |
+| `FILENAME` | Optional data file (used for schema context and --apply). |
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `--apply` / `--no-apply` | Apply the translated filter and output matching rows as JSONL. | `--no-apply` |
+| `-o`, `--output` TEXT | Output file for --apply (default stdout). |  |
+| `--provider` TEXT | LLM provider override. |  |
+| `--model` TEXT | Model name override. |  |
+| `--api-key` TEXT | API key override. |  |
+| `--base-url` TEXT | Base URL override (local providers). |  |
+| `--verbose` / `--no-verbose` | Enable verbose logging output. | `--no-verbose` |
+| `--table`, `--sheet` TEXT | Table or sheet name for multi-table sources (Excel, SQLite, lakehouse). |  |
+| `--start-page` INTEGER | Sheet index (0-based) for Excel files. | `0` |
+| `--trust` | Acknowledge pickle deserialization risk when reading pickle sources. |  |
+| `--on-error` TEXT | Parse-error policy: raise (default), skip, or warn. |  |
+| `--error-log` TEXT | Append parse errors as JSONL (use with --on-error skip or warn). |  |
+| `--quotechar` TEXT | CSV quote character (iterabledata default '"' when omitted). |  |
+| `--sample-size` INTEGER | Rows to sample when inferring schema context for a file (engine default 10000). |  |
+| `--flatten-nested` | Unfold nested dict / array-of-dict fields into dotted paths for schema context and --apply. |  |
+| `--max-nested-depth` INTEGER | With --flatten-nested, maximum nest depth to unfold (engine default 5). |  |
+| `--keep-nested-parents` / `--no-keep-nested-parents` | With --flatten-nested, keep parent dict/array fields alongside dotted children. | `--keep-nested-parents` |
+
+### `undatum ai plan`
+
+```text
+undatum ai plan [OPTIONS] SOURCE TARGET
+```
+
+| Argument | Description |
+|----------|-------------|
+| `SOURCE` | Source file/path. (required) |
+| `TARGET` | Target file/path. (required) |
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `--use-llm` / `--no-use-llm` | Use LLM reasoning in addition to catalog metadata. | `--no-use-llm` |
+| `--provider` TEXT | LLM provider override. |  |
+| `--model` TEXT | Model name override. |  |
+| `--api-key` TEXT | API key override. |  |
+| `--base-url` TEXT | Base URL override (local providers). |  |
+| `--verbose` / `--no-verbose` | Enable verbose logging output. | `--no-verbose` |
+
+### `undatum ai suggest`
+
+```text
+undatum ai suggest [OPTIONS] FILENAME GOAL
+```
+
+| Argument | Description |
+|----------|-------------|
+| `FILENAME` | Input data file. (required) |
+| `GOAL` | Natural-language description of the desired result. (required) |
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `--provider` TEXT | LLM provider override. |  |
+| `--model` TEXT | Model name override. |  |
+| `--api-key` TEXT | API key override. |  |
+| `--base-url` TEXT | Base URL override (local providers). |  |
+| `--apply` | Apply the suggested spec and write transformed rows. |  |
+| `-o`, `--output` TEXT | Output file for --apply (JSONL; default stdout). |  |
+| `-y`, `--yes` | Do not prompt before applying the transform. |  |
+| `--sample-size` INTEGER | Override sample row count sent to the suggestion engine (default 5). |  |
+| `--verbose` / `--no-verbose` | Enable verbose logging output. | `--no-verbose` |
+| `--table`, `--sheet` TEXT | Table or sheet name for multi-table sources (Excel, SQLite, lakehouse). |  |
+| `--start-page` INTEGER | Sheet index (0-based) for Excel files. | `0` |
+| `--trust` | Acknowledge pickle deserialization risk when reading pickle sources. |  |
+| `--on-error` TEXT | Parse-error policy: raise (default), skip, or warn. |  |
+| `--error-log` TEXT | Append parse errors as JSONL (use with --on-error skip or warn). |  |
+| `--quotechar` TEXT | CSV quote character (iterabledata default '"' when omitted). |  |
+
+See also [shared options](/commands/shared-options).
+<!-- END GENERATED: reference -->

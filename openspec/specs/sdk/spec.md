@@ -1,7 +1,7 @@
 # sdk Specification
 
 ## Purpose
-TBD - created by archiving change add-python-sdk. Update Purpose after archive.
+Fluent Python `Dataset` API that mirrors CLI transforms for programmatic read, transform, and write workflows.
 ## Requirements
 ### Requirement: Dataset Class
 The system SHALL provide a `Dataset` class as the primary interface for programmatic data

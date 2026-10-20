@@ -9,6 +9,11 @@ on:
       - "docs/**"
       - ".github/workflows/deploy-docs.yml"
   workflow_dispatch:
+  # Refresh the benchmark history chart after each 1M-row benchmark run.
+  workflow_run:
+    workflows: [Benchmarks]
+    types: [completed]
+    branches: [master]
 
 permissions:
   contents: read
@@ -26,6 +31,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
+      - name: Benchmark history chart
+        run: |
+          if git fetch -q --depth 1 origin benchmark-history; then
+            git show FETCH_HEAD:history.svg > docs/static/img/benchmark-history.svg
+          fi
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -42,7 +53,7 @@ jobs:
         run: npm run build
 
       - name: Setup Pages
-        uses: actions/configure-pages@v4
+        uses: actions/configure-pages@v6
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

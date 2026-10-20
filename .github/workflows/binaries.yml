@@ -1,0 +1,95 @@
+name: Binaries
+
+# Builds and smoke-tests the PyInstaller single-file binaries. Runs on pull requests that
+# touch packaging so a broken spec is caught before a release, and is called by release.yml.
+on:
+  pull_request:
+    paths:
+      - "packaging/**"
+      - ".github/workflows/binaries.yml"
+      - ".github/workflows/release.yml"
+  workflow_call:
+    inputs:
+      attest:
+        description: Create build provenance attestations for the binaries
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  binaries:
+    name: ${{ matrix.artifact }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            artifact: undatum-linux-x86_64
+          - os: macos-latest
+            artifact: undatum-macos-arm64
+          - os: windows-latest
+            artifact: undatum-windows-x86_64.exe
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v6
+      - name: Install locked dependencies
+        run: uv sync --frozen --no-editable --extra s3 --python 3.12
+      - name: Build binary
+        run: uv run --frozen --no-sync --with pyinstaller pyinstaller --noconfirm packaging/undatum.spec
+      - name: Smoke-test binary (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          BIN=dist/undatum
+          "$BIN" --version
+          printf 'name,age\nAlice,30\n' > /tmp/sample.csv
+          "$BIN" convert /tmp/sample.csv /tmp/sample.jsonl --no-progress
+          "$BIN" rename /tmp/sample.csv --map name:who --output /tmp/renamed.parquet
+          test -s /tmp/renamed.parquet
+      - name: Smoke-test binary (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $bin = "dist/undatum.exe"
+          & $bin --version
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+          Set-Content -Path sample.csv -Value "name,age`nAlice,30"
+          & $bin convert sample.csv sample.jsonl --no-progress
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+      - name: Smoke-test supervised repack
+        shell: bash
+        run: |
+          uv run --frozen --no-sync python - <<'PY'
+          import gzip, json, pathlib, subprocess, tempfile
+          binary = pathlib.Path("dist/undatum.exe" if pathlib.Path("dist/undatum.exe").exists() else "dist/undatum").resolve()
+          with tempfile.TemporaryDirectory() as directory:
+              source = pathlib.Path(directory) / "data.csv.gz"
+              source.write_bytes(gzip.compress(b"name,age\nAlice,30\n" * 1000, compresslevel=1))
+              result = subprocess.run([str(binary), "repack", str(source), "--timeout", "60", "--json", "--no-progress"], capture_output=True, text=True, timeout=90)
+              assert result.returncode == 0, (result.stdout, result.stderr)
+              assert json.loads(result.stdout)["verification"]["passed"]
+              assert gzip.decompress(source.read_bytes()) == b"name,age\nAlice,30\n" * 1000
+          PY
+      - name: Rename artifact
+        shell: bash
+        run: |
+          if [ -f dist/undatum.exe ]; then
+            mv dist/undatum.exe "dist/${{ matrix.artifact }}"
+          else
+            mv dist/undatum "dist/${{ matrix.artifact }}"
+          fi
+      - name: Attest build provenance
+        if: inputs.attest
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: dist/${{ matrix.artifact }}
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ${{ matrix.artifact }}
+          path: dist/${{ matrix.artifact }}

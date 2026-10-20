@@ -1,0 +1,917 @@
+{
+  "schema": "undatum.repack-benchmark/1",
+  "environment": {
+    "platform": "macOS-26.5.1-arm64-arm-64bit",
+    "cpu_count": 14,
+    "python": "3.10.20 (main, Mar  3 2026, 14:59:45) [Clang 21.1.4 ]",
+    "versions": {
+      "iterabledata": "1.0.23",
+      "pyarrow": "25.0.1",
+      "duckdb": "1.5.5",
+      "pyorc": "0.11.0",
+      "avro": "1.12.2"
+    },
+    "commit": "22c15df279601dbc9acf296507f0358e44c28d48",
+    "repacker_sha256": "65b06b7a371828c0b75fffc937c7e84b60eb7d68d276afa0479e29eb2fb89971",
+    "baseline_ref": null,
+    "baseline_commit": null,
+    "filerepack_root": null,
+    "filerepack": null,
+    "source_sha256": {
+      "scripts/benchmark_repack.py": "1c7adf53dada5a3912f127f4408e1c84cf608ee31c838ab69eae432d40016a4b",
+      "undatum/cmds/repacker.py": "65b06b7a371828c0b75fffc937c7e84b60eb7d68d276afa0479e29eb2fb89971",
+      "undatum/common/repack_avro.py": "92542504e119df4c62d5f6497ee73ffc62c48a3628d0ee4f032e0210e9029771",
+      "undatum/common/repack_columnar.py": "2257d204de7366e323cb8d1189ea1d603184f498bbd587adb2ba7dd51c00b94c",
+      "undatum/common/repack_streams.py": "5c6c263c066a778f5667e02c247d2df7a5fa390a219603e2bd473a7a46275418",
+      "undatum/common/repack_types.py": "fdd729bd9784084c5aa36145acbc9ecfdc8991f88353c0272551c797e58f0671",
+      "undatum/common/repack_worker.py": "8f77e28cc56053a3b59713832b3740d899a0ff27a783ed0925f57e23d6057a6f",
+      "undatum/common/file_snapshot.py": "42a1ad08f1068791d844e666c19df3ac92581f2561ab9102423bdeee04ce628e",
+      "undatum/common/writer.py": "87137f1c2f9fa3e8373a9b88937abf65086c5de4ec83707662cd7a98f417a623"
+    },
+    "mode": "cold subprocess; rotating implementations per repeat; sizes include headers; all undatum candidates verified"
+  },
+  "size_mib": 16,
+  "repeat": 3,
+  "layout": {
+    "batch_size": 65536,
+    "row_group_size": 65536
+  },
+  "records": [
+    {
+      "case": "csv-low.csv.gz",
+      "kind": "gzip",
+      "implementation": "undatum",
+      "profile": "max",
+      "input_size": 986423,
+      "logical_size": 16777217,
+      "trials": [
+        {
+          "seconds": 0.39761458401335403,
+          "peak_rss_bytes": 58621952,
+          "preservation_passed": true,
+          "output_size": 917513,
+          "timings": {
+            "encode_seconds": 0.16574987501371652,
+            "verify_seconds": 0.009612291993107647
+          },
+          "resources": {
+            "decoded_bytes_processed": 33554434,
+            "scratch_peak_bytes": 917513,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "gz",
+            "profile": "max",
+            "level": 9,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 0.003346709010656923,
+          "read_back_mib_per_second": 4780.816289293609
+        },
+        {
+          "seconds": 0.3794561249669641,
+          "peak_rss_bytes": 59064320,
+          "preservation_passed": true,
+          "output_size": 917513,
+          "timings": {
+            "encode_seconds": 0.16401770897209644,
+            "verify_seconds": 0.009482207999099046
+          },
+          "resources": {
+            "decoded_bytes_processed": 33554434,
+            "scratch_peak_bytes": 917513,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "gz",
+            "profile": "max",
+            "level": 9,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 0.0033775410265661776,
+          "read_back_mib_per_second": 4737.174420036855
+        },
+        {
+          "seconds": 0.3967509160283953,
+          "peak_rss_bytes": 58032128,
+          "preservation_passed": true,
+          "output_size": 917513,
+          "timings": {
+            "encode_seconds": 0.1634973749751225,
+            "verify_seconds": 0.00999275001231581
+          },
+          "resources": {
+            "decoded_bytes_processed": 33554434,
+            "scratch_peak_bytes": 917513,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "gz",
+            "profile": "max",
+            "level": 9,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 0.0033403750276193023,
+          "read_back_mib_per_second": 4789.881621488943
+        }
+      ],
+      "median_seconds": 0.3967509160283953,
+      "peak_rss_bytes": 59064320,
+      "preservation_passed": true
+    },
+    {
+      "case": "csv-high.csv.gz",
+      "kind": "gzip",
+      "implementation": "undatum",
+      "profile": "max",
+      "input_size": 9120740,
+      "logical_size": 16777283,
+      "trials": [
+        {
+          "seconds": 0.7134029580047354,
+          "peak_rss_bytes": 59244544,
+          "preservation_passed": true,
+          "output_size": 8911939,
+          "timings": {
+            "encode_seconds": 0.4082916670013219,
+            "verify_seconds": 0.04947870899923146
+          },
+          "resources": {
+            "decoded_bytes_processed": 33554566,
+            "scratch_peak_bytes": 8911939,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "gz",
+            "profile": "max",
+            "level": 9,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 0.03780316701158881,
+          "read_back_mib_per_second": 423.24665262236556
+        },
+        {
+          "seconds": 0.7533927499898709,
+          "peak_rss_bytes": 58032128,
+          "preservation_passed": true,
+          "output_size": 8911939,
+          "timings": {
+            "encode_seconds": 0.45646899996791035,
+            "verify_seconds": 0.05096866696840152
+          },
+          "resources": {
+            "decoded_bytes_processed": 33554566,
+            "scratch_peak_bytes": 8911939,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "gz",
+            "profile": "max",
+            "level": 9,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 0.03775841696187854,
+          "read_back_mib_per_second": 423.74827081159424
+        },
+        {
+          "seconds": 0.7067588749923743,
+          "peak_rss_bytes": 58900480,
+          "preservation_passed": true,
+          "output_size": 8911939,
+          "timings": {
+            "encode_seconds": 0.414036208007019,
+            "verify_seconds": 0.05085658299503848
+          },
+          "resources": {
+            "decoded_bytes_processed": 33554566,
+            "scratch_peak_bytes": 8911939,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "gz",
+            "profile": "max",
+            "level": 9,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 0.03875624999636784,
+          "read_back_mib_per_second": 412.8382879581666
+        }
+      ],
+      "median_seconds": 0.7134029580047354,
+      "peak_rss_bytes": 59244544,
+      "preservation_passed": true
+    },
+    {
+      "case": "zstd-high.csv.zst",
+      "kind": "zstd",
+      "implementation": "undatum",
+      "profile": "max",
+      "input_size": 7529962,
+      "logical_size": 16777283,
+      "trials": [
+        {
+          "seconds": 11.231163958029356,
+          "peak_rss_bytes": 161579008,
+          "preservation_passed": true,
+          "output_size": 8028683,
+          "timings": {
+            "encode_seconds": 10.958579000027385,
+            "verify_seconds": 0.03287141700275242
+          },
+          "resources": {
+            "decoded_bytes_processed": 33554566,
+            "scratch_peak_bytes": 8028683,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "zst",
+            "profile": "max",
+            "level": 19,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 0.01703883399022743,
+          "read_back_mib_per_second": 939.0351420382395
+        },
+        {
+          "seconds": 10.92469004204031,
+          "peak_rss_bytes": 161792000,
+          "preservation_passed": true,
+          "output_size": 8028683,
+          "timings": {
+            "encode_seconds": 10.565805750025902,
+            "verify_seconds": 0.030697875015903264
+          },
+          "resources": {
+            "decoded_bytes_processed": 33554566,
+            "scratch_peak_bytes": 8028683,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "zst",
+            "profile": "max",
+            "level": 19,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 0.016780874982941896,
+          "read_back_mib_per_second": 953.470180335864
+        },
+        {
+          "seconds": 10.9932752919849,
+          "peak_rss_bytes": 162414592,
+          "preservation_passed": true,
+          "output_size": 8028683,
+          "timings": {
+            "encode_seconds": 10.723164791997988,
+            "verify_seconds": 0.03104566701222211
+          },
+          "resources": {
+            "decoded_bytes_processed": 33554566,
+            "scratch_peak_bytes": 8028683,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "zst",
+            "profile": "max",
+            "level": 19,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 0.016768041998147964,
+          "read_back_mib_per_second": 954.1998939379095
+        }
+      ],
+      "median_seconds": 10.9932752919849,
+      "peak_rss_bytes": 162414592,
+      "preservation_passed": true
+    },
+    {
+      "case": "jsonl.jsonl.gz",
+      "kind": "gzip",
+      "implementation": "undatum",
+      "profile": "max",
+      "input_size": 756081,
+      "logical_size": 16777338,
+      "trials": [
+        {
+          "seconds": 0.45948874996975064,
+          "peak_rss_bytes": 58916864,
+          "preservation_passed": true,
+          "output_size": 689355,
+          "timings": {
+            "encode_seconds": 0.2368935829726979,
+            "verify_seconds": 0.009203833993524313
+          },
+          "resources": {
+            "decoded_bytes_processed": 33554676,
+            "scratch_peak_bytes": 689355,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "gz",
+            "profile": "max",
+            "level": 9,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 0.002848459000233561,
+          "read_back_mib_per_second": 5617.113094116736
+        },
+        {
+          "seconds": 0.4580254160100594,
+          "peak_rss_bytes": 59097088,
+          "preservation_passed": true,
+          "output_size": 689355,
+          "timings": {
+            "encode_seconds": 0.2365837920224294,
+            "verify_seconds": 0.00915883295238018
+          },
+          "resources": {
+            "decoded_bytes_processed": 33554676,
+            "scratch_peak_bytes": 689355,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "gz",
+            "profile": "max",
+            "level": 9,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 0.0027617079904302955,
+          "read_back_mib_per_second": 5793.558335533388
+        },
+        {
+          "seconds": 0.4489138750359416,
+          "peak_rss_bytes": 57901056,
+          "preservation_passed": true,
+          "output_size": 689355,
+          "timings": {
+            "encode_seconds": 0.23591058398596942,
+            "verify_seconds": 0.009183083020616323
+          },
+          "resources": {
+            "decoded_bytes_processed": 33554676,
+            "scratch_peak_bytes": 689355,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "gz",
+            "profile": "max",
+            "level": 9,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 0.002777125046122819,
+          "read_back_mib_per_second": 5761.395717706185
+        }
+      ],
+      "median_seconds": 0.4580254160100594,
+      "peak_rss_bytes": 59097088,
+      "preservation_passed": true
+    },
+    {
+      "case": "tiny.csv.gz",
+      "kind": "gzip",
+      "implementation": "undatum",
+      "profile": "max",
+      "input_size": 28,
+      "logical_size": 8,
+      "trials": [
+        {
+          "seconds": 0.20910437498241663,
+          "peak_rss_bytes": 53690368,
+          "preservation_passed": true,
+          "output_size": 28,
+          "timings": {
+            "encode_seconds": 0.0002667080261744559,
+            "verify_seconds": 0.00036762497620657086
+          },
+          "resources": {
+            "decoded_bytes_processed": 16,
+            "scratch_peak_bytes": 28,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "gz",
+            "profile": "max",
+            "level": 9,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 3.9792037568986416e-05,
+          "read_back_mib_per_second": 0.19173168797961446
+        },
+        {
+          "seconds": 0.2078291670186445,
+          "peak_rss_bytes": 53985280,
+          "preservation_passed": true,
+          "output_size": 28,
+          "timings": {
+            "encode_seconds": 0.0002775409957394004,
+            "verify_seconds": 0.000406457984354347
+          },
+          "resources": {
+            "decoded_bytes_processed": 16,
+            "scratch_peak_bytes": 28,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "gz",
+            "profile": "max",
+            "level": 9,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 3.954098792746663e-05,
+          "read_back_mib_per_second": 0.1929490114219008
+        },
+        {
+          "seconds": 0.2118214590009302,
+          "peak_rss_bytes": 54116352,
+          "preservation_passed": true,
+          "output_size": 28,
+          "timings": {
+            "encode_seconds": 0.0003334159846417606,
+            "verify_seconds": 0.0004545829724520445
+          },
+          "resources": {
+            "decoded_bytes_processed": 16,
+            "scratch_peak_bytes": 28,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "gz",
+            "profile": "max",
+            "level": 9,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 3.608298720791936e-05,
+          "read_back_mib_per_second": 0.21144021384059714
+        }
+      ],
+      "median_seconds": 0.20910437498241663,
+      "peak_rss_bytes": 54116352,
+      "preservation_passed": true
+    },
+    {
+      "case": "empty.csv.gz",
+      "kind": "gzip",
+      "implementation": "undatum",
+      "profile": "max",
+      "input_size": 20,
+      "logical_size": 0,
+      "trials": [
+        {
+          "seconds": 0.23802158294711262,
+          "peak_rss_bytes": 54329344,
+          "preservation_passed": true,
+          "output_size": 20,
+          "timings": {
+            "encode_seconds": 0.0002555829705670476,
+            "verify_seconds": 0.00033420801628381014
+          },
+          "resources": {
+            "decoded_bytes_processed": 0,
+            "scratch_peak_bytes": 20,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "gz",
+            "profile": "max",
+            "level": 9,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 3.837497206404805e-05,
+          "read_back_mib_per_second": 0.0
+        },
+        {
+          "seconds": 0.21070033399155363,
+          "peak_rss_bytes": 53936128,
+          "preservation_passed": true,
+          "output_size": 20,
+          "timings": {
+            "encode_seconds": 0.0002463340060785413,
+            "verify_seconds": 0.0003399160341359675
+          },
+          "resources": {
+            "decoded_bytes_processed": 0,
+            "scratch_peak_bytes": 20,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "gz",
+            "profile": "max",
+            "level": 9,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 4.016596358269453e-05,
+          "read_back_mib_per_second": 0.0
+        },
+        {
+          "seconds": 0.20945220801513642,
+          "peak_rss_bytes": 53936128,
+          "preservation_passed": true,
+          "output_size": 20,
+          "timings": {
+            "encode_seconds": 0.00025174999609589577,
+            "verify_seconds": 0.0003738750237971544
+          },
+          "resources": {
+            "decoded_bytes_processed": 0,
+            "scratch_peak_bytes": 20,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "gz",
+            "profile": "max",
+            "level": 9,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 3.670802107080817e-05,
+          "read_back_mib_per_second": 0.0
+        }
+      ],
+      "median_seconds": 0.21070033399155363,
+      "peak_rss_bytes": 54329344,
+      "preservation_passed": true
+    },
+    {
+      "case": "typed.parquet",
+      "kind": "parquet",
+      "implementation": "undatum",
+      "profile": "max",
+      "input_size": 819436,
+      "logical_size": 16777216,
+      "trials": [
+        {
+          "seconds": 0.5596016250201501,
+          "peak_rss_bytes": 157466624,
+          "preservation_passed": true,
+          "output_size": 397504,
+          "timings": {
+            "encode_seconds": 0.27499941701535136,
+            "verify_seconds": 0.006472792010754347
+          },
+          "resources": {
+            "decoded_bytes_processed": 27672576,
+            "scratch_peak_bytes": 397504,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "zstd",
+            "profile": "max",
+            "level": 19,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 0.0965517500299029,
+          "read_back_mib_per_second": 165.7142412752194
+        },
+        {
+          "seconds": 0.5371533340075985,
+          "peak_rss_bytes": 157040640,
+          "preservation_passed": true,
+          "output_size": 397504,
+          "timings": {
+            "encode_seconds": 0.26699625002220273,
+            "verify_seconds": 0.006130750000011176
+          },
+          "resources": {
+            "decoded_bytes_processed": 27672576,
+            "scratch_peak_bytes": 397504,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "zstd",
+            "profile": "max",
+            "level": 19,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 0.00538608297938481,
+          "read_back_mib_per_second": 2970.618919396503
+        },
+        {
+          "seconds": 0.5344064580276608,
+          "peak_rss_bytes": 155189248,
+          "preservation_passed": true,
+          "output_size": 397504,
+          "timings": {
+            "encode_seconds": 0.272291041968856,
+            "verify_seconds": 0.006312875018920749
+          },
+          "resources": {
+            "decoded_bytes_processed": 27672576,
+            "scratch_peak_bytes": 397504,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "zstd",
+            "profile": "max",
+            "level": 19,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 0.005508041998837143,
+          "read_back_mib_per_second": 2904.8435003541945
+        }
+      ],
+      "median_seconds": 0.5371533340075985,
+      "peak_rss_bytes": 157466624,
+      "preservation_passed": true
+    },
+    {
+      "case": "typed.orc",
+      "kind": "orc",
+      "implementation": "undatum",
+      "profile": "max",
+      "input_size": 167658,
+      "logical_size": 16777216,
+      "trials": [
+        {
+          "seconds": 1.5594077080022544,
+          "peak_rss_bytes": 42696704,
+          "preservation_passed": true,
+          "output_size": 128130,
+          "timings": {
+            "encode_seconds": 0.7406493329908699,
+            "verify_seconds": 0.6874240000033751
+          },
+          "resources": {
+            "decoded_bytes_processed": 24157172,
+            "scratch_peak_bytes": 128130,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "zstd",
+            "profile": "max",
+            "level": null,
+            "threads": 1,
+            "applied": true,
+            "strategy": "compression"
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 0.021871083008591086,
+          "read_back_mib_per_second": 731.5595662873717
+        },
+        {
+          "seconds": 1.5599242089665495,
+          "peak_rss_bytes": 42631168,
+          "preservation_passed": true,
+          "output_size": 128130,
+          "timings": {
+            "encode_seconds": 0.7412269170163199,
+            "verify_seconds": 0.6904909159638919
+          },
+          "resources": {
+            "decoded_bytes_processed": 24157172,
+            "scratch_peak_bytes": 128130,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "zstd",
+            "profile": "max",
+            "level": null,
+            "threads": 1,
+            "applied": true,
+            "strategy": "compression"
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 0.02477620798163116,
+          "read_back_mib_per_second": 645.780823758916
+        },
+        {
+          "seconds": 1.5524169169948436,
+          "peak_rss_bytes": 42582016,
+          "preservation_passed": true,
+          "output_size": 128130,
+          "timings": {
+            "encode_seconds": 0.740587999986019,
+            "verify_seconds": 0.6866862080059946
+          },
+          "resources": {
+            "decoded_bytes_processed": 24157172,
+            "scratch_peak_bytes": 128130,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "zstd",
+            "profile": "max",
+            "level": null,
+            "threads": 1,
+            "applied": true,
+            "strategy": "compression"
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 0.02273712499300018,
+          "read_back_mib_per_second": 703.6949484565765
+        }
+      ],
+      "median_seconds": 1.5594077080022544,
+      "peak_rss_bytes": 42696704,
+      "preservation_passed": true
+    },
+    {
+      "case": "typed.avro",
+      "kind": "avro",
+      "implementation": "undatum",
+      "profile": "max",
+      "input_size": 8252249,
+      "logical_size": 16777216,
+      "trials": [
+        {
+          "seconds": 4.21925637498498,
+          "peak_rss_bytes": 59211776,
+          "preservation_passed": true,
+          "output_size": 514594,
+          "timings": {
+            "encode_seconds": 1.2936856670421548,
+            "verify_seconds": 2.6915291670011356
+          },
+          "resources": {
+            "decoded_bytes_processed": 32997120,
+            "scratch_peak_bytes": 514594,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "zstandard",
+            "profile": "max",
+            "level": 19,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 0.7927619169931859,
+          "read_back_mib_per_second": 20.182604205667875
+        },
+        {
+          "seconds": 4.254924209031742,
+          "peak_rss_bytes": 59441152,
+          "preservation_passed": true,
+          "output_size": 514594,
+          "timings": {
+            "encode_seconds": 1.2999567919760011,
+            "verify_seconds": 2.7218058750149794
+          },
+          "resources": {
+            "decoded_bytes_processed": 32997120,
+            "scratch_peak_bytes": 514594,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "zstandard",
+            "profile": "max",
+            "level": 19,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 0.8111149159958586,
+          "read_back_mib_per_second": 19.7259348638112
+        },
+        {
+          "seconds": 4.177766624954529,
+          "peak_rss_bytes": 58916864,
+          "preservation_passed": true,
+          "output_size": 514594,
+          "timings": {
+            "encode_seconds": 1.2742940000025555,
+            "verify_seconds": 2.6639638749766164
+          },
+          "resources": {
+            "decoded_bytes_processed": 32997120,
+            "scratch_peak_bytes": 514594,
+            "memory_enforcement": "none",
+            "peak_rss_bytes": null
+          },
+          "effective_settings": {
+            "codec": "zstandard",
+            "profile": "max",
+            "level": 19,
+            "threads": 1,
+            "applied": true
+          },
+          "status": "replaced",
+          "reason": null,
+          "reason_code": "accepted",
+          "decode_or_scan_seconds": 0.7946297919843346,
+          "read_back_mib_per_second": 20.135162513911165
+        }
+      ],
+      "median_seconds": 4.21925637498498,
+      "peak_rss_bytes": 59441152,
+      "preservation_passed": true
+    }
+  ]
+}

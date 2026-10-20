@@ -26,6 +26,7 @@ const sidebars = {
         'getting-started/basic-usage',
         'getting-started/performance',
         'getting-started/troubleshooting',
+        'getting-started/migrating-to-2',
         'getting-started/best-practices',
       ],
     },
@@ -67,6 +68,8 @@ const sidebars = {
             'commands/repack',
             'commands/flatten',
             'commands/formats',
+            'commands/shared-options',
+            'commands/json-output',
           ],
         },
         {
@@ -120,8 +123,11 @@ const sidebars = {
           label: 'Quality',
           items: [
             'commands/validate',
+            'commands/validate-rules',
+            'commands/quality',
             'commands/schema',
             'commands/schema-bulk',
+            'commands/schema-drift',
             'commands/doc',
           ],
         },
@@ -138,6 +144,7 @@ const sidebars = {
             'commands/package',
             'commands/pipeline',
             'commands/examples',
+            'commands/migrate-script',
           ],
         },
         {
@@ -172,6 +179,7 @@ const sidebars = {
       label: 'Integrations',
       items: [
         'integrations/sdk',
+        'integrations/sdk-reference',
         'integrations/data-api',
         'integrations/cloud',
         'integrations/plugins',
@@ -184,6 +192,10 @@ const sidebars = {
       label: 'Development',
       items: [
         'development/contributing',
+        'development/architecture',
+        'development/testing',
+        'development/benchmarks',
+        'development/releasing',
         'development/error-handling',
         'development/community',
       ],

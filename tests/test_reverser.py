@@ -1,100 +1,76 @@
-"""Tests for reverser command."""
+"""Tests for the reverse command (disk-backed for large inputs)."""
 
-import os
-import tempfile
-from unittest.mock import MagicMock, patch
+import datetime
+import json
+from decimal import Decimal
 
-from undatum.cmds.reverser import Reverser, _detect_engine, get_iterable_options
+import pytest
 
-
-class TestGetIterableOptions:
-    """Test get_iterable_options function."""
-
-    def test_get_iterable_options_all(self):
-        """Test extracting all iterable options."""
-        options = {
-            "tagname": "item",
-            "delimiter": ",",
-            "encoding": "utf-8",
-            "start_line": 1,
-            "page": 1,
-            "other": "value",
-        }
-        result = get_iterable_options(options)
-        assert result == {
-            "tagname": "item",
-            "delimiter": ",",
-            "encoding": "utf-8",
-            "start_line": 1,
-            "page": 1,
-        }
+from undatum.cmds.reverser import Reverser
+from undatum.ops.spill import reversed_rows
 
 
-class TestDetectEngine:
-    """Test _detect_engine function."""
-
-    @patch("undatum.cmds.reverser.detect_file_type")
-    def test_detect_engine_auto_duckdb(self, mock_detect):
-        """Test auto-detection selecting DuckDB."""
-        mock_detect.return_value = {
-            "success": True,
-            "datatype": MagicMock(id=lambda: "csv"),
-            "codec": MagicMock(id=lambda: "raw"),
-        }
-
-        result = _detect_engine("test.csv", "auto", None)
-        assert result == "duckdb"
-
-    @patch("undatum.cmds.reverser.detect_file_type")
-    def test_detect_engine_auto_iterable(self, mock_detect):
-        """Test auto-detection selecting iterable engine."""
-        mock_detect.return_value = {
-            "success": True,
-            "datatype": MagicMock(id=lambda: "xml"),
-            "codec": MagicMock(id=lambda: "raw"),
-        }
-
-        result = _detect_engine("test.xml", "auto", None)
-        assert result == "iterable"
-
-    def test_detect_engine_explicit(self):
-        """Test explicit engine selection."""
-        result = _detect_engine("test.csv", "iterable", "csv")
-        assert result == "iterable"
+def test_reverse_basic(tmp_path):
+    source = tmp_path / "in.jsonl"
+    source.write_text('{"id": 1}\n{"id": 2}\n{"id": 3}\n', encoding="utf8")
+    out = tmp_path / "out.jsonl"
+    Reverser().reverse(str(source), {"output": str(out)})
+    assert [json.loads(line)["id"] for line in out.read_text().splitlines()] == [3, 2, 1]
 
 
-class TestReverser:
-    """Test Reverser class."""
+def test_reversed_rows_spills_in_chunks():
+    rows = ({"id": i} for i in range(25))
+    assert [r["id"] for r in reversed_rows(rows, chunk_rows=4)] == list(range(24, -1, -1))
 
-    def test_init(self):
-        """Test Reverser initialization."""
-        reverser = Reverser()
-        assert reverser is not None
 
-    @patch("undatum.cmds.reverser.open_iterable")
-    @patch("undatum.cmds.reverser.DataWriter")
-    def test_reverse_basic(self, mock_writer_class, mock_open_iterable):
-        """Test basic reverse operation."""
-        reverser = Reverser()
+def test_reversed_rows_removes_spill_files(tmp_path, monkeypatch):
+    import tempfile
 
-        mock_iterable = MagicMock()
-        mock_iterable.__iter__ = MagicMock(return_value=iter([{"id": 1}, {"id": 2}, {"id": 3}]))
-        mock_open_iterable.return_value = mock_iterable
+    monkeypatch.setattr(tempfile, "tempdir", str(tmp_path))
+    list(reversed_rows(({"id": i} for i in range(10)), chunk_rows=3))
+    assert list(tmp_path.iterdir()) == []
 
-        mock_writer = MagicMock()
-        mock_writer_class.return_value = mock_writer
 
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".jsonl", delete=False) as f:
-            f.write('{"id": 1}\n{"id": 2}\n{"id": 3}\n')
-            temp_path = f.name
+def test_spill_keeps_typed_nested_values_and_literal_tags():
+    import uuid
 
-        try:
-            options = {}
-            reverser.reverse(temp_path, options)
-            mock_writer.write_items.assert_called_once()
-            # Check that items were reversed
-            items = mock_writer.write_items.call_args[0][0]
-            assert items[0]["id"] == 3  # Last item should be first
-            assert items[-1]["id"] == 1  # First item should be last
-        finally:
-            os.unlink(temp_path)
+    value = {
+        "day": datetime.date(2026, 1, 2),
+        "stamp": datetime.datetime(2026, 1, 2, 3, tzinfo=datetime.timezone.utc, fold=1),
+        "time": datetime.time(3, 4, 5, fold=1),
+        "duration": datetime.timedelta(days=2, microseconds=3),
+        "amount": Decimal("123.4500"),
+        "binary": b"\0\xff\n",
+        "uuid": uuid.uuid4(),
+        "nested": [{"a": (Decimal("1.2"),)}],
+        "keys": {1: "integer", "1": "string"},
+        "large": 2**100,
+        "literal": {"__undatum_spill_type__": "date", "value": "not-a-date"},
+    }
+    rows = [{**value, "i": i} for i in range(5)]
+    out = list(reversed_rows(rows, chunk_rows=2))
+    assert out == list(reversed(rows))
+    for row in out:
+        assert isinstance(row["amount"], Decimal)
+        assert isinstance(row["binary"], bytes)
+        assert isinstance(row["nested"][0]["a"], tuple)
+        assert row["stamp"].fold == row["time"].fold == 1
+
+
+def test_backward_fill_preserves_types_when_both_passes_spill():
+    from undatum.ops import FillConfig, get_operation
+    from undatum.ops.spill import DEFAULT_CHUNK_ROWS
+
+    day, price = datetime.date(2026, 1, 2), Decimal("1.50")
+    rows = ({"day": None if i == 0 else day, "price": price} for i in range(DEFAULT_CHUNK_ROWS + 1))
+    out = get_operation("fill").apply(rows, FillConfig(fields=("day",), strategy="backward"))
+    assert all(row == {"day": day, "price": price} for row in out)
+
+
+def test_failed_spill_does_not_leave_temporary_files(tmp_path, monkeypatch):
+    import tempfile
+
+    monkeypatch.setattr(tempfile, "tempdir", str(tmp_path))
+    with pytest.raises(TypeError):
+        list(reversed_rows([{"unsupported": object()}], chunk_rows=1))
+    assert list(tmp_path.iterdir()) == []

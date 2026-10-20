@@ -1,7 +1,7 @@
 # community Specification
 
 ## Purpose
-TBD - created by archiving change improve-community-positioning. Update Purpose after archive.
+Discovery listings, GitHub Discussions, and contributor-facing positioning so undatum is findable and supportable.
 ## Requirements
 ### Requirement: Discovery Listing After Trust Fixes
 The project SHALL pursue listing on dbohdan/structured-text-tools only after P0 trust fixes for

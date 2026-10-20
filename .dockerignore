@@ -1,0 +1,10 @@
+# Only package sources, metadata, licenses and the man page are copied into the image.
+*
+!pyproject.toml
+!README.md
+!LICENSE
+!THIRD_PARTY_NOTICES
+!undatum/
+!man/undatum.1
+**/__pycache__
+**/*.pyc

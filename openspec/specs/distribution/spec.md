@@ -1,7 +1,7 @@
 # distribution Specification
 
 ## Purpose
-TBD - created by archiving change improve-distribution-install. Update Purpose after archive.
+Installable CLI distribution: PyPI extras, pipx/uv paths, man page, shell completion, and release binaries.
 ## Requirements
 ### Requirement: First-Class Tool Install Documentation
 Project documentation SHALL present `uv tool install undatum` and `pipx install undatum` as

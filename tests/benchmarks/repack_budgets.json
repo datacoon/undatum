@@ -1,0 +1,164 @@
+{
+  "csv-low.csv.gz:fast": {
+    "seconds": 4.54,
+    "rss_bytes": 92494233,
+    "output_bytes": 64696,
+    "scratch_bytes": 79452
+  },
+  "csv-low.csv.gz:balanced": {
+    "seconds": 4.06,
+    "rss_bytes": 92472934,
+    "output_bytes": 65936,
+    "scratch_bytes": 80896
+  },
+  "csv-low.csv.gz:max": {
+    "seconds": 3.99,
+    "rss_bytes": 92664627,
+    "output_bytes": 60278,
+    "scratch_bytes": 74304
+  },
+  "csv-high.csv.gz:fast": {
+    "seconds": 1.23,
+    "rss_bytes": 94368563,
+    "output_bytes": 596095,
+    "scratch_bytes": 698557
+  },
+  "csv-high.csv.gz:balanced": {
+    "seconds": 4.64,
+    "rss_bytes": 93836083,
+    "output_bytes": 582882,
+    "scratch_bytes": 683164
+  },
+  "csv-high.csv.gz:max": {
+    "seconds": 5.68,
+    "rss_bytes": 94432460,
+    "output_bytes": 582876,
+    "scratch_bytes": 683156
+  },
+  "zstd-high.csv.zst:fast": {
+    "seconds": 1.23,
+    "rss_bytes": 98010726,
+    "output_bytes": 494276,
+    "scratch_bytes": 579934
+  },
+  "zstd-high.csv.zst:balanced": {
+    "seconds": 1.23,
+    "rss_bytes": 100737024,
+    "output_bytes": 530639,
+    "scratch_bytes": 622297
+  },
+  "zstd-high.csv.zst:max": {
+    "seconds": 1.4,
+    "rss_bytes": 209256448,
+    "output_bytes": 509736,
+    "scratch_bytes": 597944
+  },
+  "jsonl.jsonl.gz:fast": {
+    "seconds": 1.23,
+    "rss_bytes": 94688051,
+    "output_bytes": 48876,
+    "scratch_bytes": 61020
+  },
+  "jsonl.jsonl.gz:balanced": {
+    "seconds": 1.23,
+    "rss_bytes": 95390924,
+    "output_bytes": 48271,
+    "scratch_bytes": 60316
+  },
+  "jsonl.jsonl.gz:max": {
+    "seconds": 1.23,
+    "rss_bytes": 95284428,
+    "output_bytes": 44486,
+    "scratch_bytes": 55906
+  },
+  "tiny.csv.gz:fast": {
+    "seconds": 1.23,
+    "rss_bytes": 91812659,
+    "output_bytes": 44,
+    "scratch_bytes": 4129
+  },
+  "tiny.csv.gz:balanced": {
+    "seconds": 1.23,
+    "rss_bytes": 91557068,
+    "output_bytes": 44,
+    "scratch_bytes": 4129
+  },
+  "tiny.csv.gz:max": {
+    "seconds": 1.23,
+    "rss_bytes": 92068249,
+    "output_bytes": 44,
+    "scratch_bytes": 4129
+  },
+  "empty.csv.gz:fast": {
+    "seconds": 1.21,
+    "rss_bytes": 91620966,
+    "output_bytes": 36,
+    "scratch_bytes": 4120
+  },
+  "empty.csv.gz:balanced": {
+    "seconds": 1.21,
+    "rss_bytes": 91322777,
+    "output_bytes": 36,
+    "scratch_bytes": 4120
+  },
+  "empty.csv.gz:max": {
+    "seconds": 1.21,
+    "rss_bytes": 91684864,
+    "output_bytes": 36,
+    "scratch_bytes": 4120
+  },
+  "typed.parquet:fast": {
+    "seconds": 1.28,
+    "rss_bytes": 151280025,
+    "output_bytes": 27599,
+    "scratch_bytes": 36232
+  },
+  "typed.parquet:balanced": {
+    "seconds": 1.29,
+    "rss_bytes": 151280025,
+    "output_bytes": 34248,
+    "scratch_bytes": 43978
+  },
+  "typed.parquet:max": {
+    "seconds": 1.29,
+    "rss_bytes": 152728371,
+    "output_bytes": 26667,
+    "scratch_bytes": 35146
+  },
+  "typed.orc:fast": {
+    "seconds": 1.23,
+    "rss_bytes": 74539008,
+    "output_bytes": 8809,
+    "scratch_bytes": 14340
+  },
+  "typed.orc:balanced": {
+    "seconds": 1.22,
+    "rss_bytes": 75433574,
+    "output_bytes": 8833,
+    "scratch_bytes": 14369
+  },
+  "typed.orc:max": {
+    "seconds": 1.23,
+    "rss_bytes": 75348377,
+    "output_bytes": 8833,
+    "scratch_bytes": 14369
+  },
+  "typed.avro:fast": {
+    "seconds": 1.4,
+    "rss_bytes": 93708288,
+    "output_bytes": 52250,
+    "scratch_bytes": 64951
+  },
+  "typed.avro:balanced": {
+    "seconds": 1.39,
+    "rss_bytes": 93985177,
+    "output_bytes": 65932,
+    "scratch_bytes": 80892
+  },
+  "typed.avro:max": {
+    "seconds": 1.46,
+    "rss_bytes": 96072499,
+    "output_bytes": 33208,
+    "scratch_bytes": 42767
+  }
+}

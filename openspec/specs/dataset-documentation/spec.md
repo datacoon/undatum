@@ -1,7 +1,7 @@
 # dataset-documentation Specification
 
 ## Purpose
-TBD - created by archiving change add-dataset-doc-command. Update Purpose after archive.
+Generate human-readable dataset documentation (`doc` / `ai doc`) with optional LLM-backed descriptions and metadata.
 ## Requirements
 ### Requirement: Document command availability
 The system SHALL provide a CLI command `doc` with alias `document` to generate

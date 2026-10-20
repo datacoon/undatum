@@ -1,7 +1,7 @@
 # plugin-system Specification
 
 ## Purpose
-TBD - created by archiving change add-plugin-system. Update Purpose after archive.
+Entry-point plugins that add CLI commands, URI connectors, and record transforms without forking undatum.
 ## Requirements
 ### Requirement: Plugin System
 The system SHALL provide a plugin system for extending undatum with custom commands, IO connectors, and transforms.

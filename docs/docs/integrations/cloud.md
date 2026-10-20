@@ -30,7 +30,7 @@ pip install "undatum[cloud]"
 
 ### Usage examples
 
-```bash
+```bash norun
 # Read from cloud storage
 undatum stats gs://my-bucket/data.csv
 undatum count s3://my-bucket/data.jsonl
@@ -41,12 +41,13 @@ undatum convert data.csv gs://my-bucket/output.parquet
 
 # Cloud-to-cloud conversion
 undatum convert s3://bucket/input.jsonl gs://bucket/output.parquet
-undatum mask s3://bucket/data.csv --fields email --method hash az://container/masked.csv
+undatum mask s3://bucket/data.csv --fields email --method hash --output az://container/masked.csv
 ```
 
-**Supported commands:** Any command that accepts file paths — including `convert`, `stats`, `count`, `analyze`, `select`, `validate`, `ingest`, `mask`, and SDK `Dataset.read()` / `write()`.
+**Supported commands:** Any command that accepts file paths — including `convert`, `stats`, `count`, `analyze`, `select`, `validate`, `ingest`, `mask`, and SDK `Dataset.read()` / `write()`. [`repack`](/commands/repack) is **local files only**; download first or use `convert` for cloud URIs.
 
 **Notes:**
 - Cloud I/O is streaming-aware; large files do not need to be downloaded manually first.
 - Local-only options such as `--atomic` apply to local output paths only.
-- For S3-only workflows, `undatum[s3]` is sufficient; use `undatum[gcs]` or `undatum[azure]` for a single other cloud, or `undatum[cloud]` for all three.
+- `s3://` reads stream through s3fs when it is installed (`undatum[cloud]`); with only `undatum[s3]` (boto3) the object is downloaded to a temporary file first, which needs local disk space of the object's size. Credentials, profile and region come from the standard AWS configuration (`AWS_PROFILE`, `AWS_REGION`, `~/.aws`).
+- Use `undatum[gcs]` or `undatum[azure]` for a single other cloud, or `undatum[cloud]` for all three.

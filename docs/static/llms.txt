@@ -1,37 +1,69 @@
-# CLI Reference
+# undatum
 
-undatum commands grouped the same way as the documentation sidebar.
+Command-line tool for converting, validating, querying, and documenting datasets across 140+ formats (iterabledata), Entry points: `undatum` and `data`. `-` reads stdin; results go to stdout in the input's format (`-O` to change).
+
+Site: https://datenoio.github.io/undatum/
+CLI help: `undatum <command> --help`
 
 ## Getting started
 
-- [Installation](https://datenoio.github.io/undatum/getting-started/installation)
+- [Installation](https://datenoio.github.io/undatum/getting-started/installation) — extras, uv/pipx, Python 3.10+
 - [Quick start](https://datenoio.github.io/undatum/getting-started/quick-start)
-- [When to use](https://datenoio.github.io/undatum/getting-started/when-to-use)
 - [Cookbook](https://datenoio.github.io/undatum/getting-started/cookbook)
+- [Basic usage](https://datenoio.github.io/undatum/getting-started/basic-usage) — `--filter` syntax, encoding, compression
+- [Shared CLI options](https://datenoio.github.io/undatum/commands/shared-options) — `--format-in`/`-F`, `--format-out`/`-O`, `--limit`/`-n`, `--where`, `--add`, `--flatten-nested`, `--on-error`, `--error-log`, `--table`, `--quotechar`
+- [JSON output](https://datenoio.github.io/undatum/commands/json-output) — `--json` documents with a versioned `schema` id; JSON errors on stderr
 - [Performance](https://datenoio.github.io/undatum/getting-started/performance)
-- [Troubleshooting](https://datenoio.github.io/undatum/getting-started/troubleshooting)
+- [Troubleshooting](https://datenoio.github.io/undatum/getting-started/troubleshooting) — exit codes 0, 1, 2, 3, 4, 130
+- [Migrating to 2.0](https://datenoio.github.io/undatum/getting-started/migrating-to-2) — deprecated commands and options; `undatum migrate-script` rewrites them
 
 ## Commands
 
 - [Command index](https://datenoio.github.io/undatum/commands/)
-- [convert](https://datenoio.github.io/undatum/commands/convert)
-- [validate](https://datenoio.github.io/undatum/commands/validate)
-- [sql](https://datenoio.github.io/undatum/commands/sql)
+- [convert](https://datenoio.github.io/undatum/commands/convert) — `--where`, `--add`, `--partition-by` (Hive layout)
+- [repack](https://datenoio.github.io/undatum/commands/repack)
+- [formats](https://datenoio.github.io/undatum/commands/formats)
+- [analyze](https://datenoio.github.io/undatum/commands/analyze)
 - [stats](https://datenoio.github.io/undatum/commands/stats)
-- [pipeline](https://datenoio.github.io/undatum/commands/pipeline)
-- [db](https://datenoio.github.io/undatum/commands/db)
+- [select](https://datenoio.github.io/undatum/commands/select) — `--filter` (alias `--filter-expr`)
+- [validate](https://datenoio.github.io/undatum/commands/validate)
+- [Validation rules](https://datenoio.github.io/undatum/commands/validate-rules) — rule file catalogue (`format:`, `unique:`, `references:`)
+- [quality](https://datenoio.github.io/undatum/commands/quality) — data quality report with thresholds (exit 1 on failure)
+- [schema](https://datenoio.github.io/undatum/commands/schema)
+- [schema-drift](https://datenoio.github.io/undatum/commands/schema-drift) — compare deliveries with a baseline; `diff --schema` for two files
+- [sql](https://datenoio.github.io/undatum/commands/sql)
+- [pipeline](https://datenoio.github.io/undatum/commands/pipeline) — YAML DSL, templates including `jsonl-normalization`
+- [apply](https://datenoio.github.io/undatum/commands/apply) — `--script` or `--plugin`
+- [db](https://datenoio.github.io/undatum/commands/db) — query, load (PostgreSQL, MySQL, SQLite, ClickHouse, SQL Server, MongoDB, Elasticsearch/OpenSearch), dump
 - [api](https://datenoio.github.io/undatum/commands/api)
-- [ai](https://datenoio.github.io/undatum/commands/ai)
+- [ai](https://datenoio.github.io/undatum/commands/ai) — `ai plan SOURCE TARGET` (two paths, not `--to`)
+- [doc](https://datenoio.github.io/undatum/commands/doc)
 - [mcp](https://datenoio.github.io/undatum/commands/mcp)
+- [tui](https://datenoio.github.io/undatum/commands/tui) / [web](https://datenoio.github.io/undatum/commands/web)
+- [config](https://datenoio.github.io/undatum/commands/config)
+- [plugins](https://datenoio.github.io/undatum/commands/plugins)
+- [extract](https://datenoio.github.io/undatum/commands/extract) — `undatum[extract]`
+- [package](https://datenoio.github.io/undatum/commands/package)
+- [migrate-script](https://datenoio.github.io/undatum/commands/migrate-script) — rewrite deprecated commands and options in scripts
 
 ## Integrations
 
-- [MCP server](https://datenoio.github.io/undatum/integrations/mcp)
-- [Python SDK](https://datenoio.github.io/undatum/integrations/sdk)
-- [Data API](https://datenoio.github.io/undatum/integrations/data-api)
-- [Cloud storage](https://datenoio.github.io/undatum/integrations/cloud)
+- [MCP server and tool catalog](https://datenoio.github.io/undatum/integrations/mcp) — one tool per operation, resources `undatum://datasets`, prompts
+- [Python SDK](https://datenoio.github.io/undatum/integrations/sdk) — lazy `Dataset` plans: read/from_records, select, filter, sort, dedup, join, rename, fill, sample, mask, ...; terminal methods write, collect, count, stats, quality, validate, explain
+- [Python SDK reference](https://datenoio.github.io/undatum/integrations/sdk-reference) — generated from docstrings
+- [Data API](https://datenoio.github.io/undatum/integrations/data-api) — optional `--api-key` / `UNDATUM_API_KEY`, sent as the `X-API-Key` header
+- [Cloud storage](https://datenoio.github.io/undatum/integrations/cloud) — `s3://`, `gs://`, `az://`
+- [Plugins](https://datenoio.github.io/undatum/integrations/plugins)
+- [AI documentation](https://datenoio.github.io/undatum/integrations/ai)
 
 ## Formats
 
 - [Format support matrix](https://datenoio.github.io/undatum/formats/)
 - [iterabledata formats](https://datenoio.github.io/iterabledata/formats/)
+
+## Development
+
+- [Architecture](https://datenoio.github.io/undatum/development/architecture)
+- [Testing](https://datenoio.github.io/undatum/development/testing)
+- [Benchmarks](https://datenoio.github.io/undatum/development/benchmarks)
+- [Contributing](https://datenoio.github.io/undatum/development/contributing)

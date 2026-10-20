@@ -1,7 +1,7 @@
 # document-extraction Specification
 
 ## Purpose
-TBD - created by archiving change add-extract-command. Update Purpose after archive.
+Extract tables and text from PDF/Office files (`undatum extract`) into CSV, JSON/NDJSON, Parquet, or a data package.
 ## Requirements
 ### Requirement: Extract Command
 The system SHALL provide an `extract` command to ingest supported document files and emit
