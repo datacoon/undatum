@@ -178,7 +178,7 @@ all = [
 # Tool versions are pinned here and mirrored in .pre-commit-config.yaml and CI;
 # scripts/check_tool_versions.py fails CI when they drift.
 dev = [
-    "ruff==0.14.9",
+    "ruff==0.17.1",
     "mypy==1.19.1",
     "types-PyYAML",
     "types-requests",
@@ -235,7 +235,7 @@ ignore = [
     "B008",  # do not perform function calls in argument defaults
     "C901",  # too complex
     # Size/complexity limits (pylint's too-many-* checks were disabled as well).
-    "PLR0911", "PLR0912", "PLR0913", "PLR0915",
+    "PLR0911", "PLR0912", "PLR0913", "PLR0915", "PLR0917",
     "PLR2004",  # magic values in comparisons
     "PLC0415",  # imports inside functions keep CLI start-up fast (optional extras, heavy libs)
     "PLW0603",  # module-level caches updated with `global`

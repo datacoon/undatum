@@ -5,6 +5,7 @@ import os
 import pytest
 
 from undatum.common.path_utils import (
+    cloud_object_suffix,
     is_azure_uri,
     is_cloud_uri,
     is_gcs_uri,
@@ -241,3 +242,15 @@ class TestCloudUriHelpers:
         assert "adlfs" in str(error)
         assert "undatum[azure]" in str(error)
         assert "undatum[cloud]" in str(error)
+
+
+@pytest.mark.parametrize(
+    "path,expected",
+    [
+        ("data.csv?token=first?second", ".csv"),
+        ("s3:///data.parquet?token=first?second", ".parquet"),
+        ("data?token=first?second", ".tmp"),
+    ],
+)
+def test_cloud_suffix_fallback_ignores_query(path, expected):
+    assert cloud_object_suffix(path) == expected
